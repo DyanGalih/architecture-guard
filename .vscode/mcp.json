@@ -1,0 +1,18 @@
+{
+  "servers": {
+    "flash-mem": {
+      "command": "flash-mem",
+      "args": [
+        "mcp",
+        "/home/galih/IdeaProjects/spec-kit-architecture-guard"
+      ],
+      "env": {
+        "FLASH_MEM_ENABLE_PROJECT_SUMMARY_WRITES": "1"
+      },
+      "type": "local",
+      "tools": [
+        "*"
+      ]
+    }
+  }
+}

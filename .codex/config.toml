@@ -1,0 +1,8 @@
+# Project-local Codex MCP template.
+# Copy or symlink this file to ~/.codex/config.toml to activate it.
+
+[mcp_servers.flash_mem]
+command = "flash-mem"
+args = ["mcp", "/home/galih/IdeaProjects/spec-kit-architecture-guard"]
+env = { FLASH_MEM_ENABLE_PROJECT_SUMMARY_WRITES = "1" }
+enabled = true
