@@ -2,7 +2,7 @@
 
 > Continuous architecture governance for AI-assisted development.
 
-[![Version](https://img.shields.io/badge/version-1.15.0-22c55e)](extension.yml)
+[![Version](https://img.shields.io/badge/version-1.15.1-22c55e)](extension.yml)
 [![Spec Kit](https://img.shields.io/badge/Spec%20Kit-compatible-2563eb)](https://spec-kit.dev)
 [![Non-blocking](https://img.shields.io/badge/style-non--blocking-10b981)](https://spec-kit.dev)
 [![Orchestration](https://img.shields.io/badge/role-governance--orchestrator-blue)](https://spec-kit.dev)
@@ -128,7 +128,7 @@ specify extension add architecture-guard
 Or directly from the release artifact:
 ```text
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/spec-kit-architecture-guard/archive/refs/tags/v1.15.0.zip
+  https://github.com/DyanGalih/spec-kit-architecture-guard/archive/refs/tags/v1.15.1.zip
 ```
 
 2. Map the existing codebase
@@ -165,7 +165,7 @@ specify extension add architecture-guard
 Or directly from the release artifact:
 ```text
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/spec-kit-architecture-guard/archive/refs/tags/v1.15.0.zip
+  https://github.com/DyanGalih/spec-kit-architecture-guard/archive/refs/tags/v1.15.1.zip
 ```
 
 2. Initialize your constitutions
