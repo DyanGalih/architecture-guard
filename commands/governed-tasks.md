@@ -6,7 +6,7 @@ description: Generate or validate implementation tasks with memory context, secu
 
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md`. In the extension source checkout, use `templates/ponytail_core.md`. Treat that shared contract as authoritative; phase-specific instructions may narrow its application but must not weaken its safety or verification floor.
+Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
 ## Budgeted Context Contract
 
@@ -15,37 +15,6 @@ Read and apply `.specify/extensions/architecture-guard/templates/budgeted_contex
 You are orchestrating the `governed-tasks` workflow for `architecture-guard`.
 
 This command coordinates multiple extensions to ensure the task list respects architectural, historical, and security constraints before implementation begins.
-
-## Flash-Mem-First Architecture Context Retrieval
-
-Try Flash-Mem first: query summary and metadata context before performing architecture analysis.
-
-1. Search Flash-Mem for relevant architecture context:
-   - architecture decisions
-   - ADRs
-   - design constraints
-   - coding conventions
-   - prior guard findings
-   - approved exceptions
-   - architectural patterns
-2. Prefer summary-first retrieval:
-   - use summaries
-   - use metadata
-   - use confidence
-   - use tags
-   - use related files
-3. Load full memory content only when summaries are insufficient.
-4. Reuse approved architectural decisions whenever possible.
-5. Flag conflicts between proposed changes and existing architectural decisions.
-6. After analysis, store durable architecture knowledge back into Flash-Mem:
-   - new architecture decisions
-   - approved exceptions
-   - recurring violations
-   - architectural constraints
-   - project conventions
-   - validated design patterns
-
-If Flash-Mem is unavailable or the retrieved summaries are insufficient, continue with the repository artifacts and constitution files available in the workspace.
 
 ## Goal
 
@@ -110,9 +79,7 @@ You must orchestrate the `/speckit.tasks` workflow directly.
    - Generate `specs/<feature>/tasks.md` directly, breaking down the plan into implementation-ready tasks with checkbox format. Enforce Ponytail minimalism.
    - Note in the Governance Summary that `/speckit.tasks` was unavailable and task generation was performed inline.
 
-2. The generated tasks MUST use the Project Constitution documents and feature context. Use Flash-Mem first when available. If Flash-Mem is unavailable or the retrieved context is insufficient, read the constitution files directly with your file-reading tools (absolute or relative paths). Do not rely solely on workspace search or semantic indexers, as these files are often in `.gitignore`:
-   - `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, and `.specify/memory/security_constitution.md`.
-   - `specs/<feature>/security-constraints.md` (if available).
+2. The generated tasks MUST use the Project Constitution documents and feature context. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, read constitution files and feature security constraints directly with file-reading tools. Do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
 3. Prefer compact, feature-scoped task generation over broad restatements of the full memory set.
 
 ### Step 4 — Security Review on Tasks

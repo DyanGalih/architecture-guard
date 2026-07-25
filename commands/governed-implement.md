@@ -6,7 +6,7 @@ description: Run implementation with memory context, then review the produced im
 
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md`. In the extension source checkout, use `templates/ponytail_core.md`. Treat that shared contract as authoritative; phase-specific instructions may narrow its application but must not weaken its safety or verification floor.
+Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
 ## Budgeted Context Contract
 
@@ -15,37 +15,6 @@ Read and apply `.specify/extensions/architecture-guard/templates/budgeted_contex
 You are orchestrating the `governed-implement` workflow for `architecture-guard`.
 
 This command coordinates implementation and post-implementation review to ensure the output respects architectural, historical, and security constraints.
-
-## Flash-Mem-First Architecture Context Retrieval
-
-Try Flash-Mem first: query summary and metadata context before performing architecture analysis.
-
-1. Search Flash-Mem for relevant architecture context:
-   - architecture decisions
-   - ADRs
-   - design constraints
-   - coding conventions
-   - prior guard findings
-   - approved exceptions
-   - architectural patterns
-2. Prefer summary-first retrieval:
-   - use summaries
-   - use metadata
-   - use confidence
-   - use tags
-   - use related files
-3. Load full memory content only when summaries are insufficient.
-4. Reuse approved architectural decisions whenever possible.
-5. Flag conflicts between proposed changes and existing architectural decisions.
-6. After analysis, store durable architecture knowledge back into Flash-Mem:
-   - new architecture decisions
-   - approved exceptions
-   - recurring violations
-   - architectural constraints
-   - project conventions
-   - validated design patterns
-
-If Flash-Mem is unavailable or the retrieved summaries are insufficient, continue with the repository artifacts and constitution files available in the workspace.
 
 ## Goal
 
@@ -107,11 +76,7 @@ You must orchestrate the `/speckit.implement` (core implementation) workflow dir
    - Note in the Governance Summary that `/speckit.implement` was unavailable and implementation was performed inline.
 3. **Write Code**: Perform the actual coding work (writing files, running tests) required by the tasks.
 4. **Sync the tasks**: You MUST update `specs/<feature>/tasks.md` to mark completed tasks with `[x]`, check them off, and add any new subtasks discovered during implementation.
-5. The implementation MUST follow current tasks and context. Use Flash-Mem first when available. If Flash-Mem is unavailable or the retrieved context is insufficient, read the constitution files directly with your file-reading tools (absolute or relative paths). Do not rely solely on workspace search or semantic indexers, as these files are often in `.gitignore`:
-   - `specs/<feature>/tasks.md`
-   - `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, and `.specify/memory/security_constitution.md`.
-   - `specs/<feature>/security-constraints.md` (if available).
-   - Architecture migration plan (if available).
+5. The implementation MUST follow current tasks and context. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, read active artifacts and constitution files directly with file-reading tools. Do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
 
 NOTE: The core Spec Kit command is `speckit.implement`. Do not use `speckit.implementation` as it is not a registered command.
 

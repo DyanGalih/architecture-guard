@@ -6,7 +6,7 @@ description: Orchestrate a governed specification workflow that coordinates flas
 
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md`. In the extension source checkout, use `templates/ponytail_core.md`. Treat that shared contract as authoritative; phase-specific instructions may narrow its application but must not weaken its safety or verification floor.
+Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
 ## Budgeted Context Contract
 
@@ -15,23 +15,6 @@ Read and apply `.specify/extensions/architecture-guard/templates/budgeted_contex
 You are orchestrating the `governed-spec` workflow for `architecture-guard`.
 
 This command coordinates multiple extensions to ensure the initial specification respects architectural, historical, and security constraints, and provides a clear, validated foundation before planning begins.
-
-## Flash-Mem-First Architecture Context Retrieval
-
-Try Flash-Mem first: query summary and metadata context before performing architecture analysis.
-
-1. Search Flash-Mem for relevant architecture context:
-   - architecture decisions
-   - ADRs
-   - design constraints
-   - prior guard findings
-2. Prefer summary-first retrieval:
-   - use summaries
-   - use metadata
-   - use confidence
-3. Load full memory content only when summaries are insufficient.
-
-If Flash-Mem is unavailable or the retrieved summaries are insufficient, continue with the repository artifacts and constitution files available in the workspace.
 
 ## Goal
 

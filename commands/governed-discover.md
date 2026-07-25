@@ -6,7 +6,7 @@ description: Facilitate an architecture-aware discussion to flesh out ideas befo
 
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md`. In the extension source checkout, use `templates/ponytail_core.md`. Treat that shared contract as authoritative; phase-specific instructions may narrow its application but must not weaken its safety or verification floor.
+Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
 You are orchestrating the `governed-discover` workflow for `architecture-guard`.
 
@@ -14,20 +14,7 @@ This command coordinates an architecture-aware brainstorming and discovery phase
 
 ## Flash-Mem-First Architecture Context Retrieval
 
-Try Flash-Mem first: query summary and metadata context before performing any discussion or brainstorming.
-
-1. Search Flash-Mem for relevant architecture context:
-   - architecture decisions
-   - ADRs
-   - design constraints
-   - prior guard findings
-2. Prefer summary-first retrieval:
-   - use summaries
-   - use metadata
-   - use confidence
-3. Load full memory content only when summaries are insufficient.
-
-If Flash-Mem is unavailable or the retrieved summaries are insufficient, continue with the repository artifacts and constitution files available in the workspace.
+When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. If retrieval is unavailable or insufficient, fall back to repository artifacts and constitution files.
 
 ## Goal
 

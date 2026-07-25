@@ -105,6 +105,9 @@ assert_file_contains "$HUB_ROOT/templates/budgeted_context.md" "Do not load the 
 assert_file_contains "$HUB_ROOT/commands/consolidate-specs.md" "not a canonical specification" "fallback is non-authoritative"
 assert_file_contains "$HUB_ROOT/templates/budgeted_context.md" "Context Expansion" "context expansion is auditable"
 assert_file_contains "$HUB_ROOT/templates/architecture_guard_config.yml" "targeted skips it" "stale policy is unambiguous"
+assert_file_contains "$HUB_ROOT/commands/governed-plan.md" "test -f .specify/extensions/memory-md/dist/bin/speckit-memory.js" "governed-plan detects gitignored Memory MD runtime directly"
+assert_file_contains "$HUB_ROOT/commands/governed-plan.md" "rg --files -uu" "governed-plan uses ignore-aware Memory MD discovery"
+assert_file_contains "$HUB_ROOT/commands/governed-plan.md" "Do not probe for Flash-Mem" "governed-plan bounds unavailable global memory discovery"
 
 # --- Test: extension.yml references existing files ---
 echo ""

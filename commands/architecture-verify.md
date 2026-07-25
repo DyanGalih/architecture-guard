@@ -9,44 +9,13 @@ scripts:
 
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md`. In the extension source checkout, use `templates/ponytail_core.md`. Treat that shared contract as authoritative; phase-specific instructions may narrow its application but must not weaken its safety or verification floor.
+Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
 ## Budgeted Context Contract
 
 Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). The active `spec.md`, `plan.md`, `tasks.md`, applicable constitutions, security constraints, and code evidence are mandatory and authoritative. Neither Flash-Mem nor `system_context.md` is evidence that a task was implemented.
 
 Validate that the implementation fulfills all tasks in `tasks.md` while adhering to the defined architecture boundaries and the **Architecture Constitution**. This command acts as a post-implementation gate.
-
-## Flash-Mem-First Architecture Context Retrieval
-
-When Flash-Mem is available, query it first for summary and metadata context before performing architecture analysis:
-
-1. Search Flash-Mem for relevant architecture context:
-   - architecture decisions
-   - ADRs
-   - design constraints
-   - coding conventions
-   - prior guard findings
-   - approved exceptions
-   - architectural patterns
-2. Prefer summary-first retrieval:
-   - use summaries
-   - use metadata
-   - use confidence
-   - use tags
-   - use related files
-3. Load full memory content only when summaries are insufficient.
-4. Reuse approved architectural decisions whenever possible.
-5. Flag conflicts between proposed changes and existing architectural decisions.
-6. After analysis, store durable architecture knowledge back into Flash-Mem:
-   - new architecture decisions
-   - approved exceptions
-   - recurring violations
-   - architectural constraints
-   - project conventions
-   - validated design patterns
-
-If Flash-Mem is unavailable or the retrieved summaries are insufficient, continue with the repository artifacts and constitution files available in the workspace.
 
 ## User Input
 

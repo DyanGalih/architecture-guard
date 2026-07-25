@@ -6,7 +6,7 @@ description: Convert architecture violations into non-blocking, structured refac
 
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md`. In the extension source checkout, use `templates/ponytail_core.md`. Treat that shared contract as authoritative; phase-specific instructions may narrow its application but must not weaken its safety or verification floor.
+Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
 You are generating non-blocking refactor tasks for `architecture-guard`.
 
@@ -14,34 +14,7 @@ Convert architecture violations into structured tasks that preserve delivery mom
 
 ## Flash-Mem-First Architecture Context Retrieval
 
-When Flash-Mem is available, query it first for summary and metadata context before performing architecture analysis:
-
-1. Search Flash-Mem for relevant architecture context:
-   - architecture decisions
-   - ADRs
-   - design constraints
-   - coding conventions
-   - prior guard findings
-   - approved exceptions
-   - architectural patterns
-2. Prefer summary-first retrieval:
-   - use summaries
-   - use metadata
-   - use confidence
-   - use tags
-   - use related files
-3. Load full memory content only when summaries are insufficient.
-4. Reuse approved architectural decisions whenever possible.
-5. Flag conflicts between proposed changes and existing architectural decisions.
-6. After analysis, store durable architecture knowledge back into Flash-Mem:
-   - new architecture decisions
-   - approved exceptions
-   - recurring violations
-   - architectural constraints
-   - project conventions
-   - validated design patterns
-
-If Flash-Mem is unavailable or the retrieved summaries are insufficient, continue with the repository artifacts and constitution files available in the workspace.
+When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. After analysis, store only validated durable architecture knowledge. If retrieval is unavailable or insufficient, fall back to repository artifacts and constitution files.
 
 Use the same normalized command context as the review workflow. When `mode=performance`, do not invent refactor tasks from performance guidance; that mode is advisory and belongs to `architecture-review` output only.
 
