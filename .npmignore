@@ -1,0 +1,11 @@
+.git
+docs
+examples
+commands
+extension.yml
+OPENSPEC-ADAPTATION-NOTE.md
+CONTRIBUTING.md
+*.test.js
+__tests__
+node_modules
+.gitkeep

@@ -1,0 +1,49 @@
+{
+  "name": "architecture-guard",
+  "version": "1.15.2",
+  "description": "SDD framework-agnostic architecture governance orchestrator. Works with SpecKit, OpenSpec, and any SDD tool. Detects framework, adapts automatically.",
+  "bin": {
+    "architecture-guard": "install.js"
+  },
+  "scripts": {
+    "test": "node --test install.test.js",
+    "prepublishOnly": "node --check install.js && node --test install.test.js"
+  },
+  "keywords": [
+    "sdd",
+    "architecture",
+    "governance",
+    "spec-kit",
+    "openspec",
+    "spec-driven",
+    "ai-agent",
+    "architecture-review",
+    "ponytail",
+    "orchestration"
+  ],
+  "license": "MIT",
+  "author": "DyanGalih",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DyanGalih/spec-kit-architecture-guard.git"
+  },
+  "homepage": "https://github.com/DyanGalih/spec-kit-architecture-guard",
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "install.js",
+    "adapters/",
+    "orchestration/",
+    "templates/",
+    "presets/",
+    "hygiene-rules/",
+    "sonar-rules/",
+    "scripts/bash/detect-changed-files.sh",
+    "scripts/powershell/detect-changed-files.ps1",
+    "README.md",
+    "LICENSE",
+    "ADAPTERS.md",
+    "OPENSPEC-ORCHESTRATION.md"
+  ]
+}
