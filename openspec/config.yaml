@@ -1,0 +1,32 @@
+schema: spec-driven
+
+# Project context (shown to AI when creating artifacts).
+context: |
+  Repository: spec-kit-architecture-guard — repository-native architecture governance for SDD frameworks.
+  Dual-repo layout (NOT a git submodule):
+    - Parent repo (here): SDD spec / documentation store. Holds openspec/ changes, specs, and config.yaml.
+    - Nested src/ repo (remote git@github.com:DyanGalih/spec-kit-architecture-guard.git): the
+      deliverable that ships to npm as `architecture-guard`. Contains install.js, adapters/,
+      orchestration/, commands/, templates/, presets/, hygiene-rules/, sonar-rules/, scripts/,
+      package.json, .npmignore. Verify changes against `src/` before publishing.
+  Tech stack: markdown command docs, YAML manifest files, Bash and PowerShell scripts,
+    Node.js/CLI tooling (stdlib only in install.js), Flash-Mem MCP storage.
+  Conventions: memory-first workflows when Flash-Mem is available; non-blocking architecture
+    drift by default; architecture, governance, and security rules are separated; approved
+    refactors stay small and targeted; markdown constitutions and command files are the review
+    source of truth; application code lives under src/. DRY is a formal engineering principle:
+    core business rules, approvals, validation, DTO mapping, transformations, and orchestration
+    live in a single source of truth; duplicated logic is flagged as drift and can be enforced as
+    P0.
+  SDD frameworks supported: SpecKit (.specify/), OpenSpec (openspec/config.yaml + openspec/changes/),
+    framework-agnostic (generic). Architecture Guard orchestrates on top of any of them via
+    adapters/adapters/*.md; detection preamble lives at adapters/detect.md.
+
+# Per-artifact rules (optional).
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
