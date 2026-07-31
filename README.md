@@ -2,12 +2,14 @@
 
 > Continuous architecture governance for AI-assisted development.
 
-[![Version](https://img.shields.io/badge/version-1.15.1-22c55e)](extension.yml)
+[![Version](https://img.shields.io/badge/version-1.15.2-22c55e)](extension.yml)
 [![Spec Kit](https://img.shields.io/badge/Spec%20Kit-compatible-2563eb)](https://spec-kit.dev)
 [![Non-blocking](https://img.shields.io/badge/style-non--blocking-10b981)](https://spec-kit.dev)
 [![Orchestration](https://img.shields.io/badge/role-governance--orchestrator-blue)](https://spec-kit.dev)
 
-**Architecture Guard** is a repository-native governance layer for Spec Kit that helps AI agents follow the architecture rules you already defined, surface DRY and boundary drift early, and keep architecture review visible during delivery instead of waiting until code review.
+**Architecture Guard** is an SDD framework-agnostic governance orchestrator. It works with **SpecKit**, **OpenSpec**, or any SDD tool — automatically detecting which framework you use and adapting its commands and paths accordingly.
+
+Originally built as a governance layer for Spec Kit, Architecture Guard now runs as a standalone orchestrator that helps AI agents follow architecture rules, surface DRY and boundary drift early, and keep architecture review visible during delivery.
 
 ---
 
@@ -17,6 +19,36 @@ You no longer need to install separate agent skills for code minimalism, duplica
 * **DRY Cleanup Guidance:** Helps brownfield projects find duplicated business logic, validation, DTO mapping, and orchestration, then turn them into small refactor tasks instead of copy-paste drift.
 * **Brownfield Discovery + Verification:** Maps the current codebase, surfaces architectural drift early, and confirms approved refactors actually made it into the final work.
 * **Repository Hygiene Guard:** Automatically detects stray `*-copy.ts` drafts, orphaned code, and debug artifacts before they hit your main branch. [Learn more →](docs/repository-hygiene.md)
+
+---
+
+## Standalone Installation (All SDD Frameworks)
+
+Architecture Guard now runs as a standalone orchestrator across **SpecKit**, **OpenSpec**, and any SDD framework.
+
+```bash
+npx architecture-guard
+```
+
+Or install globally:
+
+```bash
+npm install -g architecture-guard
+architecture-guard
+```
+
+The installer will ask you to select:
+1. **AI agent(s)** — your tool (OpenCode, Claude Code, Gemini CLI, and 30+ more)
+2. **SDD framework** — SpecKit, OpenSpec, or framework-agnostic
+3. **Governance commands** — pick the ones you need
+
+Installation writes command files into your agent's command/skill directory, copies adapter files for auto-detection, and optionally adds governance rules to `AGENTS.md`.
+
+When run via `npx`, no prior setup needed — zero dependencies, Node.js stdlib only.
+
+### SpecKit Backward Compatibility
+
+Existing SpecKit users can continue using the extension path (`extension.yml`) OR switch to standalone — both work identically. All 15 original command files remain unchanged in `src/commands/`.
 
 ---
 
@@ -112,81 +144,43 @@ Rerunning the command is safe: it reuses accepted artifacts and resumes from the
 
 ## Quick Start
 
-Choose the path that matches your repository state.
+### Installation
 
-### Brownfield Quick Start
-
-Use this when the repository already contains application code.
-
-1. Install the extension
-
-From the Spec Kit extensions registry:
-```text
-specify extension add architecture-guard
+```bash
+npx architecture-guard
 ```
 
-Or directly from the release artifact:
-```text
-specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/spec-kit-architecture-guard/archive/refs/tags/v1.15.1.zip
+The installer asks which **AI agent**, **SDD framework** (SpecKit / OpenSpec / none), and **governance commands** to install. Commands are written in your agent's native format. No dependencies, no config files — the installer works across 35+ AI tools.
+
+Full standalone setup with framework detection, CLI flags, CI usage, and cross-framework migration: [Standalone Usage Guide →](docs/standalone-usage.md)
+
+### Brownfield (Existing Repos)
+
+```bash
+npx architecture-guard
+# choose: opencode, spec-kit, init-brownfield
 ```
 
-2. Map the existing codebase
+Then invoke `init-brownfield` to map the codebase.
 
-```text
-/speckit.architecture-guard.init-brownfield
+### Greenfield (New Projects)
+
+```bash
+npx architecture-guard
+# choose: opencode, openspec, init + architecture-review
 ```
 
-3. If you are already starting from a clear spec, run the suggested feature delivery flow:
+Then run `init` to create your governance constitutions, followed by `governed-discover` → `governed-spec` → `governed-delivery`.
 
-```text
-/speckit.architecture-guard.governed-delivery
-```
+### SpecKit Extension Users (v1.15.1 and earlier)
 
-If you are still shaping the feature, run `/speckit.architecture-guard.governed-discover` first, then pass the resulting draft into `/speckit.architecture-guard.governed-spec` before delivery.
+Your `extension.yml` install still works. To move to the standalone orchestrator:
 
-For a standalone review of existing work, use:
+1. `npx architecture-guard` in the project root
+2. Select your agent + `spec-kit` as the framework
+3. The new command files land alongside your existing setup
 
-```text
-/speckit.architecture-guard.architecture-workflow
-```
-
-### Greenfield Quick Start
-
-Use this when the repository is greenfield or when you want to define constitutions first.
-
-1. Install the extension
-
-From the Spec Kit extensions registry:
-```text
-specify extension add architecture-guard
-```
-
-Or directly from the release artifact:
-```text
-specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/spec-kit-architecture-guard/archive/refs/tags/v1.15.1.zip
-```
-
-2. Initialize your constitutions
-
-```text
-/speckit.architecture-guard.init
-```
-
-3. If you are already starting from a clear spec, run the suggested feature delivery flow:
-
-```text
-/speckit.architecture-guard.governed-delivery
-```
-
-If you are still shaping the feature, run `/speckit.architecture-guard.governed-discover` first, then pass the resulting draft into `/speckit.architecture-guard.governed-spec` before delivery.
-
-For a standalone review of existing work, use:
-
-```text
-/speckit.architecture-guard.architecture-workflow
-```
+Old `commands/*.md` and `extension.yml` remain untouched — both paths work in parallel.
 
 ---
 
@@ -243,12 +237,15 @@ spec-kit-architecture-guard/
 
 ### Direct Links
 
+- [Standalone Usage Guide](docs/standalone-usage.md) - Install, pick agent/framework/commands, CI flags, framework detection
+- [Adapter Reference](ADAPTERS.md) - Adapter contract format, built-in adapters, creating new adapters
+- [OpenSpec Transition Guide](OPENSPEC-ORCHESTRATION.md) - SPECkIT→OpenSpec migration with Architecture Guard
 - [Beginner Guide](docs/beginner-guide.md) - Plain-language overview for new users
 - [Architecture Overview](docs/architecture-overview.md) - Problem statement, value, and how the tool behaves
 - [Governance Model](docs/governance-model.md) - Layered constitutions and delegation behavior
 - [Workflows](docs/workflows.md) - Governed discovery, specification, planning, tasks, implementation, and companion extension flows
-- [Reference Manual](docs/reference-manual.md) - Install, configure, validate, and command details
-- [Framework Presets](docs/presets.md) - Built-in preset comparison, selection guidance, and custom-preset contract
+- [Reference Manual](docs/reference-manual.md) - Installation, configuration, validation, and command details
+- [Framework Presets](docs/presets.md) - Built‑in preset comparison, selection guidance, and custom-preset contract
 - [DRY Cleanup Guide](docs/dry-cleanup.md) - Brownfield flow for finding and removing duplicated logic
 - [Repository Hygiene](docs/repository-hygiene.md) - Configuration and rules for the Repository Hygiene Guard
 - [Release Notes](docs/release-notes.md) - Recent workflow and README updates
