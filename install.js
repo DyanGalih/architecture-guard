@@ -41,6 +41,27 @@ function readAllStdin() {
   });
 }
 
+// ponytail: no TTY on ANY fd and no piped answers = can't proceed interactively.
+// Called after readAllStdin() has drained piped incoming lines (the test harness path).
+// If nothing drained + no flags → error with corrective instruction.
+function requireInteractiveOrYes(opts) {
+  if (opts.yes) return;
+  // If we drained piped input (_inputLines exists), user chose non-interactive mode.
+  // Even if they piped nothing, let normal validation handle missing answers.
+  if (!process.stdin.isTTY && !process.stdout.isTTY && _inputLines !== null && _inputLines.length === 0) {
+    console.error([
+      'Interactive mode requires a terminal (TTY) or piped input.',
+      'Your environment has neither — use --yes with explicit flags:',
+      '',
+      '  architecture-guard init . --yes --agent opencode --framework openspec --commands init',
+      '',
+      'Supported flags: --agent, --framework, --commands, --overwrite, --yes',
+      'See --help for details.',
+    ].join('\n'));
+    process.exit(1);
+  }
+}
+
 const AGENT_CONFIGS = {
   opencode:     { dir: '.opencode/commands',   ext: '.md' },
   junie:        { dir: '.junie/commands',      ext: '.md' },
@@ -369,6 +390,7 @@ async function main() {
   console.log('Architecture Guard Installer\n');
   await readAllStdin();
   validateRuntimeResources();
+  requireInteractiveOrYes(opts);
 
   const positional = opts.values.filter(v => v !== 'init');
   const target = opts.target || positional[0] || process.cwd();
