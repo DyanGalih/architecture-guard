@@ -82,9 +82,10 @@ const AGENT_CONFIGS = {
   vibe:         { dir: '.vibe/commands',       ext: '.md' },
   cline:        { dir: '.clinerules/workflows', ext: '.md' },
   claude:       { dir: '.claude/skills',       ext: '/SKILL.md' },
-  codex:        { dir: '.agents/skills/codex', ext: '/SKILL.md' },
+  codex:        { dir: '.codex/skills',        ext: '/SKILL.md' },
   zed:          { dir: '.agents/skills/zed',   ext: '/SKILL.md' },
-  agy:          { dir: '.agents/skills/agy',   ext: '/SKILL.md' },
+  agy:          { dir: '.agent/skills',        ext: '/SKILL.md' },
+  antigravity:  { dir: '.agent/skills',        ext: '/SKILL.md' },
   devin:        { dir: '.devin/skills',        ext: '/SKILL.md' },
   grok:         { dir: '.grok/skills',         ext: '/SKILL.md' },
   trae:         { dir: '.trae/skills',         ext: '/SKILL.md' },
@@ -177,8 +178,14 @@ function installMarkdown(sk, content, cmdDir, dest) {
   fs.writeFileSync(dest, content);
 }
 
-function installSkillMd(sk, content, cmdDir, dest) {
-  dest ||= path.join(cmdDir, `architecture-guard-${sk}`, 'SKILL.md');
+function installSkillMd(sk, content, cmdDir, dest, agentType) {
+  if (!dest) {
+    if (agentType === 'antigravity' || agentType === 'agy' || agentType === 'codex') {
+      dest = path.join(cmdDir, sk, 'SKILL.md');
+    } else {
+      dest = path.join(cmdDir, `architecture-guard-${sk}`, 'SKILL.md');
+    }
+  }
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   const frontmatter = `---
 name: ${sk}
@@ -218,17 +225,22 @@ prompt: |2
   fs.writeFileSync(dest, yaml);
 }
 
-function commandDestination(cfg, sk, cmdDir) {
-  return cfg.ext === '/SKILL.md'
-    ? path.join(cmdDir, `architecture-guard-${sk}`, 'SKILL.md')
-    : path.join(cmdDir, `${sk}${cfg.ext}`);
+function commandDestination(cfg, sk, cmdDir, agentType) {
+  if (cfg.ext === '/SKILL.md') {
+    if (agentType === 'antigravity' || agentType === 'agy' || agentType === 'codex') {
+      return path.join(cmdDir, sk, 'SKILL.md');
+    }
+    return path.join(cmdDir, `architecture-guard-${sk}`, 'SKILL.md');
+  }
+  return path.join(cmdDir, `${sk}${cfg.ext}`);
 }
 
-function availableCopy(dest, cfg, sk, cmdDir) {
+function availableCopy(dest, cfg, sk, cmdDir, agentType) {
   if (cfg.ext === '/SKILL.md') {
-    let candidate = path.join(cmdDir, `architecture-guard-${sk}-2`, 'SKILL.md');
+    const prefix = (agentType === 'antigravity' || agentType === 'agy' || agentType === 'codex') ? sk : `architecture-guard-${sk}`;
+    let candidate = path.join(cmdDir, `${prefix}-2`, 'SKILL.md');
     for (let i = 2; fs.existsSync(candidate); i++) {
-      candidate = path.join(cmdDir, `architecture-guard-${sk}-${i + 1}`, 'SKILL.md');
+      candidate = path.join(cmdDir, `${prefix}-${i + 1}`, 'SKILL.md');
     }
     return candidate;
   }
@@ -258,7 +270,7 @@ async function installCommand(agentType, commandName, cmdDir, opts = {}) {
 
   const content = readPrompt(promptPath);
   const sk = slug(commandName);
-  let dest = commandDestination(cfg, sk, cmdDir);
+  let dest = commandDestination(cfg, sk, cmdDir, agentType);
 
   if (fs.existsSync(dest)) {
     // ponytail: --yes is for CI idempotency — repeated runs should replace, not accumulate
@@ -271,14 +283,14 @@ async function installCommand(agentType, commandName, cmdDir, opts = {}) {
       console.log(`  → ${commandName}: skipped`);
       return;
     }
-    if (action === 'keep both') dest = availableCopy(dest, cfg, sk, cmdDir);
+    if (action === 'keep both') dest = availableCopy(dest, cfg, sk, cmdDir, agentType);
   }
 
   try {
     if (cfg.ext === '.md') {
       installMarkdown(sk, content, cmdDir, dest);
     } else if (cfg.ext === '/SKILL.md') {
-      installSkillMd(sk, content, cmdDir, dest);
+      installSkillMd(sk, content, cmdDir, dest, agentType);
     } else if (cfg.ext === '.toml') {
       installToml(sk, content, cmdDir, dest);
     } else if (cfg.ext === '.yaml') {
