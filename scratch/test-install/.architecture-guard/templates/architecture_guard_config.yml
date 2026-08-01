@@ -1,0 +1,12 @@
+schema_version: "1.0"
+
+context:
+  # targeted preserves the existing Flash-Mem-first behavior.
+  # budgeted applies explicit retrieval limits and enables the local fallback index.
+  mode: targeted
+  fallback_file: specs/system_context.md
+  # regenerate refreshes a stale index; targeted skips it and opens only sources needed for named gaps.
+  stale_policy: regenerate
+  flash_mem:
+    initial_result_limit: 5
+    full_entry_limit: 3
