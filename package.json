@@ -45,5 +45,8 @@
     "LICENSE",
     "ADAPTERS.md",
     "OPENSPEC-ORCHESTRATION.md"
-  ]
+  ],
+  "dependencies": {
+    "@inquirer/prompts": "^8.5.2"
+  }
 }

@@ -119,26 +119,48 @@ const COMMANDS = [
 ];
 
 async function ask(promptText, choices, multi = false) {
-  if (choices) {
-    console.log(promptText);
-    choices.forEach((c, i) => console.log(`  ${i + 1}. ${c}`));
-    const hint = multi
-      ? 'Enter numbers separated by commas (e.g., 1,3,5) or "all": '
-      : 'Enter number: ';
-    process.stdout.write(hint);
-  } else {
-    process.stdout.write(promptText);
+  // Use old logic if reading from piped stdin (e.g. tests)
+  if (_inputLines !== null) {
+    const input = await nextLine();
+    if (!choices) return input;
+    if (multi) {
+      if (input.trim().toLowerCase() === 'all') return choices;
+      const indices = input.split(',').map(s => parseInt(s.trim()) - 1).filter(i => i >= 0 && i < choices.length);
+      return indices.map(i => choices[i]);
+    }
+    const idx = parseInt(input.trim()) - 1;
+    return (idx >= 0 && idx < choices.length) ? choices[idx] : null;
   }
 
-  const input = await nextLine();
-  if (!choices) return input;
-  if (multi) {
-    if (input.trim().toLowerCase() === 'all') return choices;
-    const indices = input.split(',').map(s => parseInt(s.trim()) - 1).filter(i => i >= 0 && i < choices.length);
-    return indices.map(i => choices[i]);
+  const { input, select, checkbox } = await import('@inquirer/prompts');
+  
+  // Clean up prompt text (remove trailing colons or extra spaces that inquirer adds natively)
+  const message = promptText.trim().replace(/:$/, '');
+
+  try {
+    if (choices) {
+      const formattedChoices = choices.map((c) => ({ name: c, value: c }));
+      if (multi) {
+        return await checkbox({
+          message: message,
+          choices: formattedChoices,
+        });
+      } else {
+        return await select({
+          message: message,
+          choices: formattedChoices,
+        });
+      }
+    }
+
+    return await input({ message: message });
+  } catch (error) {
+    if (error.name === 'ExitPromptError' || error instanceof Error && error.message.includes('User force closed the prompt')) {
+      console.log('\nInstallation aborted.');
+      process.exit(0);
+    }
+    throw error;
   }
-  const idx = parseInt(input.trim()) - 1;
-  return (idx >= 0 && idx < choices.length) ? choices[idx] : null;
 }
 
 function slug(name) {
@@ -331,12 +353,14 @@ function validateRuntimeResources() {
 }
 
 function parseArgs(argv) {
-  const opts = { target: null, agents: null, framework: null, commands: null, overwrite: null, yes: false, help: false, values: [] };
+  const opts = { target: null, agents: null, framework: null, commands: null, overwrite: null, yes: false, help: false, version: false, values: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
       case '-h': case '--help':
         opts.help = true; break;
+      case '-v': case '--version':
+        opts.version = true; break;
       case '-y': case '--yes':
         opts.yes = true; break;
       case '--overwrite':
@@ -387,6 +411,20 @@ const REQUIRED_RESOURCES = (dir) => dir === __dirname;
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   if (opts.help) { printHelp(); return; }
+  
+  if (opts.version) {
+    const pkg = require('./package.json');
+    console.log(`architecture-guard v${pkg.version}`);
+    return;
+  }
+
+  const cmd = opts.values[0];
+  if (cmd && cmd !== 'init') {
+    console.error(`Unknown command: ${cmd}`);
+    printHelp();
+    process.exit(1);
+  }
+
   console.log('Architecture Guard Installer\n');
   await readAllStdin();
   validateRuntimeResources();
@@ -396,6 +434,10 @@ async function main() {
   const target = opts.target || positional[0] || process.cwd();
   const targetDir = path.resolve(target);
 
+  await runInit(targetDir, opts);
+}
+
+async function runInit(targetDir, opts) {
   const agentNames = Object.keys(AGENT_CONFIGS).sort();
   const selectedAgents = opts.agents
     ? opts.agents.split(',').map(s => s.trim()).filter(a => AGENT_CONFIGS[a])
@@ -429,7 +471,12 @@ async function main() {
       .map(s => /^\d+$/.test(s.trim()) ? COMMANDS[parseInt(s.trim(), 10) - 1] : s.trim())
       .filter(c => COMMANDS.includes(c));
   } else {
-    selectedCommands = await ask('\nSelect governance commands to install:', COMMANDS, true);
+    const choices = ['All', ...COMMANDS];
+    selectedCommands = await ask('\nSelect governance commands to install:', choices, true);
+    
+    if (selectedCommands && selectedCommands.includes('All')) {
+      selectedCommands = [...COMMANDS];
+    }
   }
 
   if (!selectedCommands || selectedCommands.length === 0) {
