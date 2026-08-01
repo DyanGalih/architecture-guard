@@ -10,7 +10,7 @@ context: |
       orchestration/, commands/, templates/, presets/, hygiene-rules/, sonar-rules/, scripts/,
       package.json, .npmignore. Verify changes against `src/` before publishing.
   Tech stack: markdown command docs, YAML manifest files, Bash and PowerShell scripts,
-    Node.js/CLI tooling (stdlib only in install.js), Flash-Mem MCP storage.
+    Node.js/CLI tooling, Flash-Mem MCP storage.
   Conventions: memory-first workflows when Flash-Mem is available; non-blocking architecture
     drift by default; architecture, governance, and security rules are separated; approved
     refactors stay small and targeted; markdown constitutions and command files are the review
