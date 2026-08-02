@@ -1,6 +1,6 @@
 # Architecture Guard Adapters
 
-Adapters are the bridge between Architecture Guard's framework-agnostic governance commands and the specific SDD framework you use.
+Adapters are the bridge between Architecture Guard's tool-agnostic governance commands and the specific SDD tool or workflow you use.
 
 ## How It Works
 
@@ -8,22 +8,22 @@ Adapters are the bridge between Architecture Guard's framework-agnostic governan
 Orchestration command (e.g., init.md)
          │
          ▼
-  adapters/detect.md  ─── detects active SDD framework
+  adapters/detect.md  ─── detects active SDD tool
          │
          ▼
-  adapters/{framework}.md  ─── provides path map + command map + gaps
+  adapters/{tool}.md  ─── provides path map + command map + gaps
          │
          ▼
-  Framework-specific output (constitution, config.yaml, etc.)
+Tool-specific output (constitution, config.yaml, etc.)
 ```
 
 ## Built-in Adapters
 
-| Framework | Adapter File | Detection Marker |
+| SDD Tool or Workflow | Adapter File | Detection Marker |
 |---|---|---|
 | SpecKit | `adapters/spec-kit.md` | `.specify/` directory |
 | OpenSpec | `adapters/openspec.md` | `openspec/config.yaml` |
-| Generic | `adapters/generic.md` | Installer selection or no detected framework |
+| Generic workflow | `adapters/generic.md` | Installer selection or no detected SDD tool |
 
 ## Adapter Contract
 
@@ -44,39 +44,39 @@ A table mapping canonical names to concrete file paths:
 ```
 
 ### Command Map
-A table mapping governance actions to framework-native invocations:
+A table mapping governance actions to SDD-tool-native invocations:
 
 ```markdown
 ## Command Map
 
-| Canonical Key | Framework Invocation or Fallback |
+| Canonical Key | SDD Tool Invocation or Fallback |
 |---|---|
 | create-spec | `commandspec`, or explicit inline creation when unsupported |
 | analyze | `validate --strict`, plus inline coverage analysis when needed |
 ```
 
 ### Gap Fill Actions
-List features the framework lacks and how to fill them:
+List features the SDD tool lacks and how to fill them:
 
 ```markdown
 ## Gap Fill Actions
 
-1. **Missing feature** — Framework does not provide X.
+1. **Missing feature** — The SDD tool does not provide X.
    - Fill: Do Y inline.
 ```
 
 ### Hook Events
-When governance checks should run in relation to the framework's lifecycle.
+When governance checks should run in relation to the SDD tool's lifecycle.
 
 ## Creating a New Adapter
 
 1. Copy `adapters/generic.md` as a starting template.
-2. Replace the Path Map with your framework's path conventions.
-3. Replace the Command Map with your framework's CLI commands or API endpoints.
-4. Declare any gaps your framework has.
-5. Place the file at `adapters/{framework-name}.md`.
-6. Update `adapters/detect.md` detection chain to recognize your framework's marker.
+2. Replace the Path Map with your tool's artifact conventions.
+3. Replace the Command Map with your tool's CLI commands or agent commands.
+4. Declare any gaps your tool has.
+5. Place the file at `adapters/{tool-name}.md`.
+6. Update `adapters/detect.md` detection chain to recognize your tool's marker.
 
 Adapter files are self-contained markdown. No code changes needed.
 
-Installed shared resources always resolve under `.architecture-guard/{templates,presets,hygiene-rules,sonar-rules,scripts}`. Framework directories hold framework artifacts only. Before a command body runs, detection resolves every adapter token; missing keys stop with `AdapterMissingKey: <kind>:<key>` and unresolved substitutions stop with `AdapterUnresolvedToken: <token>`.
+Installed shared resources always resolve under `.architecture-guard/{templates,presets,hygiene-rules,sonar-rules,scripts}`. SDD tool directories hold SDD artifacts only. Before a command body runs, detection resolves every adapter token; missing keys stop with `AdapterMissingKey: <kind>:<key>` and unresolved substitutions stop with `AdapterUnresolvedToken: <token>`.

@@ -1,27 +1,26 @@
 ---
 description: Perform an architecture-aware verification gate validating implementation against spec.md, plan.md, tasks.md, and the Architecture Constitution.
-scripts:
-  sh: ../scripts/bash/check-prerequisites.sh --json --paths-only
-  ps: ../scripts/powershell/check-prerequisites.ps1 -Json -PathsOnly
 ---
 
 # Architecture Verification
 
+## SDD Tool Detection
+
+Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
 ## Budgeted Context Contract
 
-Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). The active `spec.md`, `plan.md`, `tasks.md`, applicable constitutions, security constraints, and code evidence are mandatory and authoritative. Neither Flash-Mem nor `system_context.md` is evidence that a task was implemented.
+Read and apply `{adapter_path:budgeted-context-template}`. Active adapter artifacts, applicable constitutions, security constraints, and code evidence are mandatory and authoritative. Neither memory nor a fallback index is implementation evidence.
 
 Validate that the implementation fulfills all tasks in `tasks.md` while adhering to the defined architecture boundaries and the **Architecture Constitution**. This command acts as a post-implementation gate.
 
 ## User Input
 
-```text
-$ARGUMENTS
-```
+Use the host command's native argument text as optional explicit artifact paths or scope.
 
 ## Goal
 
@@ -29,7 +28,7 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 
 ## Operating Constraints
 
-- **STRICTLY READ-ONLY**: This is an analytical gate. Do not modify files.
+- **REPOSITORY READ-ONLY**: This analytical gate does not modify repository files. It may write validated durable knowledge to Flash-Mem only after explicit user approval.
 - **Evidence-Based**: Every "Verified" or "Missing" status must cite specific files or code patterns.
 - **Constitution Authority**: The `architecture_constitution.md` is the non-negotiable standard for this check.
 
@@ -37,11 +36,11 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 
 ### 1. Initialize Context
 
-1. Run `{SCRIPT}` from repo root to identify the active `FEATURE_DIR`.
-2. Derive absolute paths for `spec.md`, `plan.md`, and `tasks.md`.
-3. Load the Architecture Constitution: `.specify/memory/architecture_constitution.md`.
-4. Load the Repository Hygiene Config: `.specify/config/repository_hygiene.yml` (fallback to `repository_hygiene` block in constitution).
-5. Load the Repository Hygiene Rules: `.specify/extensions/architecture-guard/hygiene-rules/*.md`.
+1. Resolve explicit artifact paths from native user input first; otherwise discover existing artifacts by matching `{adapter_path:tasks}`, `{adapter_path:plan}`, and `{adapter_path:spec}`. If multiple active sets are plausible, ask the user instead of guessing.
+2. Resolve the selected artifact set to absolute paths without invoking SDD-tool-specific prerequisite scripts.
+3. Load the Architecture Constitution: `{adapter_path:arch-constitution}`.
+4. Load the Repository Hygiene Config: `{adapter_path:governance-config}` (fallback to `repository_hygiene` block in constitution).
+5. Load the Repository Hygiene Rules: `{adapter_path:hygiene-rules}`.
 
 ### 2. Semantic Modeling (Internal)
 
@@ -73,7 +72,7 @@ Build internal representations:
 - **Pattern Match**: Does the code follow the mandated architectural patterns (e.g., DTOs, Repositories, Events)?
 
 #### D. Security Review on Implementation
-- If `security-review` (or compatibility alias `spec-kit-security-review`) is available, run `/speckit.security-review.branch` against the verified implementation.
+- If `security-review` (or compatibility alias `spec-kit-security-review`) is available, run `{adapter_command:security-review}` against the verified implementation.
 - If security findings are architecture-relevant, classify them as `Security-Architecture Conflict`.
 
 #### E. Repository Hygiene Validation
@@ -115,6 +114,10 @@ For each task in `tasks.md`:
 ### Action Plan
 1. **Critical Gaps**: Address missing implementation for tasks [IDs] immediately.
 2. **Architecture Alignment**: Resolve boundary violations in [Files] using suggested refactor tasks.
-3. **Completion**: If all CRITICAL/HIGH are resolved, you **MUST automatically execute** the durable-memory capture flow to preserve lessons. Do not just recommend it; let the formal capture flow propose entries and request user approval.
+3. **Completion**: If all CRITICAL/HIGH findings are resolved, propose any validated Flash-Mem lessons and write them only after explicit user approval.
 
-**Next Step**: [e.g. "Run `/speckit.architecture-guard.ag-architecture-apply` to fix V2"]
+**Next Step**: [e.g. "Run `{adapter_command:ag-apply}` to fix V2"]
+
+## Backward Compatibility
+
+The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-verify.md` for direct SpecKit use.

@@ -107,7 +107,7 @@ Choose the path that matches the repository state.
 1. Install the extension.
 2. Run `/speckit.architecture-guard.init-brownfield`.
 3. Review the current-state findings.
-4. Run `/speckit.architecture-guard.architecture-workflow`.
+4. Run `ag-workflow` from your AI agent.
 5. Apply approved refactors into plan and task artifacts.
 
 If you are specifically cleaning up duplicated logic, follow the [DRY Cleanup Guide](dry-cleanup.md) after the brownfield mapping pass.
@@ -117,7 +117,7 @@ If you are specifically cleaning up duplicated logic, follow the [DRY Cleanup Gu
 1. Install the extension.
 2. Run `/speckit.architecture-guard.init`.
 3. Review the constitution output.
-4. Run `/speckit.architecture-guard.architecture-workflow`.
+4. Run `ag-workflow` from your AI agent.
 5. Apply approved refactors into plan and task artifacts.
 
 This keeps architecture concerns visible throughout the delivery lifecycle instead of concentrating them at the end.

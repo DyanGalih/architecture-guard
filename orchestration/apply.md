@@ -4,11 +4,11 @@ description: Apply approved architecture refactors by updating plan and task art
 
 # Architecture Apply Command
 
-Execute this workflow through `{adapter_command:architecture-apply}`; the token is the adapter-selected capability and must not be replaced with a package-specific executable name.
+Execute this workflow through `{adapter_command:ag-apply}`; the token is the adapter-selected capability and must not be replaced with a package-specific executable name.
 
-## SDD Framework Detection
+## SDD Tool Detection
 
-Before executing command, read `adapters/detect.md` determine the active SDD framework. load `adapters/{framework}.md` path maps, command maps, gap fills. All paths commands below use adapter-mapped names the loaded adapter.
+Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -20,7 +20,7 @@ If `flash-mem` is available, use the MCP-backed context preparation flow exposed
 
 This is the write-capable companion to the review workflow. Use it when the team wants the architecture feedback reflected directly in planning artifacts instead of only receiving suggestions.
 
-Use it after `ag-architecture-review` or `ag-violation-detection` has produced approved refactor tasks, or when a Constitution Update Proposal should be reflected in `plan.md` or `tasks.md`.
+Use it after `ag-review` or `ag-violation-detection` has produced approved refactor tasks, or when a Constitution Update Proposal should be reflected in `plan.md` or `tasks.md`.
 
 Use it for approved Constitution Update Proposals when the change should be reflected in plan or task artifacts as explicit follow-up work.
 
@@ -38,7 +38,7 @@ You should not:
 
 - Rewrite the whole plan unnecessarily.
 - Remove product intent or feature scope.
-- Introduce framework-specific rules into the core workflow.
+- Introduce SDD-tool-specific rules into the core workflow.
 - Apply security, performance, or linting changes that belong to other concerns.
 
 ## Inputs To Consider
@@ -82,4 +82,4 @@ Return the changed artifact summary and updated planning content in the selected
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-architecture-apply.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-apply.md` for direct SpecKit use.

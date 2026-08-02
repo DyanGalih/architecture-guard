@@ -1,13 +1,13 @@
 # SpecKit Adapter
 
-Use this adapter when the active SDD framework is **SpecKit** (`.specify/` directory detected).
+Use this adapter when the active SDD tool is **Spec Kit** (`.specify/` directory detected).
 
 ## Path Map
 
 | Canonical Name | SpecKit Path |
 |---|---|
 | project-root | `.` |
-| framework-dir | `.specify/` |
+| sdd-tool-dir | `.specify/` |
 | constitution | `.specify/memory/constitution.md` |
 | arch-constitution | `.specify/memory/architecture_constitution.md` |
 | security-constitution | `.specify/memory/security_constitution.md` |
@@ -78,7 +78,7 @@ SpecKit uses separate files for governance, architecture, and security rules.
 5. Data Access Rules
 6. Async & Integration Rules
 7. Module Boundaries
-8. Framework-Specific Architecture Rules
+8. Application Framework-Specific Architecture Rules
 9. Blocking Architecture Violations (P0)
 10. Architecture Evolution Policy
 11. Refactor & Drift Handling

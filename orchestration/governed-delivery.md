@@ -4,9 +4,9 @@ description: Run the recommended resumable plan-to-tasks workflow with memory co
 
 # Governed Delivery Command
 
-## SDD Framework Detection
+## SDD Tool Detection
 
-Before executing command, read `adapters/detect.md` determine the active SDD framework. load `adapters/{framework}.md` path maps, command maps, gap fills. All paths commands below use adapter-mapped names the loaded adapter.
+Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -142,7 +142,7 @@ Return a concise `Governed Delivery Summary`:
 
 ## Guardrails
 
-- Remain framework-agnostic unless a preset or constitution supplies framework-specific vocabulary.
+- Remain SDD-tool-agnostic unless a preset or constitution supplies application-framework vocabulary.
 - Prefer minimal, incremental corrections and standard platform capabilities.
 - Do not silently pass a blocking finding.
 - Do not convert advisory preferences into release gates.

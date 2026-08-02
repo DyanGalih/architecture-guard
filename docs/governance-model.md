@@ -57,16 +57,15 @@ When a command encounters analysis marked `[OPTIONAL SUB-AGENT DELEGATION]`:
 ### Override Flags
 
 ```bash
-/speckit.architecture-guard.architecture-review --inline
+ag-review --inline
 /speckit.architecture-guard.governed-plan --delegate
 ```
 
 ### Where Delegation Appears
 
-- `architecture-review.md` Step 7b — SonarLint code quality scanning
+- `ag-review` Step 7b — SonarLint code quality scanning
 - `governed-plan.md` Step 2 — Memory synthesis for planning
 - `governed-tasks.md` Step 2 — Memory synthesis for task generation
 - `governed-implement.md` Step 2 — Memory synthesis for implementation
 
 This keeps typical PRs fast while still allowing large refactors to distribute work more thoroughly.
-

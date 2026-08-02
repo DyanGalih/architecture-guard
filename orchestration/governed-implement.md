@@ -4,9 +4,9 @@ description: Run implementation with memory context, then review the produced im
 
 # Governed Implement Command
 
-## SDD Framework Detection
+## SDD Tool Detection
 
-Before executing command, read `adapters/detect.md` determine the active SDD framework. load `adapters/{framework}.md` path maps, command maps, gap fills. All paths commands below use adapter-mapped names the loaded adapter.
+Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -65,7 +65,7 @@ If Flash-Mem is unavailable or the context is insufficient, continue with the re
 
 ---
 
-### Step 3 — Orchestrate Framework Implementation
+### Step 3 — Orchestrate SDD Tool Implementation
 
 You must orchestrate the `{adapter_command:implement}` (core implementation) workflow directly.
 
@@ -82,7 +82,7 @@ You must orchestrate the `{adapter_command:implement}` (core implementation) wor
 4. **Sync the tasks**: You MUST update `{adapter_path:tasks}` to mark completed tasks with `[x]`, check them off, and add any new subtasks discovered during implementation.
 5. The implementation MUST follow current tasks and context. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, read active artifacts and constitution files directly with file-reading tools. Do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
 
-The framework-native implementation behavior is defined only by `{adapter_command:implement}`.
+The SDD-tool-native implementation behavior is defined only by `{adapter_command:implement}`.
 
 ### Step 4 — Security Review on Implementation
 
@@ -95,7 +95,7 @@ IF `security-review` (or compatibility alias `spec-kit-security-review`) is avai
 
 Run:
 ```text
-`{adapter_command:architecture-review}`
+`{adapter_command:ag-review}`
 ```
 
 Review implementation against:
@@ -162,7 +162,7 @@ Produce a final `Governed Implementation Summary`.
   - Create non-blocking refactor tasks
   - Flag for post-merge remediation
 
-**Minimal Viable Workflow** (Architecture Guard plus the selected SDD framework):
+**Minimal Viable Workflow** (Architecture Guard plus the selected SDD tool):
 - Execute implementation through `{adapter_command:implement}` or its inline fallback
 - Run architecture review on output
 - Generate non-blocking refactor tasks
@@ -195,7 +195,7 @@ The command MUST return:
 ## Recommended Next Step
 - [e.g., Merge changes]
 - [e.g., Revise implementation to address Security Conflict]
-- [e.g., Run `{adapter_command:architecture-apply}`]
+- [e.g., Run `{adapter_command:ag-apply}`]
 - **Durable Memory Preservation**: (Proactively triggered) Review the proposed memory entries below.
 - **Verification Gate**: Run the adapter's registered architecture-verify capability to ensure all tasks are delivered and requirements are met.
 ```

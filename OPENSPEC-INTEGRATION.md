@@ -1,4 +1,4 @@
-# OpenSpec + Architecture Guard: Transition Guide
+# OpenSpec + Architecture Guard: Integration Guide
 
 Architecture Guard provides architecture governance that works alongside OpenSpec. This guide explains how the two systems interact.
 
@@ -32,7 +32,7 @@ architecture-guard
 
 Then select:
 1. **AI agent**: Your IDE tool (OpenCode, Claude Code, etc.)
-2. **SDD framework**: `openspec`
+2. **SDD tool**: `openspec`
 3. **Commands**: Select desired governance commands
 
 ### What Gets Installed
@@ -61,7 +61,7 @@ OpenSpec does not automatically:
 3. **Verify task-to-code evidence** — After archive, Architecture Guard reads tasks.md checkboxes and validates against code.
 4. **Detect DRY violations** — Architecture Guard scans for duplicated business rules across modules.
 
-## Framework Detection
+## SDD Tool Detection
 
 Architecture Guard auto-detects OpenSpec by checking for `openspec/config.yaml`. Detection runs at the start of every orchestration command. Override with `--adapter openspec` if needed.
 

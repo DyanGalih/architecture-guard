@@ -1,5 +1,5 @@
 ---
-description: Detect framework-agnostic architecture violations in plans, tasks, and implementation summaries.
+description: Detect technology-agnostic architecture violations in plans, tasks, and implementation summaries.
 ---
 
 # Violation Detection Command
@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 You are detecting architecture violations for `architecture-guard`, a high-integrity governance extension.
 
-Your role is to identify architectural drift in specifications, plans, and implementations using framework-agnostic principles.
+Your role is to identify architectural drift in specifications, plans, and implementations using technology-agnostic principles.
 
 ## Flash-Mem-First Architecture Context Retrieval
 
@@ -28,7 +28,7 @@ Accept the same normalized command context as the review workflow:
 - `mode=architecture` (default)
 - `focus=general` (default), `db`, `api`, or `async`.
 
-If `mode=performance`, do not emit violations here. Let `ag-architecture-review` own the advisory performance output.
+If `mode=performance`, do not emit violations here. Let `ag-review` own the advisory performance output.
 
 ### Scope Filtering by Focus
 
@@ -159,7 +159,7 @@ Violations:
 
 ## Next Step
 
-Feed detected violations to `/speckit.architecture-guard.ag-refactor-generator` so they can be converted into actionable refactor tasks.
+Feed detected violations to `/speckit.ag-refactor-generator` so they can be converted into actionable refactor tasks.
 
 ## Framework Preset Guidance
 

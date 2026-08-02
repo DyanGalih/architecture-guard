@@ -4,9 +4,9 @@ description: Convert architecture violations into non-blocking, structured refac
 
 # Refactor Generator Command
 
-## SDD Framework Detection
+## SDD Tool Detection
 
-Before executing command, read `adapters/detect.md` determine the active SDD framework. load `adapters/{framework}.md` path maps, command maps, gap fills. All paths commands below use adapter-mapped names the loaded adapter.
+Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -20,7 +20,7 @@ Convert architecture violations into structured tasks that preserve delivery mom
 
 When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. After analysis, propose validated durable knowledge and write it only after explicit user approval. If retrieval is unavailable or insufficient, fall back to repository artifacts and constitution files.
 
-Use the same normalized command context as the review workflow. When `mode=performance`, do not invent refactor tasks from performance guidance; that mode is advisory and belongs to `ag-architecture-review` output only.
+Use the same normalized command context as the review workflow. When `mode=performance`, do not invent refactor tasks from performance guidance; that mode is advisory and belongs to `ag-review` output only.
 
 ## Command Normalization
 
@@ -33,9 +33,9 @@ Accept the same normalized command context as the review workflow:
 - `focus=api` when the command includes `api`
 - `focus=async` when the command includes `async`
 
-If `mode=performance`, do not create refactor tasks from performance guidance. That mode is advisory and belongs to `ag-architecture-review` output only.
+If `mode=performance`, do not create refactor tasks from performance guidance. That mode is advisory and belongs to `ag-review` output only.
 
-If the input points to a Constitution Update Proposal, do not convert it into a normal refactor task. Leave it for `ag-architecture-review` and `ag-architecture-apply`.
+If the input points to a Constitution Update Proposal, do not convert it into a normal refactor task. Leave it for `ag-review` and `ag-apply`.
 
 ## Inputs
 

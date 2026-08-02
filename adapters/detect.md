@@ -1,6 +1,6 @@
-# SDD Framework Detection
+# SDD Tool Detection
 
-This preamble loads before every orchestration command. Its job: detect which SDD framework the project uses, load the right adapter, and fail gracefully when detection is ambiguous.
+This preamble loads before every orchestration command. Its job: detect which SDD tool or workflow the project uses, load the right adapter, and fail gracefully when detection is ambiguous.
 
 ## Detection Chain
 
@@ -10,9 +10,9 @@ This preamble loads before every orchestration command. Its job: detect which SD
 3. Check for `openspec/config.yaml` in project root → **OpenSpec**
    - Also verify `openspec/changes/` or `openspec/specs/` for confidence.
 4. If both markers exist, ask the user which adapter to use unless an explicit CLI override was supplied.
-5. Fallback: No framework detected → ask user:
+5. Fallback: No SDD tool detected → ask user:
    ```
-   No SDD framework detected. Which one are you using?
+   No SDD tool detected. Which one are you using?
    1. SpecKit (`.specify/`)
    2. OpenSpec (`openspec/`)
     3. None (load `adapters/generic.md` and ask for artifact paths as needed)
@@ -20,13 +20,13 @@ This preamble loads before every orchestration command. Its job: detect which SD
 
 ## Load Adapter
 
-Once framework is identified:
+Once the SDD tool is identified:
 
 ```
-Read `adapters/{framework}.md` → this file contains:
+Read `adapters/{tool}.md` → this file contains:
   - Path map (canonical names to concrete paths)
-  - Command map (governance action → framework invocation)
-  - Gap fill actions (what this framework lacks)
+  - Command map (governance action → SDD tool invocation)
+  - Gap fill actions (what this SDD tool lacks)
   - Hook events (when to run governance checks)
 ```
 
@@ -34,19 +34,19 @@ All subsequent path references in the orchestration command use adapter-mapped p
 
 ## Session Persistence
 
-The selected framework may be reused within the current AI session, but marker detection runs at the start of every command.
-- A session selection never silently overrides changed filesystem markers. If the markers now identify a different framework, or both markers are present, ask again.
+The selected SDD tool may be reused within the current AI session, but marker detection runs at the start of every command.
+- A session selection never silently overrides changed filesystem markers. If the markers now identify a different SDD tool, or both markers are present, ask again.
 - A persisted selection file or installer-selected adapter is advisory only and never outranks current markers.
 - If the user explicitly overrides mid-session (`--adapter openspec`), the new adapter is used for subsequent commands.
 
-## Framework-Agnostic Mode
+## Generic Workflow Mode
 
-When no framework is detected and user declines to pick one:
+When no SDD tool is detected and the user declines to pick one:
 
 ```
-Framework-agnostic mode:
+Generic workflow mode:
 - Architecture review, violation detection, refactor generation, and hygiene checks
-  work without framework-specific paths.
+  work without SDD-tool-specific paths.
 - Init, spec, plan, tasks, and implement steps require user to specify paths manually.
 - Ponytail contract and governance rules apply regardless.
 ```
@@ -55,8 +55,8 @@ Framework-agnostic mode:
 
 | Condition | Behavior |
 |---|---|
-| Adapter file missing | Report error: "Adapter file not found at adapters/{framework}.md" |
-| Framework dir exists but empty | Detect as that framework, adapter loads normally |
+| Adapter file missing | Report error: "Adapter file not found at adapters/{tool}.md" |
+| Tool directory exists but empty | Detect as that SDD tool, adapter loads normally |
 | Flash-Mem unavailable | Skip MCP steps, proceed with file-based context |
 | No git repo | Skip branch-related gap fills, continue with remaining steps |
 

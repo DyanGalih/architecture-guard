@@ -4,9 +4,9 @@ description: Orchestrate a governed specification workflow coordinating memory, 
 
 # Governed Specification Command
 
-## SDD Framework Detection
+## SDD Tool Detection
 
-Before executing command, read `adapters/detect.md` determine the active SDD framework. load `adapters/{framework}.md` path maps, command maps, gap fills. All paths commands below use adapter-mapped names the loaded adapter.
+Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -59,7 +59,7 @@ Before generating the specification, you MUST ensure work happens on a feature b
 2. Execute `{adapter_command:create-change}` before requesting framework instructions or writing specification artifacts.
 3. Reuse an existing matching change only after confirming it is the user's intended active work.
 
-### Step 5 — Orchestrate Framework Specification
+### Step 5 — Orchestrate SDD Tool Specification
 
 You must orchestrate the `{adapter_command:create-spec}` workflow directly.
 
@@ -131,7 +131,7 @@ The command MUST return:
 
 ## Guardrails
 
-- **Framework-Agnostic**: Do not assume specific framework conventions unless provided via a preset.
+- **SDD-Tool-Agnostic**: Do not assume specific SDD tool conventions unless provided via a preset.
 - **Ponytail Pragmatism**: Act as a lazy senior developer. Ensure the spec avoids bloat, complex abstractions, and over-engineering.
 - **Specification Phase**: Do NOT generate refactor tasks. Code does not exist yet. Fixes should be applied directly to the specification via the auto-fix loop.
 

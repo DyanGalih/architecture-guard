@@ -1,29 +1,25 @@
 ---
-description: Perform a framework-agnostic architecture review validating implementation against spec.md, plan.md, tasks.md, and the governance and architecture constitutions.
+description: Perform a technology-agnostic architecture review validating implementation against spec.md, plan.md, tasks.md, and the governance and architecture constitutions.
 scripts:
-  sh: .architecture-guard/scripts/bash/detect-changed-files.sh
-  ps: .architecture-guard/scripts/powershell/detect-changed-files.ps1
+  sh: ../scripts/bash/detect-changed-files.sh
+  ps: ../scripts/powershell/detect-changed-files.ps1
 ---
 
 # Architecture Review Command
 
-## SDD Framework Detection
-
-Before executing command, read `adapters/detect.md` determine the active SDD framework. load `adapters/{framework}.md` path maps, command maps, gap fills. All paths commands below use adapter-mapped names the loaded adapter.
-
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
 ## Budgeted Context Contract
 
-Read and apply `{adapter_path:budgeted-context-template}`. Available active artifacts, security constraints, applicable constitutions, and relevant code evidence are authoritative. Use fallback provenance only for named review gaps.
+Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). Available active `spec.md`, `plan.md`, `tasks.md`, security constraints, applicable constitutions, and relevant code evidence are authoritative. Use fallback provenance to open historical specs only for named review gaps.
 
-You are running `architecture-guard`, a framework-agnostic architecture review extension designed for high-integrity governance.
+You are running `architecture-guard`, a technology-agnostic architecture review extension designed for high-integrity governance.
 
 ## Operating Constraints
 
-- **REPOSITORY READ-ONLY**: This analytical command does not modify repository files. It may write validated durable knowledge to Flash-Mem only after explicit user approval.
+- **STRICTLY READ-ONLY**: This command is analytical. Do **not** modify any files. Output a structured report and non-blocking refactor tasks.
 - **Progressive Disclosure**: Load context incrementally. Start with manifests and design artifacts before deep-diving into implementation code.
 - **Evidence-Based**: Every violation must cite specific "Implementation Evidence" (file paths, line numbers, or code patterns) or its absence.
 
@@ -49,7 +45,7 @@ When you see this marker in a step, evaluate these conditions:
    ```yaml
    Task: Analyze code quality and boundary violations.
    Target Files: [Comma-separated list of target files]
-   Rules File: {adapter_path:arch-constitution}
+   Rules File: .specify/memory/architecture_constitution.md
    Context: [Brief summary of planning/implementation state]
    Expected Output: JSON list of structured violations.
    ```
@@ -74,8 +70,8 @@ This pattern ensures that lower-tier models follow strict execution paths instea
   - BUT underlying violations remain identical
 
 **Coexistence Model**:
-- Review always starts framework-agnostic
-- If preset detected in `{adapter_path:presets}` or the Constitution: Enhance with framework vocabulary
+- Review always starts technology-agnostic
+- If preset detected in `.specify/presets/` or the Constitution: Enhance with framework vocabulary
 - Violations list remains the same; explanation becomes framework-native
 - Example: "Entry boundary contamination" (agnostic) → "Controller mixing HTTP and business logic" (Laravel-aware)
 
@@ -83,10 +79,10 @@ This pattern ensures that lower-tier models follow strict execution paths instea
 
 ## Determine Review Scope
 
-1. **Normalize Arguments**: Parse the host command's native argument text to identify the `mode` (`architecture` or `performance`) and `focus` aspects (`general`, `db`, `api`, or `async`).
+1. **Normalize Arguments**: Parse "$ARGUMENTS" to identify the `mode` (`architecture` or `performance`) and `focus` aspects (`general`, `db`, `api`, or `async`).
 2. **Identify Changed Files**:
    - If the user provided a file list or explicit instructions, follow them.
-   - Otherwise, execute `.architecture-guard/scripts/bash/detect-changed-files.sh --json` (or the installed PowerShell equivalent) to detect changed files since the merge-base or in the working directory.
+   - Otherwise, you **MUST** execute the `{SCRIPT}` with `--json` to detect changed files since the merge-base or in the working directory.
    - Use the `changed_files` list as the primary review set.
 
 ## Input & Context Loading
@@ -94,11 +90,11 @@ This pattern ensures that lower-tier models follow strict execution paths instea
 Review any available artifacts from these common locations. **IMPORTANT**: You MUST read these files explicitly using your file-reading tools (absolute or relative paths). Do not rely solely on workspace search or semantic indexers, as these files are often in `.gitignore` and may be excluded from default context:
 
 1. **Governance & Security Constitution**:
-    - `{adapter_path:constitution}`
-    - `{adapter_path:security-constitution}`
+    - `.specify/memory/constitution.md`
+    - `.specify/memory/security_constitution.md`
 
 2. **Architecture Constitution**:
-    - `{adapter_path:arch-constitution}`
+    - `.specify/memory/architecture_constitution.md`
 
 3. **Flash-Mem Context Retrieval**:
 
@@ -111,8 +107,8 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
     - The detected `changed_files` and their respective directories.
 
 5. **Repository Hygiene**:
-    - Config: `{adapter_path:governance-config}` (or `repository_hygiene` block in constitution).
-    - Rules: `{adapter_path:hygiene-rules}`
+    - Config: `.specify/config/repository_hygiene.yml` (or `repository_hygiene` block in constitution).
+    - Rules: `.specify/extensions/architecture-guard/hygiene-rules/*.md`
 
 ## Semantic Modeling
 
@@ -161,19 +157,19 @@ Detect violations such as:
 
 ## Review Procedure
 
-1. **Identify Scope**: Use user-provided files, or run the installed changed-files script named above.
+1. **Identify Scope**: Run `{SCRIPT}` or use user-provided files.
 2. **Model Context**: Load artifacts and build the Semantic Models for the identified scope.
 3. **Verify Evidence**: Check if task-referenced files exist and contain expected implementation logic.
 4. **Analyze Alignment**: Compare `spec.md` intent vs. `plan.md` architecture vs. implementation behavior.
 5. **Scan Principles**: Apply Review Principles across the implemented boundaries.
 6. **Security & Governance Cross-Check**:
-  - If `{adapter_path:security-constraints}` or `{adapter_path:security-constitution}` is breached, derive severity and blocking status from the governing policy; security category alone is not critical or blocking.
-  - If a finding is primarily security-related and Security Review is available, route it to `{adapter_command:security-review}` instead of duplicating it here.
+  - If `security-constraints.md` or `security_constitution.md` is breached, log it as a critical violation.
+  - If a finding is primarily security-related and Security Review is available, route it to `/speckit.security-review.branch` instead of duplicating it here.
   - Cross-reference architecture decisions with security trust boundaries.
 7. **Ponytail Audit**: Apply both sides of the shared contract. Check for bloat and unsafe under-building; trace changed shared behavior to its callers; verify the earliest viable ladder rung was used; and confirm non-trivial logic has a runnable check.
 8. **Performance Scan (if mode=performance)**: Skip violations; focus on optimizations.
 8b. **Code Quality Scan (SonarLint)**: If `mode=architecture`, optionally scan for coupling/complexity violations.
-8c. **Repository Hygiene Scan**: Evaluate the repository against all hygiene rules loaded from `{adapter_path:hygiene-rules}`. Apply exclusions and severity overrides defined in the project's `repository_hygiene` configuration.
+8c. **Repository Hygiene Scan**: Evaluate the repository against all hygiene rules loaded from `.specify/extensions/architecture-guard/hygiene-rules/*.md`. Apply exclusions and severity overrides defined in the project's `repository_hygiene` configuration.
 9. **Generate Refactors**: Produce structured tasks for each confirmed violation.
 
 ---
@@ -182,7 +178,7 @@ Detect violations such as:
 
 This step runs code quality checks using bundled SonarLint rules. It is **optional** and complements architecture violations.
 The rules bundle is repository-native and IDE-agnostic, so it works the same in VS Code, Cursor, JetBrains, or CLI-only workflows.
-When the extension is installed, load the bundle from `{adapter_path:sonar-rules}/sonarlint-rules.json`.
+When the extension is installed, load the bundle from `.specify/extensions/architecture-guard/sonar-rules/sonarlint-rules.json`.
 
 ### Activation
 
@@ -201,14 +197,14 @@ When the extension is installed, load the bundle from `{adapter_path:sonar-rules
 - Otherwise, you **MUST** execute inline.
 
 **Execution Syntax:**
-* Custom command: `/analyze-sonar-violations --files=[comma_separated_file_list] --rules={adapter_path:sonar-rules}/sonarlint-rules.json`.
+* Custom command: `/analyze-sonar-violations --files=[comma_separated_file_list] --rules=.specify/extensions/architecture-guard/sonar-rules/sonarlint-rules.json`.
 
 **Strict Handoff Template:**
 When delegating, write the sub-agent invocation prompt exactly like this:
 ```yaml
 Task: Scan files against SonarLint rules.
 Target Files: [Comma-separated list of target files]
-Rules File: {adapter_path:sonar-rules}/sonarlint-rules.json
+Rules File: .specify/extensions/architecture-guard/sonar-rules/sonarlint-rules.json
 Expected Output: JSON list of CRITICAL/HIGH code quality violations mapped to architecture boundaries.
 ```
 
@@ -216,7 +212,7 @@ Expected Output: JSON list of CRITICAL/HIGH code quality violations mapped to ar
 ### Procedure
 
 **If inline**:
-1. **Load Rules**: Read `{adapter_path:sonar-rules}/sonarlint-rules.json`.
+1. **Load Rules**: Read the installed extension bundle at `.specify/extensions/architecture-guard/sonar-rules/sonarlint-rules.json` first; if running from the extension source checkout, use `sonar-rules/sonarlint-rules.json`
 2. **Scan Changed Files**: Simulate or invoke SonarLint logic on `changed_files` list
 3. **Filter Results**: Keep only CRITICAL/HIGH severity findings related to complexity, coupling, structure
 4. **Map to Boundaries**: Correlate findings with architecture boundaries (Entry/App/Domain/Data/External)
@@ -270,7 +266,7 @@ For all other violations, cite specific code locations, line numbers, or pattern
 
 ## Severity Guide
 
-- **CRITICAL**: Governing policy explicitly assigns Critical/P0, or a required boundary has zero implementation evidence. Security category alone does not set severity.
+- **CRITICAL**: Violates Constitution MUST, breaches Security Constraint, or has zero implementation evidence for a required boundary.
 - **HIGH**: Significant boundary erosion, contract inconsistency, or fundamental intent divergence.
 - **MEDIUM**: Pattern drift or local inconsistency that creates technical debt.
 - **LOW**: Minor naming, shape, or structure drift.
@@ -283,7 +279,7 @@ Return only this structure:
 
 | ID | Category | Severity | Location(s) | Summary | Evidence/Rationale |
 |:---|:---|:---|:---|:---|:---|
-| V1 | Constitution | CRITICAL | `{adapter_path:arch-constitution}` | Violation of [Principle Name] | [Evidence from code/plan] |
+| V1 | Constitution | CRITICAL | `.specify/memory/architecture_constitution.md` | Violation of [Principle Name] | [Evidence from code/plan] |
 
 ### Task Synchronization
 - **Status**: [Synced / Drifted]
@@ -348,8 +344,8 @@ Findings categorized by severity based on the active hygiene rules.
 2. **Architecture Alignment**: Resolve boundary erosion and contract mismatches.
 3. **Code Quality**: Address SonarLint findings that map to architectural concerns (if any).
 4. **DRY Alignment**: Centralize repeated business logic, validation, and mapping before duplicating it in another layer or module.
-5. **Durable Memory Preservation (Approval Required)**: If new validated architectural knowledge was identified, propose the Flash-Mem entries and write them only after explicit user approval.
-6. **Next Step**: [e.g. Run `{adapter_command:security-review}` for security-first findings, or `{adapter_command:architecture-apply}` for architecture fixes]
+5. **Durable Memory Preservation (Mandatory Check)**: If new architectural patterns, decisions, or repeatable lessons were identified, you **MUST automatically execute** the durable-memory capture flow immediately after providing the report. Do not just recommend it; let the formal capture flow propose entries and request user approval.
+6. **Next Step**: [e.g. Run `/speckit.security-review.branch` for security-first findings, or `/speckit.ag-apply` for architecture fixes]
 7. **Remediation**: [Concrete remediation direction for the top issues, or "None needed"]
 
 ## Framework Preset Guidance
@@ -357,8 +353,4 @@ Findings categorized by severity based on the active hygiene rules.
 If framework preset guidance exists, it is **mandatory** to use it to map generic principles to framework primitives and detect stack-specific anti-patterns.
 
 Preset path:
-- `{adapter_path:presets}`
-
-## Backward Compatibility
-
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-architecture-review.md` for direct SpecKit use.
+- `.specify/presets/architecture-guard-preset.md`

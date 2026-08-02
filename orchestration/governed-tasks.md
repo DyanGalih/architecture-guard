@@ -4,9 +4,9 @@ description: Generate or validate implementation tasks with memory context, secu
 
 # Governed Tasks Command
 
-## SDD Framework Detection
+## SDD Tool Detection
 
-Before executing command, read `adapters/detect.md` determine the active SDD framework. load `adapters/{framework}.md` path maps, command maps, gap fills. All paths commands below use adapter-mapped names the loaded adapter.
+Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -67,7 +67,7 @@ If Flash-Mem is unavailable or the context is insufficient, continue with the re
 
 ---
 
-### Step 3 — Orchestrate Framework Tasks
+### Step 3 — Orchestrate SDD Tool Tasks
 
 You must orchestrate the `{adapter_command:create-tasks}` workflow directly.
 
@@ -107,7 +107,7 @@ It MUST convert architecture findings into:
 - Boundary-level or contract-level corrections.
 - **Prefer module-level tasks** over broad system rewrites.
 
-### Step 6 — Orchestrate Framework Analysis
+### Step 6 — Orchestrate SDD Tool Analysis
 
 You must orchestrate the `{adapter_command:analyze}` workflow directly to serve as the formal analyst.
 
@@ -149,7 +149,7 @@ If the analyst (`{adapter_command:analyze}`) finds any gaps, missing steps, or h
 - Report "Architecture refactor tasks: None"
 - Task list is complete
 
-**Minimal Viable Workflow** (Architecture Guard plus the selected SDD framework):
+**Minimal Viable Workflow** (Architecture Guard plus the selected SDD tool):
 - Detect optional integrations
 - Generate tasks through `{adapter_command:create-tasks}` or its inline fallback
 - Validate against Constitution + architecture boundaries

@@ -20,8 +20,8 @@ Instead of waiting until code review to notice problems, it checks specs, plans,
 - `.specify/memory/constitution.md` stores higher-level governance rules
 - `.specify/memory/architecture_constitution.md` stores architecture boundaries and standards
 - `.specify/memory/security_constitution.md` stores security rules
-- `architecture-workflow` reviews the project against those rules
-- `architecture-apply` turns approved violations into concrete refactor work
+- `ag-workflow` reviews the project against those rules
+- `ag-apply` turns approved violations into concrete refactor work
 
 ## A simple first workflow
 
@@ -32,9 +32,9 @@ Choose the path that matches your repository.
 1. Install Architecture Guard.
 2. Run `/speckit.architecture-guard.init-brownfield` for Brownfield Discovery + Verification on the existing codebase.
 3. Review the current-state findings.
-4. Run `/speckit.architecture-guard.architecture-review` or `/speckit.architecture-guard.architecture-workflow`.
+4. Run `ag-review` or `ag-workflow` from your AI agent.
 5. Review the findings and approve any useful refactors.
-6. Run `/speckit.architecture-guard.architecture-apply` if you want the plan and tasks updated.
+6. Run `ag-apply` if you want the plan and tasks updated.
 7. If you are specifically cleaning up duplicated logic, follow the [DRY Cleanup Guide](dry-cleanup.md) after the brownfield mapping pass.
 
 ### Greenfield
@@ -43,9 +43,9 @@ Choose the path that matches your repository.
 2. Run `/speckit.architecture-guard.init` to set up constitutions.
 3. Run `/speckit.architecture-guard.governed-discover` when you have only an idea or rough feature request and want help shaping it into a spec-ready direction. Skip this step if the spec already exists and you are ready for planning.
 4. Write or update your spec (or pass the discovery draft to `/speckit.architecture-guard.governed-spec`).
-5. Run `/speckit.architecture-guard.architecture-review` or `/speckit.architecture-guard.architecture-workflow`.
+5. Run `ag-review` or `ag-workflow` from your AI agent.
 6. Review the findings and approve any useful refactors.
-7. Run `/speckit.architecture-guard.architecture-apply` if you want the plan and tasks updated.
+7. Run `ag-apply` if you want the plan and tasks updated.
 
 
 ## What to remember

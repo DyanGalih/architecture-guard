@@ -109,10 +109,10 @@ const COMMANDS = [
   'governed-tasks',
   'governed-delivery',
   'governed-implement',
-  'architecture-review',
-  'architecture-verify',
-  'architecture-apply',
-  'architecture-workflow',
+  'review',
+  'verify',
+  'apply',
+  'workflow',
   'violation-detection',
   'refactor-generator',
   'consolidate-specs',
@@ -182,16 +182,30 @@ function installSkillMd(sk, content, cmdDir, dest, agentType) {
     dest = path.join(cmdDir, `ag-${sk}`, 'SKILL.md');
   }
   fs.mkdirSync(path.dirname(dest), { recursive: true });
+  
+  let description = `Architecture Guard governance command: ag-${sk}`;
+  let cleanContent = content.trim();
+  
+  const match = cleanContent.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/);
+  if (match) {
+    const originalFrontmatter = match[1];
+    const descMatch = originalFrontmatter.match(/^description:\s*(.*)$/m);
+    if (descMatch) {
+      description = descMatch[1].trim();
+    }
+    cleanContent = cleanContent.substring(match[0].length).trim();
+  }
+
   const frontmatter = `---
 name: ag-${sk}
-description: Architecture Guard governance command: ag-${sk}
+description: ${description}
 allowed-tools: "*"
 metadata:
   author: architecture-guard
   source: https://github.com/DyanGalih/spec-kit-architecture-guard
 ---
 
-${content.trim()}`;
+${cleanContent}`;
   fs.writeFileSync(dest, frontmatter);
 }
 

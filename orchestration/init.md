@@ -2,9 +2,9 @@
 description: Initialize or refine the project governance and architecture constitutions for Architecture Guard.
 ---
 
-## SDD Framework Detection
+## SDD Tool Detection
 
-Read `adapters/detect.md` determine the active SDD framework. load `adapters/{framework}.md` path maps, command maps, gap fills. All paths commands below use adapter-mapped names the loaded adapter.
+Read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 # Purpose
 
@@ -33,7 +33,7 @@ Run this command once per project or whenever the constitution files need refine
 
 See the README quick start for brownfield and greenfield entrypoints.
 
-After init, the usual next step is to run the applicable governance command for the active SDD framework (planning or task generation) via the orchestration flow.
+After init, the usual next step is to run the applicable governance command for the active SDD tool (planning or task generation) via the orchestration flow.
 
 When Flash-Mem is available, prefer it first for retrieving prior decisions, summaries, and existing constitution context. The repository files remain the source of truth for constitution content, and the legacy `memory-hub` name is reference-only and should not be treated as the runtime backend. If Flash-Mem is unavailable or the context is incomplete, read the repository files directly and treat them as the canonical source of truth. After refining the constitutions, sync durable summaries and major decisions back into Flash-Mem.
 
@@ -49,14 +49,14 @@ The goal is to establish:
 
 ---
 
-## Framework-Agnostic vs Framework-Aware
+## SDD-Tool-Agnostic vs Application-Framework-Aware
 
-**Framework-Agnostic Core** (applied to all projects):
+**SDD-Tool-Agnostic Core** (applied to all projects):
 - Universal boundary concepts apply (Entry, App, Domain, Data, External)
 - Core governance principles are framework-independent
 - Examples: "Domain logic never touches HTTP", "Persistence is abstracted", "Events flow one direction"
 
-**Framework-Aware Enhancement** (optional, selected during init):
+**Application-Framework-Aware Enhancement** (optional, selected during init):
 - If user selects framework preset (Laravel, Django, NestJS, etc.):
   - Core principles are enhanced with framework-specific vocabulary
   - Examples become Laravel-idiomatic, Django-idiomatic, etc.
@@ -64,7 +64,7 @@ The goal is to establish:
   - But underlying boundary concepts remain identical
 
 **Coexistence**:
-- Command starts framework-agnostic
+- Command starts technology-agnostic
 - If preset selected: Constitution gains framework-aware guidance
 - Both layers work together: abstract principles + concrete framework patterns
 - Switching frameworks: Start over, preset vocabulary changes but core governance remains
@@ -436,7 +436,7 @@ If the user selects Budgeted:
 1. Create `{adapter_path:governance-config}` using the adapter's configuration format.
 2. Set `context.mode: budgeted`.
 3. Preserve the default retrieval limits unless the user explicitly requests different limits.
-4. If feature specs already exist, run the consolidation command for the active SDD framework after constitution generation is complete.
+4. If feature specs already exist, run the consolidation command for the active SDD tool after constitution generation is complete.
 
 If the user selects Targeted or gives no answer, preserve existing behavior. Do not add operational context settings to any constitution.
 

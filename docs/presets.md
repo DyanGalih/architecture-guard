@@ -1,6 +1,6 @@
 # Framework Presets
 
-Architecture Guard is framework-agnostic at its core. Presets add framework-native vocabulary, initialization questions, boundary mappings, detection guidance, and review output without replacing the project Constitution.
+Architecture Guard is technology-agnostic at its core. Presets add application-framework vocabulary, initialization questions, boundary mappings, detection guidance, and review output without replacing the project Constitution.
 
 A preset does not automatically require every pattern or dependency it mentions. During initialization, the user selects the conventions that apply. During review, the Constitution remains the final authority.
 
@@ -75,7 +75,7 @@ Examples:
 - Nuxt application: select Nuxt rather than combining standalone Vue and a generic server preset.
 - Mixed or multi-service repository: document each governed application root and apply the relevant preset to each scope.
 
-If no built-in preset matches, continue with the framework-agnostic interview. Do not force the closest preset.
+If no built-in preset matches, continue with the technology-agnostic interview. Do not force the closest preset.
 
 ## Built-in and Custom Presets
 

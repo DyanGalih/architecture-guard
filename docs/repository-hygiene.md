@@ -8,7 +8,7 @@ It focuses on detecting implementation artifacts and repository hygiene issues c
 
 * **Framework Agnostic**: Works across all programming languages and frameworks.
 * **Non-destructive**: Never deletes files automatically. It provides actionable recommendations.
-* **Advisory by Default**: In `architecture-review`, it provides a report. In `architecture-verify`, it can fail the build based on your `fail_on` configuration.
+* **Advisory by Default**: In `ag-review`, it provides a report. In `ag-verify`, it can fail the build based on your `fail_on` configuration.
 * **Extensible**: Add custom rules by placing markdown files in the `hygiene-rules/` directory.
 
 ## Configuration
@@ -52,7 +52,7 @@ The following hygiene categories are checked by default:
 - **Debug Artifacts**: `console.log`, `print`, `var_dump`, `debug.log`.
 - **Empty Files**: Files with no meaningful implementation.
 - **Duplicate Experimental Files**: `service_new.ts`, `service_v2.ts`.
-- **Duplicate Business Logic**: Repeated rules, validations, mappings, or orchestration that should be centralized in one shared source of truth. This rule is a good candidate for `Critical` severity if you want DRY violations to fail `architecture-verify`.
+- **Duplicate Business Logic**: Repeated rules, validations, mappings, or orchestration that should be centralized in one shared source of truth. This rule is a good candidate for `Critical` severity if you want DRY violations to fail `ag-verify`.
 - **Orphaned Files**: Files with no references from entry points or exports.
 - **Dead Documentation**: Outdated implementation notes and scratch documents.
 - **TODO / FIXME**: Unresolved markers (configurable severity).

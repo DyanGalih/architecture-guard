@@ -28,7 +28,7 @@ Architecture Guard is helpful because it gives AI a smaller, better set of rules
 - architecture decisions stop living only in people’s heads
 - drift becomes visible as refactor work instead of hidden technical debt
 - security and architecture checks happen in the workflow, not after the damage is done
-- the system stays framework-agnostic, so the same ideas work across Laravel, NestJS, Next.js, React Native, Django, and more
+- the system stays technology-agnostic, so the same ideas work across Laravel, NestJS, Next.js, React Native, Django, and more
 
 ## Best Features
 
@@ -87,7 +87,7 @@ The local system context is an offline fallback, not another default input and n
 | Task Generation | Converts violations into structured refactor work | Prioritized refactor tasks |
 | Implementation | Re-checks implementation against architecture rules | Drift detection and consistency review |
 | Architecture Evolution | Detects repeated patterns and proposes architecture updates | Constitution update proposals |
-| Approved Changes | Applies accepted updates into planning artifacts | Updated tasks and plans via `architecture-apply` |
+| Approved Changes | Applies accepted updates into planning artifacts | Updated tasks and plans via `ag-apply` |
 | Verification | Post-implementation task and requirement audit | Task gap analysis and outcome report |
 
 ## Key Philosophy

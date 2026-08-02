@@ -146,3 +146,11 @@ test('--help prints usage and exits without writing files', () => {
   assert.match(result.stdout, /architecture-guard init \[target\]/i);
   assert.ok(!fs.existsSync(path.join(cwd, '.opencode')));
 });
+
+test('installer exposes init only and publishes linked documentation', () => {
+  const pkg = require('./package.json');
+  assert.deepEqual([...new Set(pkg.files.filter(file => ['docs/', 'examples/', 'adapters/'].includes(file)))], ['adapters/', 'docs/', 'examples/']);
+  const result = spawnSync(process.execPath, [installer, 'review'], { encoding: 'utf8' });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Unknown command: review/);
+});

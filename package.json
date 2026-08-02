@@ -1,6 +1,6 @@
 {
   "name": "architecture-guard",
-  "version": "1.15.2",
+  "version": "2.0.0",
   "description": "SDD framework-agnostic architecture governance orchestrator. Works with SpecKit, OpenSpec, and any SDD tool. Detects framework, adapts automatically.",
   "bin": {
     "architecture-guard": "install.js"
@@ -42,9 +42,13 @@
     "scripts/bash/detect-changed-files.sh",
     "scripts/powershell/detect-changed-files.ps1",
     "README.md",
+    "docs/",
+    "examples/",
+    "adapters/",
     "LICENSE",
     "ADAPTERS.md",
-    "OPENSPEC-ORCHESTRATION.md"
+    "OPENSPEC-INTEGRATION.md",
+    "SPECKIT-INTEGRATION.md"
   ],
   "dependencies": {
     "@inquirer/prompts": "^8.5.2"

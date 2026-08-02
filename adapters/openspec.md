@@ -1,20 +1,20 @@
 # OpenSpec Adapter
 
-Use this adapter when the active SDD framework is **OpenSpec** (`openspec/config.yaml` detected).
+Use this adapter when the active SDD tool is **OpenSpec** (`openspec/config.yaml` detected).
 
 ## Path Map
 
 | Canonical Name | OpenSpec Path |
 |---|---|
 | project-root | `.` |
-| framework-dir | `openspec/` |
+| sdd-tool-dir | `openspec/` |
 | constitution | `openspec/config.yaml` (context section) |
 | arch-constitution | `openspec/architecture.md` (optional — split from config) |
 | security-constitution | `openspec/security.md` (optional — split from config) |
 | governance-config | `openspec/config.yaml` (rules section) |
 | config | `openspec/config.yaml` (compatibility alias of `governance-config`) |
 | extensions | Unsupported; detect optional integrations from host capabilities |
-| extensions-dir | Unsupported; do not probe a framework extension directory |
+| extensions-dir | Unsupported; do not probe an SDD tool extension directory |
 | spec | `openspec/changes/{change}/specs/{capability}/spec.md` |
 | plan | `openspec/changes/{change}/design.md` |
 | tasks | `openspec/changes/{change}/tasks.md` |

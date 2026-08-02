@@ -1,13 +1,13 @@
 # Generic SDD Adapter
 
-Use this adapter when no supported SDD framework is selected. Ask the user for active artifact paths when a command needs them; never guess.
+Use this adapter when no supported SDD tool is selected. Ask the user for active artifact paths when a command needs them; never guess.
 
 ## Path Map
 
 | Canonical Name | Generic Path |
 |---|---|
 | project-root | `.` |
-| framework-dir | Unsupported |
+| sdd-tool-dir | Unsupported |
 | constitution | User-provided governance artifact path |
 | arch-constitution | User-provided architecture artifact path |
 | security-constitution | User-provided security artifact path, if any |
@@ -55,7 +55,7 @@ Preserve the user's existing artifact format. If no governance artifacts exist, 
 
 ## Gap Fill Actions
 
-1. **No framework lifecycle** — All creation, validation, and implementation steps run inline with explicit user-selected paths.
+1. **No SDD tool lifecycle** — All creation, validation, and implementation steps run inline with explicit user-selected paths.
 2. **No automatic artifact discovery** — Ask when active paths are ambiguous.
 
 ## Hook Events

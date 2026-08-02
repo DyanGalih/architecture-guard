@@ -106,7 +106,7 @@ If you are specifically cleaning up duplicated logic, follow the [DRY Cleanup Gu
 3. Run Architecture Workflow
 
 ```text
-/speckit.architecture-guard.architecture-workflow
+ag-workflow
 ```
 
 Outputs:
@@ -119,7 +119,7 @@ Outputs:
 4. Review Violations and Apply Fixes
 
 ```text
-/speckit.architecture-guard.architecture-apply
+ag-apply
 ```
 
 This injects refactor tasks into `plan.md` and `tasks.md` so the AI has explicit guidance to fix architectural debt while implementing features.
@@ -149,13 +149,13 @@ This creates or updates:
 3. Run Architecture Workflow
 
 ```text
-/speckit.architecture-guard.architecture-workflow
+ag-workflow
 ```
 
 4. Review Violations and Apply Fixes
 
 ```text
-/speckit.architecture-guard.architecture-apply
+ag-apply
 ```
 
 This injects refactor tasks into `plan.md` and `tasks.md` so the AI has explicit guidance to fix architectural debt while implementing features.
@@ -171,12 +171,12 @@ This injects refactor tasks into `plan.md` and `tasks.md` so the AI has explicit
 | `governed-discover` | Orchestration | Architecture-aware discovery brief with alignment notes, rejected options, assumptions, and handoff prompt | Use before specification when the feature idea needs discussion against existing architecture constraints |
 | `governed-spec` | Orchestration | Specification and Clarification with `flash-mem` synthesis first + security + architecture, plus auto-fix loop | Use when `flash-mem` and Security Review are installed to start from specification |
 | `governed-delivery` | Orchestration | Resumable plan-to-tasks flow with memory preflight, plan gates, task reconciliation, and analysis | Recommended entry point after specification |
-| `architecture-workflow` | General Review | Violations, severity and priority, refactor tasks, evolution proposals | Entry point for end-to-end review; good for dashboards |
-| `architecture-review` | Validation | Cached-context alignment status, boundary issues, contract drift | After `/specify`, `/plan`, or `/implement` |
+| `ag-workflow` | General Review | Violations, severity and priority, refactor tasks, evolution proposals | Entry point for end-to-end review; good for dashboards |
+| `ag-review` | Validation | Cached-context alignment status, boundary issues, contract drift | After `/specify`, `/plan`, or `/implement` |
 | `violation-detection` | Detection | Drift summary, boundary violations, module coupling | Focus on specific architecture problems |
 | `refactor-generator` | Planning | Refactor task generation | After review; convert violations to non-blocking refactor tasks |
-| `architecture-apply` | Implementation | After refactor decisions | Inject refactor tasks into `tasks.md` and `plan.md` using the approved review context |
-| `architecture-verify` | Verification | Task fulfillment report, gap analysis | Final gate after implementation to ensure all tasks are delivered, with cached memory context if available |
+| `ag-apply` | Implementation | After refactor decisions | Inject refactor tasks into `tasks.md` and `plan.md` using the approved review context |
+| `ag-verify` | Verification | Task fulfillment report, gap analysis | Final gate after implementation to ensure all tasks are delivered, with cached memory context if available |
 
 ### Ponytail Core
 
@@ -213,9 +213,9 @@ optimizer:
 | `governed-tasks` | Orchestration | Tasks and Analysis with cached memory context + security + architecture refactors + auto-fix loop | Use when companion extensions are installed |
 | `governed-implement` | Orchestration | Implementation validation with cached memory governance context | Use for end-to-end implementation with governance |
 
-> Use `governed-delivery` as the suggested plan-to-tasks flow. Use `architecture-workflow` or `architecture-review` directly for standalone reviews; the individual `governed-plan` and `governed-tasks` commands remain available for targeted recovery.
+> Use `ag-governed-delivery` as the suggested plan-to-tasks flow. Use `ag-workflow` or `ag-review` directly for standalone reviews; the individual `ag-governed-plan` and `ag-governed-tasks` commands remain available for targeted recovery.
 
-> `architecture-apply` targets `plan.md` and `tasks.md`. If architectural issues are found in the specification stage, refine the specification before generating a technical plan. When `flash-mem` is available, use the cached synthesis and approved review output before writing back.
+> `ag-apply` targets `plan.md` and `tasks.md`. If architectural issues are found in the specification stage, refine the specification before generating a technical plan. When `flash-mem` is available, use the cached synthesis and approved review output before writing back.
 
 ## Budgeted Architecture Context Retrieval
 

@@ -91,7 +91,7 @@ IF `security-review` (or compatibility alias `spec-kit-security-review`) is avai
 
 Run:
 ```text
-/speckit.architecture-guard.ag-architecture-review
+/speckit.ag-review
 ```
 
 Review implementation against:
@@ -124,7 +124,7 @@ ELSE (no critical violations):
 ### Step 6 — Generate Refactor Tasks
 
 IF architecture violations exist:
-1. Run `/speckit.architecture-guard.ag-refactor-generator`.
+1. Run `/speckit.ag-refactor-generator`.
 2. Generate non-blocking refactor, migration, or correction tasks.
 3. Skip performance refactors unless explicitly requested.
 
@@ -193,9 +193,9 @@ The command MUST return:
 ## Recommended Next Step
 - [e.g., Merge changes]
 - [e.g., Revise implementation to address Security Conflict]
-- [e.g., Run /speckit.architecture-guard.ag-architecture-apply]
+- [e.g., Run /speckit.ag-apply]
 - **Durable Memory Preservation**: (Proactively triggered) Review the proposed memory entries below.
-- **Verification Gate**: Run `/speckit.architecture-guard.ag-architecture-verify` to ensure all tasks are delivered and requirements are met.
+- **Verification Gate**: Run `/speckit.ag-verify` to ensure all tasks are delivered and requirements are met.
 ```
 
 ## Security + Architecture Conflict Handling

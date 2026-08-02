@@ -97,7 +97,7 @@ IF `security-review` (or compatibility alias `spec-kit-security-review`) is avai
 
 Run:
 ```text
-/speckit.architecture-guard.ag-violation-detection
+/speckit.ag-violation-detection
 ```
 
 Inputs to consider:
@@ -163,7 +163,7 @@ The command MUST return:
 - **Consistency Risks**: [How the plan aligns with the Constitution]
 
 ## Recommended Actions
-- [e.g., Run /speckit.architecture-guard.ag-refactor-generator]
+- [e.g., Run /speckit.ag-refactor-generator]
 - [e.g., Refine plan to address Security Conflict]
 - [e.g., Continue to /speckit.tasks phase]
 - **Durable Memory Preservation**: (Proactively triggered) Review the proposed memory entries below.
@@ -171,7 +171,7 @@ The command MUST return:
 
 ## Guardrails
 
-- **Framework-Agnostic**: Do not assume specific framework conventions unless provided via a preset.
+- **SDD-Tool-Agnostic**: Do not assume specific SDD tool conventions unless provided via a preset.
 - **Non-Blocking**: Findings should be advisory by default unless they violate a P0 rule in the Constitution.
 - **Incremental**: Prefer suggestions for incremental migration over full rewrites.
 - **Decoupled**: Do not tightly couple the logic to the internals of other extensions; rely on documented context and repository artifacts.

@@ -53,7 +53,7 @@ Before generating the specification, you MUST ensure work happens on a feature b
 
 You must orchestrate the `/speckit.specify` workflow directly.
 
-1. **Seed from Discovery (if available)**: If a Discovery Summary Draft from `/speckit.architecture-guard.ag-governed-discover` is available, use it as the seed input for specification generation instead of starting from scratch. Carry forward its architecture alignment, rejected options, assumptions, and open questions.
+1. **Seed from Discovery (if available)**: If a Discovery Summary Draft from `/speckit.ag-governed-discover` is available, use it as the seed input for specification generation instead of starting from scratch. Carry forward its architecture alignment, rejected options, assumptions, and open questions.
 2. **Execute Specify**: Run `/speckit.specify` to generate and save `specs/<feature>/spec.md`.
 3. **Apply Ponytail Pragmatism**: Instruct the agent to prevent over-specified, "future-proofed" requirements. Keep the specification minimal and focused purely on the immediate needs (YAGNI).
 4. The specification process must incorporate the Project Constitution documents and memory synthesis. Use Flash-Mem first when available.
@@ -85,7 +85,7 @@ If the specification process or architecture validation identified new architect
 
 Produce a final `Governed Specification Summary` outlining memory context, architectural review status, and any violations found.
 
-If `context.mode` is `budgeted` and `stale_policy` is `regenerate`, run `/speckit.architecture-guard.ag-consolidate-specs` after the specification and clarification changes are complete. If the policy is `targeted`, report that the existing fallback is stale and do not load it until refreshed.
+If `context.mode` is `budgeted` and `stale_policy` is `regenerate`, run `/speckit.ag-consolidate-specs` after the specification and clarification changes are complete. If the policy is `targeted`, report that the existing fallback is stale and do not load it until refreshed.
 
 ### Step 9 — Interactive Auto-Fix Loop
 
@@ -116,11 +116,11 @@ The command MUST return:
 ## Recommended Actions
 - **Durable Memory Preservation**: (Proactively triggered) Review the proposed memory entries below.
 - *(If violations are present)* Ask the user if they want to trigger the auto-fix loop.
-- *(If no violations are present)* Suggest continuing to `/speckit.architecture-guard.ag-governed-plan`.
+- *(If no violations are present)* Suggest continuing to `/speckit.ag-governed-plan`.
 ```
 
 ## Guardrails
 
-- **Framework-Agnostic**: Do not assume specific framework conventions unless provided via a preset.
+- **SDD-Tool-Agnostic**: Do not assume specific SDD tool conventions unless provided via a preset.
 - **Ponytail Pragmatism**: Act as a lazy senior developer. Ensure the spec avoids bloat, complex abstractions, and over-engineering.
 - **Specification Phase**: Do NOT generate refactor tasks. Code does not exist yet. Fixes should be applied directly to the specification via the auto-fix loop.

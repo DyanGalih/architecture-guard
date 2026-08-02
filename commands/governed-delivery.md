@@ -32,7 +32,8 @@ Produce an implementation-ready `tasks.md` from an accepted technical plan while
 2. Do not guess when multiple feature directories are plausible. Ask the user to identify the feature.
 3. Detect `flash-mem` as an MCP service. Do not look for it in `.specify/extensions.yml`.
 4. Detect Security Review from `.specify/extensions.yml`. Accept `security-review` as the canonical extension id and `spec-kit-security-review` as a compatibility alias.
-5. Read constitution files directly when present because they may be ignored by repository search:
+5. Detect OpenSpec by looking for `openspec/config.yaml` or an `openspec` directory.
+6. Read constitution files directly when present because they may be ignored by repository search:
    - `.specify/memory/constitution.md`
    - `.specify/memory/architecture_constitution.md`
    - `.specify/memory/security_constitution.md`
@@ -46,9 +47,16 @@ When Flash-Mem is available, execute both operations before planning, reviewing,
 
 Prefer summaries, metadata, tags, confidence, and related files. Load full entries only when those results are insufficient. If Flash-Mem is unavailable, continue with repository artifacts and report the degraded state.
 
-## Phase 3 — Inspect Resume State
+## Phase 3 — Spec & Proposal Gate
 
-Inspect `spec.md`, `plan.md`, `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
+Check if a formal specification or proposal already exists for the active feature. If missing, automatically generate it using the available discovery context or prompt the user for input:
+
+1. **If OpenSpec is detected:** Run the OpenSpec proposal generation (`openspec new change`) to define what to build. Ensure all OpenSpec artifacts (`proposal.md`, `design.md`, `specs/**/*.md`, `tasks.md`) are generated and wired into the corresponding SpecKit directories for subsequent validation.
+2. **If SpecKit (without OpenSpec) is detected:** Automatically run `/speckit.ag-governed-spec` to generate `spec.md` from the discovery draft.
+
+## Phase 4 — Inspect Resume State
+
+Inspect `spec.md` (or equivalent specification artifacts), `plan.md`, `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
 
 Classify the plan:
 
@@ -67,11 +75,11 @@ Classify tasks:
 
 Do not use timestamps as the only evidence of material staleness. Compare artifact intent and content when possible.
 
-## Phase 4 — Plan Gate
+## Phase 5 — Plan Gate
 
-If the plan is `missing` or `stale`, execute the full `/speckit.architecture-guard.ag-governed-plan` workflow.
+If the plan is `missing` or `stale`, execute the full `/ag-governed-plan` (or `/speckit.ag-governed-plan`) workflow.
 
-If the plan is `review-required`, reuse it and run the applicable security plan review plus `/speckit.architecture-guard.ag-violation-detection`. Do not regenerate a plan merely because review is needed.
+If the plan is `review-required`, reuse it and run the applicable security plan review plus `/ag-violation-detection` (or `/speckit.ag-violation-detection`). Do not regenerate a plan merely because review is needed.
 
 - Continue automatically when there are no blocking findings.
 - Record advisory architecture drift without stopping.
@@ -81,23 +89,23 @@ If the plan is `review-required`, reuse it and run the applicable security plan 
 
 The plan does not need to be perfect. It must be sufficiently stable and free of unresolved blocking findings.
 
-## Phase 5 — Task Generation and Analysis
+## Phase 6 — Task Generation and Analysis
 
 Only enter this phase after the plan is `accepted`.
 
-If tasks are `missing`, `stale`, or `review-required`, execute `/speckit.architecture-guard.ag-governed-tasks` with the accepted plan and cached context.
+If tasks are `missing`, `stale`, or `review-required`, execute `/ag-governed-tasks` (or `/speckit.ag-governed-tasks`) with the accepted plan and cached context.
 
 The governed task phase must:
 
-1. Generate or reconcile `tasks.md` through `/speckit.tasks` or its documented inline fallback.
+1. Generate or reconcile `tasks.md` through `/speckit.tasks` (or the SDD tool's native task generator/inline fallback).
 2. Run the applicable security task review.
 3. Convert confirmed architecture findings into explicit work through `ag-refactor-generator`.
-4. Run `/speckit.analyze` against the complete plan and task set.
+4. Run analysis (e.g., `/speckit.analyze`) against the complete plan and task set if available in the SDD tool.
 5. Keep implementation, security, migration, and refactor work explicit.
 
 If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks.
 
-## Phase 6 — Durable Memory Preservation
+## Phase 7 — Durable Memory Preservation
 
 When Flash-Mem is available:
 
@@ -138,7 +146,7 @@ Return a concise `Governed Delivery Summary`:
 
 ## Guardrails
 
-- Remain framework-agnostic unless a preset or constitution supplies framework-specific vocabulary.
+- Remain SDD-tool-agnostic unless a preset or constitution supplies application-framework vocabulary.
 - Prefer minimal, incremental corrections and standard platform capabilities.
 - Do not silently pass a blocking finding.
 - Do not convert advisory preferences into release gates.

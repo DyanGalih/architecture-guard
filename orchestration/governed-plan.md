@@ -4,9 +4,9 @@ description: Orchestrate a governed planning workflow that coordinates flash-mem
 
 # Governed Plan Command
 
-## SDD Framework Detection
+## SDD Tool Detection
 
-Before executing command, read `adapters/detect.md` determine the active SDD framework. load `adapters/{framework}.md` path maps, command maps, gap fills. All paths commands below use adapter-mapped names the loaded adapter.
+Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -69,7 +69,7 @@ When Flash-Mem MCP is unavailable but the Memory MD CLI detected in Step 1 is pr
 
 ---
 
-### Step 3 — Orchestrate Framework Plan
+### Step 3 — Orchestrate SDD Tool Plan
 
 You must orchestrate the `{adapter_command:create-plan}` workflow directly.
 
@@ -138,7 +138,7 @@ Produce a final `Governed Planning Summary` for the user.
 - Flag missing security validation in governance summary
 - Plan-level review proceeds with architecture constraints only
 
-**Minimal Viable Workflow** (Architecture Guard plus the selected SDD framework):
+**Minimal Viable Workflow** (Architecture Guard plus the selected SDD tool):
 - Detect optional integrations
 - Generate the plan via `{adapter_command:create-plan}` or its inline fallback
 - Validate against Constitution + architecture boundaries
