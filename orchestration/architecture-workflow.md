@@ -47,7 +47,7 @@ Try Flash-Mem first: query summary and metadata context before performing archit
 
 If Flash-Mem is unavailable or the retrieved summaries are insufficient, continue with the repository artifacts and constitution files available in the workspace.
 
-This command accepts the same normalized command context as `architecture-review`, including semantic and dot-style aliases.
+This command accepts the same normalized command context as `ag-architecture-review`, including semantic and dot-style aliases.
 
 The workflow is serial and ownership-aware:
 
@@ -58,7 +58,7 @@ The workflow is serial and ownership-aware:
 5. Route security-first findings to Security Review instead of duplicating them here.
 6. Treat repeated business rules, approvals, validation, DTO mapping, or orchestration as DRY drift and route it to refactor extraction rather than allowing parallel copies.
    - Prefer one shared source of truth for the repeated rule, contract, transformation, or decision.
-7. If `mode=architecture` and a Constitution Update Proposal is warranted, surface it and leave application to `architecture-apply`.
+7. If `mode=architecture` and a Constitution Update Proposal is warranted, surface it and leave application to `ag-architecture-apply`.
 8. Produce refactor tasks or an apply recommendation for architecture findings.
 
 ## Goal
@@ -139,4 +139,4 @@ All governance reports MUST follow this standard template:
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/architecture-workflow.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-architecture-workflow.md` for direct SpecKit use.

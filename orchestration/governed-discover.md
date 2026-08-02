@@ -12,9 +12,9 @@ Before executing command, read `adapters/detect.md` determine the active SDD fra
 
 Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
-You are orchestrating the `governed-discover` workflow for `architecture-guard`.
+You are orchestrating the `ag-governed-discover` workflow for `architecture-guard`.
 
-This command coordinates an architecture-aware brainstorming and discovery phase before a formal specification is written. It helps ideas align with existing historical and architectural constraints, reducing drift early in the lifecycle while still leaving final validation to `governed-spec`.
+This command coordinates an architecture-aware brainstorming and discovery phase before a formal specification is written. It helps ideas align with existing historical and architectural constraints, reducing drift early in the lifecycle while still leaving final validation to `ag-governed-spec`.
 
 ## Flash-Mem-First Architecture Context Retrieval
 
@@ -131,4 +131,4 @@ the adapter-registered governed-spec capability with the Discovery Summary Draft
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/governed-discover.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-governed-discover.md` for direct SpecKit use.

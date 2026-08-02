@@ -361,4 +361,4 @@ Preset path:
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/architecture-review.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-architecture-review.md` for direct SpecKit use.

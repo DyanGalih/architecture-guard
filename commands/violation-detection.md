@@ -28,7 +28,7 @@ Accept the same normalized command context as the review workflow:
 - `mode=architecture` (default)
 - `focus=general` (default), `db`, `api`, or `async`.
 
-If `mode=performance`, do not emit violations here. Let `architecture-review` own the advisory performance output.
+If `mode=performance`, do not emit violations here. Let `ag-architecture-review` own the advisory performance output.
 
 ### Scope Filtering by Focus
 
@@ -159,7 +159,7 @@ Violations:
 
 ## Next Step
 
-Feed detected violations to `/speckit.architecture-guard.refactor-generator` so they can be converted into actionable refactor tasks.
+Feed detected violations to `/speckit.architecture-guard.ag-refactor-generator` so they can be converted into actionable refactor tasks.
 
 ## Framework Preset Guidance
 

@@ -12,7 +12,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). The active feature's `spec.md`, `plan.md`, and applicable constitutions are mandatory and authoritative. Flash-Mem and `system_context.md` may supplement but never replace them.
 
-You are orchestrating the `governed-tasks` workflow for `architecture-guard`.
+You are orchestrating the `ag-governed-tasks` workflow for `architecture-guard`.
 
 This command coordinates multiple extensions to ensure the task list respects architectural, historical, and security constraints before implementation begins.
 
@@ -95,7 +95,7 @@ IF `security-review` (or compatibility alias `spec-kit-security-review`) is avai
 
 Run:
 ```text
-/speckit.architecture-guard.refactor-generator
+/speckit.architecture-guard.ag-refactor-generator
 ```
 
 It MUST convert architecture findings into:
@@ -172,7 +172,7 @@ The command MUST return:
 - **Architecture Risks**: [Drift or conflicts detected in the task list]
 
 ## Recommended Next Step
-- [e.g., Continue to /speckit.architecture-guard.governed-implement]
+- [e.g., Continue to /speckit.architecture-guard.ag-governed-implement]
 - [e.g., Revise tasks to address missing security items]
 - [e.g., Update architecture constitution if standard is outdated]
 - **Durable Memory Preservation**: (Proactively triggered) Review the proposed memory entries below.

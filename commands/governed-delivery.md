@@ -12,7 +12,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). At each resumable phase, its active feature artifacts and applicable constitutions are mandatory and authoritative. Reuse one Flash-Mem synthesis across planning and task generation; do not load `system_context.md` when that synthesis is sufficient.
 
-You are orchestrating `governed-delivery`, the recommended plan-to-tasks entry point for Architecture Guard.
+You are orchestrating `ag-governed-delivery`, the recommended plan-to-tasks entry point for Architecture Guard.
 
 This command coordinates the existing governed planning and task phases. It does not replace their rules or duplicate their review logic. It inspects the active feature, resumes from the first invalid phase, and stops only when a blocking decision requires user input.
 
@@ -69,9 +69,9 @@ Do not use timestamps as the only evidence of material staleness. Compare artifa
 
 ## Phase 4 — Plan Gate
 
-If the plan is `missing` or `stale`, execute the full `/speckit.architecture-guard.governed-plan` workflow.
+If the plan is `missing` or `stale`, execute the full `/speckit.architecture-guard.ag-governed-plan` workflow.
 
-If the plan is `review-required`, reuse it and run the applicable security plan review plus `/speckit.architecture-guard.violation-detection`. Do not regenerate a plan merely because review is needed.
+If the plan is `review-required`, reuse it and run the applicable security plan review plus `/speckit.architecture-guard.ag-violation-detection`. Do not regenerate a plan merely because review is needed.
 
 - Continue automatically when there are no blocking findings.
 - Record advisory architecture drift without stopping.
@@ -85,13 +85,13 @@ The plan does not need to be perfect. It must be sufficiently stable and free of
 
 Only enter this phase after the plan is `accepted`.
 
-If tasks are `missing`, `stale`, or `review-required`, execute `/speckit.architecture-guard.governed-tasks` with the accepted plan and cached context.
+If tasks are `missing`, `stale`, or `review-required`, execute `/speckit.architecture-guard.ag-governed-tasks` with the accepted plan and cached context.
 
 The governed task phase must:
 
 1. Generate or reconcile `tasks.md` through `/speckit.tasks` or its documented inline fallback.
 2. Run the applicable security task review.
-3. Convert confirmed architecture findings into explicit work through `refactor-generator`.
+3. Convert confirmed architecture findings into explicit work through `ag-refactor-generator`.
 4. Run `/speckit.analyze` against the complete plan and task set.
 5. Keep implementation, security, migration, and refactor work explicit.
 
@@ -132,9 +132,9 @@ Return a concise `Governed Delivery Summary`:
 
 ## Targeted Recovery Commands
 
-- Plan problem: run `governed-plan`, then `governed-tasks` because tasks may be stale.
-- Task-only problem: run `governed-tasks`.
-- Unknown or cross-phase problem: rerun `governed-delivery`.
+- Plan problem: run `ag-governed-plan`, then `ag-governed-tasks` because tasks may be stale.
+- Task-only problem: run `ag-governed-tasks`.
+- Unknown or cross-phase problem: rerun `ag-governed-delivery`.
 
 ## Guardrails
 

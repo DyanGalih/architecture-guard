@@ -345,7 +345,7 @@ Findings categorized by severity based on the active hygiene rules.
 3. **Code Quality**: Address SonarLint findings that map to architectural concerns (if any).
 4. **DRY Alignment**: Centralize repeated business logic, validation, and mapping before duplicating it in another layer or module.
 5. **Durable Memory Preservation (Mandatory Check)**: If new architectural patterns, decisions, or repeatable lessons were identified, you **MUST automatically execute** the durable-memory capture flow immediately after providing the report. Do not just recommend it; let the formal capture flow propose entries and request user approval.
-6. **Next Step**: [e.g. Run `/speckit.security-review.branch` for security-first findings, or `/speckit.architecture-guard.architecture-apply` for architecture fixes]
+6. **Next Step**: [e.g. Run `/speckit.security-review.branch` for security-first findings, or `/speckit.architecture-guard.ag-architecture-apply` for architecture fixes]
 7. **Remediation**: [Concrete remediation direction for the top issues, or "None needed"]
 
 ## Framework Preset Guidance

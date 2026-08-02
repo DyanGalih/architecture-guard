@@ -8,9 +8,9 @@ description: Facilitate an architecture-aware discussion to flesh out ideas befo
 
 Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
-You are orchestrating the `governed-discover` workflow for `architecture-guard`.
+You are orchestrating the `ag-governed-discover` workflow for `architecture-guard`.
 
-This command coordinates an architecture-aware brainstorming and discovery phase before a formal specification is written. It helps ideas align with existing historical and architectural constraints, reducing drift early in the lifecycle while still leaving final validation to `governed-spec`.
+This command coordinates an architecture-aware brainstorming and discovery phase before a formal specification is written. It helps ideas align with existing historical and architectural constraints, reducing drift early in the lifecycle while still leaving final validation to `ag-governed-spec`.
 
 ## Flash-Mem-First Architecture Context Retrieval
 
@@ -23,7 +23,7 @@ Provide a single command that ensures:
 2. The user can discuss, refine, and brainstorm their feature idea interactively.
 3. The AI actively warns the user if a proposed idea conflicts with established architecture.
 4. Non-blocking architecture concerns are recorded as risks and alternatives; only explicitly blocking or P0 rules should stop the discovery path.
-5. The final, agreed-upon idea is drafted into a clean format ready to be passed to `/speckit.architecture-guard.governed-spec`.
+5. The final, agreed-upon idea is drafted into a clean format ready to be passed to `/speckit.architecture-guard.ag-governed-spec`.
 
 ## Orchestration Flow
 
@@ -100,7 +100,7 @@ When the discussion is concluded and aligned, the command MUST return:
 ## Recommended Next Step
 You can now run the following command to generate the formal specification:
 
-`/speckit.architecture-guard.governed-spec "Based on the Discovery Summary Draft..."`
+`/speckit.architecture-guard.ag-governed-spec "Based on the Discovery Summary Draft..."`
 ```
 
 ## Guardrails

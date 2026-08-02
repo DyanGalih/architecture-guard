@@ -12,7 +12,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). Applicable constitutions and the newly generated active `spec.md` are authoritative. Flash-Mem and `system_context.md` may supplement but never replace them.
 
-You are orchestrating the `governed-spec` workflow for `architecture-guard`.
+You are orchestrating the `ag-governed-spec` workflow for `architecture-guard`.
 
 This command coordinates multiple extensions to ensure the initial specification respects architectural, historical, and security constraints, and provides a clear, validated foundation before planning begins.
 
@@ -53,7 +53,7 @@ Before generating the specification, you MUST ensure work happens on a feature b
 
 You must orchestrate the `/speckit.specify` workflow directly.
 
-1. **Seed from Discovery (if available)**: If a Discovery Summary Draft from `/speckit.architecture-guard.governed-discover` is available, use it as the seed input for specification generation instead of starting from scratch. Carry forward its architecture alignment, rejected options, assumptions, and open questions.
+1. **Seed from Discovery (if available)**: If a Discovery Summary Draft from `/speckit.architecture-guard.ag-governed-discover` is available, use it as the seed input for specification generation instead of starting from scratch. Carry forward its architecture alignment, rejected options, assumptions, and open questions.
 2. **Execute Specify**: Run `/speckit.specify` to generate and save `specs/<feature>/spec.md`.
 3. **Apply Ponytail Pragmatism**: Instruct the agent to prevent over-specified, "future-proofed" requirements. Keep the specification minimal and focused purely on the immediate needs (YAGNI).
 4. The specification process must incorporate the Project Constitution documents and memory synthesis. Use Flash-Mem first when available.
@@ -85,7 +85,7 @@ If the specification process or architecture validation identified new architect
 
 Produce a final `Governed Specification Summary` outlining memory context, architectural review status, and any violations found.
 
-If `context.mode` is `budgeted` and `stale_policy` is `regenerate`, run `/speckit.architecture-guard.consolidate-specs` after the specification and clarification changes are complete. If the policy is `targeted`, report that the existing fallback is stale and do not load it until refreshed.
+If `context.mode` is `budgeted` and `stale_policy` is `regenerate`, run `/speckit.architecture-guard.ag-consolidate-specs` after the specification and clarification changes are complete. If the policy is `targeted`, report that the existing fallback is stale and do not load it until refreshed.
 
 ### Step 9 — Interactive Auto-Fix Loop
 
@@ -96,7 +96,7 @@ If any architectural gaps, security boundary issues, or drift are detected in St
    - Automatically rewrite `specs/<feature>/spec.md` to resolve the detected gaps.
    - Run the clarification process again to ensure no new ambiguities were introduced.
    - Present the clean result.
-   - Refresh `system_context.md` through `consolidate-specs` when budgeted mode uses the `regenerate` policy.
+   - Refresh `system_context.md` through `ag-consolidate-specs` when budgeted mode uses the `regenerate` policy.
 
 ## Output Structure
 
@@ -116,7 +116,7 @@ The command MUST return:
 ## Recommended Actions
 - **Durable Memory Preservation**: (Proactively triggered) Review the proposed memory entries below.
 - *(If violations are present)* Ask the user if they want to trigger the auto-fix loop.
-- *(If no violations are present)* Suggest continuing to `/speckit.architecture-guard.governed-plan`.
+- *(If no violations are present)* Suggest continuing to `/speckit.architecture-guard.ag-governed-plan`.
 ```
 
 ## Guardrails

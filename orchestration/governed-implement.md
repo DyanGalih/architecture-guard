@@ -16,7 +16,7 @@ Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}
 
 Read and apply `{adapter_path:budgeted-context-template}`. `{adapter_path:tasks}` is authoritative; load `{adapter_path:plan}`, `{adapter_path:spec}`, and security constraints when a task lacks context. Memory and supported fallbacks may supplement but never replace active artifacts.
 
-You are orchestrating the `governed-implement` workflow for `architecture-guard`.
+You are orchestrating the `ag-governed-implement` workflow for `architecture-guard`.
 
 This command coordinates implementation and post-implementation review to ensure the output respects architectural, historical, and security constraints.
 
@@ -222,4 +222,4 @@ If implementation repeatedly violates a standard because the standard is outdate
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/governed-implement.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-governed-implement.md` for direct SpecKit use.

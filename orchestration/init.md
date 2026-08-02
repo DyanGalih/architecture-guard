@@ -865,4 +865,4 @@ The init interview produces framework-specific constitution files:
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/init.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-init.md` for direct SpecKit use.

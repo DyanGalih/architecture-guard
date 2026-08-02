@@ -12,7 +12,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). The active feature's `tasks.md` is mandatory and authoritative; load its active `plan.md`, `spec.md`, and security constraints whenever a task lacks enough context. Flash-Mem and `system_context.md` may supplement but never replace active artifacts.
 
-You are orchestrating the `governed-implement` workflow for `architecture-guard`.
+You are orchestrating the `ag-governed-implement` workflow for `architecture-guard`.
 
 This command coordinates implementation and post-implementation review to ensure the output respects architectural, historical, and security constraints.
 
@@ -91,7 +91,7 @@ IF `security-review` (or compatibility alias `spec-kit-security-review`) is avai
 
 Run:
 ```text
-/speckit.architecture-guard.architecture-review
+/speckit.architecture-guard.ag-architecture-review
 ```
 
 Review implementation against:
@@ -124,7 +124,7 @@ ELSE (no critical violations):
 ### Step 6 — Generate Refactor Tasks
 
 IF architecture violations exist:
-1. Run `/speckit.architecture-guard.refactor-generator`.
+1. Run `/speckit.architecture-guard.ag-refactor-generator`.
 2. Generate non-blocking refactor, migration, or correction tasks.
 3. Skip performance refactors unless explicitly requested.
 
@@ -193,9 +193,9 @@ The command MUST return:
 ## Recommended Next Step
 - [e.g., Merge changes]
 - [e.g., Revise implementation to address Security Conflict]
-- [e.g., Run /speckit.architecture-guard.architecture-apply]
+- [e.g., Run /speckit.architecture-guard.ag-architecture-apply]
 - **Durable Memory Preservation**: (Proactively triggered) Review the proposed memory entries below.
-- **Verification Gate**: Run `/speckit.architecture-guard.architecture-verify` to ensure all tasks are delivered and requirements are met.
+- **Verification Gate**: Run `/speckit.architecture-guard.ag-architecture-verify` to ensure all tasks are delivered and requirements are met.
 ```
 
 ## Security + Architecture Conflict Handling

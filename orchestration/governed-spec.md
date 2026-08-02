@@ -16,7 +16,7 @@ Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}
 
 Read and apply `{adapter_path:budgeted-context-template}`. Applicable constitutions and `{adapter_path:spec}` are authoritative; memory and supported fallbacks may supplement but never replace them.
 
-You are orchestrating the `governed-spec` workflow for `architecture-guard`.
+You are orchestrating the `ag-governed-spec` workflow for `architecture-guard`.
 
 This command coordinates multiple extensions to ensure the initial specification respects architectural, historical, and security constraints, and provides a clear, validated foundation before planning begins.
 
@@ -106,7 +106,7 @@ If any architectural gaps, security boundary issues, or drift are detected in St
    - Automatically rewrite `{adapter_path:spec}` to resolve the detected gaps.
    - Run the clarification process again to ensure no new ambiguities were introduced.
    - Present the clean result.
-   - Refresh `system_context.md` through `consolidate-specs` when budgeted mode uses the `regenerate` policy.
+   - Refresh `system_context.md` through `ag-consolidate-specs` when budgeted mode uses the `regenerate` policy.
 
 ## Output Structure
 
@@ -138,4 +138,4 @@ The command MUST return:
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/governed-spec.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-governed-spec.md` for direct SpecKit use.

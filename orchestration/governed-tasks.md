@@ -16,7 +16,7 @@ Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}
 
 Read and apply `{adapter_path:budgeted-context-template}`. Active adapter artifacts and applicable constitutions are mandatory and authoritative; memory and supported fallbacks may supplement but never replace them.
 
-You are orchestrating the `governed-tasks` workflow for `architecture-guard`.
+You are orchestrating the `ag-governed-tasks` workflow for `architecture-guard`.
 
 This command coordinates multiple extensions to ensure the task list respects architectural, historical, and security constraints before implementation begins.
 
@@ -191,4 +191,4 @@ The command MUST return:
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/governed-tasks.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-governed-tasks.md` for direct SpecKit use.

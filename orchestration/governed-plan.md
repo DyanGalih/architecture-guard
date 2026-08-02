@@ -16,7 +16,7 @@ Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}
 
 Read and apply `{adapter_path:budgeted-context-template}`. `{adapter_path:spec}` and applicable constitutions are authoritative; memory and supported fallbacks may supplement but never replace them.
 
-You are orchestrating the `governed-plan` workflow for `architecture-guard`.
+You are orchestrating the `ag-governed-plan` workflow for `architecture-guard`.
 
 This command coordinates multiple extensions to ensure the technical plan respects architectural, historical, and security constraints before implementation begins.
 
@@ -183,4 +183,4 @@ The command MUST return:
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/governed-plan.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-governed-plan.md` for direct SpecKit use.

@@ -16,7 +16,7 @@ Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}
 
 Read and apply `{adapter_path:budgeted-context-template}`. At each resumable phase, active adapter artifacts and applicable constitutions are authoritative. Reuse one sufficient Flash-Mem synthesis instead of loading a fallback index.
 
-You are orchestrating `governed-delivery`, the recommended plan-to-tasks entry point for Architecture Guard.
+You are orchestrating `ag-governed-delivery`, the recommended plan-to-tasks entry point for Architecture Guard.
 
 This command coordinates the existing governed planning and task phases. It does not replace their rules or duplicate their review logic. It inspects the active feature, resumes from the first invalid phase, and stops only when a blocking decision requires user input.
 
@@ -95,7 +95,7 @@ The governed task phase must:
 
 1. Generate or reconcile `tasks.md` through `{adapter_command:create-tasks}` or its documented inline fallback.
 2. Run the applicable security task review.
-3. Convert confirmed architecture findings into explicit work through `refactor-generator`.
+3. Convert confirmed architecture findings into explicit work through `ag-refactor-generator`.
 4. Run `{adapter_command:analyze}` against the complete plan and task set.
 5. Keep implementation, security, migration, and refactor work explicit.
 
@@ -136,9 +136,9 @@ Return a concise `Governed Delivery Summary`:
 
 ## Targeted Recovery Commands
 
-- Plan problem: run `governed-plan`, then `governed-tasks` because tasks may be stale.
-- Task-only problem: run `governed-tasks`.
-- Unknown or cross-phase problem: rerun `governed-delivery`.
+- Plan problem: run `ag-governed-plan`, then `ag-governed-tasks` because tasks may be stale.
+- Task-only problem: run `ag-governed-tasks`.
+- Unknown or cross-phase problem: rerun `ag-governed-delivery`.
 
 ## Guardrails
 
@@ -151,4 +151,4 @@ Return a concise `Governed Delivery Summary`:
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/governed-delivery.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-governed-delivery.md` for direct SpecKit use.

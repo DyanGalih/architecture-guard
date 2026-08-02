@@ -173,23 +173,19 @@ function readPrompt(promptPath) {
 }
 
 function installMarkdown(sk, content, cmdDir, dest) {
-  dest ||= path.join(cmdDir, `${sk}.md`);
+  dest ||= path.join(cmdDir, `ag-${sk}.md`);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.writeFileSync(dest, content);
 }
 
 function installSkillMd(sk, content, cmdDir, dest, agentType) {
   if (!dest) {
-    if (agentType === 'antigravity' || agentType === 'agy' || agentType === 'codex') {
-      dest = path.join(cmdDir, sk, 'SKILL.md');
-    } else {
-      dest = path.join(cmdDir, `architecture-guard-${sk}`, 'SKILL.md');
-    }
+    dest = path.join(cmdDir, `ag-${sk}`, 'SKILL.md');
   }
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   const frontmatter = `---
-name: ${sk}
-description: Architecture Guard governance command: ${sk}
+name: ag-${sk}
+description: Architecture Guard governance command: ag-${sk}
 allowed-tools: "*"
 metadata:
   author: architecture-guard
@@ -203,7 +199,7 @@ ${content.trim()}`;
 function installToml(sk, content, cmdDir, dest) {
   dest ||= path.join(cmdDir, `${sk}.toml`);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  const toml = `description = "Architecture Guard: ${sk}"
+  const toml = `description = "Architecture Guard: ag-${sk}"
 
 prompt = """
 ${content.trim().replace(/"""/g, '\\"\\"\\"')}
@@ -217,8 +213,8 @@ function installYaml(sk, content, cmdDir, dest) {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   const yamlQuote = value => `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, '\\n')}"`;
   const yaml = `version: "1.0"
-title: ${yamlQuote(sk)}
-description: ${yamlQuote(`Architecture Guard: ${sk}`)}
+title: ${yamlQuote(`ag-${sk}`)}
+description: ${yamlQuote(`Architecture Guard: ag-${sk}`)}
 prompt: |2
   ${content.trim().replace(/\n/g, '\n  ')}
 `;
@@ -227,17 +223,14 @@ prompt: |2
 
 function commandDestination(cfg, sk, cmdDir, agentType) {
   if (cfg.ext === '/SKILL.md') {
-    if (agentType === 'antigravity' || agentType === 'agy' || agentType === 'codex') {
-      return path.join(cmdDir, sk, 'SKILL.md');
-    }
-    return path.join(cmdDir, `architecture-guard-${sk}`, 'SKILL.md');
+    return path.join(cmdDir, `ag-${sk}`, 'SKILL.md');
   }
-  return path.join(cmdDir, `${sk}${cfg.ext}`);
+  return path.join(cmdDir, `ag-${sk}${cfg.ext}`);
 }
 
 function availableCopy(dest, cfg, sk, cmdDir, agentType) {
   if (cfg.ext === '/SKILL.md') {
-    const prefix = (agentType === 'antigravity' || agentType === 'agy' || agentType === 'codex') ? sk : `architecture-guard-${sk}`;
+    const prefix = `ag-${sk}`;
     let candidate = path.join(cmdDir, `${prefix}-2`, 'SKILL.md');
     for (let i = 2; fs.existsSync(candidate); i++) {
       candidate = path.join(cmdDir, `${prefix}-${i + 1}`, 'SKILL.md');

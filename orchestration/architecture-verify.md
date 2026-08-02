@@ -120,4 +120,4 @@ For each task in `tasks.md`:
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/architecture-verify.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-architecture-verify.md` for direct SpecKit use.

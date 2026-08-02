@@ -17,9 +17,9 @@ test('installs every agent format at the project root with selected resources on
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   install('all\n1\n1\nn\n', cwd);
 
-  assert.equal(Object.keys(require('./install').AGENT_CONFIGS).length, 35);
-  assert.ok(fs.existsSync(path.join(cwd, '.opencode/commands/init.md')));
-  assert.ok(!fs.existsSync(path.join(cwd, cwd.slice(1), '.opencode/commands/init.md')));
+  assert.equal(Object.keys(require('./install').AGENT_CONFIGS).length, 36);
+  assert.ok(fs.existsSync(path.join(cwd, '.opencode/commands/ag-init.md')));
+  assert.ok(!fs.existsSync(path.join(cwd, cwd.slice(1), '.opencode/commands/ag-init.md')));
   assert.ok(fs.existsSync(path.join(cwd, 'adapters/detect.md')));
   assert.ok(fs.existsSync(path.join(cwd, 'adapters/spec-kit.md')));
   assert.ok(!fs.existsSync(path.join(cwd, 'adapters/openspec.md')));
@@ -31,18 +31,18 @@ test('installs every agent format at the project root with selected resources on
 
 test('existing commands skip by default, replace, or keep both', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
-  const dest = path.join(cwd, '.opencode/commands/init.md');
+  const dest = path.join(cwd, '.opencode/commands/ag-init.md');
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.writeFileSync(dest, 'original');
 
-  install('24\n3\n1\n\nn\n', cwd);
+  install('25\n3\n2\n\nn\n', cwd);
   assert.equal(fs.readFileSync(dest, 'utf8'), 'original');
-  install('24\n3\n1\n2\n\nn\n', cwd);
+  install('25\n3\n2\n2\n\nn\n', cwd);
   assert.notEqual(fs.readFileSync(dest, 'utf8'), 'original');
   fs.writeFileSync(dest, 'original');
-  install('24\n3\n1\n3\n\nn\n', cwd);
+  install('25\n3\n2\n3\n\nn\n', cwd);
   assert.equal(fs.readFileSync(dest, 'utf8'), 'original');
-  assert.ok(fs.existsSync(path.join(cwd, '.opencode/commands/init.architecture-guard.md')));
+  assert.ok(fs.existsSync(path.join(cwd, '.opencode/commands/ag-init.architecture-guard.md')));
   assert.ok(fs.existsSync(path.join(cwd, 'adapters/detect.md')));
   assert.ok(fs.existsSync(path.join(cwd, 'adapters/generic.md')));
   assert.ok(!fs.existsSync(path.join(cwd, 'adapters/spec-kit.md')));
@@ -51,22 +51,22 @@ test('existing commands skip by default, replace, or keep both', () => {
 
 test('keep both creates a discoverable sibling skill', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
-  const dest = path.join(cwd, '.claude/skills/architecture-guard-init/SKILL.md');
+  const dest = path.join(cwd, '.claude/skills/ag-init/SKILL.md');
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.writeFileSync(dest, 'original');
 
-  install('5\n3\n1\n3\nn\n', cwd);
+  install('6\n3\n2\n3\nn\n', cwd);
   assert.equal(fs.readFileSync(dest, 'utf8'), 'original');
-  assert.ok(fs.existsSync(path.join(cwd, '.claude/skills/architecture-guard-init-2/SKILL.md')));
+  assert.ok(fs.existsSync(path.join(cwd, '.claude/skills/ag-init-2/SKILL.md')));
 });
 
 test('uses discoverable skill layouts and selected destinations in AGENTS.md', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
-  install('1,8,35,10\n1\n1\nn\n', cwd);
-  assert.ok(fs.existsSync(path.join(cwd, '.cursor/skills/architecture-guard-init/SKILL.md')));
-  assert.ok(fs.existsSync(path.join(cwd, '.agents/skills/codex/architecture-guard-init/SKILL.md')));
-  assert.ok(fs.existsSync(path.join(cwd, '.agents/skills/zed/architecture-guard-init/SKILL.md')));
-  assert.ok(fs.existsSync(path.join(cwd, '.agents/skills/agy/architecture-guard-init/SKILL.md')));
+  install('1,9,36,11\n1\n2\nn\n', cwd);
+  assert.ok(fs.existsSync(path.join(cwd, '.cursor/skills/ag-init/SKILL.md')));
+  assert.ok(fs.existsSync(path.join(cwd, '.codex/skills/ag-init/SKILL.md')));
+  assert.ok(fs.existsSync(path.join(cwd, '.agents/skills/zed/ag-init/SKILL.md')));
+  assert.ok(fs.existsSync(path.join(cwd, '.agent/skills/ag-init/SKILL.md')));
 
   const agentsPath = path.join(cwd, 'AGENTS.md');
   require('./install').appendAgentsMd(cwd, ['opencode']);
@@ -95,18 +95,18 @@ test('escapes TOML triple quotes and emits safe YAML metadata', () => {
   assert.match(fs.readFileSync(toml, 'utf8'), /\\"\\"\\"/);
   const yaml = path.join(cwd, 'test.yaml');
   require('./install').installYaml('init', 'prompt', cwd, yaml);
-  assert.match(fs.readFileSync(yaml, 'utf8'), /title: "init"/);
+  assert.match(fs.readFileSync(yaml, 'utf8'), /title: "ag-init"/);
 });
 
 test('runtime resources default to skip and replace on approval', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
-  install('24\n3\n1\nn\n', cwd);
+  install('25\n3\n2\nn\n', cwd);
   const template = path.join(cwd, '.architecture-guard/templates/ponytail_core.md');
   fs.writeFileSync(template, 'custom');
 
-  install('24\n3\n1\n\nn\n', cwd);
+  install('25\n3\n2\n\nn\n', cwd);
   assert.equal(fs.readFileSync(template, 'utf8'), 'custom');
-  install('24\n3\n1\n2\n2\nn\n', cwd);
+  install('25\n3\n2\n2\n2\nn\n', cwd);
   assert.notEqual(fs.readFileSync(template, 'utf8'), 'custom');
 });
 
@@ -122,8 +122,8 @@ test('--yes non-interactive flags install without stdin and respect target arg',
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   // `init <target>` plus --yes --agent=opencode --framework=openspec --commands=init-brownfield
   runArgs(['--yes', '--agent', 'opencode', '--framework', 'openspec', '--commands', 'init-brownfield'], cwd);
-  assert.ok(fs.existsSync(path.join(cwd, '.opencode/commands/init-brownfield.md')));
-  assert.ok(!fs.existsSync(path.join(cwd, '.opencode/commands/init.md')));
+  assert.ok(fs.existsSync(path.join(cwd, '.opencode/commands/ag-init-brownfield.md')));
+  assert.ok(!fs.existsSync(path.join(cwd, '.opencode/commands/ag-init.md')));
   assert.ok(fs.existsSync(path.join(cwd, 'adapters/openspec.md')));
   assert.ok(!fs.existsSync(path.join(cwd, 'adapters/spec-kit.md')));
   assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-adapter'), 'utf8').trim(), 'openspec');
@@ -134,9 +134,9 @@ test('init accepts target directory positional argument', () => {
   const inner = path.join(outer, 'target');
   fs.mkdirSync(inner, { recursive: true });
   // Run from outer, target = inner subdir
-  runArgs(['--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init', inner], outer);
-  assert.ok(fs.existsSync(path.join(inner, '.opencode/commands/init.md')));
-  assert.ok(!fs.existsSync(path.join(outer, '.opencode/commands/init.md')));
+  runArgs(['init', inner, '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'], outer);
+  assert.ok(fs.existsSync(path.join(inner, '.opencode/commands/ag-init.md')));
+  assert.ok(!fs.existsSync(path.join(outer, '.opencode/commands/ag-init.md')));
 });
 
 test('--help prints usage and exits without writing files', () => {

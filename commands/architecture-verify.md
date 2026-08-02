@@ -117,4 +117,4 @@ For each task in `tasks.md`:
 2. **Architecture Alignment**: Resolve boundary violations in [Files] using suggested refactor tasks.
 3. **Completion**: If all CRITICAL/HIGH are resolved, you **MUST automatically execute** the durable-memory capture flow to preserve lessons. Do not just recommend it; let the formal capture flow propose entries and request user approval.
 
-**Next Step**: [e.g. "Run `/speckit.architecture-guard.architecture-apply` to fix V2"]
+**Next Step**: [e.g. "Run `/speckit.architecture-guard.ag-architecture-apply` to fix V2"]

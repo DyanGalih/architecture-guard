@@ -32,7 +32,7 @@ Accept the same normalized command context as the review workflow:
 - `mode=architecture` (default)
 - `focus=general` (default), `db`, `api`, or `async`.
 
-If `mode=performance`, do not emit violations here. Let `architecture-review` own the advisory performance output.
+If `mode=performance`, do not emit violations here. Let `ag-architecture-review` own the advisory performance output.
 
 ### Scope Filtering by Focus
 
@@ -174,4 +174,4 @@ Preset path:
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/violation-detection.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-violation-detection.md` for direct SpecKit use.

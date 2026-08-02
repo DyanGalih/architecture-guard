@@ -6,7 +6,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 Brownfield-first project initialization for existing codebases.
 
-Use this command when the repository already contains application code and you want to understand the current system before proposing structure, governance, or refactor work. After the current state is mapped, move to `/speckit.architecture-guard.init` if you need to define or refine constitutions before continuing into planning or implementation.
+Use this command when the repository already contains application code and you want to understand the current system before proposing structure, governance, or refactor work. After the current state is mapped, move to `/speckit.architecture-guard.ag-init` if you need to define or refine constitutions before continuing into planning or implementation.
 
 ## Goal
 
@@ -38,7 +38,7 @@ Create a reliable current-state baseline before any architectural or delivery gu
 - Keep the first pass lightweight and non-destructive.
 - Ask for confirmation before suggesting broad refactors.
 - Recommend targeted mode for small spec sets. For larger histories, explain that budgeted mode queries Flash-Mem first, loads `specs/system_context.md` only as an offline fallback, and never replaces active feature artifacts.
-- If the user wants budgeted mode, record the recommendation in the brownfield output and hand it to `/speckit.architecture-guard.init`. Do not create configuration or generate `system_context.md` during this non-destructive mapping pass.
+- If the user wants budgeted mode, record the recommendation in the brownfield output and hand it to `/speckit.architecture-guard.ag-init`. Do not create configuration or generate `system_context.md` during this non-destructive mapping pass.
 - Do not promise token savings before representative measurement and do not write operational settings into constitution files.
 
 ## When to use

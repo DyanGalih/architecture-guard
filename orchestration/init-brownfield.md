@@ -53,4 +53,4 @@ Create a reliable current-state baseline before any architectural or delivery gu
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/init-brownfield.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-init-brownfield.md` for direct SpecKit use.
