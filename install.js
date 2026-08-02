@@ -84,7 +84,6 @@ const AGENT_CONFIGS = {
   claude:       { dir: '.claude/skills',       ext: '/SKILL.md' },
   codex:        { dir: '.codex/skills',        ext: '/SKILL.md' },
   zed:          { dir: '.agents/skills/zed',   ext: '/SKILL.md' },
-  agy:          { dir: '.agent/skills',        ext: '/SKILL.md' },
   antigravity:  { dir: '.agent/skills',        ext: '/SKILL.md' },
   devin:        { dir: '.devin/skills',        ext: '/SKILL.md' },
   grok:         { dir: '.grok/skills',         ext: '/SKILL.md' },
@@ -245,7 +244,7 @@ function availableCopy(dest, cfg, sk, cmdDir, agentType) {
   return candidate;
 }
 
-async function installCommand(agentType, commandName, cmdDir, opts = {}) {
+async function installCommand(agentType, commandName, cmdDir, opts = {}, workflowsDir = null) {
   const cfg = AGENT_CONFIGS[agentType];
   if (!cfg) return;
   const yes = !!opts.yes;
@@ -269,11 +268,11 @@ async function installCommand(agentType, commandName, cmdDir, opts = {}) {
     // ponytail: --yes is for CI idempotency — repeated runs should replace, not accumulate
     // `init.architecture-guard-2.md`, `-3.md`, ... Save-the-original behavior is opt-in via
     // `--overwrite keep-both`; interactive users still get the 3-way prompt.
-    const action = yes
+    const action = yes || opts.batchPrompted
       ? (overwrite === 'keep-both' ? 'keep both' : (overwrite === 'skip' ? 'skip' : 'replace'))
-      : await ask(`  ${path.relative(process.cwd(), dest)} exists:`, ['skip', 'replace', 'keep both']);
+      : (await ask(`  ${path.relative(process.cwd(), dest)} exists:`, ['skip', 'replace', 'keep both']) || 'skip');
     if (action !== 'replace' && action !== 'keep both') {
-      console.log(`  → ${commandName}: skipped`);
+      console.log(`  → ${commandName}: skipped (action: ${action}, exists: ${fs.existsSync(dest)}, dest: ${dest}, batchPrompted: ${opts.batchPrompted})`);
       return;
     }
     if (action === 'keep both') dest = availableCopy(dest, cfg, sk, cmdDir, agentType);
@@ -289,7 +288,16 @@ async function installCommand(agentType, commandName, cmdDir, opts = {}) {
     } else if (cfg.ext === '.yaml') {
       installYaml(sk, content, cmdDir, dest);
     }
-    console.log(`  ✓ ${commandName} → ${agentType}`);
+    
+    let wfMsg = '';
+    if (workflowsDir) {
+      const wfDest = path.join(workflowsDir, `agx-${sk}.md`);
+      fs.mkdirSync(path.dirname(wfDest), { recursive: true });
+      fs.writeFileSync(wfDest, content);
+      wfMsg = ' (+ workflow)';
+    }
+    
+    console.log(`  ✓ ${commandName} → ${agentType}${wfMsg}`);
   } catch (err) {
     console.error(`  ✗ ${commandName}: ${err.message}`);
   }
@@ -436,7 +444,8 @@ async function main() {
   requireInteractiveOrYes(opts);
 
   const positional = opts.values.filter(v => v !== 'init');
-  const target = opts.target || positional[0] || process.cwd();
+  const userPath = opts.target || positional[0];
+  const target = userPath || process.cwd();
   const targetDir = path.resolve(target);
 
   await runInit(targetDir, opts);
@@ -489,14 +498,67 @@ async function runInit(targetDir, opts) {
     process.exit(0);
   }
 
+  let agyScope = null;
+  const positional = opts.values.filter(v => v !== 'init');
+  const userPath = opts.target || positional[0];
+  if (selectedAgents.includes('antigravity')) {
+    if (!userPath) {
+      const choices = ['Global (~/.gemini/antigravity-cli/skills)', 'Shared (~/.gemini/skills)', 'Workspace (current directory)'];
+      const scopeChoice = opts.yes ? choices[0] : (await ask('\nNo target path provided. Where would you like to install Antigravity skills?', choices, false) || '');
+      if (scopeChoice.startsWith('Global')) agyScope = 'global';
+      else if (scopeChoice.startsWith('Shared')) agyScope = 'shared';
+      else agyScope = 'workspace';
+    } else {
+      agyScope = 'workspace';
+    }
+  }
+
   console.log(`\nInstalling ${selectedCommands.length} commands for ${selectedAgents.length} agent(s)...\n`);
 
   for (const agent of selectedAgents) {
-    const cfg = AGENT_CONFIGS[agent];
-    const cmdDir = path.join(targetDir, cfg.dir);
+    const isAgy = agent === 'antigravity';
+    let cmdDir;
+    let workflowsDir = null;
+    
+    if (isAgy) {
+      if (agyScope === 'global') {
+        cmdDir = path.join(require('os').homedir(), '.gemini/antigravity-cli/skills');
+        workflowsDir = path.join(require('os').homedir(), '.gemini/antigravity-cli/workflows');
+      } else if (agyScope === 'shared') {
+        cmdDir = path.join(require('os').homedir(), '.gemini/skills');
+        workflowsDir = path.join(require('os').homedir(), '.gemini/workflows');
+      } else {
+        cmdDir = path.join(targetDir, '.agents/skills');
+        workflowsDir = path.join(targetDir, '.agent/workflows');
+      }
+    } else {
+      const cfg = AGENT_CONFIGS[agent];
+      cmdDir = path.join(targetDir, cfg.dir);
+    }
+
+    let batchOverwrite = opts.overwrite;
+    let batchPrompted = false;
+    if (!opts.yes && !batchOverwrite && selectedCommands.length > 1) {
+      let anyExists = false;
+      for (const cmd of selectedCommands) {
+        const sk = slug(cmd);
+        const cfg = AGENT_CONFIGS[agent];
+        const dest = isAgy ? path.join(cmdDir, `ag-${sk}`, 'SKILL.md') : commandDestination(cfg, sk, cmdDir, agent);
+        if (fs.existsSync(dest)) {
+          anyExists = true; break;
+        }
+      }
+      if (anyExists) {
+        const action = (await ask(`\nSome files already exist for ${agent}. What would you like to do for all of them?`, ['skip', 'replace', 'keep both'])) || 'skip';
+        batchOverwrite = action === 'keep both' ? 'keep-both' : action;
+        batchPrompted = true;
+      }
+    }
+
+    const currentOpts = { ...opts, overwrite: batchOverwrite || opts.overwrite, batchPrompted };
 
     for (const cmd of selectedCommands) {
-      await installCommand(agent, cmd, cmdDir, opts);
+      await installCommand(agent, cmd, cmdDir, currentOpts, isAgy ? workflowsDir : null);
     }
     console.log();
   }

@@ -17,7 +17,7 @@ test('installs every agent format at the project root with selected resources on
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   install('all\n1\n1\nn\n', cwd);
 
-  assert.equal(Object.keys(require('./install').AGENT_CONFIGS).length, 36);
+  assert.equal(Object.keys(require('./install').AGENT_CONFIGS).length, 35);
   assert.ok(fs.existsSync(path.join(cwd, '.opencode/commands/ag-init.md')));
   assert.ok(!fs.existsSync(path.join(cwd, cwd.slice(1), '.opencode/commands/ag-init.md')));
   assert.ok(fs.existsSync(path.join(cwd, 'adapters/detect.md')));
@@ -35,12 +35,12 @@ test('existing commands skip by default, replace, or keep both', () => {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.writeFileSync(dest, 'original');
 
-  install('25\n3\n2\n\nn\n', cwd);
+  install('24\n3\n2\n\nn\n', cwd);
   assert.equal(fs.readFileSync(dest, 'utf8'), 'original');
-  install('25\n3\n2\n2\n\nn\n', cwd);
+  install('24\n3\n2\n2\n\nn\n', cwd);
   assert.notEqual(fs.readFileSync(dest, 'utf8'), 'original');
   fs.writeFileSync(dest, 'original');
-  install('25\n3\n2\n3\n\nn\n', cwd);
+  install('24\n3\n2\n3\n\nn\n', cwd);
   assert.equal(fs.readFileSync(dest, 'utf8'), 'original');
   assert.ok(fs.existsSync(path.join(cwd, '.opencode/commands/ag-init.architecture-guard.md')));
   assert.ok(fs.existsSync(path.join(cwd, 'adapters/detect.md')));
@@ -55,18 +55,18 @@ test('keep both creates a discoverable sibling skill', () => {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.writeFileSync(dest, 'original');
 
-  install('6\n3\n2\n3\nn\n', cwd);
+  install('5\n3\n2\n3\nn\n', cwd);
   assert.equal(fs.readFileSync(dest, 'utf8'), 'original');
   assert.ok(fs.existsSync(path.join(cwd, '.claude/skills/ag-init-2/SKILL.md')));
 });
 
 test('uses discoverable skill layouts and selected destinations in AGENTS.md', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
-  install('1,9,36,11\n1\n2\nn\n', cwd);
+  install('2,8,35,10\n1\n2\n3\nn\n', cwd);
   assert.ok(fs.existsSync(path.join(cwd, '.cursor/skills/ag-init/SKILL.md')));
   assert.ok(fs.existsSync(path.join(cwd, '.codex/skills/ag-init/SKILL.md')));
   assert.ok(fs.existsSync(path.join(cwd, '.agents/skills/zed/ag-init/SKILL.md')));
-  assert.ok(fs.existsSync(path.join(cwd, '.agent/skills/ag-init/SKILL.md')));
+  assert.ok(fs.existsSync(path.join(cwd, '.agents/skills/ag-init/SKILL.md')));
 
   const agentsPath = path.join(cwd, 'AGENTS.md');
   require('./install').appendAgentsMd(cwd, ['opencode']);
@@ -100,13 +100,13 @@ test('escapes TOML triple quotes and emits safe YAML metadata', () => {
 
 test('runtime resources default to skip and replace on approval', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
-  install('25\n3\n2\nn\n', cwd);
+  install('24\n3\n2\nn\n', cwd);
   const template = path.join(cwd, '.architecture-guard/templates/ponytail_core.md');
   fs.writeFileSync(template, 'custom');
 
-  install('25\n3\n2\n\nn\n', cwd);
+  install('24\n3\n2\n\nn\n', cwd);
   assert.equal(fs.readFileSync(template, 'utf8'), 'custom');
-  install('25\n3\n2\n2\n2\nn\n', cwd);
+  install('24\n3\n2\n2\n2\nn\n', cwd);
   assert.notEqual(fs.readFileSync(template, 'utf8'), 'custom');
 });
 
