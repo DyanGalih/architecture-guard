@@ -12,7 +12,6 @@
 
 AI agents (like Claude Code, Gemini, and OpenCode) are incredibly fast but often create architectural drift, duplicate business logic, and ignore established patterns. Architecture Guard solves this by wrapping their actions in structured, governed workflows. It automatically forces agents to check historical memory, validate plans against architecture rules, and apply pragmatic engineering constraints before writing any code.
 
-[![OpenSpec](https://img.shields.io/badge/OpenSpec-compatible-8b5cf6)](https://github.com/Fission-AI/OpenSpec)
 It orchestrates the full delivery path—from discovery and specification through planning, implementation, and verification—while adapting to the project's existing SDD tool. It works with **OpenSpec**, **Spec Kit**, or a generic Markdown workflow without replacing them.
 
 ---
@@ -21,7 +20,6 @@ It orchestrates the full delivery path—from discovery and specification throug
 
 Architecture Guard doesn't just manage files; it actively constraints AI behavior using proven engineering practices:
 
-[![OpenSpec](https://img.shields.io/badge/OpenSpec-compatible-8b5cf6)](https://github.com/Fission-AI/OpenSpec)
 * **OpenSpec & Spec Kit Governance:** Detects the active SDD tool and applies the matching artifact paths, commands, and gap fills.
 * **Ponytail Core:** Applies one shared decision ladder across discovery, planning, tasks, implementation, and review. Includes root-cause caller tracing, a safety floor, and runnable checks for non-trivial logic. *(Inspired by the [Ponytail Pragmatism Skill](https://github.com/DietrichGebert/ponytail))*
 * **DRY Cleanup Guidance:** Prevents agents from blindly copying code. It helps find duplicated business logic, validation, DTO mapping, and orchestration, turning them into small refactor tasks instead of silent drift.
@@ -47,7 +45,6 @@ architecture-guard
 
 The installer launches a setup wizard that asks you to select:
 1. **AI agent(s)** — OpenCode, Claude Code, Gemini CLI, etc.
-[![OpenSpec](https://img.shields.io/badge/OpenSpec-compatible-8b5cf6)](https://github.com/Fission-AI/OpenSpec)
 2. **SDD tool** — Spec Kit, OpenSpec, or a generic Markdown workflow.
 3.  **Governed workflows** — Pick the orchestration and governance workflows you need.
 
@@ -101,7 +98,6 @@ spec-kit-architecture-guard/
 - [Standalone Usage Guide](docs/standalone-usage.md)
 - [Manual Workflow Guide](docs/manual-workflow-guide.md)
 - [Adapter Reference](ADAPTERS.md)
-[![OpenSpec](https://img.shields.io/badge/OpenSpec-compatible-8b5cf6)](https://github.com/Fission-AI/OpenSpec)
 - [Spec Kit Integration Guide](SPECKIT-INTEGRATION.md)
 - [OpenSpec Integration Guide](OPENSPEC-INTEGRATION.md)
 - [Beginner Guide](docs/beginner-guide.md)
@@ -122,10 +118,8 @@ spec-kit-architecture-guard/
 - **Architecture first**: orchestration keeps boundaries, ownership, and drift visible across the delivery lifecycle.
 - **Ponytail Core**: one shared ladder prevents both over-building and unsafe under-building across every delivery phase.
 
-[![OpenSpec](https://img.shields.io/badge/OpenSpec-compatible-8b5cf6)](https://github.com/Fission-AI/OpenSpec)
 ## 🔄 Spec Kit Compatibility
 
 The standalone orchestrator is the primary experience. Existing SpecKit users (v1.15.1 and earlier) remain fully supported through `extension.yml` installation. 
 
-[![OpenSpec](https://img.shields.io/badge/OpenSpec-compatible-8b5cf6)](https://github.com/Fission-AI/OpenSpec)
 If your project is already centered on Spec Kit, you can continue installing Architecture Guard as a native Spec Kit extension. See the [Spec Kit Integration Guide](SPECKIT-INTEGRATION.md).
