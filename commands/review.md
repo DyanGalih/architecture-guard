@@ -1,5 +1,5 @@
 ---
-description: Perform a technology-agnostic architecture review validating implementation against spec.md, plan.md, tasks.md, and the governance and architecture constitutions.
+description: Perform a technology-agnostic architecture review validating implementation (or pre-implementation planning artifacts) against active specification, design, and task documents, as well as the constitutions.
 scripts:
   sh: ../scripts/bash/detect-changed-files.sh
   ps: ../scripts/powershell/detect-changed-files.ps1
@@ -13,7 +13,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Budgeted Context Contract
 
-Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). Available active `spec.md`, `plan.md`, `tasks.md`, security constraints, applicable constitutions, and relevant code evidence are authoritative. Use fallback provenance to open historical specs only for named review gaps.
+Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). Available active specification documents (e.g., `spec.md`, `design.md`, `plan.md`, `tasks.md`), security constraints, applicable constitutions, and relevant code evidence are authoritative. Use fallback provenance to open historical specs only for named review gaps.
 
 You are running `architecture-guard`, a technology-agnostic architecture review extension designed for high-integrity governance.
 
@@ -84,6 +84,8 @@ This pattern ensures that lower-tier models follow strict execution paths instea
    - If the user provided a file list or explicit instructions, follow them.
    - Otherwise, you **MUST** execute the `{SCRIPT}` with `--json` to detect changed files since the merge-base or in the working directory.
    - Use the `changed_files` list as the primary review set.
+3. **Artifact-Only Review (Pre-Implementation)**:
+   - If no implementation code exists or has been changed yet, focus the review strictly on validating the available specification and planning artifacts (e.g., `spec.md`, `design.md`, `plan.md`, `tasks.md`) against the architectural rules and constitutions before coding begins.
 
 ## Input & Context Loading
 
@@ -103,7 +105,7 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
    If Flash-Mem is unavailable or the context is insufficient, continue with the repository artifacts and constitution files available in the workspace.
 
 4. **Implementation Context**:
-    - `spec.md`, `plan.md`, `tasks.md`, `data-model.md`
+    - Active specification and planning artifacts (e.g., `spec.md`, `design.md`, `plan.md`, `tasks.md`, `data-model.md`)
     - The detected `changed_files` and their respective directories.
 
 5. **Repository Hygiene**:
@@ -134,7 +136,7 @@ Use these core principles to detect drift:
 ## Detection Scope
 
 Detect violations such as:
-- **Intent Divergence**: Implementation deviates fundamentally from `spec.md` or `plan.md` intent.
+- **Intent Divergence**: Implementation deviates fundamentally from the specification or design intent.
 - **Hallucinated Abstractions**: Plan mentions an abstraction (e.g., Repository) that is missing in code.
 - **Boundary Erosion**: Business logic leaking into entry points or UI.
 - **Tight Coupling**: Circular dependencies or cross-module leakage.
@@ -159,8 +161,8 @@ Detect violations such as:
 
 1. **Identify Scope**: Run `{SCRIPT}` or use user-provided files.
 2. **Model Context**: Load artifacts and build the Semantic Models for the identified scope.
-3. **Verify Evidence**: Check if task-referenced files exist and contain expected implementation logic.
-4. **Analyze Alignment**: Compare `spec.md` intent vs. `plan.md` architecture vs. implementation behavior.
+3. **Verify Evidence**: Check if task-referenced files exist and contain expected implementation logic. (Skip this if performing a pre-implementation artifact-only review).
+4. **Analyze Alignment**: Compare the initial specification intent vs. the proposed architectural design vs. implementation behavior (if any). If pre-implementation, ensure the proposed design or plan accurately satisfies the spec without violating constraints.
 5. **Scan Principles**: Apply Review Principles across the implemented boundaries.
 6. **Security & Governance Cross-Check**:
   - If `security-constraints.md` or `security_constitution.md` is breached, log it as a critical violation.
@@ -345,7 +347,7 @@ Findings categorized by severity based on the active hygiene rules.
 3. **Code Quality**: Address SonarLint findings that map to architectural concerns (if any).
 4. **DRY Alignment**: Centralize repeated business logic, validation, and mapping before duplicating it in another layer or module.
 5. **Durable Memory Preservation (Mandatory Check)**: If new architectural patterns, decisions, or repeatable lessons were identified, you **MUST automatically execute** the durable-memory capture flow immediately after providing the report. Do not just recommend it; let the formal capture flow propose entries and request user approval.
-6. **Next Step**: [e.g. Run `/speckit.security-review.branch` for security-first findings, or `/speckit.ag-apply` for architecture fixes]
+6. **Next Step**: [e.g. Run `/speckit.security-review.branch` for security-first findings, or `/ag-apply` for architecture fixes]
 7. **Remediation**: [Concrete remediation direction for the top issues, or "None needed"]
 
 ## Framework Preset Guidance

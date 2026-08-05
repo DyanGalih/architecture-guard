@@ -23,29 +23,34 @@ Instead of waiting until code review to notice problems, it checks specs, plans,
 - `ag-workflow` reviews the project against those rules
 - `ag-apply` turns approved violations into concrete refactor work
 
-## A simple first workflow
+## End-to-End Delivery Lifecycles
 
-Choose the path that matches your repository.
+You can choose between a **Granular** step-by-step approach or a **Streamlined** magic-button approach. Both paths ensure your work is reviewed and validated before implementation begins.
 
-### Brownfield
+### Path 1: The Granular Workflow
+Best for complex features where you want manual review after every single stage.
 
-1. Install Architecture Guard.
-2. Run `/speckit.architecture-guard.init-brownfield` for Brownfield Discovery + Verification on the existing codebase.
-3. Review the current-state findings.
-4. Run `ag-review` or `ag-workflow` from your AI agent.
-5. Review the findings and approve any useful refactors.
-6. Run `ag-apply` if you want the plan and tasks updated.
-7. If you are specifically cleaning up duplicated logic, follow the [DRY Cleanup Guide](dry-cleanup.md) after the brownfield mapping pass.
+1. **Initialization:** Run `/ag-init` (Greenfield) or `/ag-init-brownfield` (Brownfield) to set up constitutions.
+2. **Discovery (Optional):** Run `/ag-governed-discover` to brainstorm a rough idea into a spec-ready direction.
+3. **Specification:** Run `/ag-governed-spec` to formally generate the Spec.
+4. **Spec Review:** Run `ag-review` to check the spec against architecture rules. Apply any fixes.
+5. **Planning:** Run `/ag-governed-plan` to generate the technical plan.
+6. **Plan Review:** Run `ag-review` to ensure the plan doesn't violate boundaries. Apply any fixes via `ag-apply`.
+7. **Task Generation:** Run `/ag-governed-tasks` to map the plan into actionable tasks.
+8. **Implementation:** Run `/ag-governed-implement` to execute the tasks safely.
+9. **Implementation Review:** Run `ag-review` again. This time it will review your actual code changes against the architecture rules. Apply fixes if needed.
+10. **Verification:** Run `/ag-verify` to ensure all tasks are delivered and no unapproved drift exists. **Ready to commit!**
 
-### Greenfield
+### Path 2: The Streamlined Workflow (Recommended)
+Best for most features. It automatically chains Spec, Plan, and Task generation together while pausing for your review.
 
-1. Install Architecture Guard.
-2. Run `/speckit.architecture-guard.init` to set up constitutions.
-3. Run `/speckit.architecture-guard.governed-discover` when you have only an idea or rough feature request and want help shaping it into a spec-ready direction. Skip this step if the spec already exists and you are ready for planning.
-4. Write or update your spec (or pass the discovery draft to `/speckit.architecture-guard.governed-spec`).
-5. Run `ag-review` or `ag-workflow` from your AI agent.
-6. Review the findings and approve any useful refactors.
-7. Run `ag-apply` if you want the plan and tasks updated.
+1. **Initialization:** Run `/ag-init` (Greenfield) or `/ag-init-brownfield` (Brownfield).
+2. **Discovery (Optional):** Run `/ag-governed-discover` to shape your idea.
+3. **Delivery Orchestration:** Run `/ag-governed-delivery`. This "magic button" command will automatically generate the Spec, check it, generate the Plan, check it, and generate the Tasks. 
+4. **Pre-Implementation Review:** Review the generated Spec, Plan, and Tasks. If you want a formal check, run `ag-review` and then `ag-apply` for any refactor suggestions.
+5. **Implementation:** Run `/ag-governed-implement`.
+6. **Implementation Review:** Run `ag-review` to check your coded solution for drift or anti-patterns before finalizing.
+7. **Verification:** Run `/ag-verify` as your final gate. **Ready to commit!**
 
 
 ## What to remember

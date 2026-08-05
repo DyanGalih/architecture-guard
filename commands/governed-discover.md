@@ -23,7 +23,7 @@ Provide a single command that ensures:
 2. The user can discuss, refine, and brainstorm their feature idea interactively.
 3. The AI actively warns the user if a proposed idea conflicts with established architecture.
 4. Non-blocking architecture concerns are recorded as risks and alternatives; only explicitly blocking or P0 rules should stop the discovery path.
-5. The final, agreed-upon idea is drafted into a clean format ready to be passed to `/speckit.ag-governed-spec`.
+5. The final, agreed-upon idea is drafted into a clean format ready to be passed to `/ag-governed-spec`.
 
 ## Orchestration Flow
 
@@ -100,7 +100,7 @@ When the discussion is concluded and aligned, the command MUST return:
 ## Recommended Next Step
 You can now run the following command to generate the formal specification:
 
-`/speckit.ag-governed-spec "Based on the Discovery Summary Draft..."`
+`/ag-governed-spec "Based on the Discovery Summary Draft..."`
 ```
 
 ## Guardrails

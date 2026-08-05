@@ -52,7 +52,7 @@ Prefer summaries, metadata, tags, confidence, and related files. Load full entri
 Check if a formal specification or proposal already exists for the active feature. If missing, automatically generate it using the available discovery context or prompt the user for input:
 
 1. **If OpenSpec is detected:** Run the OpenSpec proposal generation (`openspec new change`) to define what to build. Ensure all OpenSpec artifacts (`proposal.md`, `design.md`, `specs/**/*.md`, `tasks.md`) are generated and wired into the corresponding SpecKit directories for subsequent validation.
-2. **If SpecKit (without OpenSpec) is detected:** Automatically run `/speckit.ag-governed-spec` to generate `spec.md` from the discovery draft.
+2. **If SpecKit (without OpenSpec) is detected:** Automatically run `/ag-governed-spec` to generate `spec.md` from the discovery draft.
 
 ## Phase 4 — Inspect Resume State
 
@@ -60,7 +60,7 @@ Inspect `spec.md` (or equivalent specification artifacts), `plan.md`, `tasks.md`
 
 Classify the plan:
 
-- `missing`: `plan.md` does not exist or is empty.
+- `missing`: the design artifact (`plan.md` or `design.md`) does not exist or is empty.
 - `stale`: `spec.md` or governing constraints changed materially after the plan was produced.
 - `blocked`: an unresolved P0 architecture finding, Critical security finding, or material design decision prevents safe task generation.
 - `review-required`: the plan exists but has not been validated against current inputs.
@@ -77,9 +77,9 @@ Do not use timestamps as the only evidence of material staleness. Compare artifa
 
 ## Phase 5 — Plan Gate
 
-If the plan is `missing` or `stale`, execute the full `/ag-governed-plan` (or `/speckit.ag-governed-plan`) workflow.
+If the plan is `missing` or `stale`, execute the full `/ag-governed-plan` (or `/ag-governed-plan`) workflow.
 
-If the plan is `review-required`, reuse it and run the applicable security plan review plus `/ag-violation-detection` (or `/speckit.ag-violation-detection`). Do not regenerate a plan merely because review is needed.
+If the plan is `review-required`, reuse it and run the applicable security plan review plus `/ag-violation-detection` (or `/ag-violation-detection`). Do not regenerate a plan merely because review is needed.
 
 - Continue automatically when there are no blocking findings.
 - Record advisory architecture drift without stopping.
@@ -93,7 +93,7 @@ The plan does not need to be perfect. It must be sufficiently stable and free of
 
 Only enter this phase after the plan is `accepted`.
 
-If tasks are `missing`, `stale`, or `review-required`, execute `/ag-governed-tasks` (or `/speckit.ag-governed-tasks`) with the accepted plan and cached context.
+If tasks are `missing`, `stale`, or `review-required`, execute `/ag-governed-tasks` (or `/ag-governed-tasks`) with the accepted plan and cached context.
 
 The governed task phase must:
 

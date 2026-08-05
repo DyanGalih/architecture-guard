@@ -62,19 +62,19 @@ Instead of letting AI agents run wild, Architecture Guard provides structured en
 
 | Workflow Command | When To Use | What It Does |
 | :--- | :--- | :--- |
-| **`governed-discover`** | Idea-stage | Shapes a rough request into a spec-ready direction *before* formal specification. |
-| **`governed-delivery`** | Delivery stage | The ultimate "magic button" orchestrator. Automatically checks for missing artifacts (Specs, OpenSpec Proposals, Plans, Tasks) and chains their generation together. Gated by security/architecture rules and runs analysis. |
-| **`governed-implement`** | Implementation | Executes the generated tasks while strictly following the plan and architecture rules. |
+| **`ag-governed-discover`**<br>*(or `/speckit.ag-governed-discover`)* | Idea-stage | Shapes a rough request into a spec-ready direction *before* formal specification. |
+| **`ag-governed-delivery`**<br>*(or `/speckit.ag-governed-delivery`)* | Delivery stage | The ultimate "magic button" orchestrator. Automatically checks for missing artifacts (Specs, OpenSpec Proposals, Plans, Tasks) and chains their generation together. Gated by security/architecture rules and runs analysis. |
+| **`ag-governed-implement`**<br>*(or `/speckit.ag-governed-implement`)* | Implementation | Executes the generated tasks while strictly following the plan and architecture rules. |
 
-*(Note: Granular commands like `governed-spec`, `governed-plan`, and `governed-tasks` are still available if you want manual control. See the [Manual Workflow Guide](docs/manual-workflow-guide.md).)*
+*(Note: Granular commands like `ag-governed-spec`, `ag-governed-plan`, and `ag-governed-tasks` are still available if you want manual control. See the [Manual Workflow Guide](docs/manual-workflow-guide.md).)*
 
 ### Suggested Feature Delivery Flow
 
 ```text
-governed-discover (optional, to brainstorm an idea)
-  → governed-delivery (auto-generates missing specs, proposals, plans, and tasks)
-  → governed-implement (writes the code)
-  → ag-verify (checks for unapproved drift)
+/ag-governed-discover (optional, to brainstorm an idea)
+  → /ag-governed-delivery (auto-generates missing specs, proposals, plans, and tasks)
+  → /ag-governed-implement (writes the code)
+  → /ag-verify (checks for unapproved drift)
 ```
 
 ---

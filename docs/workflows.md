@@ -7,7 +7,7 @@ This document covers the governed discovery, specification, planning, task, and 
 Use `governed-delivery` once you already have a clear spec or a discovery draft that has been converted into a spec-ready direction:
 
 ```text
-/speckit.architecture-guard.governed-delivery
+/ag-governed-delivery
 ```
 
 If the work is still just an idea, request, or rough problem statement, start with `governed-discover` first and then `governed-spec` before delivery. That keeps the discovery and specification phases ahead of planning and task generation.
@@ -32,7 +32,7 @@ The orchestrated workflow is:
 ### Example Orchestration
 
 ```text
-/speckit.architecture-guard.governed-discover "I want a new feature..."
+/ag-governed-discover "I want a new feature..."
 ```
 
 ## Governed Specification Workflow
@@ -51,7 +51,7 @@ The orchestrated workflow is:
 ### Example Orchestration
 
 ```text
-/speckit.architecture-guard.governed-spec
+/ag-governed-spec
 ```
 
 ## Governed Planning Workflow
@@ -69,7 +69,7 @@ The orchestrated workflow is:
 ### Example Orchestration
 
 ```text
-/speckit.architecture-guard.governed-plan
+/ag-governed-plan
 ```
 
 ## Governed Task Workflow
@@ -81,7 +81,7 @@ Flow:
 memory synthesis -> tasks (with Ponytail minimalism) -> security task review -> architecture refactor generation -> analysis -> automatic analyst loop -> task governance summary
 
 ```text
-/speckit.architecture-guard.governed-tasks
+/ag-governed-tasks
 ```
 
 ## Governed Implementation Workflow
@@ -93,31 +93,40 @@ Flow:
 memory synthesis -> implement (with Ponytail pragmatism) -> security review -> architecture review (with Ponytail Audit) -> refactor or fix recommendations
 
 ```text
-/speckit.architecture-guard.governed-implement
+/ag-governed-implement
 ```
 
 > Companion extensions are optional. Architecture Guard degrades gracefully and does not require `flash-mem` or Security Review to function. It orchestrates workflows only when companion artifacts or extensions are available.
 
-## Practical Quick Flow
+## End-to-End Delivery Lifecycles
 
-Choose the path that matches the repository state.
+Choose the path that matches how much manual control you want over the delivery process. Both paths ensure your work is reviewed and validated before implementation begins.
 
-### Brownfield
+### Path 1: The Granular Workflow
 
-1. Install Architecture Guard.
-2. Run `/speckit.architecture-guard.init-brownfield`.
-3. Review the current-state findings.
-4. Run `ag-workflow` from your AI agent.
-5. Apply approved refactors into plan and task artifacts.
+Best for complex features where you want manual review after every single stage.
 
-If you are specifically cleaning up duplicated logic, follow the [DRY Cleanup Guide](dry-cleanup.md) after the brownfield mapping pass.
+1. **Initialization:** Run `/ag-init` (Greenfield) or `/ag-init-brownfield` (Brownfield) to set up constitutions.
+2. **Discovery (Optional):** Run `/ag-governed-discover` to brainstorm a rough idea into a spec-ready direction.
+3. **Specification:** Run `/ag-governed-spec` to formally generate the Spec.
+4. **Spec Review:** Run `ag-review` to check the spec against architecture rules. Apply any fixes.
+5. **Planning:** Run `/ag-governed-plan` to generate the technical plan.
+6. **Plan Review:** Run `ag-review` to ensure the plan doesn't violate boundaries. Apply any fixes via `ag-apply`.
+7. **Task Generation:** Run `/ag-governed-tasks` to map the plan into actionable tasks.
+8. **Implementation:** Run `/ag-governed-implement` to execute the tasks safely.
+9. **Implementation Review:** Run `ag-review` again. This time it will review your actual code changes against the architecture rules. Apply fixes if needed.
+10. **Verification:** Run `/ag-verify` to ensure all tasks are delivered and no unapproved drift exists. **Ready to commit!**
 
-### Greenfield
+### Path 2: The Streamlined Workflow (Recommended)
 
-1. Install Architecture Guard.
-2. Run `/speckit.architecture-guard.init`.
-3. Review the constitution output.
-4. Run `ag-workflow` from your AI agent.
-5. Apply approved refactors into plan and task artifacts.
+Best for most features. It automatically chains Spec, Plan, and Task generation together while pausing for your review.
 
-This keeps architecture concerns visible throughout the delivery lifecycle instead of concentrating them at the end.
+1. **Initialization:** Run `/ag-init` (Greenfield) or `/ag-init-brownfield` (Brownfield).
+2. **Discovery (Optional):** Run `/ag-governed-discover` to shape your idea.
+3. **Delivery Orchestration:** Run `/ag-governed-delivery`. This "magic button" command will automatically generate the Spec, check it, generate the Plan, check it, and generate the Tasks. 
+4. **Pre-Implementation Review:** Review the generated Spec, Plan, and Tasks. If you want a formal check, run `ag-review` and then `ag-apply` for any refactor suggestions.
+5. **Implementation:** Run `/ag-governed-implement`.
+6. **Implementation Review:** Run `ag-review` to check your coded solution for drift or anti-patterns before finalizing.
+7. **Verification:** Run `/ag-verify` as your final gate. **Ready to commit!**
+
+If you are specifically cleaning up duplicated logic (Brownfield), follow the [DRY Cleanup Guide](dry-cleanup.md) after your initialization pass. This keeps architecture concerns visible throughout the delivery lifecycle instead of concentrating them at the end.

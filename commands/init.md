@@ -29,7 +29,7 @@ Run this command once per project or whenever the constitution files need refine
 
 See the README quick start for brownfield and greenfield entrypoints.
 
-After init, the usual next step is `/speckit.ag-governed-plan` or `/speckit.ag-governed-tasks`, depending on whether the team wants planning or task generation next.
+After init, the usual next step is `/ag-governed-plan` or `/ag-governed-tasks`, depending on whether the team wants planning or task generation next.
 
 When Flash-Mem is available, prefer it first for retrieving prior decisions, summaries, and existing constitution context. The repository files remain the source of truth for constitution content, and the legacy `memory-hub` name is reference-only and should not be treated as the runtime backend. If Flash-Mem is unavailable or the context is incomplete, read the repository files directly and treat them as the canonical source of truth. After refining the constitutions, sync durable summaries and major decisions back into Flash-Mem.
 
@@ -432,7 +432,7 @@ If the user selects Budgeted:
 1. Create `.specify/config/architecture_guard.yml` from `.specify/extensions/architecture-guard/templates/architecture_guard_config.yml` (or `templates/architecture_guard_config.yml` in the extension source checkout).
 2. Set `context.mode: budgeted`.
 3. Preserve the default retrieval limits unless the user explicitly requests different limits.
-4. If feature specs already exist, run `/speckit.ag-consolidate-specs` after constitution generation is complete.
+4. If feature specs already exist, run `/ag-consolidate-specs` after constitution generation is complete.
 
 If the user selects Targeted or gives no answer, preserve existing behavior. Do not add operational context settings to any constitution.
 

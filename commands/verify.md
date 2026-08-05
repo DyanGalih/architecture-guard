@@ -1,5 +1,5 @@
 ---
-description: Perform an architecture-aware verification gate validating implementation against spec.md, plan.md, tasks.md, and the Architecture Constitution.
+description: Perform an architecture-aware verification gate validating implementation against specification, design, and task documents, and the Architecture Constitution.
 scripts:
   sh: ../scripts/bash/check-prerequisites.sh --json --paths-only
   ps: ../scripts/powershell/check-prerequisites.ps1 -Json -PathsOnly
@@ -13,7 +13,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Budgeted Context Contract
 
-Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). The active `spec.md`, `plan.md`, `tasks.md`, applicable constitutions, security constraints, and code evidence are mandatory and authoritative. Neither Flash-Mem nor `system_context.md` is evidence that a task was implemented.
+Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). The active specification, design, and task artifacts (e.g., `spec.md`, `design.md`, `plan.md`, `tasks.md`), applicable constitutions, security constraints, and code evidence are mandatory and authoritative. Neither Flash-Mem nor `system_context.md` is evidence that a task was implemented.
 
 Validate that the implementation fulfills all tasks in `tasks.md` while adhering to the defined architecture boundaries and the **Architecture Constitution**. This command acts as a post-implementation gate.
 
@@ -38,7 +38,7 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 ### 1. Initialize Context
 
 1. Run `{SCRIPT}` from repo root to identify the active `FEATURE_DIR`.
-2. Derive absolute paths for `spec.md`, `plan.md`, and `tasks.md`.
+2. Derive absolute paths for active specification, design, and task artifacts.
 3. Load the Architecture Constitution: `.specify/memory/architecture_constitution.md`.
 4. Load the Repository Hygiene Config: `.specify/config/repository_hygiene.yml` (fallback to `repository_hygiene` block in constitution).
 5. Load the Repository Hygiene Rules: `.specify/extensions/architecture-guard/hygiene-rules/*.md`.
@@ -48,7 +48,7 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 Build internal representations:
 - **Task-Boundary Map**: Associate each task with its intended architecture layer (Entry, Application, Domain, Data, External).
 - **Implementation Evidence**: For each completed task (`[x]`), scan referenced files for logic that addresses the task description.
-- **Contract Inventory**: Extract planned API/Data signatures from `plan.md`.
+- **Contract Inventory**: Extract planned API/Data signatures from the design artifact (`plan.md` or `design.md`).
 - **Duplication Check**: Look for repeated business logic, validation, or transformation across files and confirm it has been centralized or explicitly justified.
 
 **Common DRY Signals**
@@ -117,4 +117,4 @@ For each task in `tasks.md`:
 2. **Architecture Alignment**: Resolve boundary violations in [Files] using suggested refactor tasks.
 3. **Completion**: If all CRITICAL/HIGH are resolved, you **MUST automatically execute** the durable-memory capture flow to preserve lessons. Do not just recommend it; let the formal capture flow propose entries and request user approval.
 
-**Next Step**: [e.g. "Run `/speckit.ag-apply` to fix V2"]
+**Next Step**: [e.g. "Run `/ag-apply` to fix V2"]

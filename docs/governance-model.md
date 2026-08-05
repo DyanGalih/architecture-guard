@@ -58,7 +58,7 @@ When a command encounters analysis marked `[OPTIONAL SUB-AGENT DELEGATION]`:
 
 ```bash
 ag-review --inline
-/speckit.architecture-guard.governed-plan --delegate
+/ag-governed-plan --delegate
 ```
 
 ### Where Delegation Appears

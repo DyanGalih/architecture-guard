@@ -11,10 +11,10 @@ Use this guide after the brownfield mapping pass when you are bringing an existi
 
 ## Brownfield Flow
 
-1. Run `/speckit.architecture-guard.init-brownfield`.
+1. Run `/ag-init-brownfield`.
 2. Review the current-state summary and identify likely duplication hotspots.
 3. Run `ag-workflow` from your AI agent.
-4. Feed duplication findings into `/speckit.architecture-guard.refactor-generator`.
+4. Feed duplication findings into `/ag-refactor-generator`.
 5. Apply approved changes with `ag-apply`.
 6. Re-run `ag-verify`.
 

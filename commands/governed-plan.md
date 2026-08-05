@@ -72,13 +72,13 @@ You must orchestrate the `/speckit.plan` workflow directly.
 **CRITICAL INSTRUCTION**: You must NOT just advise the user or stop here. You must actually generate the plan:
 1. **Apply Ponytail Pragmatism**: Instruct the agent to act as a "lazy senior developer." The generated plan must prefer standard libraries and native platform features over proposing complex new abstractions. Strictly enforce YAGNI.
    - Also prefer one shared plan path for repeated behavior instead of separate duplicated steps or parallel implementations.
-2. **Execute Plan**: Run `/speckit.plan` to generate and save `specs/<feature>/plan.md`.
+2. **Execute Plan**: Run `/speckit.plan` to generate and save the technical design document (e.g., `specs/<feature>/plan.md` or `openspec/.../design.md`).
 
    **If `/speckit.plan` is not available as a registered command** (i.e., the AI agent does not recognize it as a slash command), fall back to inline planning:
    - Read the active spec at `specs/<feature>/spec.md` (or the path provided by the user).
    - Read all applicable constitution files (`.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`).
    - Use Flash-Mem context if available.
-   - Generate `specs/<feature>/plan.md` directly, incorporating all context above and enforcing Ponytail minimalism.
+   - Generate the technical design document (e.g., `specs/<feature>/plan.md` or `openspec/.../design.md`) directly, incorporating all context above and enforcing Ponytail minimalism.
    - Note in the Governance Summary that `/speckit.plan` was unavailable and planning was performed inline.
 
 3. The planning process must incorporate the Project Constitution documents and memory synthesis. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, read constitution files directly with file-reading tools. Do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
@@ -97,11 +97,11 @@ IF `security-review` (or compatibility alias `spec-kit-security-review`) is avai
 
 Run:
 ```text
-/speckit.ag-violation-detection
+/ag-violation-detection
 ```
 
 Inputs to consider:
-- The generated `plan.md`.
+- The generated technical design document (e.g., `plan.md` or `design.md`).
 - `.specify/memory/architecture_constitution.md`.
 - Flash-Mem context (if available).
 - `security-constraints.md` (if available).
@@ -163,7 +163,7 @@ The command MUST return:
 - **Consistency Risks**: [How the plan aligns with the Constitution]
 
 ## Recommended Actions
-- [e.g., Run /speckit.ag-refactor-generator]
+- [e.g., Run /ag-refactor-generator]
 - [e.g., Refine plan to address Security Conflict]
 - [e.g., Continue to /speckit.tasks phase]
 - **Durable Memory Preservation**: (Proactively triggered) Review the proposed memory entries below.

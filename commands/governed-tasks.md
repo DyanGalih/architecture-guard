@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Budgeted Context Contract
 
-Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). The active feature's `spec.md`, `plan.md`, and applicable constitutions are mandatory and authoritative. Flash-Mem and `system_context.md` may supplement but never replace them.
+Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). The active feature's specification and design artifacts (e.g., `spec.md`, `design.md`, `plan.md`), and applicable constitutions are mandatory and authoritative. Flash-Mem and `system_context.md` may supplement but never replace them.
 
 You are orchestrating the `ag-governed-tasks` workflow for `architecture-guard`.
 
@@ -73,7 +73,7 @@ You must orchestrate the `/speckit.tasks` workflow directly.
 2. **Execute Tasks**: Run `/speckit.tasks` to generate and save `specs/<feature>/tasks.md`.
 
    **If `/speckit.tasks` is not available as a registered command** (i.e., the AI agent does not recognize it as a slash command), fall back to inline task generation:
-   - Read `specs/<feature>/plan.md` (and `spec.md` if present).
+   - Read the technical design document (e.g., `specs/<feature>/plan.md` or `openspec/.../design.md`) (and `spec.md` if present).
    - Read all applicable constitution files (`.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`).
    - Use Flash-Mem context and `specs/<feature>/security-constraints.md` if available.
    - Generate `specs/<feature>/tasks.md` directly, breaking down the plan into implementation-ready tasks with checkbox format. Enforce Ponytail minimalism.
@@ -95,7 +95,7 @@ IF `security-review` (or compatibility alias `spec-kit-security-review`) is avai
 
 Run:
 ```text
-/speckit.ag-refactor-generator
+/ag-refactor-generator
 ```
 
 It MUST convert architecture findings into:
@@ -172,7 +172,7 @@ The command MUST return:
 - **Architecture Risks**: [Drift or conflicts detected in the task list]
 
 ## Recommended Next Step
-- [e.g., Continue to /speckit.ag-governed-implement]
+- [e.g., Continue to /ag-governed-implement]
 - [e.g., Revise tasks to address missing security items]
 - [e.g., Update architecture constitution if standard is outdated]
 - **Durable Memory Preservation**: (Proactively triggered) Review the proposed memory entries below.

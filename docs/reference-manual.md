@@ -29,7 +29,7 @@ The validator checks constitution files, Spec Kit structure, optional extensions
 Run:
 
 ```text
-/speckit.architecture-guard.init
+/ag-init
 ```
 
 This command can:
@@ -97,7 +97,7 @@ specify extension add architecture-guard
 2. Map the existing codebase
 
 ```text
-/speckit.architecture-guard.init-brownfield
+/ag-init-brownfield
 ```
 
 This is the Brownfield Discovery + Verification entrypoint.
@@ -137,7 +137,7 @@ specify extension add architecture-guard
 2. Initialize Constitutions
 
 ```text
-/speckit.architecture-guard.init
+/ag-init
 ```
 
 This creates or updates:
