@@ -1,13 +1,15 @@
 {
   "name": "architecture-guard",
-  "version": "2.0.0",
-  "description": "SDD framework-agnostic architecture governance orchestrator. Works with SpecKit, OpenSpec, and any SDD tool. Detects framework, adapts automatically.",
+  "version": "2.0.1",
+  "description": "SDD-tool-agnostic architecture governance orchestrator for Spec Kit, OpenSpec, and generic Markdown workflows. Detects the active SDD tool and applies the matching adapter automatically.",
   "bin": {
-    "architecture-guard": "install.js"
+    "architecture-guard": "./dist/bin/cli.js"
   },
   "scripts": {
-    "test": "node --test install.test.js",
-    "prepublishOnly": "node --check install.js && node --test install.test.js"
+    "build": "tsc",
+    "test": "npm run build && node --test dist/install.test.js",
+    "lint": "eslint .",
+    "prepublishOnly": "npm run lint && npm run build && node --test dist/install.test.js"
   },
   "keywords": [
     "sdd",
@@ -32,25 +34,32 @@
     "node": ">=18"
   },
   "files": [
-    "install.js",
+    "dist/",
     "adapters/",
     "orchestration/",
     "templates/",
     "presets/",
     "hygiene-rules/",
     "sonar-rules/",
-    "scripts/bash/detect-changed-files.sh",
-    "scripts/powershell/detect-changed-files.ps1",
+    "commands/",
     "README.md",
     "docs/",
     "examples/",
-    "adapters/",
     "LICENSE",
     "ADAPTERS.md",
     "OPENSPEC-INTEGRATION.md",
     "SPECKIT-INTEGRATION.md"
   ],
   "dependencies": {
-    "@inquirer/prompts": "^8.5.2"
+    "@inquirer/prompts": "^8.5.2",
+    "commander": "^15.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.1.2",
+    "eslint": "^10.8.0",
+    "globals": "^17.9.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.66.0"
   }
 }

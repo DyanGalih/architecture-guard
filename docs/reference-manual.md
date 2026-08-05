@@ -6,7 +6,7 @@ This document collects setup, commands, installation, and validation details.
 
 Architecture Guard depends on architecture standards.
 
-Without architecture rules, the extension has nothing meaningful to validate against.
+Without architecture rules, the orchestrator has nothing meaningful to validate against.
 
 ## Validate Your Setup
 
@@ -253,7 +253,7 @@ specify extension add architecture-guard
 
 ```text
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/spec-kit-architecture-guard/archive/refs/tags/v1.9.0.zip
+  https://github.com/DyanGalih/spec-kit-architecture-guard/archive/refs/tags/v2.0.1.zip
 ```
 
 ### Global Preset Usage
@@ -269,7 +269,7 @@ If you manage multiple projects using the same framework (e.g., Laravel), you ca
 
 ```bash
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/spec-kit-architecture-guard/archive/refs/tags/v1.8.19.zip
+  https://github.com/DyanGalih/spec-kit-architecture-guard/archive/refs/tags/v2.0.1.zip
 ```
 
 ### From a Local Developer Artifact
@@ -282,5 +282,5 @@ specify extension add architecture-guard --dev /path/to/spec-kit-architecture-gu
 
 ```text
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/spec-kit-architecture-guard/archive/refs/tags/v1.8.19.zip
+  https://github.com/DyanGalih/spec-kit-architecture-guard/archive/refs/tags/v2.0.1.zip
 ```

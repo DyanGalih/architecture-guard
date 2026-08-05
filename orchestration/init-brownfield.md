@@ -1,3 +1,7 @@
+---
+description: Perform brownfield-first project initialization and discovery for existing codebases.
+---
+
 # init-brownfield
 
 ## SDD Tool Detection

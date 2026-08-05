@@ -617,7 +617,41 @@ Which operations must never block requests?
 
 ---
 
-# Phase 5 — Enforcement & Evolution
+# Phase 5 — Naming & Namespacing Conventions
+
+Determine:
+
+* class naming standards
+* property naming standards
+* module and folder naming conventions
+
+---
+
+## Questions
+
+Before asking detailed questions, ask:
+
+```text
+Do you want to use standard/general naming conventions, or detailed custom conventions?
+
+- Standard/General: The system will use preset defaults (if a framework is selected) or common defaults.
+- Detailed Custom: The system will ask specific questions about your naming standards.
+```
+
+If the user selects Standard/General and a framework preset is active, use the preset's `## Naming Standards` to automatically configure the rules. If the active preset does not explicitly define a `## Naming Standards` section, automatically apply the universally accepted general native naming conventions for that programming language (e.g., PEP-8 for Python, standard Java conventions for Spring, standard PHP PSR-4 conventions, etc.). If no preset is active, use common defaults (e.g., PascalCase for classes, camelCase for properties).
+
+If the user selects Detailed Custom, ask:
+
+```text
+What are the naming conventions for:
+- Classes (e.g., Adapters, Controllers, Services)?
+- Properties (props)?
+- Folder structures?
+```
+
+---
+
+# Phase 6 — Enforcement & Evolution
 
 Determine:
 
@@ -656,6 +690,17 @@ Examples:
 - proposal-based evolution
 - strict governance
 ```
+
+---
+
+## Final Confirmation
+
+At the end of the initialization interview, before generating or updating the constitution files, you MUST ask the user:
+
+```text
+Do you have any concerns related to the current rules?
+```
+Wait for the user's confirmation to ensure they are aware of the generated configuration and ready to finalize.
 
 ---
 
@@ -770,7 +815,8 @@ If the `flash-mem` MCP server is available, you MUST run the `update_project_sum
 5. Documentation Standards
 6. Review Process
 7. High-Level Architecture Intent
-8. Governance and Evolution Policy
+8. Naming & Namespacing Conventions
+9. Governance and Evolution Policy
 ```
 
 ---
@@ -785,10 +831,11 @@ If the `flash-mem` MCP server is available, you MUST run the `update_project_sum
 5. Data Access Rules
 6. Async & Integration Rules
 7. Module Boundaries
-8. Framework-Specific Architecture Rules
-9. Blocking Architecture Violations (P0)
-10. Architecture Evolution Policy
-11. Refactor & Drift Handling
+8. Naming & Namespacing Conventions
+9. Framework-Specific Architecture Rules
+10. Blocking Architecture Violations (P0)
+11. Architecture Evolution Policy
+12. Refactor & Drift Handling
 ```
 
 ---

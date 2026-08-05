@@ -158,6 +158,29 @@ Ask:
 Which work must use Jobs, events, listeners, or scheduled commands instead of blocking an HTTP request?
 ```
 
+## Naming Standards
+
+If the user selects Standard/General naming conventions during initialization, apply these Laravel-native defaults:
+
+**Backend (PHP)**:
+- **Classes** (Controllers, Models, Services, Actions, Jobs, Events): `PascalCase`
+- **Properties and Variables**: `camelCase`
+- **Methods**: `camelCase`
+- **Database Tables**: `snake_case` (plural)
+- **Database Columns**: `snake_case`
+- **File Names**: `PascalCase.php` (matching the class name)
+
+**Frontend (React / Vue via Inertia)**:
+- **Directories**: `kebab-case`
+- **Components & Pages**: 
+  - **React (Laravel 12+ / shadcn/ui)**: `kebab-case.tsx`
+  - **React (Legacy / Pre-Laravel 12)**: `PascalCase.tsx`
+  - **Vue**: `PascalCase.vue` or `kebab-case.vue` (Vue officially accepts both, but they must be consistent. Default to PascalCase for editor support)
+- **Hooks / Composables**: `camelCase` (e.g., `useAuth.ts`)
+- **Types / Interfaces**: `PascalCase` (e.g., `UserData`)
+- **Utility / Lib Files**: `kebab-case.ts` or `camelCase.ts`
+- **Props and State**: `camelCase`
+
 ## Senior Engineering Lens
 
 Apply the framework mapping with senior judgment:

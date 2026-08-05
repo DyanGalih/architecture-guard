@@ -1,5 +1,12 @@
 # Release Notes
 
+## 2.0.1
+
+- Repositioned Architecture Guard as a standalone SDD Tools Orchestration layer for discovery, specification, planning, implementation, and verification.
+- Kept Spec Kit extension installation as a backward-compatible integration path.
+- Updated version references and release-artifact examples to `2.0.1`.
+
+
 ## 1.15.1
 
 - Fixed memory-tool discovery in `governed-plan` capability-detection: `rg --files` respects `.gitignore` hiding `dist/` — switched to `find` or `rg --files -uu` for paths under `.specify/extensions/`.

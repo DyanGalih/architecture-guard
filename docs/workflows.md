@@ -104,7 +104,7 @@ Choose the path that matches the repository state.
 
 ### Brownfield
 
-1. Install the extension.
+1. Install Architecture Guard.
 2. Run `/speckit.architecture-guard.init-brownfield`.
 3. Review the current-state findings.
 4. Run `ag-workflow` from your AI agent.
@@ -114,7 +114,7 @@ If you are specifically cleaning up duplicated logic, follow the [DRY Cleanup Gu
 
 ### Greenfield
 
-1. Install the extension.
+1. Install Architecture Guard.
 2. Run `/speckit.architecture-guard.init`.
 3. Review the constitution output.
 4. Run `ag-workflow` from your AI agent.

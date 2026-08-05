@@ -2,6 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const ROOT_DIR = path.join(__dirname, '..', '..');
+
 // ponytail: stdin detection is the trickiest part of a prompt-style installer.
 // Node has no synchronous peek on stdin, so we distinguish three cases:
 //   1. interactive (stdout is a TTY): prompt via readline regardless of stdin TTY
@@ -32,11 +34,11 @@ function readAllStdin() {
     // Interactive stdout => readline prompts work even if stdin is a pipe (opencode).
     if (!process.stdout.isTTY) {
       const rl = require('readline').createInterface({ input: process.stdin });
-      const lines = [];
-      rl.on('line', (l) => lines.push(l));
-      rl.on('close', () => { _inputLines = lines; _inputIdx = 0; resolve(); });
+      const lines: string[] = [];
+      rl.on('line', (l: string) => lines.push(l));
+      rl.on('close', () => { _inputLines = lines; _inputIdx = 0; resolve(undefined); });
     } else {
-      resolve();
+      resolve(undefined);
     }
   });
 }
@@ -83,7 +85,7 @@ const AGENT_CONFIGS = {
   cline:        { dir: '.clinerules/workflows', ext: '.md' },
   claude:       { dir: '.claude/skills',       ext: '/SKILL.md' },
   codex:        { dir: '.codex/skills',        ext: '/SKILL.md' },
-  zed:          { dir: '.agents/skills/zed',   ext: '/SKILL.md' },
+  zed:          { dir: '.agent/skills/zed',   ext: '/SKILL.md' },
   antigravity:  { dir: '.agent/skills',        ext: '/SKILL.md' },
   devin:        { dir: '.devin/skills',        ext: '/SKILL.md' },
   grok:         { dir: '.grok/skills',         ext: '/SKILL.md' },
@@ -258,15 +260,15 @@ function availableCopy(dest, cfg, sk, cmdDir, agentType) {
   return candidate;
 }
 
-async function installCommand(agentType, commandName, cmdDir, opts = {}, workflowsDir = null) {
+async function installCommand(agentType: any, commandName: any, cmdDir: any, opts: any = {}, workflowsDir: any = null) {
   const cfg = AGENT_CONFIGS[agentType];
   if (!cfg) return;
   const yes = !!opts.yes;
   const overwrite = opts.overwrite;
 
   // Read from orchestration dir if it exists, fallback to commands dir
-  const orchestrationPath = path.join(__dirname, 'orchestration', `${commandName}.md`);
-  const commandsPath = path.join(__dirname, 'commands', `${commandName}.md`);
+  const orchestrationPath = path.join(ROOT_DIR, 'orchestration', `${commandName}.md`);
+  const commandsPath = path.join(ROOT_DIR, 'commands', `${commandName}.md`);
   const promptPath = fs.existsSync(orchestrationPath) ? orchestrationPath : commandsPath;
 
   if (!fs.existsSync(promptPath)) {
@@ -357,21 +359,14 @@ async function installRuntimeResources(runtimeDir, yes = false) {
     return;
   }
 
-  for (const dir of ['templates', 'presets', 'hygiene-rules', 'sonar-rules']) {
-    fs.cpSync(path.join(__dirname, dir), path.join(runtimeDir, dir), { recursive: true, force: true });
-  }
-  for (const script of ['bash/detect-changed-files.sh', 'powershell/detect-changed-files.ps1']) {
-    const dest = path.join(runtimeDir, 'scripts', script);
-    fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.copyFileSync(path.join(__dirname, 'scripts', script), dest);
+  for (const dir of REQUIRED_RESOURCES) {
+    fs.cpSync(path.join(ROOT_DIR, dir), path.join(runtimeDir, dir), { recursive: true, force: true });
   }
 }
 
 function validateRuntimeResources() {
   const required = [
-    ...['templates', 'presets', 'hygiene-rules', 'sonar-rules'].map(dir => path.join(__dirname, dir)),
-    path.join(__dirname, 'scripts', 'bash/detect-changed-files.sh'),
-    path.join(__dirname, 'scripts', 'powershell/detect-changed-files.ps1'),
+    ...['templates', 'presets', 'hygiene-rules', 'sonar-rules'].map(dir => path.join(ROOT_DIR, dir))
   ];
   const missing = required.filter(resource => !fs.existsSync(resource));
   if (missing.length) {
@@ -433,7 +428,7 @@ falls back to its first valid option. Without --overwrite, --yes replaces existi
 files; use --overwrite keep-both to preserve originals, or --overwrite skip to skip them.`);
 }
 
-const REQUIRED_RESOURCES = (dir) => dir === __dirname;
+const REQUIRED_RESOURCES = ['templates', 'presets', 'hygiene-rules', 'sonar-rules'];
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
@@ -513,8 +508,7 @@ async function runInit(targetDir, opts) {
   }
 
   let agyScope = null;
-  const positional = opts.values.filter(v => v !== 'init');
-  const userPath = opts.target || positional[0];
+  const userPath = opts.target;
   if (selectedAgents.includes('antigravity')) {
     if (!userPath) {
       const choices = ['Global (~/.gemini/antigravity-cli/skills)', 'Shared (~/.gemini/skills)', 'Workspace (current directory)'];
@@ -542,7 +536,7 @@ async function runInit(targetDir, opts) {
         cmdDir = path.join(require('os').homedir(), '.gemini/skills');
         workflowsDir = path.join(require('os').homedir(), '.gemini/workflows');
       } else {
-        cmdDir = path.join(targetDir, '.agents/skills');
+        cmdDir = path.join(targetDir, '.agent/skills');
         workflowsDir = path.join(targetDir, '.agent/workflows');
       }
     } else {
@@ -581,7 +575,7 @@ async function runInit(targetDir, opts) {
   await installRuntimeResources(runtimeDir, opts.yes);
 
   const adaptersDir = path.join(targetDir, 'adapters');
-  const srcAdaptersDir = path.join(__dirname, 'adapters');
+  const srcAdaptersDir = path.join(ROOT_DIR, 'adapters');
   if (fs.existsSync(srcAdaptersDir)) {
     fs.mkdirSync(adaptersDir, { recursive: true });
     const adapter = framework === 'none' ? 'generic' : framework;
@@ -596,7 +590,7 @@ async function runInit(targetDir, opts) {
   }
   fs.writeFileSync(path.join(runtimeDir, 'selected-adapter'), `${framework === 'none' ? 'generic' : framework}\n`);
 
-  const updateAgents = opts.yes || (await ask('\nAppend governance rules to AGENTS.md? (y/n): '));
+  const updateAgents = opts.yes || (await ask('\nAppend governance rules to AGENTS.md? (y/n): ', null));
   if (updateAgents && (opts.yes || ['y', 'yes'].includes(String(updateAgents).toLowerCase()))) {
     appendAgentsMd(targetDir, selectedAgents);
   }
@@ -609,11 +603,14 @@ async function runInit(targetDir, opts) {
   console.log(`Detection: adapters/detect.md`);
 }
 
-if (require.main === module) {
-  main().catch(err => {
-    console.error(err);
-    process.exit(1);
-  });
+export async function runInstallCommand(target: any, opts: any) {
+  opts.target = target;
+  opts.agents = opts.agent;
+  const targetDir = target ? path.resolve(target) : process.cwd();
+  await readAllStdin();
+  validateRuntimeResources();
+  requireInteractiveOrYes(opts);
+  await runInit(targetDir, opts);
 }
 
-module.exports = { installCommand, AGENT_CONFIGS, COMMANDS, appendAgentsMd, installToml, installYaml, validateRuntimeResources };
+export { installCommand, AGENT_CONFIGS, COMMANDS, appendAgentsMd, installToml, installYaml, validateRuntimeResources };

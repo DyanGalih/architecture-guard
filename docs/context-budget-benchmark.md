@@ -1,6 +1,6 @@
 # Budgeted Context Benchmark
 
-Use this protocol before describing Budgeted Architecture Context Retrieval as a token optimization for a project or release. The extension is prompt-driven, so results must come from comparable agent runs rather than static file-size claims.
+Use this protocol before describing Budgeted Architecture Context Retrieval as a token optimization for a project or release. The orchestration layer is prompt-driven, so results must come from comparable agent runs rather than static file-size claims.
 
 ## Fixture Profiles
 

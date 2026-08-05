@@ -2,16 +2,16 @@
 
 > Keep AI-generated code aligned with your architecture, specs, and delivery workflow.
 
-[![Version](https://img.shields.io/badge/version-2.0.0-22c55e)](extension.yml)
+[![Version](https://img.shields.io/badge/version-2.0.1-22c55e)](extension.yml)
 [![Spec Kit](https://img.shields.io/badge/Spec%20Kit-compatible-2563eb)](https://spec-kit.dev)
 [![Non-blocking](https://img.shields.io/badge/style-non--blocking-10b981)](https://spec-kit.dev)
 [![Orchestration](https://img.shields.io/badge/role-governance--orchestrator-blue)](https://spec-kit.dev)
 
-**Architecture Guard** is a technology-agnostic governance layer for Spec-Driven Development (SDD) and AI-assisted engineering.
+**Architecture Guard** is a technology-agnostic **SDD Tools Orchestration layer** for AI-assisted engineering.
 
 AI agents (like Claude Code, Gemini, and OpenCode) are incredibly fast but often create architectural drift, duplicate business logic, and ignore established patterns. Architecture Guard solves this by wrapping their actions in structured, governed workflows. It automatically forces agents to check historical memory, validate plans against architecture rules, and apply pragmatic engineering constraints before writing any code.
 
-It works with **OpenSpec**, **Spec Kit**, or a generic Markdown workflow, and adapts to the project's detected SDD tool without replacing it.
+It orchestrates the full delivery path—from discovery and specification through planning, implementation, and verification—while adapting to the project's existing SDD tool. It works with **OpenSpec**, **Spec Kit**, or a generic Markdown workflow without replacing them.
 
 ---
 
@@ -29,7 +29,7 @@ Architecture Guard doesn't just manage files; it actively constraints AI behavio
 
 ## 🚀 Installation & Setup
 
-Architecture Guard is published on npm as an installer for agent-native governance commands. The simplest way to use it is directly via `npx`:
+Architecture Guard is published on npm as a standalone SDD orchestration tool and installer for agent-native workflows. The simplest way to use it is directly via `npx`:
 
 ```bash
 npx architecture-guard
@@ -45,7 +45,7 @@ architecture-guard
 The installer launches a setup wizard that asks you to select:
 1. **AI agent(s)** — OpenCode, Claude Code, Gemini CLI, etc.
 2. **SDD tool** — Spec Kit, OpenSpec, or a generic Markdown workflow.
-3. **Governance commands** — Pick the governed workflows you need.
+3.  **Governed workflows** — Pick the orchestration and governance workflows you need.
 
 It installs the necessary command files directly into your agent's command or skill directory. The installer uses `@inquirer/prompts`; the installed governance commands themselves are Markdown and require no runtime dependency.
 
@@ -114,11 +114,11 @@ spec-kit-architecture-guard/
 
 - **Non-blocking by default**: violations become refactor tasks unless a rule is explicitly marked blocking.
 - **Reviewable in Git**: the rules live in markdown files, not hidden state.
-- **Architecture first**: the extension focuses on boundaries, ownership, and drift.
+- **Architecture first**: orchestration keeps boundaries, ownership, and drift visible across the delivery lifecycle.
 - **Ponytail Core**: one shared ladder prevents both over-building and unsafe under-building across every delivery phase.
 
-## 🔄 Legacy Spec Kit Compatibility
+## 🔄 Spec Kit Compatibility
 
-For existing SpecKit users (v1.15.1 and earlier), your `extension.yml` installation remains fully supported. 
+The standalone orchestrator is the primary experience. Existing SpecKit users (v1.15.1 and earlier) remain fully supported through `extension.yml` installation. 
 
-If you prefer installing it as a native Spec Kit extension rather than a standalone installer, see the [Spec Kit Integration Guide](SPECKIT-INTEGRATION.md).
+If your project is already centered on Spec Kit, you can continue installing Architecture Guard as a native Spec Kit extension. See the [Spec Kit Integration Guide](SPECKIT-INTEGRATION.md).
