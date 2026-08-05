@@ -1,5 +1,9 @@
 # 🛡️ Architecture Guard
 
+<p align="center">
+  <img src="landing/ag_logo.png" alt="Architecture Guard Logo" width="200" />
+</p>
+
 > Keep AI-generated code aligned with your architecture, specs, and delivery workflow.
 
 [![Version](https://img.shields.io/badge/version-2.0.1-22c55e)](extension.yml)

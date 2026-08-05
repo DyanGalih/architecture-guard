@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture Guard - Protect Architecture. Orchestrate Delivery.</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="antialiased selection:bg-cyan-500 selection:text-black">
+
+    <!-- Navigation Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-white/5 bg-navy-950/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            
+            <!-- Logo -->
+            <a href="#" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 group-hover:scale-105 transition-transform">
+                    <img src="ag_logo.png" alt="Architecture Guard Logo" class="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(0,229,255,0.4)]">
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-bold text-lg tracking-tight text-white flex items-center gap-1.5">
+                        Architecture <span class="text-cyan-400">Guard</span>
+                    </span>
+                </div>
+            </a>
+
+            <!-- Desktop Nav Links -->
+            <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
+                <a href="#overview" class="hover:text-cyan-400 transition-colors">Overview</a>
+                <a href="#features" class="hover:text-cyan-400 transition-colors">Features</a>
+                <a href="#how-it-works" class="hover:text-cyan-400 transition-colors">How It Works</a>
+                <a href="#integrations" class="hover:text-cyan-400 transition-colors">Integrations</a>
+                <a href="#docs" class="hover:text-cyan-400 transition-colors">Docs</a>
+                <a href="#community" class="hover:text-cyan-400 transition-colors">Community</a>
+            </nav>
+
+            <!-- Action Buttons -->
+            <div class="hidden md:flex items-center gap-4">
+                <!-- GitHub Star Button -->
+                <a href="https://github.com/DyanGalih/architecture-guard" target="_blank" rel="noopener noreferrer" 
+                   id="github-star-btn"
+                   class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg glass-card hover:bg-slate-800 text-xs font-semibold text-slate-200 border border-slate-700/60 transition-all hover:border-slate-500">
+                    <i class="fa-brands fa-github text-base"></i>
+                    <span>Star</span>
+                    <span class="bg-slate-800 px-2 py-0.5 rounded text-[11px] text-cyan-400 font-mono border border-slate-700" id="star-count">...</span>
+                </a>
+
+                <!-- Get Started CTA -->
+                <button onclick="openModal()" 
+                   class="px-5 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-sm shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all transform hover:-translate-y-0.5">
+                    Get Started
+                </button>
+            </div>
+
+            <!-- Mobile Menu Toggle Button -->
+            <button id="mobile-menu-btn" class="md:hidden text-slate-300 hover:text-white p-2" aria-label="Toggle Menu">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobile-menu" class="hidden md:hidden glass-card border-t border-white/10 px-4 pt-3 pb-6 space-y-3">
+            <a href="#overview" class="block py-2 text-slate-300 hover:text-cyan-400 font-medium">Overview</a>
+            <a href="#features" class="block py-2 text-slate-300 hover:text-cyan-400 font-medium">Features</a>
+            <a href="#how-it-works" class="block py-2 text-slate-300 hover:text-cyan-400 font-medium">How It Works</a>
+            <a href="#integrations" class="block py-2 text-slate-300 hover:text-cyan-400 font-medium">Integrations</a>
+            <a href="#docs" class="block py-2 text-slate-300 hover:text-cyan-400 font-medium">Docs</a>
+            <a href="#community" class="block py-2 text-slate-300 hover:text-cyan-400 font-medium">Community</a>
+            <div class="pt-4 flex flex-col gap-3">
+                <a href="https://github.com/DyanGalih/architecture-guard" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 py-2.5 rounded-lg glass-card text-sm font-semibold">
+                    <i class="fa-brands fa-github"></i> Star on GitHub (<span id="star-count-mobile">...</span>)
+                </a>
+                <button onclick="openModal()" class="w-full py-2.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold text-sm">
+                    Get Started
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section id="overview" class="relative pt-32 pb-20 md:pt-40 md:pb-32 overflow-hidden">
+        <!-- Background Glowing Orbs -->
+        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/15 rounded-full blur-[140px] pointer-events-none"></div>
+        <div class="absolute top-1/3 right-10 w-[400px] h-[400px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+                
+                <!-- Left Hero Text Content -->
+                <div class="lg:col-span-7 space-y-8 text-center lg:text-left">
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.15]">
+                        Protect Architecture.<br>
+                        Orchestrate Delivery.<br>
+                        Ship with <span class="gradient-text">Confidence.</span>
+                    </h1>
+
+                    <p class="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
+                        Architecture Guard is an SDD tools orchestration layer that unifies your specification, implementation, and verification workflow — with AI as your co-pilot.
+                    </p>
+
+                    <!-- Feature Badges -->
+                    <div class="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs sm:text-sm font-medium text-slate-300">
+                        <div class="flex items-center gap-2 bg-navy-850/80 border border-slate-800 rounded-full px-3.5 py-1.5 shadow-inner">
+                            <i class="fa-solid fa-shield-halved text-cyan-400"></i>
+                            <span>Governed by Architecture</span>
+                        </div>
+                        <div class="flex items-center gap-2 bg-navy-850/80 border border-slate-800 rounded-full px-3.5 py-1.5 shadow-inner">
+                            <i class="fa-solid fa-brain text-cyan-400"></i>
+                            <span>AI-Assisted</span>
+                        </div>
+                        <div class="flex items-center gap-2 bg-navy-850/80 border border-slate-800 rounded-full px-3.5 py-1.5 shadow-inner">
+                            <i class="fa-solid fa-circle-check text-cyan-400"></i>
+                            <span>Continuously Verified</span>
+                        </div>
+                    </div>
+
+                    <!-- CTA Group -->
+                    <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+                        <button onclick="openModal()" 
+                           class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-base shadow-lg shadow-cyan-500/25 hover:shadow-cyan-400/40 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 group">
+                            <span>Get Started In Minutes</span>
+                            <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                        </button>
+
+                        <a href="https://github.com/DyanGalih/architecture-guard" target="_blank" rel="noopener noreferrer" 
+                           class="w-full sm:w-auto px-7 py-3.5 rounded-xl glass-card hover:bg-slate-800/80 text-white font-semibold text-base border border-slate-700/80 transition-all flex items-center justify-center gap-2.5">
+                            <i class="fa-brands fa-github text-lg"></i>
+                            <span>View on GitHub</span>
+                        </a>
+                    </div>
+
+                    <!-- Footer Note -->
+                    <p class="text-xs text-slate-400 font-mono tracking-wide pt-1">
+                        Open source <span class="text-cyan-500">•</span> Extensible <span class="text-cyan-500">•</span> Built for Developers
+                    </p>
+                </div>
+
+                <!-- Right Hero Graphic Element -->
+                <div class="lg:col-span-5 flex justify-center items-center relative">
+                    <div class="relative w-full max-w-md lg:max-w-none aspect-square flex items-center justify-center">
+                        
+                        <!-- Orbital Rings -->
+                        <div class="absolute inset-0 rounded-full border border-cyan-500/20 animate-spin-slow pointer-events-none"></div>
+                        <div class="absolute inset-8 rounded-full border border-dashed border-blue-500/30 pointer-events-none"></div>
+                        
+                        <!-- Glowing Shield Center Graphic -->
+                        <div class="relative z-10 w-72 h-80 sm:w-80 sm:h-96 glass-card rounded-3xl p-6 border border-cyan-500/30 flex flex-col items-center justify-center shadow-2xl shadow-cyan-500/20 animate-float">
+                            
+                            <!-- Glowing Shield Graphic -->
+                            <div class="relative w-48 h-56 flex items-center justify-center">
+                                <img src="ag_logo.png" alt="Architecture Guard Shield" class="w-full h-full object-contain filter drop-shadow-[0_0_15px_rgba(0,229,255,0.5)] z-10 relative">
+                                
+                                <!-- Outer Shield Glow -->
+                                <svg class="w-full h-full text-blue-600/40 animate-pulse-slow absolute inset-0 z-0" viewBox="0 0 200 240" fill="currentColor">
+                                    <path d="M100 0 L190 40 V110 C190 170 100 230 100 230 C100 230 10 170 10 110 V40 L100 0 Z" />
+                                </svg>
+                            </div>
+
+                            <!-- Floating Satellite Badges around Shield -->
+                            <div class="absolute -top-3 -left-3 glass-card p-2.5 rounded-xl border border-cyan-400/40 text-cyan-400 shadow-lg">
+                                <i class="fa-solid fa-shield-check text-xl"></i>
+                            </div>
+                            <div class="absolute -top-3 -right-3 glass-card p-2.5 rounded-xl border border-purple-400/40 text-purple-400 shadow-lg">
+                                <i class="fa-solid fa-brain text-xl"></i>
+                            </div>
+                            <div class="absolute -bottom-3 -left-3 glass-card p-2.5 rounded-xl border border-blue-400/40 text-blue-400 shadow-lg">
+                                <i class="fa-solid fa-code text-xl"></i>
+                            </div>
+                            <div class="absolute -bottom-3 -right-3 glass-card p-2.5 rounded-xl border border-emerald-400/40 text-emerald-400 shadow-lg">
+                                <i class="fa-solid fa-chart-line text-xl"></i>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- TRUSTED BY SECTION -->
+    <section class="py-10 border-y border-white/5 bg-navy-900/60">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="glass-card rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10">
+                
+                <div class="text-center md:text-left">
+                    <span class="text-xs font-bold tracking-wider text-slate-400 uppercase block">Trusted By</span>
+                    <span class="text-sm font-semibold text-white">DEVELOPERS & TEAMS</span>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 w-full md:w-auto">
+                    
+                    <div class="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-navy-850 border border-slate-800/80 text-slate-200 text-xs font-semibold hover:border-cyan-500/40 transition-colors justify-center">
+                        <i class="fa-solid fa-users-gear text-cyan-400 text-sm"></i>
+                        <span>AI-Native Teams</span>
+                    </div>
+
+                    <div class="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-navy-850 border border-slate-800/80 text-slate-200 text-xs font-semibold hover:border-cyan-500/40 transition-colors justify-center">
+                        <i class="fa-solid fa-layer-group text-blue-400 text-sm"></i>
+                        <span>Platform Engineers</span>
+                    </div>
+
+                    <div class="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-navy-850 border border-slate-800/80 text-slate-200 text-xs font-semibold hover:border-cyan-500/40 transition-colors justify-center">
+                        <i class="fa-solid fa-user-shield text-indigo-400 text-sm"></i>
+                        <span>Security Architects</span>
+                    </div>
+
+                    <div class="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-navy-850 border border-slate-800/80 text-slate-200 text-xs font-semibold hover:border-cyan-500/40 transition-colors justify-center">
+                        <i class="fa-solid fa-rocket text-purple-400 text-sm"></i>
+                        <span>Product Builders</span>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES SECTION -->
+    <section id="features" class="py-24 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Section Header -->
+            <div class="text-center max-w-3xl mx-auto mb-16 space-y-4">
+                <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+                    Everything You Need for Governed Delivery
+                </h2>
+                <p class="text-slate-400 text-base sm:text-lg">
+                    Architecture Guard orchestrates best-in-class SDD tools and enforces your architectural intent across the entire lifecycle.
+                </p>
+            </div>
+
+            <!-- 5 Feature Cards Grid -->
+            <div class="grid md:grid-cols-3 lg:grid-cols-5 gap-6">
+                
+                <!-- Feature 1 -->
+                <div class="glass-card glass-card-hover p-6 rounded-2xl flex flex-col justify-between h-full border border-white/5">
+                    <div class="space-y-4">
+                        <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-xl">
+                            <i class="fa-solid fa-diagram-project"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white">Spec-Driven by Default</h3>
+                        <p class="text-slate-400 text-xs leading-relaxed">
+                            Align requirements, design, and tasks. Keep everything traceable and in sync.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="glass-card glass-card-hover p-6 rounded-2xl flex flex-col justify-between h-full border border-white/5">
+                    <div class="space-y-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xl">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white">Architectural Guardrails</h3>
+                        <p class="text-slate-400 text-xs leading-relaxed">
+                            Enforce boundaries, rules, and patterns defined in your architecture constitution.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="glass-card glass-card-hover p-6 rounded-2xl flex flex-col justify-between h-full border border-white/5">
+                    <div class="space-y-4">
+                        <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xl">
+                            <i class="fa-solid fa-sliders"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white">Smart Orchestration</h3>
+                        <p class="text-slate-400 text-xs leading-relaxed">
+                            Connect and orchestrate the right tools at the right time in your SDD workflow.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="glass-card glass-card-hover p-6 rounded-2xl flex flex-col justify-between h-full border border-white/5">
+                    <div class="space-y-4">
+                        <div class="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 text-xl">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white">Continuous Verification</h3>
+                        <p class="text-slate-400 text-xs leading-relaxed">
+                            Automated checks, reviews, and tests ensure quality at every step.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="glass-card glass-card-hover p-6 rounded-2xl flex flex-col justify-between h-full border border-white/5">
+                    <div class="space-y-4">
+                        <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 text-xl">
+                            <i class="fa-solid fa-brain"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white">AI as Your Co-pilot</h3>
+                        <p class="text-slate-400 text-xs leading-relaxed">
+                            Leverage AI to analyze, generate, refactor, and validate — responsibly.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS SECTION -->
+    <section id="how-it-works" class="py-24 bg-navy-900/40 relative border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Section Header -->
+            <div class="text-center max-w-3xl mx-auto mb-16 space-y-4">
+                <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+                    How Architecture Guard Orchestrates SDD
+                </h2>
+                <p class="text-slate-400 text-base sm:text-lg">
+                    From idea to implementation, verified and aligned.
+                </p>
+            </div>
+
+            <!-- Steps Pipeline Flow -->
+            <div class="relative">
+                <!-- Connecting Line Desktop -->
+                <div class="hidden lg:block absolute top-12 left-[8%] right-[8%] h-0.5 bg-gradient-to-r from-purple-500 via-cyan-400 to-blue-600 z-0 opacity-40"></div>
+
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 relative z-10">
+                    
+                    <!-- Step 1 -->
+                    <div onclick="selectStep(1)" id="step-card-1" class="step-card cursor-pointer glass-card p-5 rounded-2xl text-center border border-purple-500/40 hover:border-purple-400 transition-all transform hover:-translate-y-1">
+                        <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-purple-600/20 border border-purple-500 flex items-center justify-center text-purple-400 text-xl shadow-lg shadow-purple-500/20">
+                            <i class="fa-solid fa-lightbulb"></i>
+                        </div>
+                        <h4 class="text-sm font-bold text-white mb-1">1. Explore</h4>
+                        <p class="text-slate-400 text-xs">Understand the problem and shape the change with AI assistance.</p>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div onclick="selectStep(2)" id="step-card-2" class="step-card cursor-pointer glass-card p-5 rounded-2xl text-center border border-white/10 hover:border-blue-400 transition-all transform hover:-translate-y-1">
+                        <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-blue-600/20 border border-blue-500 flex items-center justify-center text-blue-400 text-xl shadow-lg shadow-blue-500/20">
+                            <i class="fa-solid fa-file-signature"></i>
+                        </div>
+                        <h4 class="text-sm font-bold text-white mb-1">2. Propose</h4>
+                        <p class="text-slate-400 text-xs">Define the change requirements, design, and tasks that align with architecture.</p>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div onclick="selectStep(3)" id="step-card-3" class="step-card cursor-pointer glass-card p-5 rounded-2xl text-center border border-white/10 hover:border-cyan-400 transition-all transform hover:-translate-y-1">
+                        <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-cyan-600/20 border border-cyan-500 flex items-center justify-center text-cyan-400 text-xl shadow-lg shadow-cyan-500/20">
+                            <i class="fa-solid fa-list-check"></i>
+                        </div>
+                        <h4 class="text-sm font-bold text-white mb-1">3. Plan</h4>
+                        <p class="text-slate-400 text-xs">Break down work, validate scope, and prepare for delivery.</p>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div onclick="selectStep(4)" id="step-card-4" class="step-card cursor-pointer glass-card p-5 rounded-2xl text-center border border-white/10 hover:border-emerald-400 transition-all transform hover:-translate-y-1">
+                        <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-emerald-600/20 border border-emerald-500 flex items-center justify-center text-emerald-400 text-xl shadow-lg shadow-emerald-500/20">
+                            <i class="fa-solid fa-code"></i>
+                        </div>
+                        <h4 class="text-sm font-bold text-white mb-1">4. Implement</h4>
+                        <p class="text-slate-400 text-xs">Build with confidence. Guardrails and context guide every decision.</p>
+                    </div>
+
+                    <!-- Step 5 -->
+                    <div onclick="selectStep(5)" id="step-card-5" class="step-card cursor-pointer glass-card p-5 rounded-2xl text-center border border-white/10 hover:border-amber-400 transition-all transform hover:-translate-y-1">
+                        <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-amber-600/20 border border-amber-500 flex items-center justify-center text-amber-400 text-xl shadow-lg shadow-amber-500/20">
+                            <i class="fa-solid fa-shield-check"></i>
+                        </div>
+                        <h4 class="text-sm font-bold text-white mb-1">5. Verify</h4>
+                        <p class="text-slate-400 text-xs">Run automated reviews, tests, and security checks. Continuously.</p>
+                    </div>
+
+                    <!-- Step 6 -->
+                    <div onclick="selectStep(6)" id="step-card-6" class="step-card cursor-pointer glass-card p-5 rounded-2xl text-center border border-white/10 hover:border-indigo-400 transition-all transform hover:-translate-y-1">
+                        <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-indigo-600/20 border border-indigo-500 flex items-center justify-center text-indigo-400 text-xl shadow-lg shadow-indigo-500/20">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </div>
+                        <h4 class="text-sm font-bold text-white mb-1">6. Deliver</h4>
+                        <p class="text-slate-400 text-xs">Ship high-quality software that stays true to the architecture.</p>
+                    </div>
+
+                </div>
+
+                <!-- Feedback Loop Footer Banner -->
+                <div class="mt-10 max-w-2xl mx-auto">
+                    <div class="glass-card px-6 py-3 rounded-full border border-cyan-500/30 flex items-center justify-center gap-3 text-cyan-300 text-xs sm:text-sm font-semibold shadow-lg shadow-cyan-500/10">
+                        <i class="fa-solid fa-arrows-rotate text-cyan-400 animate-spin-slow"></i>
+                        <span>Feedback Loop & Continuous Improvement</span>
+                    </div>
+                </div>
+
+                <!-- Dynamic Step Detail Preview Panel -->
+                <div id="step-detail-box" class="mt-8 glass-card p-6 rounded-2xl border border-cyan-500/30 max-w-3xl mx-auto text-center space-y-2">
+                    <span class="text-xs uppercase tracking-widest text-cyan-400 font-bold" id="detail-step-num">STEP 1 HIGHLIGHT</span>
+                    <h3 class="text-lg font-bold text-white" id="detail-title">Exploration Phase with Contextual AI</h3>
+                    <p class="text-sm text-slate-300" id="detail-desc">
+                        During the Explore phase, AI analyzes current architectural blueprints, existing codebases, and PRDs to evaluate impact before writing a single line of code.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- INTEGRATIONS SECTION -->
+    <section id="integrations" class="py-24 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Section Title -->
+            <div class="text-center max-w-3xl mx-auto mb-14 space-y-4">
+                <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+                    Works with the Tools You Love
+                </h2>
+                <p class="text-slate-400 text-base">
+                    Extensible via the Model Context Protocol (MCP). Bring your own tools and workflows.
+                </p>
+            </div>
+
+            <!-- Tool Icons Container -->
+            <div class="flex flex-wrap items-center justify-center gap-4 sm:gap-6 max-w-4xl mx-auto">
+                
+                <!-- OpenSpec -->
+                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl glass-card flex flex-col items-center justify-center text-xl text-emerald-400 hover:scale-110 hover:border-emerald-400 transition-all shadow-md group" title="OpenSpec">
+                    <i class="fa-solid fa-file-contract group-hover:text-emerald-300 transition-colors"></i>
+                    <span class="text-[10px] mt-1 font-semibold text-slate-300">OpenSpec</span>
+                </div>
+
+                <!-- SpecKit -->
+                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl glass-card flex flex-col items-center justify-center text-xl text-blue-400 hover:scale-110 hover:border-blue-400 transition-all shadow-md" title="SpecKit">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span class="text-[10px] mt-1 font-semibold text-slate-300">SpecKit</span>
+                </div>
+
+                <!-- Flash-Mem MCP -->
+                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl glass-card flex flex-col items-center justify-center text-xl text-purple-400 hover:scale-110 hover:border-purple-400 transition-all shadow-md" title="Flash-Mem">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span class="text-[10px] mt-1 font-semibold text-slate-300">Flash-Mem</span>
+                </div>
+
+                <!-- GitHub Actions -->
+                <a href="https://github.com/features/actions" target="_blank" rel="noopener" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl glass-card flex flex-col items-center justify-center text-xl text-white hover:scale-110 hover:border-white transition-all shadow-md" title="GitHub Actions">
+                    <i class="fa-brands fa-github"></i>
+                    <span class="text-[10px] mt-1 font-semibold text-slate-300">GH Actions</span>
+                </a>
+
+                <!-- Agent IDEs -->
+                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl glass-card flex flex-col items-center justify-center text-xl text-amber-500 hover:scale-110 hover:border-amber-400 transition-all shadow-md" title="AI Agents">
+                    <i class="fa-solid fa-robot"></i>
+                    <span class="text-[10px] mt-1 font-semibold text-slate-300">AI Agents</span>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA CARD SECTION -->
+    <section id="docs" class="py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-navy-900 via-navy-850 to-blue-950 p-8 sm:p-12 lg:p-16 border border-cyan-500/30 shadow-2xl">
+                
+                <!-- Decorative Subtle Background Shield Icon -->
+                <div class="absolute -left-10 -bottom-10 opacity-10 text-cyan-400 pointer-events-none">
+                    <i class="fa-solid fa-shield-halved text-[240px]"></i>
+                </div>
+
+                <div class="relative z-10 grid lg:grid-cols-12 gap-8 items-center">
+                    
+                    <!-- Left Shield Visual Badge -->
+                    <div class="hidden lg:flex lg:col-span-3 items-center justify-center">
+                        <div class="w-28 h-28 rounded-2xl bg-cyan-500/10 border-2 border-cyan-400 flex items-center justify-center text-cyan-400 text-5xl shadow-xl shadow-cyan-500/20">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                    </div>
+
+                    <!-- Text & Buttons -->
+                    <div class="lg:col-span-9 space-y-6 text-center lg:text-left">
+                        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+                            Build Better. Together.
+                        </h2>
+                        <p class="text-slate-300 text-base sm:text-lg max-w-2xl leading-relaxed">
+                            Architecture Guard brings structure to AI-assisted development so your team can focus on what matters: building great software.
+                        </p>
+
+                        <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+                            <button onclick="openModal()" 
+                               class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-base shadow-lg shadow-cyan-500/25 transition-all transform hover:-translate-y-0.5">
+                                Get Started
+                            </button>
+
+                            <button onclick="openDocsModal()" 
+                               class="w-full sm:w-auto px-7 py-3.5 rounded-xl glass-card hover:bg-slate-800 text-white font-semibold text-base border border-slate-700/80 transition-all">
+                                Read the Documentation
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer id="community" class="py-12 border-t border-white/5 bg-navy-950 text-xs text-slate-400">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+            
+            <!-- Left Info -->
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-shield-halved text-cyan-400 text-base"></i>
+                <span>Open source under the <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener" class="text-slate-300 hover:text-cyan-400 underline underline-offset-2">MIT License</a></span>
+            </div>
+
+            <!-- Right Nav Links -->
+            <div class="flex items-center gap-6 font-medium">
+                <a href="https://github.com/DyanGalih/architecture-guard" target="_blank" rel="noopener noreferrer" class="hover:text-cyan-400 transition-colors">GitHub</a>
+                <a href="#docs" onclick="openDocsModal()" class="hover:text-cyan-400 transition-colors">Docs</a>
+                <a href="#community" class="hover:text-cyan-400 transition-colors">Community</a>
+                <a href="https://github.com/DyanGalih/architecture-guard" target="_blank" rel="noopener noreferrer" class="hover:text-cyan-400 transition-colors">Contribute</a>
+            </div>
+
+        </div>
+    </footer>
+
+    <!-- GET STARTED MODAL -->
+    <div id="get-started-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+        <div class="glass-card w-full max-w-lg rounded-2xl p-6 sm:p-8 border border-cyan-500/40 relative shadow-2xl">
+            <!-- Close Button -->
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-2">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="space-y-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400">
+                        <i class="fa-solid fa-terminal"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Get Started with Architecture Guard</h3>
+                        <p class="text-xs text-slate-400">Install via CLI or integrate with your workflow</p>
+                    </div>
+                </div>
+
+                <!-- Code Terminal -->
+                <div class="bg-navy-950 rounded-xl p-4 border border-slate-800 font-mono text-xs space-y-3 relative group">
+                    <button onclick="copyCode()" class="absolute top-3 right-3 text-slate-400 hover:text-cyan-400 text-sm px-2 py-1 rounded bg-slate-800 border border-slate-700">
+                        <i class="fa-regular fa-copy"></i> Copy
+                    </button>
+                    <div class="text-slate-400"># Start Architecture Guard orchestration</div>
+                    <div class="text-cyan-300"><span class="text-purple-400">npx</span> architecture-guard</div>
+                    <div class="text-slate-400 pt-2"># Or install it globally</div>
+                    <div class="text-cyan-300"><span class="text-purple-400">npm</span> install -g architecture-guard</div>
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="flex items-center gap-3 pt-2">
+                    <a href="https://github.com/DyanGalih/architecture-guard" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-center text-sm">
+                        View Full Setup on GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DOCUMENTATION MODAL -->
+    <div id="docs-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+        <div class="glass-card w-full max-w-2xl rounded-2xl p-6 sm:p-8 border border-blue-500/40 relative shadow-2xl max-h-[85vh] overflow-y-auto">
+            <button onclick="closeDocsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-2">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="space-y-6">
+                <div class="flex items-center gap-3 border-b border-white/10 pb-4">
+                    <i class="fa-solid fa-book text-cyan-400 text-2xl"></i>
+                    <div>
+                        <h3 class="text-xl font-bold text-white">Documentation Overview</h3>
+                        <p class="text-xs text-slate-400">Specification-Driven Development (SDD) & Guardrails</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4 text-sm text-slate-300">
+                    <h4 class="font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-circle-dot text-cyan-400 text-xs"></i> SDD Orchestration Workflows
+                    </h4>
+                    <p class="text-xs leading-relaxed text-slate-400">
+                        Guides AI agents from idea to implementation safely with workflows like `governed-discover`, `governed-delivery`, and `governed-implement`.
+                    </p>
+
+                    <h4 class="font-bold text-white flex items-center gap-2 pt-2">
+                        <i class="fa-solid fa-circle-dot text-cyan-400 text-xs"></i> OpenSpec & Spec Kit Governance
+                    </h4>
+                    <p class="text-xs leading-relaxed text-slate-400">
+                        Detects the active SDD tool and applies matching artifact paths and commands, ensuring the AI conforms to the current framework.
+                    </p>
+
+                    <h4 class="font-bold text-white flex items-center gap-2 pt-2">
+                        <i class="fa-solid fa-circle-dot text-cyan-400 text-xs"></i> Repository Hygiene Guard
+                    </h4>
+                    <p class="text-xs leading-relaxed text-slate-400">
+                        Automatically detects stray draft files, orphaned code, and debug artifacts generated by AI before they hit your main branch.
+                    </p>
+                </div>
+
+                <div class="pt-4 border-t border-white/10 flex justify-end">
+                    <button onclick="closeDocsModal()" class="px-5 py-2 rounded-xl bg-slate-800 text-white font-semibold text-xs border border-slate-700 hover:bg-slate-700">
+                        Close Overview
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 hidden glass-card border border-cyan-400/50 text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 text-xs font-semibold">
+        <i class="fa-solid fa-circle-check text-cyan-400 text-base"></i>
+        <span id="toast-msg">Copied to clipboard!</span>
+    </div>
+
+    
+    <script src="script.js"></script>
+</body>
+</html>
