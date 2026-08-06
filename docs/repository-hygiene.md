@@ -8,7 +8,7 @@ It focuses on detecting implementation artifacts and repository hygiene issues c
 
 * **Framework Agnostic**: Works across all programming languages and frameworks.
 * **Non-destructive**: Never deletes files automatically. It provides actionable recommendations.
-* **Advisory by Default**: In `ag-review`, it provides a report. In `ag-verify`, it can fail the build based on your `fail_on` configuration.
+* **Advisory by Default**: In `ag-review-artifacts`, it provides a report. In `ag-verify`, it can fail the build based on your `fail_on` configuration.
 * **Extensible**: Add custom rules by placing markdown files in the `hygiene-rules/` directory.
 
 ## Configuration

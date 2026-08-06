@@ -97,7 +97,8 @@ The governed task phase must:
 2. Run the applicable security task review.
 3. Convert confirmed architecture findings into explicit work through `ag-refactor-generator`.
 4. Run `{adapter_command:analyze}` against the complete plan and task set.
-5. Keep implementation, security, migration, and refactor work explicit.
+5. Run `{adapter_command:ag-review-implementation}` to analyze the implementation code against the accepted tasks and plan.
+6. Keep implementation, security, migration, and refactor work explicit.
 
 If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks.
 

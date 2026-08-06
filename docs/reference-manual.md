@@ -13,13 +13,11 @@ Without architecture rules, the orchestrator has nothing meaningful to validate 
 Before running governed workflows, verify prerequisites with the included setup validator:
 
 ```bash
-# Bash
-./scripts/validate-setup.sh
+npx architecture-guard validate-setup
 ```
 
 ```powershell
-# PowerShell
-.\scripts\powershell\validate-setup.ps1
+pnpx architecture-guard validate-setup
 ```
 
 The validator checks constitution files, Spec Kit structure, optional extensions, optimizer status, and source directories. It exits non-zero when blocking errors are present, which makes it safe to use in CI.
@@ -172,7 +170,8 @@ This injects refactor tasks into `plan.md` and `tasks.md` so the AI has explicit
 | `governed-spec` | Orchestration | Specification and Clarification with `flash-mem` synthesis first + security + architecture, plus auto-fix loop | Use when `flash-mem` and Security Review are installed to start from specification |
 | `governed-delivery` | Orchestration | Resumable plan-to-tasks flow with memory preflight, plan gates, task reconciliation, and analysis | Recommended entry point after specification |
 | `ag-workflow` | General Review | Violations, severity and priority, refactor tasks, evolution proposals | Entry point for end-to-end review; good for dashboards |
-| `ag-review` | Validation | Cached-context alignment status, boundary issues, contract drift | After `/specify`, `/plan`, or `/implement` |
+| `ag-review-artifacts` | Validation | Validates planning artifacts (spec, plan) against constitution without reading code | After `/specify` or `/plan` |
+| `ag-review-implementation` | Validation | Validates implementation codebase against planning artifacts and constitution | After `/implement` |
 | `violation-detection` | Detection | Drift summary, boundary violations, module coupling | Focus on specific architecture problems |
 | `refactor-generator` | Planning | Refactor task generation | After review; convert violations to non-blocking refactor tasks |
 | `ag-apply` | Implementation | After refactor decisions | Inject refactor tasks into `tasks.md` and `plan.md` using the approved review context |
@@ -213,7 +212,7 @@ optimizer:
 | `governed-tasks` | Orchestration | Tasks and Analysis with cached memory context + security + architecture refactors + auto-fix loop | Use when companion extensions are installed |
 | `governed-implement` | Orchestration | Implementation validation with cached memory governance context | Use for end-to-end implementation with governance |
 
-> Use `ag-governed-delivery` as the suggested plan-to-tasks flow. Use `ag-workflow` or `ag-review` directly for standalone reviews; the individual `ag-governed-plan` and `ag-governed-tasks` commands remain available for targeted recovery.
+> Use `ag-governed-delivery` as the suggested plan-to-tasks flow. Use `ag-workflow`, `ag-review-artifacts` or `ag-review-implementation` directly for standalone reviews; the individual `ag-governed-plan` and `ag-governed-tasks` commands remain available for targeted recovery.
 
 > `ag-apply` targets `plan.md` and `tasks.md`. If architectural issues are found in the specification stage, refine the specification before generating a technical plan. When `flash-mem` is available, use the cached synthesis and approved review output before writing back.
 

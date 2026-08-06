@@ -1,8 +1,5 @@
 ---
 description: Perform an architecture-aware verification gate validating implementation against specification, design, and task documents, and the Architecture Constitution.
-scripts:
-  sh: ../scripts/bash/check-prerequisites.sh --json --paths-only
-  ps: ../scripts/powershell/check-prerequisites.ps1 -Json -PathsOnly
 ---
 
 # Architecture Verification
@@ -37,7 +34,7 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 
 ### 1. Initialize Context
 
-1. Run `{SCRIPT}` from repo root to identify the active `FEATURE_DIR`.
+1. Run `architecture-guard check-architecture` from repo root to identify the active `FEATURE_DIR`.
 2. Derive absolute paths for active specification, design, and task artifacts.
 3. Load the Architecture Constitution: `.specify/memory/architecture_constitution.md`.
 4. Load the Repository Hygiene Config: `.specify/config/repository_hygiene.yml` (fallback to `repository_hygiene` block in constitution).

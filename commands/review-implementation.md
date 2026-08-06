@@ -1,8 +1,5 @@
 ---
 description: Perform a technology-agnostic architecture review validating implementation (or pre-implementation planning artifacts) against active specification, design, and task documents, as well as the constitutions.
-scripts:
-  sh: ../scripts/bash/detect-changed-files.sh
-  ps: ../scripts/powershell/detect-changed-files.ps1
 ---
 
 # Architecture Review Command
@@ -82,11 +79,8 @@ This pattern ensures that lower-tier models follow strict execution paths instea
 1. **Normalize Arguments**: Parse "$ARGUMENTS" to identify the `mode` (`architecture` or `performance`) and `focus` aspects (`general`, `db`, `api`, or `async`).
 2. **Identify Changed Files**:
    - If the user provided a file list or explicit instructions, follow them.
-   - Otherwise, you **MUST** execute the `{SCRIPT}` with `--json` to detect changed files since the merge-base or in the working directory.
+   - Otherwise, you **MUST** execute `architecture-guard detect-changed-files --json` to detect changed files since the merge-base or in the working directory.
    - Use the `changed_files` list as the primary review set.
-3. **Artifact-Only Review (Pre-Implementation)**:
-   - If the `--artifacts-only` flag is present in `$ARGUMENTS`, you **MUST** treat this as a pre-implementation review.
-   - Skip reading or evaluating any implementation code. Focus strictly on validating the specification and planning artifacts (e.g., `spec.md`, `design.md`, `plan.md`, `tasks.md`) against the architectural rules and constitutions.
 
 ## Input & Context Loading
 
@@ -160,10 +154,10 @@ Detect violations such as:
 
 ## Review Procedure
 
-1. **Identify Scope**: Run `{SCRIPT}` or use user-provided files.
+1. **Identify Scope**: Run `architecture-guard detect-changed-files --json` or use user-provided files.
 2. **Model Context**: Load artifacts and build the Semantic Models for the identified scope.
-3. **Verify Evidence**: Check if task-referenced files exist and contain expected implementation logic. (Skip this if `--artifacts-only` is provided).
-4. **Analyze Alignment**: Compare the initial specification intent vs. the proposed architectural design vs. implementation behavior (if any). If `--artifacts-only` is provided, ensure the proposed design or plan accurately satisfies the spec without violating constraints, ignoring any existing legacy code.
+3. **Verify Evidence**: Check if task-referenced files exist and contain expected implementation logic.
+4. **Analyze Alignment**: Compare the initial specification intent vs. the proposed architectural design vs. implementation behavior. Ensure the implementation accurately satisfies the spec without violating constraints.
 5. **Scan Principles**: Apply Review Principles across the implemented boundaries.
 6. **Security & Governance Cross-Check**:
   - If `security-constraints.md` or `security_constitution.md` is breached, log it as a critical violation.

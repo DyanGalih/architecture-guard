@@ -20,7 +20,7 @@ Convert architecture violations into structured tasks that preserve delivery mom
 
 When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. After analysis, propose validated durable knowledge and write it only after explicit user approval. If retrieval is unavailable or insufficient, fall back to repository artifacts and constitution files.
 
-Use the same normalized command context as the review workflow. When `mode=performance`, do not invent refactor tasks from performance guidance; that mode is advisory and belongs to `ag-review` output only.
+Use the same normalized command context as the review workflow. When `mode=performance`, do not invent refactor tasks from performance guidance; that mode is advisory and belongs to `ag-review-implementation` output only.
 
 ## Command Normalization
 
@@ -33,9 +33,9 @@ Accept the same normalized command context as the review workflow:
 - `focus=api` when the command includes `api`
 - `focus=async` when the command includes `async`
 
-If `mode=performance`, do not create refactor tasks from performance guidance. That mode is advisory and belongs to `ag-review` output only.
+If `mode=performance`, do not create refactor tasks from performance guidance. That mode is advisory and belongs to `ag-review-implementation` output only.
 
-If the input points to a Constitution Update Proposal, do not convert it into a normal refactor task. Leave it for `ag-review` and `ag-apply`.
+If the input points to a Constitution Update Proposal, do not convert it into a normal refactor task. Leave it for `ag-review-artifacts` (or implementation) and `ag-apply`.
 
 ## Inputs
 

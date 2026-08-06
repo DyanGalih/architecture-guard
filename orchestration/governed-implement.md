@@ -95,7 +95,7 @@ IF `security-review` (or compatibility alias `spec-kit-security-review`) is avai
 
 Run:
 ```text
-`{adapter_command:ag-review}`
+`{adapter_command:ag-review-implementation}`
 ```
 
 Review implementation against:

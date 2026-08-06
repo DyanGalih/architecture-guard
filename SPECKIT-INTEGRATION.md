@@ -15,7 +15,7 @@ npx architecture-guard init . --agent opencode --framework spec-kit --commands a
 
 The installer adds:
 
-- Agent-native governance commands such as `ag-governed-spec`, `ag-review`, and `ag-verify`.
+- Agent-native governance commands such as `ag-governed-spec`, `ag-review-artifacts`, and `ag-verify`.
 - `adapters/detect.md` and `adapters/spec-kit.md`.
 - Runtime resources under `.architecture-guard/`.
 - Optional governance guidance in `AGENTS.md`.

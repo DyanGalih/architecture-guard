@@ -7,7 +7,7 @@ Use this protocol before describing Budgeted Architecture Context Retrieval as a
 Generate reproducible baseline fixtures into an empty temporary directory:
 
 ```bash
-./scripts/create-context-budget-fixtures.sh /tmp/architecture-guard-context-fixtures
+npx architecture-guard create-fixtures /tmp/architecture-guard-context-fixtures
 ```
 
 The generator creates:

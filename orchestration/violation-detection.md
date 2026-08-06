@@ -32,7 +32,7 @@ Accept the same normalized command context as the review workflow:
 - `mode=architecture` (default)
 - `focus=general` (default), `db`, `api`, or `async`.
 
-If `mode=performance`, do not emit violations here. Let `ag-review` own the advisory performance output.
+If `mode=performance`, do not emit violations here. Let `ag-review-implementation` own the advisory performance output.
 
 ### Scope Filtering by Focus
 

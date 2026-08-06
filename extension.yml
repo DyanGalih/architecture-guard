@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "architecture-guard"
   name: "Architecture Guard"
-  version: "2.1.2"
+  version: "2.2.0"
   description: "Framework-agnostic architecture review extension for validating implementation against governance and architecture constitutions, detecting architectural drift, and generating non-blocking refactor tasks."
   author: "DyanGalih"
   repository: "https://github.com/DyanGalih/spec-kit-architecture-guard"
@@ -35,7 +35,7 @@ hooks:
     optional: true
     prompt: "Would you like to generate architectural refactor tasks before implementation?"
   after_implement:
-    command: "speckit.ag-review"
+    command: "speckit.ag-review-implementation"
     optional: true
     prompt: "Would you like to run a post-implementation architecture review?"
 
@@ -62,9 +62,12 @@ provides:
     - name: "speckit.ag-workflow"
       file: "commands/workflow.md"
       description: "Run a single architecture workflow with memory-first flash-mem context and optional Security Review handoff."
-    - name: "speckit.ag-review"
-      file: "commands/review.md"
-      description: "Review specs, plans, tasks, or implementation for architecture drift."
+    - name: "speckit.ag-review-artifacts"
+      file: "commands/review-artifacts.md"
+      description: "Review specification and planning artifacts against architectural rules without reading code."
+    - name: "speckit.ag-review-implementation"
+      file: "commands/review-implementation.md"
+      description: "Review implementation code against active specifications and constitutions."
     - name: "speckit.ag-violation-detection"
       file: "commands/violation-detection.md"
       description: "Detect architecture violations in plans, tasks, and implementation summaries."

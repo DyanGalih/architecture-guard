@@ -57,13 +57,13 @@ When a command encounters analysis marked `[OPTIONAL SUB-AGENT DELEGATION]`:
 ### Override Flags
 
 ```bash
-ag-review --inline
+ag-review-artifacts --inline
 /ag-governed-plan --delegate
 ```
 
 ### Where Delegation Appears
 
-- `ag-review` Step 7b — SonarLint code quality scanning
+- `ag-review-artifacts` Step 7b — SonarLint code quality scanning
 - `governed-plan.md` Step 2 — Memory synthesis for planning
 - `governed-tasks.md` Step 2 — Memory synthesis for task generation
 - `governed-implement.md` Step 2 — Memory synthesis for implementation

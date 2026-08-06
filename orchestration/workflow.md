@@ -47,7 +47,7 @@ Try Flash-Mem first: query summary and metadata context before performing archit
 
 If Flash-Mem is unavailable or the retrieved summaries are insufficient, continue with the repository artifacts and constitution files available in the workspace.
 
-This command accepts the same normalized command context as `ag-review`, including semantic and dot-style aliases.
+This command accepts the same normalized command context as `ag-review-artifacts` and `ag-review-implementation`, including semantic and dot-style aliases.
 
 The workflow is serial and ownership-aware:
 

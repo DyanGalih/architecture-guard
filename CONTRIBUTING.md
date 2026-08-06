@@ -20,7 +20,7 @@ examples/              ← Example architecture reports
 If you want to modify architecture review rules or detection logic:
 
 1. Update the relevant file in `commands/`. Each prompt file is self-contained with its full rules, steps, and output format.
-2. Run `./scripts/test-install.sh` to verify consistency.
+2. Run `npm run test` or `npx architecture-guard test-install` to verify consistency.
 3. If you add a new command, register it in `extension.yml` under `provides.commands`.
 
 ### Adding Framework Presets
@@ -37,12 +37,12 @@ When adding support for a new framework:
 Run the smoke tests:
 
 ```bash
-./scripts/test-install.sh
+npm run test
 ```
 
 ## Guidelines
 
-- **Self-Contained Prompts**: Every prompt file must carry its full rules, steps, and output format inline. Do not reference external files except for scripts via `{SCRIPT}`.
+- **Self-Contained Prompts**: Every prompt file must carry its full rules, steps, and output format inline. Do not reference external files.
 - **Actionable Findings**: Every violation must include severity, location, evidence, and a suggested fix.
 - **Non-Blocking by Default**: Findings are reported, not enforced. The `refactor-generator` handles task creation.
 - **`flash-mem` Integration**: When project memory exists, use it as context — but never require it. The legacy `memory-hub` name is reference-only.
@@ -53,7 +53,7 @@ Run the smoke tests:
 1. Fork the repository.
 2. Create your feature branch.
 3. Commit your changes.
-4. Run `./scripts/test-install.sh` to verify.
+4. Run `npm run test` to verify.
 5. Submit a PR with a clear description of what changed and why.
 
 ## Release Process

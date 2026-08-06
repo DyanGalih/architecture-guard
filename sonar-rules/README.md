@@ -1,6 +1,6 @@
 # SonarLint Rules Bundle
 
-This directory contains the bundled SonarLint rules used by the `ag-review` command during code quality scanning phase (Step 7b).
+This directory contains the bundled SonarLint rules used by the `ag-review-implementation` command during code quality scanning phase (Step 7b).
 The bundle is repository-native, not VS Code-specific, so any IDE or CLI that can read the repository can participate in the same scan.
 When this extension is installed into a project, the same bundle is available at `.specify/extensions/architecture-guard/.github/sonar-rules/`.
 
@@ -35,7 +35,7 @@ When ready, regenerate rules from actual SonarLint CLI (quarterly recommended):
 
 ```bash
 # From repository root
-./scripts/bash/extract-sonar-rules.sh --commit
+npx architecture-guard extract-sonar-rules --commit
 ```
 
 This will:
@@ -73,9 +73,9 @@ The extraction script filters for these tags:
 
 Pure style rules (formatting, naming conventions) are excluded.
 
-## Usage in ag-review
+## Usage in ag-review-implementation
 
-The `ag-review` command Step 7b loads rules from this bundle and:
+The `ag-review-implementation` command Step 7b loads rules from this bundle and:
 
 1. Scans changed files with loaded rules
 2. Generates violations report

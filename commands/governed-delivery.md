@@ -86,7 +86,7 @@ Do not use timestamps as the only evidence of material staleness. Compare artifa
 
 If the plan is `missing` or `stale`, execute the full `/ag-governed-plan` (or `/ag-governed-plan`) workflow.
 
-If the plan is `review-required`, reuse it and run the applicable security plan review plus `/ag-violation-detection` (or `/ag-violation-detection`). Do not regenerate a plan merely because review is needed.
+If the plan is `review-required`, reuse it and run the applicable security plan review plus `/ag-review-artifacts`. Do not regenerate a plan merely because review is needed.
 
 - Continue automatically when there are no blocking findings.
 - Record advisory architecture drift without stopping.
@@ -100,7 +100,7 @@ The plan does not need to be perfect. It must be sufficiently stable and free of
 
 Only enter this phase after the plan is `accepted`.
 
-If tasks are `missing`, `stale`, or `review-required`, execute `/ag-governed-tasks` (or `/ag-governed-tasks`) with the accepted plan and cached context.
+If tasks are `missing`, `stale`, or `review-required`, execute `/ag-governed-tasks` (or `/ag-governed-tasks`) with the accepted plan and cached context. Upon task generation, you MUST run `/ag-review-implementation` to analyze the implementation against the accepted plan.
 
 The governed task phase must:
 

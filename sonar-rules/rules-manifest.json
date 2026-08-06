@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "generated_at": "2026-05-07T00:00:00Z",
-  "sonarlint_cli_version": "bundled snapshot (user can update via extract-sonar-rules.sh)",
+  "sonarlint_cli_version": "bundled snapshot (user can update via architecture-guard extract-sonar-rules)",
   "language_support": [
     "javascript",
     "typescript",
@@ -20,5 +20,5 @@
   "total_rules": 18,
   "architecture_rules_count": 18,
   "last_updated_by": "initial-bundle-template",
-  "note": "This is the initial bundled set of representative architecture-relevant rules (template format). Run extract-sonar-rules.sh to replace with actual SonarLint CLI rules. These template rules are functional and ready to use for the MVP."
+  "note": "This is the initial bundled set of representative architecture-relevant rules (template format). Run architecture-guard extract-sonar-rules to replace with actual SonarLint CLI rules. These template rules are functional and ready to use for the MVP."
 }

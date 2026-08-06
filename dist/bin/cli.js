@@ -6,13 +6,15 @@ const program = new commander_1.Command();
 program
     .name('architecture-guard')
     .description('SDD-tool-agnostic architecture governance orchestrator for Spec Kit, OpenSpec, and generic Markdown workflows')
-    .version('2.1.2');
+    .version('2.2.0');
 const install_1 = require("../cli/install");
 const detect_changed_files_1 = require("../cli/detect-changed-files");
 const check_architecture_1 = require("../cli/check-architecture");
 const validate_setup_1 = require("../cli/validate-setup");
 const create_context_budget_fixtures_1 = require("../cli/create-context-budget-fixtures");
 const test_install_1 = require("../cli/test-install");
+const review_artifacts_1 = require("../cli/review-artifacts");
+const review_implementation_1 = require("../cli/review-implementation");
 program
     .command('init [target]')
     .description('Install governance commands')
@@ -38,4 +40,12 @@ program
 program
     .command('test-install')
     .action(test_install_1.runTestInstall);
+program
+    .command('review-artifacts')
+    .description('Evaluate specification and planning artifacts against architecture constraints')
+    .action(review_artifacts_1.runReviewArtifacts);
+program
+    .command('review-implementation')
+    .description('Evaluate implementation code against the planned architecture and constraints')
+    .action(review_implementation_1.runReviewImplementation);
 program.parse(process.argv);

@@ -100,13 +100,13 @@ After you select agents, an SDD tool or workflow, and commands, `install.js` wri
 After installation, invoke the agent-native command:
 
 ```
-ag-review
+ag-review-artifacts
 ```
 
 Or use the slash command registered by your agent:
 
 ```
-ag-review
+ag-review-artifacts
 ```
 
 The agent command detects the SDD tool from your project, loads the adapter, and runs the governance workflow in your project context. `architecture-guard` itself is the installer; it does not execute governance commands.
