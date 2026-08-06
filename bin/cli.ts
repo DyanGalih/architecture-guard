@@ -1,13 +1,20 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+const packageJsonPath =
+  [join(__dirname, '..', 'package.json'), join(__dirname, '..', '..', 'package.json')]
+    .find((candidate) => existsSync(candidate)) ?? join(__dirname, '..', '..', 'package.json');
+const packageVersion = JSON.parse(readFileSync(packageJsonPath, 'utf8')).version ?? '0.0.0';
 
 const program = new Command();
 
 program
   .name('architecture-guard')
   .description('SDD-tool-agnostic architecture governance orchestrator for Spec Kit, OpenSpec, and generic Markdown workflows')
-  .version('2.2.0');
+  .version(packageVersion);
 
 import { runInstallCommand } from '../cli/install';
 import { runDetectChangedFiles } from '../cli/detect-changed-files';
