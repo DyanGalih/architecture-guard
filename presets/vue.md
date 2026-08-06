@@ -69,6 +69,19 @@ Ask:
 How should API clients, caching, retries, authentication refresh, and error translation be centralized?
 ```
 
+
+### Code Style & Tooling
+
+Ask:
+
+```text
+Which framework-specific lint/style conventions apply to this project, if any?
+
+Examples:
+- ESLint strictness, Prettier formatting
+- Forbidden hooks patterns
+```
+
 ## Senior Engineering Lens
 
 Apply the framework mapping with senior judgment:

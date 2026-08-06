@@ -83,6 +83,19 @@ Ask:
 Which operations require a queue, workflow service, scheduled job, or external worker instead of a request-bound Server Action or Route Handler?
 ```
 
+
+### Code Style & Tooling
+
+Ask:
+
+```text
+Which framework-specific lint/style conventions apply to this project, if any?
+
+Examples:
+- ESLint strictness, Prettier formatting
+- Forbidden hooks patterns
+```
+
 ## Senior Engineering Lens
 
 Apply the framework mapping with senior judgment:

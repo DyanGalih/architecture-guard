@@ -89,6 +89,19 @@ Ask:
 How should secure storage, ordinary persistence, API clients, authentication refresh, push notifications, deep links, background work, analytics, and crash reporting be isolated?
 ```
 
+
+### Code Style & Tooling
+
+Ask:
+
+```text
+Which framework-specific lint/style conventions apply to this project, if any?
+
+Examples:
+- ESLint strictness, Prettier formatting
+- Forbidden hooks patterns
+```
+
 ## Senior Engineering Lens
 
 Apply the framework mapping with senior judgment:

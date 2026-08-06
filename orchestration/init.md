@@ -488,6 +488,9 @@ When the user selects a built-in framework preset:
 1. Resolve its preset file from `{adapter_path:presets}`.
 2. Locate `## Init Interview` and read that section through the next level-two heading. Do not load unrelated review guidance solely to run the interview when the host can read a section selectively.
 3. Merge the preset questions into the matching generic interview phases. Ask them sequentially and only when relevant to the selected application type or an earlier answer; do not ask a generic and preset question twice when they seek the same decision.
+   - Preset `### API Conventions & Tooling` questions belong to Phase 3.
+   - Preset `### Code Style & Tooling` questions belong to Phase 6.
+   - When a preset question overlaps a generic question, ask the preset wording only when it adds framework-specific detail; otherwise ask the generic question once and record the answer for both decisions.
 4. Record each answer as a framework-neutral architectural decision plus its selected framework implementation.
 5. If the preset has no `## Init Interview` section, continue with the generic phases below without inventing framework requirements.
 
@@ -542,12 +545,25 @@ How strict should module boundaries be enforced?
 
 ---
 
-# Phase 3 — Contracts & Validation
+Ask:
+
+```text
+Are there specific subfolder conventions for features/modules?
+(Only ask if the project has or plans more than a trivial single-module shape)
+
+Examples:
+- consistent subfolders (dto/, entities/, interfaces/, guards/, strategy/)
+```
+
+---
+
+# Phase 3 — Contracts & API Conventions
 
 Determine:
 
 * validation strategy
-* request/response contracts
+* request/response contracts (REST/API conventions)
+* API documentation standards
 * serialization standards
 * frontend/backend boundaries
 
@@ -571,9 +587,37 @@ What is the standard response structure?
 
 ---
 
+Ask:
+
+```text
+What are the generic REST/API contract conventions?
+
+Examples:
+- status code conventions per verb
+- pagination shape
+- error response shape / error codes
+- versioning strategy
+```
+
+---
+
+Ask:
+
+```text
+What is the API documentation strategy?
+
+Examples:
+- Is Swagger/OpenAPI (or equivalent) required?
+- Does its presence gate merge/review?
+```
+
+---
+
 ## Preset Contract Questions
 
 If the selected preset's `## Init Interview` includes contract or validation questions, ask them during this phase unless an earlier answer already resolves them. Do not ask the same question twice.
+
+Preset API-convention questions are also part of this phase. Ask them only when the selected application exposes the relevant kind of API, using the deduplication rule above.
 
 ---
 
@@ -663,6 +707,96 @@ Examples:
 
 ---
 
+Ask:
+
+```text
+Does a developer/operational guide already exist, or will one be maintained?
+
+Examples:
+- setup steps, DB migration/seed commands
+- CI/release process
+- third-party integration configs (OIDC providers, CORS setup)
+
+(If yes, record its path as a "Useful file refs" entry in the generated constitution instead of absorbing that operational content into the constitution itself.)
+```
+
+---
+
+Ask:
+
+```text
+If the active adapter supports per-artifact rules (e.g., `{adapter_path:artifact-rules-mechanism}`), do you want lightweight checklists for specs and design?
+(Skip if the active adapter lacks a per-artifact rule mechanism)
+```
+
+---
+
+# Phase 6 — Code Style & Tooling
+
+Determine:
+
+* linting/formatting strictness and progressive rollout policy
+* naming conventions across identifier kinds
+* forbidden/required patterns and enforcement subset
+* logging standards (structured vs console, levels, retention if applicable)
+
+If the selected preset's `## Init Interview` includes a `### Code Style & Tooling` section, merge those questions here. Ask framework-specific questions only when the project uses the corresponding tool or pattern; do not turn examples into mandatory rules.
+
+---
+
+## Questions
+
+Ask:
+
+```text
+How strict should code styling and tooling be enforced?
+
+Examples:
+- lint/format as advisory or blocking
+- is there a progressive-strictness policy (e.g., rules start at warn and promote to error once stable)? (Capture as explicit rollout policy)
+```
+
+---
+
+Ask:
+
+```text
+What are the naming conventions per identifier kind?
+
+(Ask for a short table covering variables, booleans, types/classes/interfaces, enum members, constants, object literal keys - don't invent one)
+```
+
+---
+
+Ask:
+
+```text
+Are there any general forbidden/required patterns?
+
+Examples:
+- no console.log in committed code
+- no implicit any, explicit return types
+- strict equality, no wrapper-object constructors
+- secure randomness instead of Math.random() for security-sensitive values
+
+(Ask what subset of these the project actually wants enforced rather than dumping a fixed checklist)
+```
+
+---
+
+Ask:
+
+```text
+What is the logging standard?
+
+Examples:
+- structured logger vs console.log
+- log levels
+- rotation/retention rules (only ask retention specifics if the project already has or plans a logging module)
+```
+
+---
+
 # Rule Classification Logic
 
 Before generating rules, classify them.
@@ -679,6 +813,7 @@ Examples:
 * review expectations
 * engineering philosophy (Ponytail principles, YAGNI, minimal abstractions)
 * operational governance
+* naming conventions, linting strictness, and code style rules
 
 ---
 
@@ -693,9 +828,10 @@ Examples:
 * authorization strategy and its framework implementation, when selected
 * validation placement
 * async boundaries
-* response contracts
+* response contracts and REST/API conventions
 * module ownership rules
-* framework-specific architecture patterns
+* module and feature subfolder shapes
+* framework-specific architecture and decorator patterns
 * DRY and single-source-of-truth rules for repeated business rules, approvals, validation, DTO mapping, transformations, and orchestration
 * temporary/scratch files MUST use `-temp` or `-test` suffixes for easier cleanup
 
@@ -775,6 +911,8 @@ If the `flash-mem` MCP server is available, you MUST run the `update_project_sum
 6. Review Process
 7. High-Level Architecture Intent
 8. Governance and Evolution Policy
+9. Useful File References (optional)
+10. Per-Artifact Rules (e.g., OpenSpec rules block)
 ```
 
 ---
@@ -789,10 +927,13 @@ If the `flash-mem` MCP server is available, you MUST run the `update_project_sum
 5. Data Access Rules
 6. Async & Integration Rules
 7. Module Boundaries
-8. Framework-Specific Architecture Rules
-9. Blocking Architecture Violations (P0)
-10. Architecture Evolution Policy
-11. Refactor & Drift Handling
+8. Code Style & Tooling Rules
+9. Framework-Specific Architecture Rules
+10. Blocking Architecture Violations (P0)
+11. Architecture Evolution Policy
+12. Refactor & Drift Handling
+13. Useful File References (optional)
+14. Per-Artifact Rules (e.g., OpenSpec rules block)
 ```
 
 ---

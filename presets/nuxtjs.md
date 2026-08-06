@@ -61,6 +61,19 @@ Ask:
 Where should database access, secrets, server integrations, caching, and background work live?
 ```
 
+
+### Code Style & Tooling
+
+Ask:
+
+```text
+Which framework-specific lint/style conventions apply to this project, if any?
+
+Examples:
+- ESLint strictness, Prettier formatting
+- Forbidden hooks patterns
+```
+
 ## Senior Engineering Lens
 
 Apply the framework mapping with senior judgment:
