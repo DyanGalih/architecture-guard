@@ -7,7 +7,7 @@ const program = new Command();
 program
   .name('architecture-guard')
   .description('SDD-tool-agnostic architecture governance orchestrator for Spec Kit, OpenSpec, and generic Markdown workflows')
-  .version('2.0.0');
+  .version('2.1.0');
 
 import { runInstallCommand } from '../cli/install';
 import { runDetectChangedFiles } from '../cli/detect-changed-files';
