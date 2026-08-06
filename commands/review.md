@@ -85,7 +85,8 @@ This pattern ensures that lower-tier models follow strict execution paths instea
    - Otherwise, you **MUST** execute the `{SCRIPT}` with `--json` to detect changed files since the merge-base or in the working directory.
    - Use the `changed_files` list as the primary review set.
 3. **Artifact-Only Review (Pre-Implementation)**:
-   - If no implementation code exists or has been changed yet, focus the review strictly on validating the available specification and planning artifacts (e.g., `spec.md`, `design.md`, `plan.md`, `tasks.md`) against the architectural rules and constitutions before coding begins.
+   - If the `--artifacts-only` flag is present in `$ARGUMENTS`, you **MUST** treat this as a pre-implementation review.
+   - Skip reading or evaluating any implementation code. Focus strictly on validating the specification and planning artifacts (e.g., `spec.md`, `design.md`, `plan.md`, `tasks.md`) against the architectural rules and constitutions.
 
 ## Input & Context Loading
 
@@ -161,8 +162,8 @@ Detect violations such as:
 
 1. **Identify Scope**: Run `{SCRIPT}` or use user-provided files.
 2. **Model Context**: Load artifacts and build the Semantic Models for the identified scope.
-3. **Verify Evidence**: Check if task-referenced files exist and contain expected implementation logic. (Skip this if performing a pre-implementation artifact-only review).
-4. **Analyze Alignment**: Compare the initial specification intent vs. the proposed architectural design vs. implementation behavior (if any). If pre-implementation, ensure the proposed design or plan accurately satisfies the spec without violating constraints.
+3. **Verify Evidence**: Check if task-referenced files exist and contain expected implementation logic. (Skip this if `--artifacts-only` is provided).
+4. **Analyze Alignment**: Compare the initial specification intent vs. the proposed architectural design vs. implementation behavior (if any). If `--artifacts-only` is provided, ensure the proposed design or plan accurately satisfies the spec without violating constraints, ignoring any existing legacy code.
 5. **Scan Principles**: Apply Review Principles across the implemented boundaries.
 6. **Security & Governance Cross-Check**:
   - If `security-constraints.md` or `security_constitution.md` is breached, log it as a critical violation.
