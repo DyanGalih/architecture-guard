@@ -1,3 +1,6 @@
+## 2.1.1
+- Added `Branch Management` safety check to `ag-governed-delivery` to prevent accidental generation on protected branches (matching `ag-governed-spec` behavior).
+
 ## 2.1.0
 - Rebuilt installer as a unified TypeScript CLI (`cli.ts`).
 - Generalized command prompts to support both SpecKit (`spec.md`, `plan.md`) and OpenSpec (`design.md`) artifacts natively.
