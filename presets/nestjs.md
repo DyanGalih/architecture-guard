@@ -81,6 +81,22 @@ Ask:
 Which workflows should use queues, events, schedulers, or NestJS microservice transports?
 ```
 
+
+### API Conventions & Tooling
+
+Ask:
+
+```text
+Which framework-specific API conventions or tooling rules apply to this project, if any?
+
+Ask only about conventions actually used by the project.
+
+Examples:
+- response or decorator patterns
+- status code mapping conventions
+- framework-specific linting strictness
+```
+
 ## Senior Engineering Lens
 
 Apply the framework mapping with senior judgment:

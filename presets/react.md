@@ -62,6 +62,19 @@ Ask:
 Which router owns navigation, and how should route visibility differ from server-enforced authorization?
 ```
 
+
+### Code Style & Tooling
+
+Ask:
+
+```text
+Which framework-specific lint/style conventions apply to this project, if any?
+
+Examples:
+- ESLint strictness, Prettier formatting
+- Forbidden hooks patterns
+```
+
 ## Senior Engineering Lens
 
 Apply the framework mapping with senior judgment:

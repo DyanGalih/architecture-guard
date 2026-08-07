@@ -66,6 +66,22 @@ Ask:
 How should Spring Security authorization be expressed, and which work belongs in events, messaging, @Async, or scheduled jobs?
 ```
 
+
+### API Conventions & Tooling
+
+Ask:
+
+```text
+Which framework-specific API conventions or tooling rules apply to this project, if any?
+
+Ask only about conventions actually used by the project.
+
+Examples:
+- response or decorator patterns
+- status code mapping conventions
+- framework-specific linting strictness
+```
+
 ## Senior Engineering Lens
 
 Apply the framework mapping with senior judgment:
