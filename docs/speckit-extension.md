@@ -13,7 +13,7 @@ To install Architecture Guard as an extension inside an existing SpecKit project
    extensions:
      - id: architecture-guard
        source: github
-       repo: DyanGalih/spec-kit-architecture-guard
+       repo: DyanGalih/architecture-guard
        version: 2.0.0
    ```
 

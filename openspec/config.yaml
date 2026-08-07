@@ -2,10 +2,10 @@ schema: spec-driven
 
 # Project context (shown to AI when creating artifacts).
 context: |
-  Repository: spec-kit-architecture-guard — repository-native architecture governance for SDD frameworks.
+  Repository: architecture-guard — repository-native architecture governance for SDD frameworks.
   Dual-repo layout (NOT a git submodule):
     - Parent repo (here): SDD spec / documentation store. Holds openspec/ changes, specs, and config.yaml.
-    - Nested src/ repo (remote git@github.com:DyanGalih/spec-kit-architecture-guard.git): the
+    - Nested src/ repo (remote git@github.com:DyanGalih/architecture-guard.git): the
       deliverable that ships to npm as `architecture-guard`. Contains install.js, adapters/,
       orchestration/, commands/, templates/, presets/, hygiene-rules/, sonar-rules/, scripts/,
       package.json, .npmignore. Verify changes against `src/` before publishing.
