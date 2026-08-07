@@ -1,5 +1,5 @@
 ---
-description: Orchestrate a governed planning workflow that coordinates flash-mem, Security Review, and Architecture Guard validation.
+description: Generate and validate a technical plan with optional Flash-Mem context, Security Review, and Architecture Guard checks.
 ---
 
 # Governed Plan Command
@@ -183,4 +183,4 @@ The command MUST return:
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-governed-plan.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `commands/governed-plan.md` for direct SpecKit use.

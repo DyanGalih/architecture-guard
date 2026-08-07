@@ -1,5 +1,5 @@
 ---
-description: Perform an architecture-aware verification gate validating implementation against specification, design, and task documents, and the Architecture Constitution.
+description: Verify implementation against specification, design, plan, tasks, architecture rules, and repository hygiene requirements.
 ---
 
 # Architecture Verification
@@ -89,8 +89,8 @@ Build internal representations:
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |:---|:---|:---|:---|:---|:---|
-| V1 | Task Integrity | CRITICAL | `tasks.md:T01` | Task marked complete but logic missing in `src/auth.ts` | Implement logic or uncheck task |
-| V2 | Boundary | HIGH | `src/ctrl/user.ts` | Database query found in Controller layer | Move query to Repository/Data layer |
+| V1 | Task Integrity | CRITICAL | `tasks.md:T01` | Task marked complete but logic missing in `auth.ts` | Implement logic or uncheck task |
+| V2 | Boundary | HIGH | `ctrl/user.ts` | Database query found in Controller layer | Move query to Repository/Data layer |
 
 ### Task Status Analysis
 For each task in `tasks.md`:

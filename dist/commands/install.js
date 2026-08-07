@@ -237,7 +237,7 @@ description: ${description}
 allowed-tools: "*"
 metadata:
   author: architecture-guard
-  source: https://github.com/DyanGalih/spec-kit-architecture-guard
+  source: https://github.com/DyanGalih/architecture-guard
 ---
 
 ${cleanContent}`;

@@ -149,6 +149,7 @@ test('--help prints usage and exits without writing files', () => {
 
 test('installer exposes init only and publishes linked documentation', () => {
   const pkg = require('../package.json');
+  assert.ok(require('./cli/install').COMMANDS.includes('governed-delivery-team'));
   assert.deepEqual([...new Set(pkg.files.filter(file => ['docs/', 'examples/', 'adapters/'].includes(file)))], ['adapters/', 'docs/', 'examples/']);
   const result = spawnSync(process.execPath, [installer, 'review'], { encoding: 'utf8' });
   assert.notEqual(result.status, 0);

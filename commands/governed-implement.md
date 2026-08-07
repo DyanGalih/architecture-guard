@@ -1,5 +1,5 @@
 ---
-description: Run implementation with memory context, then review the produced implementation against security and architecture constraints.
+description: Execute implementation tasks, then review the result against available security and architecture constraints.
 ---
 
 # Governed Implement Command

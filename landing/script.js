@@ -54,7 +54,7 @@ tailwind.config = {
         });
 
         // GitHub Star Fetch
-        fetch('https://api.github.com/repos/DyanGalih/spec-kit-architecture-guard')
+        fetch('https://api.github.com/repos/DyanGalih/architecture-guard')
             .then(res => res.json())
             .then(data => {
                 if(data.stargazers_count !== undefined) {

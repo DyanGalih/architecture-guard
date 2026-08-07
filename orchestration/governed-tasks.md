@@ -1,5 +1,5 @@
 ---
-description: Generate or validate implementation tasks with memory context, security constraints, and architecture refactor/migration awareness.
+description: Generate or reconcile implementation tasks, then analyze security, architecture, migration, and refactor coverage.
 ---
 
 # Governed Tasks Command
@@ -191,4 +191,4 @@ The command MUST return:
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-governed-tasks.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `commands/governed-tasks.md` for direct SpecKit use.

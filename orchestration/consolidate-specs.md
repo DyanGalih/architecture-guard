@@ -58,4 +58,4 @@ Report the output path, source count, conflicts found, excluded sources, and whe
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-consolidate-specs.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `commands/consolidate-specs.md` for direct SpecKit use.

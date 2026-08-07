@@ -4,7 +4,7 @@ description: Apply approved architecture refactors by updating plan and task art
 
 # Architecture Apply Command
 
-Execute this workflow through `{adapter_command:ag-apply}`; the token is the adapter-selected capability and must not be replaced with a package-specific executable name.
+Execute this workflow through `{adapter_command:architecture-apply}`; the token is the adapter-selected capability and must not be replaced with a package-specific executable name.
 
 ## SDD Tool Detection
 
@@ -82,4 +82,4 @@ Return the changed artifact summary and updated planning content in the selected
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-apply.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `commands/apply.md` for direct SpecKit use.

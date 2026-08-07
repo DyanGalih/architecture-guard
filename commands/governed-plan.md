@@ -1,5 +1,5 @@
 ---
-description: Orchestrate a governed planning workflow that coordinates flash-mem, Security Review, and Architecture Guard validation.
+description: Generate and validate a technical plan with optional Flash-Mem context, Security Review, and Architecture Guard checks.
 ---
 
 # Governed Plan Command

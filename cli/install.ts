@@ -110,6 +110,7 @@ const COMMANDS = [
   'governed-plan',
   'governed-tasks',
   'governed-delivery',
+  'governed-delivery-team',
   'governed-implement',
   'review-artifacts',
   'review-implementation',
@@ -202,10 +203,9 @@ function installSkillMd(sk, content, cmdDir, dest, agentType) {
   const frontmatter = `---
 name: ag-${sk}
 description: ${description}
-allowed-tools: "*"
 metadata:
   author: architecture-guard
-  source: https://github.com/DyanGalih/spec-kit-architecture-guard
+  source: https://github.com/DyanGalih/architecture-guard
 ---
 
 ${cleanContent}`;

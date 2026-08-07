@@ -725,7 +725,7 @@ Examples:
 Ask:
 
 ```text
-If the active adapter supports per-artifact rules (e.g., `{adapter_path:artifact-rules-mechanism}`), do you want lightweight checklists for specs and design?
+If the active adapter supports per-artifact rules (for example, OpenSpec rules), do you want lightweight checklists for specs and design?
 (Skip if the active adapter lacks a per-artifact rule mechanism)
 ```
 
@@ -1006,4 +1006,4 @@ The init interview produces framework-specific constitution files:
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-init.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `commands/init.md` for direct SpecKit use.

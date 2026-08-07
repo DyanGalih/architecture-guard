@@ -1,5 +1,5 @@
 ---
-description: Run a single architecture workflow that prefers memory-first context and can incorporate security review when available.
+description: Run a single architecture workflow with optional memory context and Security Review handoff.
 ---
 
 # Architecture Workflow Command
