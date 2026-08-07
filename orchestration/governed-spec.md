@@ -1,5 +1,5 @@
 ---
-description: Orchestrate a governed specification workflow coordinating memory, framework-native specification, Security Review, and architecture validation.
+description: Orchestrate governed specification with memory, framework-native specification, Security Review, architecture validation, and an auto-fix loop.
 ---
 
 # Governed Specification Command
@@ -97,16 +97,16 @@ Produce a final `Governed Specification Summary` outlining memory context, archi
 
 If `context.mode` is `budgeted` and `stale_policy` is `regenerate`, run `{adapter_command:consolidate-specs}` after the specification and clarification changes are complete. If the policy is `targeted`, report that the existing fallback is stale and do not load it until refreshed.
 
-### Step 9 — Interactive Auto-Fix Loop
+### Step 10 — Interactive Auto-Fix Loop
 
-If any architectural gaps, security boundary issues, or drift are detected in Step 5:
+If any architectural gaps, security boundary issues, or drift are detected in Step 7:
 1. **Pause and Ask**: Conclude your response by asking the user:
    > *"I found [number] architectural gaps. Would you like me to automatically revise the specification to address these findings and re-run clarification?"*
 2. **Execute if Approved**: If the user answers "yes" (or equivalent) in their next message, you must:
    - Automatically rewrite `{adapter_path:spec}` to resolve the detected gaps.
    - Run the clarification process again to ensure no new ambiguities were introduced.
    - Present the clean result.
-   - Refresh `system_context.md` through `ag-consolidate-specs` when budgeted mode uses the `regenerate` policy.
+   - Refresh the fallback index through `{adapter_command:consolidate-specs}` when budgeted mode uses the `regenerate` policy.
 
 ## Output Structure
 
@@ -138,4 +138,4 @@ The command MUST return:
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-governed-spec.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `commands/governed-spec.md` for direct SpecKit use.

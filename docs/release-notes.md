@@ -73,7 +73,7 @@
 
 ## 1.10.0
 
-- Repository Hygiene Guard (Full Changelog: [v1.9.0...v1.10.0](https://github.com/DyanGalih/spec-kit-architecture-guard/compare/v1.9.0...v1.10.0))
+- Repository Hygiene Guard (Full Changelog: [v1.9.0...v1.10.0](https://github.com/DyanGalih/architecture-guard/compare/v1.9.0...v1.10.0))
 
 ## 1.9.0
 

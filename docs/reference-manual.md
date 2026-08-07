@@ -168,14 +168,15 @@ This injects refactor tasks into `plan.md` and `tasks.md` so the AI has explicit
 | `consolidate-specs` | Context maintenance | `specs/system_context.md` | Refresh the compact local fallback used only when Flash-Mem is unavailable or insufficient |
 | `governed-discover` | Orchestration | Architecture-aware discovery brief with alignment notes, rejected options, assumptions, and handoff prompt | Use before specification when the feature idea needs discussion against existing architecture constraints |
 | `governed-spec` | Orchestration | Specification and Clarification with `flash-mem` synthesis first + security + architecture, plus auto-fix loop | Use when `flash-mem` and Security Review are installed to start from specification |
-| `governed-delivery` | Orchestration | Resumable plan-to-tasks flow with memory preflight, plan gates, task reconciliation, and analysis | Recommended entry point after specification |
+| `governed-delivery` | Orchestration | Resume governed delivery from an active specification through plan and task generation, with optional memory context, gates, reconciliation, and analysis | Recommended entry point after specification |
+| `governed-delivery-team` | Orchestration | Team delivery flow with an approved User Story before planning and task generation | Use when stakeholders need to approve business intent before engineering proceeds |
 | `ag-workflow` | General Review | Violations, severity and priority, refactor tasks, evolution proposals | Entry point for end-to-end review; good for dashboards |
 | `ag-review-artifacts` | Validation | Validates planning artifacts (spec, plan) against constitution without reading code | After `/specify` or `/plan` |
 | `ag-review-implementation` | Validation | Validates implementation codebase against planning artifacts and constitution | After `/implement` |
 | `violation-detection` | Detection | Drift summary, boundary violations, module coupling | Focus on specific architecture problems |
 | `refactor-generator` | Planning | Refactor task generation | After review; convert violations to non-blocking refactor tasks |
 | `ag-apply` | Implementation | After refactor decisions | Inject refactor tasks into `tasks.md` and `plan.md` using the approved review context |
-| `ag-verify` | Verification | Task fulfillment report, gap analysis | Final gate after implementation to ensure all tasks are delivered, with cached memory context if available |
+| `ag-verify` | Verification | Implementation verification report with task fulfillment, architecture, and hygiene findings | Final gate after implementation to ensure all tasks are delivered, with cached memory context if available |
 
 ### Ponytail Core
 
@@ -207,10 +208,11 @@ optimizer:
 | --- | --- | --- | --- |
 | `governed-discover` | Orchestration | Discovery brief with `flash-mem` synthesis first + architecture-aware discussion + governed-spec handoff | Use when companion extensions are installed and feature ideas should be shaped before specification |
 | `governed-spec` | Orchestration | Specification and Clarification with `flash-mem` synthesis first + security + architecture + auto-fix loop | Use when `flash-mem` and Security Review are installed to start from specification |
-| `governed-delivery` | Orchestration | Resumable plan-to-tasks flow with memory preflight, security and architecture gates, task reconciliation, and analysis | Suggested flow after specification; rerun safely to resume |
-| `governed-plan` | Orchestration | Plan with `flash-mem` synthesis first + security + architecture | Use when `flash-mem` and Security Review are installed |
-| `governed-tasks` | Orchestration | Tasks and Analysis with cached memory context + security + architecture refactors + auto-fix loop | Use when companion extensions are installed |
-| `governed-implement` | Orchestration | Implementation validation with cached memory governance context | Use for end-to-end implementation with governance |
+| `governed-delivery` | Orchestration | Resume governed delivery from an active specification through plan and task generation, with optional memory context, security review, architecture gates, task reconciliation, and analysis | Suggested flow after specification; rerun safely to resume |
+| `governed-delivery-team` | Orchestration | Team delivery flow with an approved User Story before planning and task generation | Suggested for stakeholder-reviewed delivery |
+| `governed-plan` | Orchestration | Generate and validate a technical plan with optional memory context, Security Review, and Architecture Guard checks | Use when `flash-mem` and Security Review are installed |
+| `governed-tasks` | Orchestration | Generate or reconcile implementation tasks, then analyze security, architecture, migration, and refactor coverage | Use when companion extensions are installed |
+| `governed-implement` | Orchestration | Execute implementation tasks, then review the result against available security and architecture constraints | Use for end-to-end implementation with governance |
 
 > Use `ag-governed-delivery` as the suggested plan-to-tasks flow. Use `ag-workflow`, `ag-review-artifacts` or `ag-review-implementation` directly for standalone reviews; the individual `ag-governed-plan` and `ag-governed-tasks` commands remain available for targeted recovery.
 
@@ -252,7 +254,7 @@ specify extension add architecture-guard
 
 ```text
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/spec-kit-architecture-guard/archive/refs/tags/v2.1.2.zip
+  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v2.2.2.zip
 ```
 
 ### Global Preset Usage
@@ -268,18 +270,18 @@ If you manage multiple projects using the same framework (e.g., Laravel), you ca
 
 ```bash
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/spec-kit-architecture-guard/archive/refs/tags/v2.1.2.zip
+  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v2.2.2.zip
 ```
 
 ### From a Local Developer Artifact
 
 ```text
-specify extension add architecture-guard --dev /path/to/spec-kit-architecture-guard
+specify extension add architecture-guard --dev /path/to/architecture-guard
 ```
 
 ### From GitHub
 
 ```text
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/spec-kit-architecture-guard/archive/refs/tags/v2.1.2.zip
+  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v2.2.2.zip
 ```

@@ -1,5 +1,5 @@
 ---
-description: Perform a technology-agnostic architecture review validating implementation (or pre-implementation planning artifacts) against active specification, design, and task documents, as well as the constitutions.
+description: Review implementation code or pre-implementation planning artifacts against active specifications and constitutions.
 ---
 
 # Architecture Review Command
@@ -250,7 +250,7 @@ Findings that correlate with architecture concerns:
 
 Every violation MUST cite evidence or explicitly note its absence. Evidence can be:
 
-- **Specific**: Concrete code reference like `src/checkout/route.js:45-67 contains pricing logic that should be in service layer`
+- **Specific**: Concrete code reference like `checkout/route.js:45-67 contains pricing logic that should be in service layer`
 - **Pattern**: Behavioral observation like `All 5 user endpoints return different response shapes instead of standard contract`
 - **Absence**: Missing implementation like `Task references Repository pattern but no repo/ folder exists`
 
@@ -312,7 +312,7 @@ Findings that correlate with architecture concerns:
 
 | Rule | Severity | File | Issue | Architecture Signal |
 |:---|:---|:---|:---|:---|
-| `brain-overload::...` | HIGH | src/service/checkout.ts:45 | Function has 8 parameters | Hidden boundary: pricing logic should be in dedicated module |
+| `brain-overload::...` | HIGH | service/checkout.ts:45 | Function has 8 parameters | Hidden boundary: pricing logic should be in dedicated module |
 
 **Note**: Pure style violations (formatting, naming) are filtered out. Only findings related to complexity, coupling, and structure are included.
 

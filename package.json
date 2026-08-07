@@ -1,6 +1,6 @@
 {
   "name": "architecture-guard",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "SDD-tool-agnostic architecture governance orchestrator for Spec Kit, OpenSpec, and generic Markdown workflows. Detects the active SDD tool and applies the matching adapter automatically.",
   "bin": {
     "architecture-guard": "./dist/bin/cli.js"
@@ -27,9 +27,9 @@
   "author": "DyanGalih",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DyanGalih/spec-kit-architecture-guard.git"
+    "url": "git+https://github.com/DyanGalih/architecture-guard.git"
   },
-  "homepage": "https://github.com/DyanGalih/spec-kit-architecture-guard",
+  "homepage": "https://github.com/DyanGalih/architecture-guard",
   "engines": {
     "node": ">=18"
   },

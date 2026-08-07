@@ -242,4 +242,4 @@ Suggested Fix: Move the policy into one shared domain service or policy object, 
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-refactor-generator.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `commands/refactor-generator.md` for direct SpecKit use.

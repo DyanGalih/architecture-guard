@@ -1,5 +1,5 @@
 ---
-description: Run a single architecture workflow that prefers memory-first context and can incorporate security review when available.
+description: Run a single architecture workflow with optional memory context and Security Review handoff.
 ---
 
 # Architecture Workflow Command
@@ -139,4 +139,4 @@ All governance reports MUST follow this standard template:
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-workflow.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `commands/workflow.md` for direct SpecKit use.

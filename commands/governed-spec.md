@@ -1,5 +1,5 @@
 ---
-description: Orchestrate a governed specification workflow that coordinates flash-mem, Spec Kit specification and clarification, Security Review, and Architecture Guard validation.
+description: Orchestrate governed specification with memory, framework-native specification, Security Review, architecture validation, and an auto-fix loop.
 ---
 
 # Governed Specification Command
@@ -89,7 +89,7 @@ If `context.mode` is `budgeted` and `stale_policy` is `regenerate`, run `/ag-con
 
 ### Step 9 — Interactive Auto-Fix Loop
 
-If any architectural gaps, security boundary issues, or drift are detected in Step 5:
+If any architectural gaps, security boundary issues, or drift are detected in Step 7:
 1. **Pause and Ask**: Conclude your response by asking the user:
    > *"I found [number] architectural gaps. Would you like me to automatically revise the specification to address these findings and re-run clarification?"*
 2. **Execute if Approved**: If the user answers "yes" (or equivalent) in their next message, you must:

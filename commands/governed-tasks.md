@@ -1,5 +1,5 @@
 ---
-description: Generate or validate implementation tasks with memory context, security constraints, and architecture refactor/migration awareness.
+description: Generate or reconcile implementation tasks, then analyze security, architecture, migration, and refactor coverage.
 ---
 
 # Governed Tasks Command

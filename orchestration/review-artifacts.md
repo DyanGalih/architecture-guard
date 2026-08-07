@@ -1,12 +1,12 @@
 ---
-description: Perform a technology-agnostic architecture review validating pre-implementation planning artifacts against active specification, design, and task documents, as well as the constitutions.
+description: Review specification and planning artifacts against architectural rules without reading implementation code.
 ---
 
 # Architecture Review Command
 
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `{adapter_path:ponytail-core-template}` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
 ## Budgeted Context Contract
 

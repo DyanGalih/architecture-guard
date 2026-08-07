@@ -1,5 +1,5 @@
 ---
-description: Perform an architecture-aware verification gate validating implementation against spec.md, plan.md, tasks.md, and the Architecture Constitution.
+description: Verify implementation against specification, design, plan, tasks, architecture rules, and repository hygiene requirements.
 ---
 
 # Architecture Verification
@@ -91,8 +91,8 @@ Build internal representations:
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |:---|:---|:---|:---|:---|:---|
-| V1 | Task Integrity | CRITICAL | `tasks.md:T01` | Task marked complete but logic missing in `src/auth.ts` | Implement logic or uncheck task |
-| V2 | Boundary | HIGH | `src/ctrl/user.ts` | Database query found in Controller layer | Move query to Repository/Data layer |
+| V1 | Task Integrity | CRITICAL | `tasks.md:T01` | Task marked complete but logic missing in `auth.ts` | Implement logic or uncheck task |
+| V2 | Boundary | HIGH | `ctrl/user.ts` | Database query found in Controller layer | Move query to Repository/Data layer |
 
 ### Task Status Analysis
 For each task in `tasks.md`:
@@ -116,8 +116,8 @@ For each task in `tasks.md`:
 2. **Architecture Alignment**: Resolve boundary violations in [Files] using suggested refactor tasks.
 3. **Completion**: If all CRITICAL/HIGH findings are resolved, propose any validated Flash-Mem lessons and write them only after explicit user approval.
 
-**Next Step**: [e.g. "Run `{adapter_command:ag-apply}` to fix V2"]
+**Next Step**: [e.g. "Run `{adapter_command:architecture-apply}` to fix V2"]
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-verify.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `commands/verify.md` for direct SpecKit use.

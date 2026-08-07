@@ -174,4 +174,4 @@ Preset path:
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-violation-detection.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `commands/violation-detection.md` for direct SpecKit use.

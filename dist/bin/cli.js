@@ -2,11 +2,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const commander_1 = require("commander");
+const node_fs_1 = require("node:fs");
+const node_path_1 = require("node:path");
+const packageJsonPath = [(0, node_path_1.join)(__dirname, '..', 'package.json'), (0, node_path_1.join)(__dirname, '..', '..', 'package.json')]
+    .find((candidate) => (0, node_fs_1.existsSync)(candidate)) ?? (0, node_path_1.join)(__dirname, '..', '..', 'package.json');
+const packageVersion = JSON.parse((0, node_fs_1.readFileSync)(packageJsonPath, 'utf8')).version ?? '0.0.0';
 const program = new commander_1.Command();
 program
     .name('architecture-guard')
     .description('SDD-tool-agnostic architecture governance orchestrator for Spec Kit, OpenSpec, and generic Markdown workflows')
-    .version('2.2.0');
+    .version(packageVersion);
 const install_1 = require("../cli/install");
 const detect_changed_files_1 = require("../cli/detect-changed-files");
 const check_architecture_1 = require("../cli/check-architecture");

@@ -60,11 +60,11 @@ If required questions remain unresolved, ask only the next necessary questions a
 
 If the user proposes a feature that touches authentication, authorization, PII, or data exposure, and `security-review` (or compatibility alias `spec-kit-security-review`) was detected in Step 1, flag the idea for downstream security review.
 
-### Step 4.5 — Proactive Durable Memory Preservation
+### Step 4.5 — Durable Memory Proposal
 
 If the discussion surfaced new architectural decisions, rejected alternatives, or clarified constraints:
-1. **Proactive Execution**: You **MUST automatically execute** the durable-memory capture flow.
-2. **Standard**: Do not silently write memory outside the capture flow; let the formal capture flow propose entries and handle user approval.
+1. **Proposal Only**: Include proposed durable-memory entries in the Discovery Summary Draft; do not write memory during discovery.
+2. **Handoff**: The next mutating workflow may execute the formal capture flow after the user approves the proposal.
 
 ### Step 5 — Handoff Draft Generation
 
@@ -98,9 +98,13 @@ When the discussion is concluded and aligned, the command MUST return:
 - [Non-blocking questions that can be resolved during governed-spec]
 
 ## Recommended Next Step
-You can now run the following command to generate the formal specification:
+To proceed to implementation and avoid a "Feature: Not selected" error, you must initialize the feature using the active SDD tool's workflow (e.g., creating a new OpenSpec change) before running a delivery phase.
 
-`/ag-governed-spec "Based on the Discovery Summary Draft..."`
+You can now run:
+1. The adapter-registered command to create a new change/feature (Suggested name: `<suggested-feature-name>`).
+2. Then choose a delivery workflow with this Discovery Summary Draft as input:
+   - For solo developers: run `/ag-governed-delivery` or `/ag-governed-spec`.
+   - For teams: run `/ag-governed-delivery-team` to generate a User Story for business review first.
 ```
 
 ## Guardrails
@@ -108,6 +112,8 @@ You can now run the following command to generate the formal specification:
 - **Conversational**: The goal is discussion and alignment, not outputting massive markdown files immediately.
 - **Non-Blocking Governance**: Treat the architecture constitution as authoritative context. Clearly warn on drift, recommend compliant alternatives, and only stop the path when a rule is explicitly blocking or P0.
 - **Ponytail Pragmatism**: Advocate for the simplest, lowest-effort solution that satisfies the user's goal without over-engineering.
+- **Strictly Read-Only**: Discovery is strictly read-only. Do not create, modify, delete, install, upgrade, or format source files, dependency manifests, lockfiles, tests, specs, plans, tasks, or configuration. Only inspect files and discuss options. Implementation requires an explicit transition to governed-spec, governed-plan, or governed-implement.
+- **Override Handling**: If the user attempts to skip, override, or prematurely exit the discovery stage, you MUST pause and ask them to choose one of three paths: 1) Create the Discovery Summary Draft based on the discussion so far, 2) Exit discovery immediately (warning them that current discovery context will be lost), or 3) Continue the discovery discussion.
 
 ## Graceful Degradation
 

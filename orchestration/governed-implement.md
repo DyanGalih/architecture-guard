@@ -1,5 +1,5 @@
 ---
-description: Run implementation with memory context, then review the produced implementation against security and architecture constraints.
+description: Execute implementation tasks, then review the result against available security and architecture constraints.
 ---
 
 # Governed Implement Command
@@ -95,7 +95,7 @@ IF `security-review` (or compatibility alias `spec-kit-security-review`) is avai
 
 Run:
 ```text
-`{adapter_command:ag-review-implementation}`
+`{adapter_command:architecture-review}`
 ```
 
 Review implementation against:
@@ -195,7 +195,7 @@ The command MUST return:
 ## Recommended Next Step
 - [e.g., Merge changes]
 - [e.g., Revise implementation to address Security Conflict]
-- [e.g., Run `{adapter_command:ag-apply}`]
+- [e.g., Run `{adapter_command:architecture-apply}`]
 - **Durable Memory Preservation**: (Proactively triggered) Review the proposed memory entries below.
 - **Verification Gate**: Run the adapter's registered architecture-verify capability to ensure all tasks are delivered and requirements are met.
 ```
@@ -222,4 +222,4 @@ If implementation repeatedly violates a standard because the standard is outdate
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `src/commands/ag-governed-implement.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `commands/governed-implement.md` for direct SpecKit use.

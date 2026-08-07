@@ -1,5 +1,5 @@
 ---
-description: Perform a technology-agnostic architecture review validating pre-implementation planning artifacts against active specification, design, and task documents, as well as the constitutions.
+description: Review specification and planning artifacts against architectural rules without reading implementation code.
 ---
 
 # Architecture Review Command
