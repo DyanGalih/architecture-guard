@@ -36,6 +36,8 @@ Use this adapter when the active SDD tool is **Spec Kit** (`.specify/` directory
 |---|---|
 | create-spec | `/speckit.specify`; if unavailable, create `{adapter_path:spec}` inline from user intent and governing context |
 | create-change | Require or create the feature workspace before specification creation |
+| archive | SpecKit has no native archive command; after verification, move active feature artifacts to the configured archive location only with explicit user approval |
+| verify | Use the registered Architecture Guard verification capability, or run the verification workflow inline |
 | clarify-spec | `/speckit.clarify`; if unavailable, ask and apply an inline ambiguity-resolution loop |
 | create-plan | `/speckit.plan`; if unavailable, create `{adapter_path:plan}` inline from the active spec |
 | create-tasks | `/speckit.tasks`; if unavailable, create `{adapter_path:tasks}` inline from the active plan |

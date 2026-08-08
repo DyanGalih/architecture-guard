@@ -47,6 +47,8 @@ npm install -g architecture-guard
 architecture-guard
 ```
 
+To update a globally installed CLI explicitly, run `architecture-guard update` (or `architecture-guard self-update`).
+
 The installer launches a setup wizard that asks you to select:
 1. **AI agent(s)** — OpenCode, Claude Code, Gemini CLI, etc.
 2. **SDD tool** — Spec Kit, OpenSpec, or a generic Markdown workflow.
@@ -65,6 +67,7 @@ Instead of letting AI agents run wild, Architecture Guard provides structured en
 | **`ag-governed-discover`**<br>*(or `/speckit.ag-governed-discover`)* | Idea-stage | Shapes a rough request into a spec-ready direction *before* formal specification. |
 | **`ag-governed-delivery`**<br>*(or `/speckit.ag-governed-delivery`)* | Delivery stage | Resumes governed delivery from an active specification through plan and task generation, with optional memory context, security and architecture gates, task reconciliation, and analysis. |
 | **`ag-governed-delivery-team`**<br>*(or `/speckit.ag-governed-delivery-team`)* | Team delivery | Creates a stakeholder-approved User Story before the governed plan-to-tasks workflow. |
+| **`ag-governed-archive`**<br>*(or `/speckit.ag-governed-archive`)* | Finalization | Archives a completed feature after verification, with explicit approval for changelog, memory, Git, and cleanup actions. |
 | **`ag-governed-implement`**<br>*(or `/speckit.ag-governed-implement`)* | Implementation | Executes the generated tasks while strictly following the plan and architecture rules. |
 
 *(Note: Granular commands like `ag-governed-spec`, `ag-governed-plan`, and `ag-governed-tasks` are still available if you want manual control. See the [Manual Workflow Guide](docs/manual-workflow-guide.md).)*

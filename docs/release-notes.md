@@ -1,3 +1,9 @@
+## 2.3.0
+- Added framework-agnostic governed delivery and team User Story workflows.
+- Synchronized adapter contracts, prompt descriptions, installer registration, and project-relative command examples.
+- Added CLI update and JSON changed-file capabilities.
+- Added a verification-gated `governed-archive` workflow for OpenSpec, SpecKit, and generic Markdown projects.
+
 ## 2.1.2
 - Fixed `ag-review-artifacts` ambiguity by removing auto-detection for pre-implementation reviews. It now requires an explicit `--artifacts-only` flag to ignore codebase implementations.
 

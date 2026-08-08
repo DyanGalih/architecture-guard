@@ -31,7 +31,8 @@ program
     .action(install_1.runInstallCommand);
 program
     .command('detect-changed-files')
-    .description('Detect changed files via git diff')
+    .description('Detect staged, unstaged, and untracked files')
+    .option('--json', 'Output results in JSON format')
     .action(detect_changed_files_1.runDetectChangedFiles);
 program
     .command('check-architecture')
@@ -53,4 +54,10 @@ program
     .command('review-implementation')
     .description('Evaluate implementation code against the planned architecture and constraints')
     .action(review_implementation_1.runReviewImplementation);
+const self_update_1 = require("../cli/self-update");
+program
+    .command('update')
+    .alias('self-update')
+    .description('Update the globally installed architecture-guard CLI to the latest version')
+    .action(self_update_1.runSelfUpdate);
 program.parse(process.argv);
