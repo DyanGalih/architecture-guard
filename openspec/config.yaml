@@ -3,24 +3,30 @@ schema: spec-driven
 # Project context (shown to AI when creating artifacts).
 context: |
   Repository: architecture-guard — repository-native architecture governance for SDD frameworks.
-  Dual-repo layout (NOT a git submodule):
-    - Parent repo (here): SDD spec / documentation store. Holds openspec/ changes, specs, and config.yaml.
-    - Nested src/ repo (remote git@github.com:DyanGalih/architecture-guard.git): the
-      deliverable that ships to npm as `architecture-guard`. Contains install.js, adapters/,
-      orchestration/, commands/, templates/, presets/, hygiene-rules/, sonar-rules/, scripts/,
-      package.json, .npmignore. Verify changes against `src/` before publishing.
-  Tech stack: markdown command docs, YAML manifest files, Bash and PowerShell scripts,
-    Node.js/CLI tooling, Flash-Mem MCP storage.
-  Conventions: memory-first workflows when Flash-Mem is available; non-blocking architecture
-    drift by default; architecture, governance, and security rules are separated; approved
-    refactors stay small and targeted; markdown constitutions and command files are the review
-    source of truth; application code lives under src/. DRY is a formal engineering principle:
-    core business rules, approvals, validation, DTO mapping, transformations, and orchestration
-    live in a single source of truth; duplicated logic is flagged as drift and can be enforced as
-    P0.
-  SDD frameworks supported: SpecKit (.specify/), OpenSpec (openspec/config.yaml + openspec/changes/),
-    framework-agnostic (generic). Architecture Guard orchestrates on top of any of them via
-    adapters/adapters/*.md; detection preamble lives at adapters/detect.md.
+  Engineering Philosophy:
+    - Ponytail principles: YAGNI, standard library preference, lazy senior mindset.
+    - Conventions: memory-first workflows when Flash-Mem is available; non-blocking architecture
+      drift by default; approved refactors stay small and targeted; markdown constitutions and command files are the review
+      source of truth.
+  
+  Code Review Expectations:
+    - All PRs require at least one approval.
+    - Architecture Guard rules and validation must pass.
+  
+  Documentation Standards:
+    - Feature additions must update relevant Markdown documentation.
+    - Architecture rules must be documented via OpenSpec artifacts.
+  
+  Code Style & Linting:
+    - ESLint rules are blocking (must run `npm run lint` successfully).
+    - Maintain strict typing; no implicit `any`.
+  
+  Operational & CI Expectations:
+    - CI pipeline must run tests (`npm run test`) and linter successfully before merge.
+    - Test regressions or failure to build (`npm run build`) block releases.
+  
+  Architecture enforcement rules are defined in `openspec/architecture.md`.
+  Security rules are defined in `openspec/security.md`.
 
 # Per-artifact rules (optional).
 # Example:

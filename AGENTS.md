@@ -52,3 +52,14 @@ Keep durable project memory current and easy to retrieve.
 
 Use `flash-mem update` to refresh this block if it changes.
 <!-- flash-mem-protocol-end -->
+
+## Architecture Guard
+
+Use these governance rules across all SDD workflow phases.
+Read the installed governance commands or skills at:
+- `.agent/skills/*`
+- `.opencode/commands/*`
+
+- **Ponytail Core Contract**: Before spec/plan/tasks/implement, read and apply the ponytail pragmatism contract.
+- **After each phase**: Run architecture review for boundary drift, DRY violations, and repository hygiene.
+- **Framework detection**: Project uses auto-detected SDD framework. Read `adapters/detect.md` before first command.
