@@ -120,6 +120,7 @@ const COMMANDS = [
   'violation-detection',
   'refactor-generator',
   'consolidate-specs',
+  'governed-archive',
 ];
 
 async function ask(promptText, choices, multi = false) {

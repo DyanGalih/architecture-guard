@@ -160,6 +160,7 @@ const COMMANDS = [
     'violation-detection',
     'refactor-generator',
     'consolidate-specs',
+    'governed-archive',
 ];
 exports.COMMANDS = COMMANDS;
 async function ask(promptText, choices, multi = false) {

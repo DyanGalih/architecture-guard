@@ -32,6 +32,8 @@ Use this adapter when no supported SDD tool is selected. Ask the user for active
 |---|---|
 | create-spec | Create the user-selected specification artifact inline |
 | create-change | No container step; use the user-selected artifact paths |
+| archive | Unsupported natively; preserve artifacts and report that archival must be performed manually after user confirmation |
+| verify | Run the Architecture Guard verification workflow against the user-selected artifacts |
 | clarify-spec | Ask and apply an inline ambiguity-resolution loop |
 | create-plan | Create the user-selected planning artifact inline |
 | create-tasks | Create the user-selected task artifact inline |

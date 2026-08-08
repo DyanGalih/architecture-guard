@@ -37,7 +37,8 @@ program
 
 program
   .command('detect-changed-files')
-  .description('Detect changed files via git diff')
+  .description('Detect staged, unstaged, and untracked files')
+  .option('--json', 'Output results in JSON format')
   .action(runDetectChangedFiles);
 
 program
@@ -65,5 +66,13 @@ program
   .command('review-implementation')
   .description('Evaluate implementation code against the planned architecture and constraints')
   .action(runReviewImplementation);
+
+import { runSelfUpdate } from '../cli/self-update';
+
+program
+  .command('update')
+  .alias('self-update')
+  .description('Update the globally installed architecture-guard CLI to the latest version')
+  .action(runSelfUpdate);
 
 program.parse(process.argv);

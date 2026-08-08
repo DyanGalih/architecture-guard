@@ -72,8 +72,8 @@ Before generating artifacts or modifying files, you MUST ensure work happens on 
 
 Before engineering planning begins, generate a business-oriented User Story representing the approved business intent.
 
-1. Check if a `user-story.md` file already exists in the active feature directory.
-2. If it does not exist, analyze the Discovery context and generate a User Story containing:
+1. Look in the root `<root>/user-stories/` directory. If multiple stories exist, use an interactive prompt to ask the user which User Story they are fulfilling, or if they want to create a new one.
+2. If creating a new story, analyze the Discovery context and generate a User Story containing:
    - Business objective
    - User stories
    - Acceptance criteria
@@ -83,9 +83,10 @@ Before engineering planning begins, generate a business-oriented User Story repr
    - Risks
    - Open questions
 3. Ensure the User Story is understandable by technical and non-technical stakeholders.
-4. Persist the generated User Story as `user-story.md` in the active feature directory with status `draft`.
+4. Persist the generated User Story as `<feature-name>.md` in the `<root>/user-stories/` directory with status `draft`.
 5. Present it for stakeholder review and stop before engineering planning until the user explicitly accepts it. Record the result as `approved` in the file.
-6. If a previously approved `user-story.md` has been modified after engineering artifacts were generated, mark it `review-required`, warn the user, and require re-approval before proceeding.
+6. (Placeholder: Once approved, trigger the issue tracker MCP sync here, e.g., create GitHub Issue, if configured in governance).
+7. If a previously approved User Story has been modified after engineering artifacts were generated, mark it `review-required`, warn the user, and require re-approval before proceeding.
 
 ## Phase 5 — Spec & Proposal Gate
 
@@ -118,6 +119,7 @@ Do not use timestamps as the only evidence of material staleness. Compare artifa
 ## Phase 7 — Plan Gate
 
 If the plan is `missing` or `stale`, execute the full `/ag-governed-plan` (or `/ag-governed-plan`) workflow.
+- **Linkage metadata**: When generating the new technical plan (`plan.md` or `design.md`), inject the YAML frontmatter `Story: ../../../user-stories/<selected-story>.md` to establish the explicit link between the technical change and the business epic.
 
 If the plan is `review-required`, reuse it and run the applicable security plan review plus `/ag-review-artifacts`. Do not regenerate a plan merely because review is needed.
 

@@ -128,10 +128,19 @@ test('--help prints usage and exits without writing files', () => {
     assert.equal(result.status, 0);
     assert.match(result.stdout, /init \[options\] \[target\]/i);
     assert.ok(!fs.existsSync(path.join(cwd, '.opencode')));
+    const jsonResult = spawnSync(process.execPath, [installer, 'detect-changed-files', '--json'], { cwd, encoding: 'utf8' });
+    assert.notEqual(jsonResult.status, 0);
+    assert.doesNotThrow(() => JSON.parse(jsonResult.stderr.match(/{.*}/s)[0]));
 });
 test('installer exposes init only and publishes linked documentation', () => {
     const pkg = require('../package.json');
+    assert.equal(require('./cli/self-update').compareSemver('2.3.0', '2.2.2'), 1);
+    assert.equal(require('./cli/self-update').compareSemver('2.2.2', '2.2.2'), 0);
+    assert.equal(require('./cli/self-update').compareSemver('2.2.1', '2.2.2'), -1);
+    assert.equal(require('./cli/self-update').compareSemver('v2.2.2', '2.2.2'), 0);
+    assert.equal(require('./cli/self-update').compareSemver('2.2.2', '2.2.2-rc.1'), 1);
     assert.ok(require('./cli/install').COMMANDS.includes('governed-delivery-team'));
+    assert.ok(require('./cli/install').COMMANDS.includes('governed-archive'));
     assert.deepEqual([...new Set(pkg.files.filter(file => ['docs/', 'examples/', 'adapters/'].includes(file)))], ['adapters/', 'docs/', 'examples/']);
     const result = spawnSync(process.execPath, [installer, 'review'], { encoding: 'utf8' });
     assert.notEqual(result.status, 0);

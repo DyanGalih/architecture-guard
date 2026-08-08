@@ -414,6 +414,24 @@ Examples:
 
 ---
 
+### Delivery Topology (Team vs Solo)
+
+Ask:
+
+```text
+Are you working on this project as a solo developer, or as part of a team?
+
+- Solo Development
+- Team Development
+```
+
+If the user selects Team Development:
+1. Write `Mode: Team` into the governance rules (e.g., `openspec/config.yaml` or `.specify/memory/constitution.md`).
+2. Ask: "Which issue tracker MCP server should be used to sync User Stories? (e.g., github-mcp-server, jira, none)". Save this preference in the governance rules.
+3. Automatically scaffold a `user-stories/` directory at the project root to house global business requirements.
+
+---
+
 ### Architecture Context Budget
 
 After the project shape is understood, ask:

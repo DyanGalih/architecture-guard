@@ -170,6 +170,7 @@ This injects refactor tasks into `plan.md` and `tasks.md` so the AI has explicit
 | `governed-spec` | Orchestration | Specification and Clarification with `flash-mem` synthesis first + security + architecture, plus auto-fix loop | Use when `flash-mem` and Security Review are installed to start from specification |
 | `governed-delivery` | Orchestration | Resume governed delivery from an active specification through plan and task generation, with optional memory context, gates, reconciliation, and analysis | Recommended entry point after specification |
 | `governed-delivery-team` | Orchestration | Team delivery flow with an approved User Story before planning and task generation | Use when stakeholders need to approve business intent before engineering proceeds |
+| `governed-archive` | Finalization | Archives a completed feature after verification, with explicit approval for changelog, memory, Git, and cleanup actions | Use only after implementation is verified |
 | `ag-workflow` | General Review | Violations, severity and priority, refactor tasks, evolution proposals | Entry point for end-to-end review; good for dashboards |
 | `ag-review-artifacts` | Validation | Validates planning artifacts (spec, plan) against constitution without reading code | After `/specify` or `/plan` |
 | `ag-review-implementation` | Validation | Validates implementation codebase against planning artifacts and constitution | After `/implement` |
@@ -210,6 +211,7 @@ optimizer:
 | `governed-spec` | Orchestration | Specification and Clarification with `flash-mem` synthesis first + security + architecture + auto-fix loop | Use when `flash-mem` and Security Review are installed to start from specification |
 | `governed-delivery` | Orchestration | Resume governed delivery from an active specification through plan and task generation, with optional memory context, security review, architecture gates, task reconciliation, and analysis | Suggested flow after specification; rerun safely to resume |
 | `governed-delivery-team` | Orchestration | Team delivery flow with an approved User Story before planning and task generation | Suggested for stakeholder-reviewed delivery |
+| `governed-archive` | Finalization | Archives a completed feature after verification, with explicit approval for changelog, memory, Git, and cleanup actions | Use only after implementation is verified |
 | `governed-plan` | Orchestration | Generate and validate a technical plan with optional memory context, Security Review, and Architecture Guard checks | Use when `flash-mem` and Security Review are installed |
 | `governed-tasks` | Orchestration | Generate or reconcile implementation tasks, then analyze security, architecture, migration, and refactor coverage | Use when companion extensions are installed |
 | `governed-implement` | Orchestration | Execute implementation tasks, then review the result against available security and architecture constraints | Use for end-to-end implementation with governance |
