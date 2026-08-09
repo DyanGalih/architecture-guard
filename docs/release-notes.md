@@ -1,3 +1,6 @@
+## 2.3.2
+- Fixed the sync-config validator build by declaring its `yaml` and `zod` runtime dependencies.
+
 ## 2.3.1
 - Added AI agent auto-detection during installation to seamlessly select installed agents based on directory presence.
 - Added an explicit `archive` command to fully clean up empty source directories during feature archival.

@@ -6,7 +6,7 @@
 
 > Keep AI-generated code aligned with your architecture, specs, and delivery workflow.
 
-[![Version](https://img.shields.io/badge/version-2.3.1-22c55e)](extension.yml)
+[![Version](https://img.shields.io/badge/version-2.3.2-22c55e)](extension.yml)
 [![OpenSpec](https://img.shields.io/badge/OpenSpec-compatible-8b5cf6)](https://github.com/Fission-AI/OpenSpec)
 [![Spec Kit](https://img.shields.io/badge/Spec%20Kit-compatible-2563eb)](https://spec-kit.dev)
 [![Non-blocking](https://img.shields.io/badge/style-non--blocking-10b981)](https://spec-kit.dev)
