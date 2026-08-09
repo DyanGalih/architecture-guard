@@ -20,6 +20,7 @@ const create_context_budget_fixtures_1 = require("../cli/create-context-budget-f
 const test_install_1 = require("../cli/test-install");
 const review_artifacts_1 = require("../cli/review-artifacts");
 const review_implementation_1 = require("../cli/review-implementation");
+const archive_1 = require("../cli/archive");
 program
     .command('init [target]')
     .description('Install governance commands')
@@ -54,6 +55,10 @@ program
     .command('review-implementation')
     .description('Evaluate implementation code against the planned architecture and constraints')
     .action(review_implementation_1.runReviewImplementation);
+program
+    .command('archive <changeName>')
+    .description('Archive a completed OpenSpec change')
+    .action(archive_1.runArchive);
 const self_update_1 = require("../cli/self-update");
 program
     .command('update')

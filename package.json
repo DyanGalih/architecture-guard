@@ -1,15 +1,15 @@
 {
   "name": "architecture-guard",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "SDD-tool-agnostic architecture governance orchestrator for Spec Kit, OpenSpec, and generic Markdown workflows. Detects the active SDD tool and applies the matching adapter automatically.",
   "bin": {
     "architecture-guard": "./dist/bin/cli.js"
   },
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && node --test dist/install.test.js",
+    "test": "npm run build && node --test dist/install.test.js dist/archive.test.js",
     "lint": "eslint .",
-    "prepublishOnly": "npm run lint && npm run build && node --test dist/install.test.js"
+    "prepublishOnly": "npm run lint && npm run build && node --test dist/install.test.js dist/archive.test.js"
   },
   "keywords": [
     "sdd",
