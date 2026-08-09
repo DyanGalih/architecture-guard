@@ -105,7 +105,7 @@ Run:
 ```
 
 Inputs to consider:
-- The generated `plan.md`.
+- The generated `plan.md` (or `proposal.md`).
 - `{adapter_path:arch-constitution}`.
 - Flash-Mem context (if available).
 - `security-constraints.md` (if available).
