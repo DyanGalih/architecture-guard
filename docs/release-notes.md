@@ -1,3 +1,6 @@
+## 2.3.3
+- Removed generated dist artifacts from version control while preserving build and npm packaging behavior.
+
 ## 2.3.2
 - Fixed the sync-config validator build by declaring its `yaml` and `zod` runtime dependencies.
 
