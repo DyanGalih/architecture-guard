@@ -1,4 +1,6 @@
 ## 2.3.0
+- Added: Enhanced `/ag-init` workflow to interactively scaffold `.architecture-guard/sync.yml` when a team issue tracker is selected.
+- Added: One-way sync feature for User Stories to external issue trackers (GitHub/Jira) via `.architecture-guard/sync.yml`.
 - Added framework-agnostic governed delivery and team User Story workflows.
 - Synchronized adapter contracts, prompt descriptions, installer registration, and project-relative command examples.
 - Added CLI update and JSON changed-file capabilities.

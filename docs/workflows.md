@@ -130,3 +130,30 @@ Best for most features. It automatically chains Spec, Plan, and Task generation 
 7. **Verification:** Run `/ag-verify` as your final gate. **Ready to commit!**
 
 If you are specifically cleaning up duplicated logic (Brownfield), follow the [DRY Cleanup Guide](dry-cleanup.md) after your initialization pass. This keeps architecture concerns visible throughout the delivery lifecycle instead of concentrating them at the end.
+
+## User Story Tracker Sync (Team Delivery)
+
+The `ag-governed-delivery-team` workflow supports pushing approved User Stories to an external issue tracker (e.g., GitHub Issues or Jira) automatically. This is a one-way sync (push only) designed to minimize complexity while satisfying YAGNI.
+
+### Configuration
+
+Create a file at `.architecture-guard/sync.yml` in your workspace:
+
+```yaml
+# Supported providers: github, jira
+provider: github
+# Optional repository or project mapping
+repo: my-org/my-repo
+enabled: true
+```
+
+The configuration is strictly validated during the workflow using the `validate-sync-config.ts` CLI tool to ensure security constraints on untrusted input are met.
+
+### How it Works
+1. Run `/ag-governed-delivery-team`.
+2. A User Story is generated and proposed.
+3. Upon your explicit approval, the agent reads `sync.yml`.
+4. If enabled, the agent uses its MCP tools (e.g., `github-mcp-server`) to create the issue in your tracker.
+5. The result is recorded locally in `.architecture-guard/sync_status.json` (e.g., `{ "status": "success", "issue_url": "..." }`).
+
+If the push fails, the workflow gracefully degrades by logging a warning and writing `{ "status": "failed" }` to the status file without blocking local delivery.

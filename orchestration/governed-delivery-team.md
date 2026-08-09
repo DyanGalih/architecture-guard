@@ -81,7 +81,11 @@ Before engineering planning begins, generate a business-oriented User Story repr
 3. Ensure the User Story is understandable by technical and non-technical stakeholders.
 4. Persist the generated User Story as `<feature-name>.md` in the `<root>/user-stories/` directory with status `draft`.
 5. Present it for stakeholder review and stop before engineering planning until the user explicitly accepts it. Record the result as `approved` in the file.
-6. (Placeholder: Once approved, trigger the issue tracker MCP sync here, e.g., create GitHub Issue, if configured in governance).
+6. Once the User Story is approved, check for the presence of `.architecture-guard/sync.yml`. If it exists:
+   - Run `npx tsx src/cli/validate-sync-config.ts` to strictly validate the configuration.
+   - If the configuration is valid and `enabled: true`, read the User Story content and push it to the configured provider (e.g., via your `github-mcp-server` to create an issue).
+   - Record the resulting issue ID or URL in `.architecture-guard/sync_status.json` (e.g., `{ "status": "success", "issue_url": "..." }`).
+   - If the push fails, write `{ "status": "failed" }` to `.architecture-guard/sync_status.json` and output a non-blocking warning. Do NOT stop the delivery workflow.
 7. If a previously approved User Story has been modified after engineering artifacts were generated, mark it `review-required`, warn the user, and require re-approval before proceeding.
 
 ## Phase 4 — Inspect Resume State

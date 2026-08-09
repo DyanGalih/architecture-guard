@@ -433,6 +433,7 @@ If the user selects Team Development:
 1. Write `Mode: Team` into the governance rules (e.g., `openspec/config.yaml` or `.specify/memory/constitution.md`).
 2. Ask: "Which issue tracker MCP server should be used to sync User Stories? (e.g., github-mcp-server, jira, none)". Save this preference in the governance rules.
 3. Automatically scaffold a `user-stories/` directory at the project root to house global business requirements.
+4. If an issue tracker is selected (not "none"), ask for the required provider configuration (e.g., `repo` string for GitHub or `project` string for Jira). Then, automatically scaffold the `.architecture-guard/sync.yml` file configuring the chosen provider, the project/repo string, and `enabled: true`.
 
 ---
 
