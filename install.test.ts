@@ -35,12 +35,12 @@ test('existing commands skip by default, replace, or keep both', () => {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.writeFileSync(dest, 'original');
 
-  install('24\n3\n2\n\nn\n', cwd);
+  install('1\n3\n2\n\nn\n', cwd);
   assert.equal(fs.readFileSync(dest, 'utf8'), 'original');
-  install('24\n3\n2\n2\n\nn\n', cwd);
+  install('1\n3\n2\n2\n\nn\n', cwd);
   assert.notEqual(fs.readFileSync(dest, 'utf8'), 'original');
   fs.writeFileSync(dest, 'original');
-  install('24\n3\n2\n3\n\nn\n', cwd);
+  install('1\n3\n2\n3\n\nn\n', cwd);
   assert.equal(fs.readFileSync(dest, 'utf8'), 'original');
   assert.ok(fs.existsSync(path.join(cwd, '.opencode/commands/ag-init.architecture-guard.md')));
   assert.ok(fs.existsSync(path.join(cwd, 'adapters/detect.md')));
@@ -55,7 +55,7 @@ test('keep both creates a discoverable sibling skill', () => {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.writeFileSync(dest, 'original');
 
-  install('5\n3\n2\n3\nn\n', cwd);
+  install('1\n3\n2\n3\nn\n', cwd);
   assert.equal(fs.readFileSync(dest, 'utf8'), 'original');
   assert.ok(fs.existsSync(path.join(cwd, '.claude/skills/ag-init-2/SKILL.md')));
 });
@@ -100,13 +100,13 @@ test('escapes TOML triple quotes and emits safe YAML metadata', () => {
 
 test('runtime resources default to skip and replace on approval', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
-  install('24\n3\n2\nn\n', cwd);
+  install('1\n3\n2\nn\n', cwd);
   const template = path.join(cwd, '.architecture-guard/templates/ponytail_core.md');
   fs.writeFileSync(template, 'custom');
 
-  install('24\n3\n2\n\nn\n', cwd);
+  install('1\n3\n2\n\nn\n', cwd);
   assert.equal(fs.readFileSync(template, 'utf8'), 'custom');
-  install('24\n3\n2\n2\n2\nn\n', cwd);
+  install('1\n3\n2\n2\n2\nn\n', cwd);
   assert.notEqual(fs.readFileSync(template, 'utf8'), 'custom');
 });
 
