@@ -24,6 +24,7 @@ import { runCreateContextBudgetFixtures } from '../cli/create-context-budget-fix
 import { runTestInstall } from '../cli/test-install';
 import { runReviewArtifacts } from '../cli/review-artifacts';
 import { runReviewImplementation } from '../cli/review-implementation';
+import { runArchive } from '../cli/archive';
 
 program
   .command('init [target]')
@@ -66,6 +67,11 @@ program
   .command('review-implementation')
   .description('Evaluate implementation code against the planned architecture and constraints')
   .action(runReviewImplementation);
+
+program
+  .command('archive <changeName>')
+  .description('Archive a completed OpenSpec change')
+  .action(runArchive);
 
 import { runSelfUpdate } from '../cli/self-update';
 

@@ -38,7 +38,7 @@ Use this adapter when the active SDD tool is **OpenSpec** (`openspec/config.yaml
 |---|---|
 | create-spec | Read `openspec instructions specs --change "{change}" --json`, then create the requested change-level specs inline |
 | create-change | If the named change does not exist, run `openspec new change "{change}"`; otherwise reuse it |
-| archive | Run `openspec archive "{change}"` after verification and explicit user approval |
+| archive | Run `architecture-guard archive "{change}"` |
 | verify | Run the Architecture Guard verification workflow against the active change |
 | clarify-spec | Unsupported natively; ask and apply an inline ambiguity-resolution loop |
 | create-plan | Read `openspec instructions design --change "{change}" --json`, then create `{adapter_path:plan}` inline |

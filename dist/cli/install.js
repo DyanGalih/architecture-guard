@@ -171,19 +171,19 @@ async function ask(promptText, choices, multi = false) {
             return input;
         if (multi) {
             if (input.trim().toLowerCase() === 'all')
-                return choices;
+                return choices.map(c => typeof c === 'string' ? c : c.value);
             const indices = input.split(',').map(s => parseInt(s.trim()) - 1).filter(i => i >= 0 && i < choices.length);
-            return indices.map(i => choices[i]);
+            return indices.map(i => typeof choices[i] === 'string' ? choices[i] : choices[i].value);
         }
         const idx = parseInt(input.trim()) - 1;
-        return (idx >= 0 && idx < choices.length) ? choices[idx] : null;
+        return (idx >= 0 && idx < choices.length) ? (typeof choices[idx] === 'string' ? choices[idx] : choices[idx].value) : null;
     }
     const { input, select, checkbox } = await Promise.resolve().then(() => __importStar(require('@inquirer/prompts')));
     // Clean up prompt text (remove trailing colons or extra spaces that inquirer adds natively)
     const message = promptText.trim().replace(/:$/, '');
     try {
         if (choices) {
-            const formattedChoices = choices.map((c) => ({ name: c, value: c }));
+            const formattedChoices = choices.map((c) => (typeof c === 'string' ? { name: c, value: c } : c));
             if (multi) {
                 return await checkbox({
                     message: message,
@@ -499,10 +499,24 @@ async function main() {
     await runInit(targetDir, opts);
 }
 async function runInit(targetDir, opts) {
-    const agentNames = Object.keys(AGENT_CONFIGS).sort();
+    const allAgentNames = Object.keys(AGENT_CONFIGS).sort();
+    const detectedAgents = [];
+    const undetectedAgents = [];
+    for (const name of allAgentNames) {
+        if (fs.existsSync(path.join(targetDir, AGENT_CONFIGS[name].dir))) {
+            detectedAgents.push(name);
+        }
+        else {
+            undetectedAgents.push(name);
+        }
+    }
+    const agentChoices = [
+        ...detectedAgents.map(a => ({ name: a, value: a, checked: true })),
+        ...undetectedAgents.map(a => ({ name: a, value: a }))
+    ];
     const selectedAgents = opts.agents
         ? opts.agents.split(',').map(s => s.trim()).filter(a => AGENT_CONFIGS[a])
-        : await ask('Select AI agent(s) to install commands for:', agentNames, true);
+        : await ask('Select AI agent(s) to install commands for:', agentChoices, true);
     if (!selectedAgents || selectedAgents.length === 0) {
         console.log('No agents selected. Exiting.');
         process.exit(0);
