@@ -47,7 +47,7 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 Build internal representations:
 - **Task-Boundary Map**: Associate each task with its intended architecture layer (Entry, Application, Domain, Data, External).
 - **Implementation Evidence**: For each completed task (`[x]`), scan referenced files for logic that addresses the task description.
-- **Contract Inventory**: Extract planned API/Data signatures from `plan.md`.
+- **Contract Inventory**: Extract planned API/Data signatures from the technical design artifact.
 - **Duplication Check**: Look for repeated business logic, validation, or transformation across files and confirm it has been centralized or explicitly justified.
 
 **Common DRY Signals**

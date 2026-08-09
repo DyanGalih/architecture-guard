@@ -67,7 +67,7 @@ Before analysis, build internal representations (do not output these):
 ## Detection Scope
 
 ### A. Intent & Alignment
-- **Intent Divergence**: Implementation deviates fundamentally from `spec.md` or `plan.md` intent.
+- **Intent Divergence**: Implementation deviates fundamentally from `spec.md` or the technical design artifact intent.
 - **Hallucinated Abstractions**: Plan mentions an abstraction (e.g., Repository) that is missing in code.
 - **Spec-Code Mismatch**: Functional requirements from spec are implemented in the wrong architectural layer.
 - **Ponytail Violation (Bloat)**: Plan, tasks, or code duplicate existing capability, add avoidable files or dependencies, include unnecessary boilerplate or future-proofing, or bypass a correct standard-library or native-platform feature.
@@ -127,7 +127,7 @@ A Security-Architecture Conflict occurs when security requirements and architect
 
     If Flash-Mem is unavailable or the context is insufficient, continue with the repository artifacts and constitution files available in the workspace.
 2. **Verify Evidence**: Check if task-referenced files exist and contain expected implementation logic.
-3. **Analyze Alignment**: Compare `spec.md` intent vs. `plan.md` architecture vs. actual behavior.
+3. **Analyze Alignment**: Compare `spec.md` intent vs. the technical design artifact architecture vs. actual behavior.
 4. **Scan Principles**: Apply detection scope across boundaries and contracts.
 5. **Security & Governance Cross-Check**: Ensure architecture decisions do not violate `{adapter_path:security-constitution}` or `{adapter_path:security-constraints}`.
 6. **Assign Severity**:

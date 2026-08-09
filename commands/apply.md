@@ -14,7 +14,7 @@ If `flash-mem` is available, use the MCP-backed context preparation flow exposed
 
 This is the write-capable companion to the review workflow. Use it when the team wants the architecture feedback reflected directly in planning artifacts instead of only receiving suggestions.
 
-Use it after `ag-review-artifacts`, `ag-review-implementation` or `ag-violation-detection` has produced approved refactor tasks, or when a Constitution Update Proposal should be reflected in design or task artifacts (e.g., `plan.md`, `design.md`, `tasks.md`).
+Use it after `ag-review-artifacts`, `ag-review-implementation` or `ag-violation-detection` has produced approved refactor tasks, or when a Constitution Update Proposal should be reflected in design or task artifacts (the exact filenames depend on the active SDD tool).
 
 Use it for approved Constitution Update Proposals when the change should be reflected in plan or task artifacts as explicit follow-up work.
 
@@ -24,7 +24,7 @@ You may update plan and task artifacts, but you must keep the changes small, tar
 
 You may revise:
 
-- `plan.md`
+- the technical design artifact
 - `tasks.md`
 - Related task breakdown or checklist artifacts when they are part of the same Spec Kit workflow
 
@@ -51,7 +51,7 @@ Review any available:
 
 ## Apply Procedure
 
-1. Identify the approved architecture changes that should be reflected in design or task artifacts (e.g., `plan.md`, `design.md`, `tasks.md`).
+1. Identify the approved architecture changes that should be reflected in design or task artifacts (the exact filenames depend on the active SDD tool).
 2. Preserve the feature intent and implementation scope.
 3. Add or refine task entries for refactors that are safe to schedule.
 4. Reorder tasks when architectural dependencies matter.

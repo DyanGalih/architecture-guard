@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Budgeted Context Contract
 
-Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). Available active specification documents (e.g., `spec.md`, `design.md`, `plan.md` (or `proposal.md`), `tasks.md`), security constraints, applicable constitutions, and relevant code evidence are authoritative. Use fallback provenance to open historical specs only for named review gaps.
+Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). Available active specification documents (the exact filenames depend on the active SDD tool), security constraints, applicable constitutions, and relevant code evidence are authoritative. Use fallback provenance to open historical specs only for named review gaps.
 
 You are running `architecture-guard`, a technology-agnostic architecture review extension designed for high-integrity governance.
 
@@ -100,7 +100,7 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
    If Flash-Mem is unavailable or the context is insufficient, continue with the repository artifacts and constitution files available in the workspace.
 
 4. **Implementation Context**:
-    - Active specification and planning artifacts (e.g., `spec.md`, `design.md`, `plan.md` (or `proposal.md`), `tasks.md`, `data-model.md`)
+    - Active specification and planning artifacts (the exact filenames depend on the active SDD tool)
     - The detected `changed_files` and their respective directories.
 
 5. **Repository Hygiene**:

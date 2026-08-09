@@ -24,7 +24,7 @@
 
 ## 2.1.0
 - Rebuilt installer as a unified TypeScript CLI (`cli.ts`).
-- Generalized command prompts to support both SpecKit (`spec.md`, `plan.md`) and OpenSpec (`design.md`) artifacts natively.
+- Generalized command prompts to support both SpecKit (`spec.md`, the technical design artifact) and OpenSpec (`design.md`) artifacts natively.
 - Fixed command prompt prefixing to consistently use `.ag-` for extensions and `ag-` for standalone environments.
 - Added explicit Pre-Implementation and Post-Implementation review gates in the documentation workflows.
 

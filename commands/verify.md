@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Budgeted Context Contract
 
-Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). The active specification, design, and task artifacts (e.g., `spec.md`, `design.md`, `plan.md` (or `proposal.md`), `tasks.md`), applicable constitutions, security constraints, and code evidence are mandatory and authoritative. Neither Flash-Mem nor `system_context.md` is evidence that a task was implemented.
+Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). The active specification, design, and task artifacts (the exact filenames depend on the active SDD tool), applicable constitutions, security constraints, and code evidence are mandatory and authoritative. Neither Flash-Mem nor `system_context.md` is evidence that a task was implemented.
 
 Validate that the implementation fulfills all tasks in `tasks.md` while adhering to the defined architecture boundaries and the **Architecture Constitution**. This command acts as a post-implementation gate.
 
@@ -45,7 +45,7 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 Build internal representations:
 - **Task-Boundary Map**: Associate each task with its intended architecture layer (Entry, Application, Domain, Data, External).
 - **Implementation Evidence**: For each completed task (`[x]`), scan referenced files for logic that addresses the task description.
-- **Contract Inventory**: Extract planned API/Data signatures from the design artifact (`plan.md`, `design.md`, or `proposal.md`).
+- **Contract Inventory**: Extract planned API/Data signatures from the design artifact (the technical design artifact, `design.md`, or `proposal.md`).
 - **Duplication Check**: Look for repeated business logic, validation, or transformation across files and confirm it has been centralized or explicitly justified.
 
 **Common DRY Signals**

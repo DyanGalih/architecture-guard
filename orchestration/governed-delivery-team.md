@@ -90,11 +90,11 @@ Before engineering planning begins, generate a business-oriented User Story repr
 
 ## Phase 4 — Inspect Resume State
 
-Inspect `spec.md`, `plan.md` (or `proposal.md`), `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
+Inspect `spec.md`, the technical design artifact, `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
 
 Classify the plan:
 
-- `missing`: `plan.md` (or `proposal.md`) does not exist or is empty.
+- `missing`: the technical design artifact does not exist or is empty.
 - `stale`: `spec.md` or governing constraints changed materially after the plan was produced.
 - `blocked`: an unresolved P0 finding, policy-designated blocking security finding, or material design decision prevents safe task generation.
 - `review-required`: the plan exists but has not been validated against current inputs.
@@ -118,7 +118,7 @@ Before technical planning can occur, the feature must be formally proposed and s
 ## Phase 5 — Plan Gate
 
 If the plan is `missing` or `stale`, run `ag-governed-plan` with the active feature context.
-- **Linkage metadata**: When generating the new technical plan (`plan.md`, `design.md`, or `proposal.md`), inject the YAML frontmatter `Story: ../../../user-stories/<selected-story>.md` to establish the explicit link between the technical change and the business epic.
+- **Linkage metadata**: When generating the new technical plan (the technical design artifact, `design.md`, or `proposal.md`), inject the YAML frontmatter `Story: ../../../user-stories/<selected-story>.md` to establish the explicit link between the technical change and the business epic.
 
 If the plan is `review-required`, reuse it and run the applicable security plan review plus the adapter-registered violation-detection capability. Do not regenerate a plan merely because review is needed.
 

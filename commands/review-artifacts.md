@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Budgeted Context Contract
 
-Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). Available active specification documents (e.g., `spec.md`, `design.md`, `plan.md` (or `proposal.md`), `tasks.md`), security constraints, applicable constitutions, and relevant code evidence are authoritative. Use fallback provenance to open historical specs only for named review gaps.
+Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). Available active specification documents (the exact filenames depend on the active SDD tool), security constraints, applicable constitutions, and relevant code evidence are authoritative. Use fallback provenance to open historical specs only for named review gaps.
 
 You are running `architecture-guard`, a technology-agnostic architecture review extension designed for high-integrity governance.
 
@@ -49,7 +49,7 @@ You are running `architecture-guard`, a technology-agnostic architecture review 
 
 1. **Normalize Arguments**: Parse "$ARGUMENTS" to identify the `mode` (`architecture` or `performance`) and `focus` aspects (`general`, `db`, `api`, or `async`).
 2. **Identify Artifact Scope**:
-   - Focus strictly on validating the specification and planning artifacts (e.g., `spec.md`, `design.md`, `plan.md` (or `proposal.md`), `tasks.md`) against the architectural rules and constitutions.
+   - Focus strictly on validating the specification and planning artifacts (the exact filenames depend on the active SDD tool) against the architectural rules and constitutions.
    - Do **NOT** run changed-files detection scripts or evaluate source code.
 
 ## Input & Context Loading
@@ -70,7 +70,7 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
    If Flash-Mem is unavailable or the context is insufficient, continue with the repository artifacts and constitution files available in the workspace.
 
 4. **Planning Context**:
-    - Active specification and planning artifacts (e.g., `spec.md`, `design.md`, `plan.md` (or `proposal.md`), `tasks.md`, `data-model.md`)
+    - Active specification and planning artifacts (the exact filenames depend on the active SDD tool)
 
 5. **Repository Hygiene**:
     - Config: `.specify/config/repository_hygiene.yml` (or `repository_hygiene` block in constitution).
@@ -144,7 +144,7 @@ Every violation MUST cite evidence or explicitly note its absence. Evidence can 
 - **Absence**: Missing planning detail like `Task references Repository pattern but no data access module is planned`
 
 **Absence Evidence** is acceptable for CRITICAL violations only. Example:
-- "Constitution requires data access abstraction but `plan.md` (or `proposal.md`) does not specify one"
+- "Constitution requires data access abstraction but the technical design artifact does not specify one"
 
 For all other violations, cite specific planning locations, lines, or patterns. Vague claims like "business logic is leaking" without specific evidence are insufficient.
 
