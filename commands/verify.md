@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Budgeted Context Contract
 
-Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). The active specification, design, and task artifacts (e.g., `spec.md`, `design.md`, `plan.md`, `proposal.md`, `tasks.md`), applicable constitutions, security constraints, and code evidence are mandatory and authoritative. Neither Flash-Mem nor `system_context.md` is evidence that a task was implemented.
+Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). The active specification, design, and task artifacts (e.g., `spec.md`, `design.md`, `plan.md` (or `proposal.md`), `tasks.md`), applicable constitutions, security constraints, and code evidence are mandatory and authoritative. Neither Flash-Mem nor `system_context.md` is evidence that a task was implemented.
 
 Validate that the implementation fulfills all tasks in `tasks.md` while adhering to the defined architecture boundaries and the **Architecture Constitution**. This command acts as a post-implementation gate.
 

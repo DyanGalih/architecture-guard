@@ -120,7 +120,7 @@ Outputs:
 ag-apply
 ```
 
-This injects refactor tasks into `plan.md`, `proposal.md`, and `tasks.md` so the AI has explicit guidance to fix architectural debt while implementing features.
+This injects refactor tasks into `plan.md` (or `proposal.md`) and `tasks.md` so the AI has explicit guidance to fix architectural debt while implementing features.
 
 ### Greenfield Quick Start
 
@@ -156,7 +156,7 @@ ag-workflow
 ag-apply
 ```
 
-This injects refactor tasks into `plan.md`, `proposal.md`, and `tasks.md` so the AI has explicit guidance to fix architectural debt while implementing features.
+This injects refactor tasks into `plan.md` (or `proposal.md`) and `tasks.md` so the AI has explicit guidance to fix architectural debt while implementing features.
 
 
 ## Commands
@@ -218,7 +218,7 @@ optimizer:
 
 > Use `ag-governed-delivery` as the suggested plan-to-tasks flow. Use `ag-workflow`, `ag-review-artifacts` or `ag-review-implementation` directly for standalone reviews; the individual `ag-governed-plan` and `ag-governed-tasks` commands remain available for targeted recovery.
 
-> `ag-apply` targets `plan.md`, `proposal.md`, and `tasks.md`. If architectural issues are found in the specification stage, refine the specification before generating a technical plan. When `flash-mem` is available, use the cached synthesis and approved review output before writing back.
+> `ag-apply` targets `plan.md` (or `proposal.md`) and `tasks.md`. If architectural issues are found in the specification stage, refine the specification before generating a technical plan. When `flash-mem` is available, use the cached synthesis and approved review output before writing back.
 
 ## Budgeted Architecture Context Retrieval
 

@@ -78,7 +78,7 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
 
 3. **Feature-Specific Context**:
    - `{adapter_path:security-constraints}`
-   - `spec.md`, `plan.md`, `proposal.md`, `tasks.md`, `data-model.md`
+   - `spec.md`, `plan.md` (or `proposal.md`), `tasks.md`, `data-model.md`
    - Stored architecture decisions from Flash-Mem, if present.
    - Security Review findings, if present.
    - Optional preset guidance, if present.

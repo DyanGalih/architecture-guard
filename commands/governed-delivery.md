@@ -76,7 +76,7 @@ Check if a formal specification or proposal already exists for the active featur
 
 ## Phase 5 — Inspect Resume State
 
-Inspect `spec.md` (or equivalent specification artifacts), `plan.md`, `proposal.md`, `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
+Inspect `spec.md` (or equivalent specification artifacts), `plan.md` (or `proposal.md`), `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
 
 Classify the plan:
 

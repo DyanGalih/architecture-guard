@@ -90,7 +90,7 @@ Before engineering planning begins, generate a business-oriented User Story repr
 
 ## Phase 4 — Inspect Resume State
 
-Inspect `spec.md`, `plan.md`, `proposal.md`, `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
+Inspect `spec.md`, `plan.md` (or `proposal.md`), `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
 
 Classify the plan:
 

@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}
 
 ## Budgeted Context Contract
 
-Read and apply `{adapter_path:budgeted-context-template}` (or `templates/budgeted_context.md` in the extension source checkout). Available active specification documents (e.g., `spec.md`, `design.md`, `plan.md`, `proposal.md`, `tasks.md`), security constraints, applicable constitutions, and relevant code evidence are authoritative. Use fallback provenance to open historical specs only for named review gaps.
+Read and apply `{adapter_path:budgeted-context-template}` (or `templates/budgeted_context.md` in the extension source checkout). Available active specification documents (e.g., `spec.md`, `design.md`, `plan.md` (or `proposal.md`), `tasks.md`), security constraints, applicable constitutions, and relevant code evidence are authoritative. Use fallback provenance to open historical specs only for named review gaps.
 
 You are running `architecture-guard`, a technology-agnostic architecture review extension designed for high-integrity governance.
 
@@ -49,7 +49,7 @@ You are running `architecture-guard`, a technology-agnostic architecture review 
 
 1. **Normalize Arguments**: Parse "$ARGUMENTS" to identify the `mode` (`architecture` or `performance`) and `focus` aspects (`general`, `db`, `api`, or `async`).
 2. **Identify Artifact Scope**:
-   - Focus strictly on validating the specification and planning artifacts (e.g., `spec.md`, `design.md`, `plan.md`, `proposal.md`, `tasks.md`) against the architectural rules and constitutions.
+   - Focus strictly on validating the specification and planning artifacts (e.g., `spec.md`, `design.md`, `plan.md` (or `proposal.md`), `tasks.md`) against the architectural rules and constitutions.
    - Do **NOT** run changed-files detection scripts or evaluate source code.
 
 ## Input & Context Loading
@@ -70,7 +70,7 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
    If Flash-Mem is unavailable or the context is insufficient, continue with the repository artifacts and constitution files available in the workspace.
 
 4. **Planning Context**:
-    - Active specification and planning artifacts (e.g., `spec.md`, `design.md`, `plan.md`, `proposal.md`, `tasks.md`, `data-model.md`)
+    - Active specification and planning artifacts (e.g., `spec.md`, `design.md`, `plan.md` (or `proposal.md`), `tasks.md`, `data-model.md`)
 
 5. **Repository Hygiene**:
     - Config: `{adapter_path:governance-config}` (or `repository_hygiene` block in constitution).

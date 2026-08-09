@@ -65,7 +65,7 @@ Prefer summaries, metadata, tags, confidence, and related files. Load full entri
 
 ## Phase 3 — Inspect Resume State
 
-Inspect `spec.md`, `plan.md`, `proposal.md`, `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
+Inspect `spec.md`, `plan.md` (or `proposal.md`), `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
 
 Classify the plan:
 

@@ -20,7 +20,7 @@ If `flash-mem` is available, use the MCP-backed context preparation flow exposed
 
 This is the write-capable companion to the review workflow. Use it when the team wants the architecture feedback reflected directly in planning artifacts instead of only receiving suggestions.
 
-Use it after `ag-review-artifacts`, `ag-review-implementation` or `ag-violation-detection` has produced approved refactor tasks, or when a Constitution Update Proposal should be reflected in `plan.md`, `proposal.md`, or `tasks.md`.
+Use it after `ag-review-artifacts`, `ag-review-implementation` or `ag-violation-detection` has produced approved refactor tasks, or when a Constitution Update Proposal should be reflected in `plan.md` (or `proposal.md`) or `tasks.md`.
 
 Use it for approved Constitution Update Proposals when the change should be reflected in plan or task artifacts as explicit follow-up work.
 
@@ -57,7 +57,7 @@ Review any available:
 
 ## Apply Procedure
 
-1. Identify the approved architecture changes that should be reflected in `plan.md`, `proposal.md`, or `tasks.md`.
+1. Identify the approved architecture changes that should be reflected in `plan.md` (or `proposal.md`) or `tasks.md`.
 2. Preserve the feature intent and implementation scope.
 3. Add or refine task entries for refactors that are safe to schedule.
 4. Reorder tasks when architectural dependencies matter.
