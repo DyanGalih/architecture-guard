@@ -76,11 +76,11 @@ Check if a formal specification or proposal already exists for the active featur
 
 ## Phase 5 — Inspect Resume State
 
-Inspect `spec.md` (or equivalent specification artifacts), `plan.md`, `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
+Inspect `spec.md` (or equivalent specification artifacts), `plan.md`, `proposal.md`, `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
 
 Classify the plan:
 
-- `missing`: the design artifact (`plan.md` or `design.md`) does not exist or is empty.
+- `missing`: the design artifact (`plan.md`, `design.md`, or `proposal.md`) does not exist or is empty.
 - `stale`: `spec.md` or governing constraints changed materially after the plan was produced.
 - `blocked`: an unresolved P0 architecture finding, Critical security finding, or material design decision prevents safe task generation.
 - `review-required`: the plan exists but has not been validated against current inputs.

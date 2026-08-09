@@ -74,7 +74,7 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
 
 3. **Feature-Specific Context**:
    - `specs/<feature>/security-constraints.md`
-   - active specification, design, and task artifacts (e.g., `spec.md`, `design.md`, `plan.md`, `tasks.md`), `data-model.md`
+   - active specification, design, and task artifacts (e.g., `spec.md`, `design.md`, `plan.md`, `proposal.md`, `tasks.md`), `data-model.md`
    - Stored architecture decisions from Flash-Mem, if present.
    - Security Review findings, if present.
    - Optional preset guidance, if present.

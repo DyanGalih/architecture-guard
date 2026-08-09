@@ -101,7 +101,7 @@ Run:
 ```
 
 Inputs to consider:
-- The generated technical design document (e.g., `plan.md` or `design.md`).
+- The generated technical design document (e.g., `plan.md`, `design.md`, or `proposal.md`).
 - `.specify/memory/architecture_constitution.md`.
 - Flash-Mem context (if available).
 - `security-constraints.md` (if available).
