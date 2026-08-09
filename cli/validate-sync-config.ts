@@ -23,7 +23,7 @@ export function validateSyncConfig(configPath: string): SyncConfig {
   try {
     parsed = parse(content);
   } catch (e) {
-    throw new Error(`Invalid YAML format in ${configPath}: ${e}`);
+    throw new Error(`Invalid YAML format in : `, { cause: e });
   }
   
   return syncSchema.parse(parsed);
