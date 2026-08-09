@@ -2,37 +2,44 @@ schema: spec-driven
 
 # Project context (shown to AI when creating artifacts).
 context: |
-  Repository: architecture-guard — repository-native architecture governance for SDD frameworks.
-  Engineering Philosophy:
-    - Ponytail principles: YAGNI, standard library preference, lazy senior mindset.
-    - Conventions: memory-first workflows when Flash-Mem is available; non-blocking architecture
-      drift by default; approved refactors stay small and targeted; markdown constitutions and command files are the review
-      source of truth.
+  Mode: Team
+  Issue Tracker: github-mcp-server
+
+  ## Engineering Philosophy
+  - Ponytail principles: YAGNI, standard library preference, lazy senior mindset.
+  - Decision Ladder: Remove speculative scope; reuse existing code, stdlib, native features, or installed dependencies; write the minimum correct code.
+  - Fix root causes at the shared boundary.
+  - Add no abstraction without justification. Prefer deletion over addition.
+  - Safety floor: trace flow, validate input, preserve security/error handling.
+  - Verification floor: leave at least one runnable check.
   
-  Code Review Expectations:
-    - All PRs require at least one approval.
-    - Architecture Guard rules and validation must pass.
+  ## High-Level Architecture Intent
+  - Modular Monolith CLI / Development Tool (TypeScript / Node.js).
   
-  Documentation Standards:
-    - Feature additions must update relevant Markdown documentation.
-    - Architecture rules must be documented via OpenSpec artifacts.
+  ## Documentation Standards
+  - Developer/operational guide will be maintained in the `docs/` directory.
+  - CLI commands documented via `--help` and `README.md`.
   
-  Code Style & Linting:
-    - ESLint rules are blocking (must run `npm run lint` successfully).
-    - Maintain strict typing; no implicit `any`.
+  ## Code Style & Linting
+  - Blocking enforcement (must pass CI/commit hooks).
+  - Naming conventions: `camelCase` (variables), `PascalCase` (classes/types), `UPPER_SNAKE_CASE` (constants), `is/has` prefix (booleans).
+  - Required patterns: explicit return types, strict equality (`===`), secure randomness.
+  - Forbidden patterns: implicit `any`, `console.log` (use structured logger instead).
+  - Logging standard: Structured logger (e.g., Pino/Winston) with levels (debug, info, warn, error).
   
-  Operational & CI Expectations:
-    - CI pipeline must run tests (`npm run test`) and linter successfully before merge.
-    - Test regressions or failure to build (`npm run build`) block releases.
+  ## Review Expectations
+  - PRs require at least one approval.
+  - Architecture Guard rules and validation must pass.
+  - Flag both over-building and unsafe under-building.
   
+  ## Operational Expectations
+  - CI pipeline must run tests and linter successfully before merge.
+
   Architecture enforcement rules are defined in `openspec/architecture.md`.
   Security rules are defined in `openspec/security.md`.
 
-# Per-artifact rules (optional).
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  proposal:
+    - Include a clear objective and success criteria.
+  tasks:
+    - Break tasks into chunks of max 2 hours.

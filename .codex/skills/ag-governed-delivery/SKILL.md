@@ -1,8 +1,12 @@
 ---
-description: Run team delivery with stakeholder approval of the User Story before governed planning and task generation.
+name: ag-governed-delivery
+description: Resume governed delivery from an active specification through plan and task generation, with optional Flash-Mem context, security review, architecture gates, task reconciliation, and analysis.
+metadata:
+  author: architecture-guard
+  source: https://github.com/DyanGalih/architecture-guard
 ---
 
-# Governed Team Delivery Command
+# Governed Delivery Command
 
 ## SDD Tool Detection
 
@@ -16,20 +20,19 @@ Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}
 
 Read and apply `{adapter_path:budgeted-context-template}`. At each resumable phase, active adapter artifacts and applicable constitutions are authoritative. Reuse one sufficient Flash-Mem synthesis instead of loading a fallback index.
 
-You are orchestrating `ag-governed-delivery-team`, the recommended team workflow entry point for Architecture Guard.
+You are orchestrating `ag-governed-delivery`, the recommended plan-to-tasks entry point for Architecture Guard.
 
-This command coordinates business collaboration via User Story generation before running the existing governed planning and task phases.
+This command coordinates the existing governed planning and task phases. It does not replace their rules or duplicate their review logic. It inspects the active feature, resumes from the first invalid phase, and stops only when a blocking decision requires user input.
 
 ## Goal
 
-Produce an approved User Story and an implementation-ready `tasks.md` from an accepted technical plan while ensuring:
+Produce an implementation-ready `tasks.md` from an accepted technical plan while ensuring:
 
-1. A business-oriented User Story is generated before engineering execution.
-2. Flash-Mem context is retrieved before planning or task generation when the MCP server is available.
-3. The plan passes its architecture and applicable security gates before tasks are generated.
-4. Tasks are regenerated or reconciled whenever their source plan changes materially.
-5. Advisory findings remain non-blocking, while P0 findings always stop progression; security findings block only when governing policy assigns blocking severity.
-6. A rerun resumes safely instead of recreating valid artifacts.
+1. Flash-Mem context is retrieved before planning or task generation when the MCP server is available.
+2. The plan passes its architecture and applicable security gates before tasks are generated.
+3. Tasks are regenerated or reconciled whenever their source plan changes materially.
+4. Advisory findings remain non-blocking, while P0 findings always stop progression; security findings block only when governing policy assigns blocking severity.
+5. A rerun resumes safely instead of recreating valid artifacts.
 
 ## Mandatory Branch Preflight
 
@@ -64,31 +67,7 @@ When Flash-Mem is available, execute both operations before planning, reviewing,
 
 Prefer summaries, metadata, tags, confidence, and related files. Load full entries only when those results are insufficient. If Flash-Mem is unavailable, continue with repository artifacts and report the degraded state.
 
-## Phase 3 — Generate User Story
-
-Before engineering planning begins, generate a business-oriented User Story representing the approved business intent.
-
-1. Look in the root `<root>/user-stories/` directory. If multiple stories exist, use an interactive prompt to ask the user which User Story they are fulfilling, or if they want to create a new one.
-2. If creating a new story, analyze the Discovery context and generate a User Story containing:
-   - Business objective
-   - User stories
-   - Acceptance criteria
-   - Business rules
-   - Out of scope items
-   - Assumptions
-   - Risks
-   - Open questions
-3. Ensure the User Story is understandable by technical and non-technical stakeholders.
-4. Persist the generated User Story as `<feature-name>.md` in the `<root>/user-stories/` directory with status `draft`.
-5. Present it for stakeholder review and stop before engineering planning until the user explicitly accepts it. Record the result as `approved` in the file.
-6. Once the User Story is approved, check for the presence of `.architecture-guard/sync.yml`. If it exists:
-   - Run `npx tsx src/cli/validate-sync-config.ts` to strictly validate the configuration.
-   - If the configuration is valid and `enabled: true`, read the User Story content and push it to the configured provider (e.g., via your `github-mcp-server` to create an issue).
-   - Record the resulting issue ID or URL in `.architecture-guard/sync_status.json` (e.g., `{ "status": "success", "issue_url": "..." }`).
-   - If the push fails, write `{ "status": "failed" }` to `.architecture-guard/sync_status.json` and output a non-blocking warning. Do NOT stop the delivery workflow.
-7. If a previously approved User Story has been modified after engineering artifacts were generated, mark it `review-required`, warn the user, and require re-approval before proceeding.
-
-## Phase 4 — Inspect Resume State
+## Phase 3 — Inspect Resume State
 
 Inspect `spec.md`, `plan.md`, `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
 
@@ -109,16 +88,9 @@ Classify tasks:
 
 Do not use timestamps as the only evidence of material staleness. Compare artifact intent and content when possible.
 
-## Phase 4.5 — Specification Gate
-
-Before technical planning can occur, the feature must be formally proposed and specified according to the active SDD tool.
-1. Check if the adapter requires a proposal (e.g., `proposal.md` or `specs/`).
-2. If missing, you MUST require the execution of `ag-governed-spec` to correctly generate the SDD-specific specification artifacts before allowing the Plan Gate to open.
-
-## Phase 5 — Plan Gate
+## Phase 4 — Plan Gate
 
 If the plan is `missing` or `stale`, run `ag-governed-plan` with the active feature context.
-- **Linkage metadata**: When generating the new technical plan (`plan.md` or `design.md`), inject the YAML frontmatter `Story: ../../../user-stories/<selected-story>.md` to establish the explicit link between the technical change and the business epic.
 
 If the plan is `review-required`, reuse it and run the applicable security plan review plus the adapter-registered violation-detection capability. Do not regenerate a plan merely because review is needed.
 
@@ -130,7 +102,7 @@ If the plan is `review-required`, reuse it and run the applicable security plan 
 
 The plan does not need to be perfect. It must be sufficiently stable and free of unresolved blocking findings.
 
-## Phase 6 — Task Generation and Analysis
+## Phase 5 — Task Generation and Analysis
 
 Only enter this phase after the plan is `accepted`.
 
@@ -146,7 +118,7 @@ The governed task phase must:
 
 If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks.
 
-## Phase 7 — Durable Memory Preservation
+## Phase 6 — Durable Memory Preservation
 
 When Flash-Mem is available:
 
@@ -159,12 +131,11 @@ When Flash-Mem is available:
 Return a concise `Governed Delivery Summary`:
 
 ```markdown
-# Governed Team Delivery Summary
+# Governed Delivery Summary
 
 ## Workflow State
 - **Feature**: [feature path]
 - **Memory**: [Ready / Unavailable]
-- **User Story**: [Generated / Reused / Out of Sync]
 - **Plan**: [Generated / Reused / Repaired / Blocked]
 - **Plan Security Review**: [Passed / Advisory / Blocked / Not Applicable / Unavailable]
 - **Plan Architecture Review**: [Passed / Advisory / Blocked]
@@ -184,7 +155,7 @@ Return a concise `Governed Delivery Summary`:
 
 - Plan problem: run `ag-governed-plan`, then `ag-governed-tasks` because tasks may be stale.
 - Task-only problem: run `ag-governed-tasks`.
-- Unknown or cross-phase problem: rerun `ag-governed-delivery-team`.
+- Unknown or cross-phase problem: rerun `ag-governed-delivery`.
 
 ## Guardrails
 
@@ -194,6 +165,7 @@ Return a concise `Governed Delivery Summary`:
 - Do not convert advisory preferences into release gates.
 - Never generate tasks from a blocked plan.
 
+
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `commands/governed-delivery-team.md` for direct SpecKit use.
+The original SpecKit-specific version remains in the repository source checkout under `commands/governed-delivery.md` for direct SpecKit use.
