@@ -1,5 +1,8 @@
-## 2.3.0
+## 2.3.1
 - Added AI agent auto-detection during installation to seamlessly select installed agents based on directory presence.
+- Added an explicit `archive` command to fully clean up empty source directories during feature archival.
+
+## 2.3.0
 - Added framework-agnostic governed delivery and team User Story workflows.
 - Synchronized adapter contracts, prompt descriptions, installer registration, and project-relative command examples.
 - Added CLI update and JSON changed-file capabilities.
