@@ -50,7 +50,7 @@ Use this adapter when the active SDD tool is **Spec Kit** (`.specify/` directory
 | subagent-synthesize | `/speckit.subagent.synthesize` when registered; otherwise synthesize inline |
 | list-specs | Enumerate files matching `{adapter_path:spec}` in normalized path order |
 | consolidate-specs | Build `{adapter_path:fallback-spec-index}` inline from `list-specs` results |
-| architecture-apply | Use the registered architecture-apply capability; otherwise update the resolved plan and tasks inline |
+| architecture-apply | Apply plan/tasks findings directly inline; after confirmation, use an explicit host update capability when available, otherwise run the AG-native inline artifact-fix against the resolved `spec.md` path; do not invoke `/speckit.specify` for updates |
 | architecture-review | Use the registered architecture-review capability or review the resolved artifacts inline |
 | refactor-generator | Use the registered refactor-generator capability or generate refactor tasks inline |
 | violation-detection | Use the registered violation-detection capability or detect drift inline |

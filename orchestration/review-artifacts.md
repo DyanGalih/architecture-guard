@@ -127,13 +127,14 @@ Detect violations such as:
 2. **Model Context**: Build Semantic Models for the identified scope.
 3. **Analyze Alignment**: Compare the initial specification intent vs. the proposed architectural design. Ensure the proposed design or plan accurately satisfies the spec without violating constraints.
 4. **Scan Principles**: Apply Review Principles across the planned boundaries.
-5. **Security & Governance Cross-Check**:
+5. **Target Classification**: Determine which artifact each finding targets based on the finding's source evidence. Emit the adapter-resolved filename: `plan.md` for SpecKit planning artifacts, `design.md` for OpenSpec design artifacts, and the applicable `proposal.md`, `spec.md`, or `tasks.md` otherwise. For multi-artifact findings, set `Target:` to the authoritative artifact (`spec.md` > planning artifact (`plan.md` or `design.md`) > `tasks.md` > `proposal.md`).
+6. **Security & Governance Cross-Check**:
   - If `security-constraints.md` or `security_constitution.md` is breached, log it as a critical violation.
   - Cross-reference architecture decisions with security trust boundaries.
-6. **Ponytail Audit**: Apply both sides of the shared contract to the plan. Check for planned bloat and unsafe under-building.
-7. **Performance Scan (if mode=performance)**: Skip violations; focus on optimizations.
-8. **Repository Hygiene Scan**: Evaluate the planning structure against hygiene rules loaded from `{adapter_path:hygiene-rules}`.
-9. **Generate Refactors**: Produce structured tasks for each confirmed violation in the plan.
+7. **Ponytail Audit**: Apply both sides of the shared contract to the plan. Check for planned bloat and unsafe under-building.
+8. **Performance Scan (if mode=performance)**: Skip violations; focus on optimizations.
+9. **Repository Hygiene Scan**: Evaluate the planning structure against hygiene rules loaded from `{adapter_path:hygiene-rules}`.
+10. **Generate Refactors**: Produce structured tasks for each confirmed violation in the plan.
 
 ---
 
@@ -144,7 +145,7 @@ Every violation MUST cite evidence or explicitly note its absence. Evidence can 
 - **Absence**: Missing planning detail like `Task references Repository pattern but no data access module is planned`
 
 **Absence Evidence** is acceptable for CRITICAL violations only. Example:
-- "Constitution requires data access abstraction but the technical design artifact does not specify one"
+- "Constitution requires data access abstraction but `{adapter_path:plan}` does not specify one"
 
 For all other violations, cite specific planning locations, lines, or patterns. Vague claims like "business logic is leaking" without specific evidence are insufficient.
 
@@ -163,9 +164,9 @@ Return only this structure:
 
 # Architecture Review Report
 
-| ID | Category | Severity | Location(s) | Summary | Evidence/Rationale |
-|:---|:---|:---|:---|:---|:---|
-| V1 | Constitution | CRITICAL | `{adapter_path:arch-constitution}` | Violation of [Principle Name] | [Evidence from spec/plan/tasks] |
+| ID | Category | Severity | Location(s) | Target | Summary | Evidence/Rationale |
+|:---|:---|:---|:---|:---|:---|:---|
+| V1 | Constitution | CRITICAL | `{adapter_path:arch-constitution}` | `{adapter_path:plan}` | Violation of [Principle Name] | [Evidence from spec/plan/tasks] |
 
 ### Task Synchronization
 - **Status**: [Synced / Drifted]
@@ -217,7 +218,7 @@ Findings categorized by severity based on the active hygiene rules.
 2. **Architecture Alignment**: Resolve boundary erosion and contract mismatches.
 3. **DRY Alignment**: Centralize repeated business logic, validation, and mapping before duplicating it in another layer or module.
 4. **Durable Memory Preservation (Mandatory Check)**: If new architectural patterns, decisions, or repeatable lessons were identified, you **MUST automatically execute** the durable-memory capture flow immediately after providing the report. Do not just recommend it; let the formal capture flow propose entries and request user approval.
-5. **Next Step**: [e.g. Run `/speckit.security-review.plan` for security-first findings, or `/ag-apply` for architecture fixes]
+5. **Next Step**: Run `/ag-apply` to resolve all findings (plan/tasks findings will be applied directly; upstream findings in `proposal.md` or `spec.md` will be delegated with confirmation).
 6. **Remediation**: [Concrete remediation direction for the top issues, or "None needed"]
 
 ## Framework Preset Guidance

@@ -87,10 +87,10 @@ Build internal representations:
 
 ## Verification Report
 
-| ID | Category | Severity | Location(s) | Summary | Recommendation |
-|:---|:---|:---|:---|:---|:---|
-| V1 | Task Integrity | CRITICAL | `tasks.md:T01` | Task marked complete but logic missing in `auth.ts` | Implement logic or uncheck task |
-| V2 | Boundary | HIGH | `ctrl/user.ts` | Database query found in Controller layer | Move query to Repository/Data layer |
+| ID | Category | Severity | Location(s) | Target | Summary | Recommendation |
+|:---|:---|:---|:---|:---|:---|:---|
+| V1 | Task Integrity | CRITICAL | `tasks.md:T01` | `tasks.md` | Task marked complete but logic missing in `auth.ts` | Implement logic or uncheck task |
+| V2 | Boundary | HIGH | `ctrl/user.ts` | `{adapter_path:plan}` | Database query found in Controller layer | Move query to Repository/Data layer |
 
 ### Task Status Analysis
 For each task in `tasks.md`:
