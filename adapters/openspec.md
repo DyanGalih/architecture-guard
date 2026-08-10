@@ -52,7 +52,7 @@ Use this adapter when the active SDD tool is **OpenSpec** (`openspec/config.yaml
 | subagent-synthesize | Unsupported natively; synthesize inline unless the host exposes an equivalent capability |
 | list-specs | `openspec list --specs --json` |
 | consolidate-specs | Unsupported: use `list-specs` as the fallback index and do not write a consolidated artifact |
-| architecture-apply | Use the registered architecture-apply capability; otherwise update the resolved plan and tasks inline |
+| architecture-apply | Apply plan/tasks findings directly inline; delegate upstream findings (`proposal.md`, `spec.md`) to `openspec-update-change` (or native update capability) with finding details as input context after user confirmation |
 | architecture-review | Use the registered architecture-review capability or review the resolved artifacts inline |
 | refactor-generator | Use the registered refactor-generator capability or generate refactor tasks inline |
 | violation-detection | Use the registered violation-detection capability or detect drift inline |
