@@ -101,11 +101,11 @@ Check if a formal specification or proposal already exists for the active featur
 
 ## Phase 6 — Inspect Resume State
 
-Inspect `spec.md` (or equivalent specification artifacts), `plan.md`, `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
+Inspect `spec.md` (or equivalent specification artifacts), the technical design artifact, `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
 
 Classify the plan:
 
-- `missing`: the design artifact (`plan.md` or `design.md`) does not exist or is empty.
+- `missing`: the design artifact (the technical design artifact, `design.md`, or `proposal.md`) does not exist or is empty.
 - `stale`: `spec.md` or governing constraints changed materially after the plan was produced.
 - `blocked`: an unresolved P0 architecture finding, Critical security finding, or material design decision prevents safe task generation.
 - `review-required`: the plan exists but has not been validated against current inputs.
@@ -123,7 +123,7 @@ Do not use timestamps as the only evidence of material staleness. Compare artifa
 ## Phase 7 — Plan Gate
 
 If the plan is `missing` or `stale`, execute the full `/ag-governed-plan` (or `/ag-governed-plan`) workflow.
-- **Linkage metadata**: When generating the new technical plan (`plan.md` or `design.md`), inject the YAML frontmatter `Story: ../../../user-stories/<selected-story>.md` to establish the explicit link between the technical change and the business epic.
+- **Linkage metadata**: When generating the new technical plan (the technical design artifact, `design.md`, or `proposal.md`), inject the YAML frontmatter `Story: ../../../user-stories/<selected-story>.md` to establish the explicit link between the technical change and the business epic.
 
 If the plan is `review-required`, reuse it and run the applicable security plan review plus `/ag-review-artifacts`. Do not regenerate a plan merely because review is needed.
 

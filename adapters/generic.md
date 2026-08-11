@@ -46,7 +46,7 @@ Use this adapter when no supported SDD tool is selected. Ask the user for active
 | subagent-synthesize | Use host delegation when available; otherwise synthesize inline |
 | list-specs | Ask the user which historical specifications are relevant |
 | consolidate-specs | Unsupported; do not write a fallback index |
-| architecture-apply | Use the registered architecture-apply capability or update selected artifacts inline |
+| architecture-apply | Apply plan/tasks findings directly inline; run inline AG-native artifact-fix for upstream findings after user confirmation |
 | architecture-review | Use the registered architecture-review capability or review selected artifacts inline |
 | refactor-generator | Use the registered refactor-generator capability or generate refactor tasks inline |
 | violation-detection | Use the registered violation-detection capability or detect drift inline |

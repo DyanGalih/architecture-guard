@@ -65,11 +65,11 @@ Prefer summaries, metadata, tags, confidence, and related files. Load full entri
 
 ## Phase 3 — Inspect Resume State
 
-Inspect `spec.md`, `plan.md`, `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
+Inspect `spec.md`, the technical design artifact, `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
 
 Classify the plan:
 
-- `missing`: `plan.md` does not exist or is empty.
+- `missing`: the technical design artifact does not exist or is empty.
 - `stale`: `spec.md` or governing constraints changed materially after the plan was produced.
 - `blocked`: an unresolved P0 finding, policy-designated blocking security finding, or material design decision prevents safe task generation.
 - `review-required`: the plan exists but has not been validated against current inputs.

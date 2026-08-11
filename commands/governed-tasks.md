@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Budgeted Context Contract
 
-Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). The active feature's specification and design artifacts (e.g., `spec.md`, `design.md`, `plan.md`), and applicable constitutions are mandatory and authoritative. Flash-Mem and `system_context.md` may supplement but never replace them.
+Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). The active feature's specification and design artifacts (e.g., `spec.md`, `design.md`, the technical design artifact), and applicable constitutions are mandatory and authoritative. Flash-Mem and `system_context.md` may supplement but never replace them.
 
 You are orchestrating the `ag-governed-tasks` workflow for `architecture-guard`.
 

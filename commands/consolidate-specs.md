@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Purpose
 
-Generate `specs/system_context.md` as a compact offline fallback for Budgeted Architecture Context Retrieval. This file supplements active feature artifacts; it is not a canonical specification and must never replace the active active specification, design, and task artifacts (e.g., `spec.md`, `design.md`, `plan.md`, `tasks.md`), security constraints, or constitutions.
+Generate `specs/system_context.md` as a compact offline fallback for Budgeted Architecture Context Retrieval. This file supplements active feature artifacts; it is not a canonical specification and must never replace the active active specification, design, and task artifacts (the exact filenames depend on the active SDD tool), security constraints, or constitutions.
 
 ## Procedure
 

@@ -120,7 +120,7 @@ Outputs:
 ag-apply
 ```
 
-This injects refactor tasks into `plan.md` and `tasks.md` so the AI has explicit guidance to fix architectural debt while implementing features.
+This injects refactor tasks into the technical design and task artifacts so the AI has explicit guidance to fix architectural debt while implementing features.
 
 ### Greenfield Quick Start
 
@@ -156,7 +156,7 @@ ag-workflow
 ag-apply
 ```
 
-This injects refactor tasks into `plan.md` and `tasks.md` so the AI has explicit guidance to fix architectural debt while implementing features.
+This injects refactor tasks into the technical design and task artifacts so the AI has explicit guidance to fix architectural debt while implementing features.
 
 
 ## Commands
@@ -176,7 +176,7 @@ This injects refactor tasks into `plan.md` and `tasks.md` so the AI has explicit
 | `ag-review-implementation` | Validation | Validates implementation codebase against planning artifacts and constitution | After `/implement` |
 | `violation-detection` | Detection | Drift summary, boundary violations, module coupling | Focus on specific architecture problems |
 | `refactor-generator` | Planning | Refactor task generation | After review; convert violations to non-blocking refactor tasks |
-| `ag-apply` | Implementation | After refactor decisions | Inject refactor tasks into `tasks.md` and `plan.md` using the approved review context |
+| `ag-apply` | Implementation | After refactor decisions | Inject refactor tasks into `tasks.md` and the technical design artifact using the approved review context |
 | `ag-verify` | Verification | Implementation verification report with task fulfillment, architecture, and hygiene findings | Final gate after implementation to ensure all tasks are delivered, with cached memory context if available |
 
 ### Ponytail Core
@@ -218,7 +218,7 @@ optimizer:
 
 > Use `ag-governed-delivery` as the suggested plan-to-tasks flow. Use `ag-workflow`, `ag-review-artifacts` or `ag-review-implementation` directly for standalone reviews; the individual `ag-governed-plan` and `ag-governed-tasks` commands remain available for targeted recovery.
 
-> `ag-apply` targets `plan.md` and `tasks.md`. If architectural issues are found in the specification stage, refine the specification before generating a technical plan. When `flash-mem` is available, use the cached synthesis and approved review output before writing back.
+> `ag-apply` targets the technical design and task artifacts. If architectural issues are found in the specification stage, refine the specification before generating a technical plan. When `flash-mem` is available, use the cached synthesis and approved review output before writing back.
 
 ## Budgeted Architecture Context Retrieval
 

@@ -47,7 +47,7 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 Build internal representations:
 - **Task-Boundary Map**: Associate each task with its intended architecture layer (Entry, Application, Domain, Data, External).
 - **Implementation Evidence**: For each completed task (`[x]`), scan referenced files for logic that addresses the task description.
-- **Contract Inventory**: Extract planned API/Data signatures from `plan.md`.
+- **Contract Inventory**: Extract planned API/Data signatures from the technical design artifact.
 - **Duplication Check**: Look for repeated business logic, validation, or transformation across files and confirm it has been centralized or explicitly justified.
 
 **Common DRY Signals**
@@ -89,10 +89,10 @@ Build internal representations:
 
 ## Verification Report
 
-| ID | Category | Severity | Location(s) | Summary | Recommendation |
-|:---|:---|:---|:---|:---|:---|
-| V1 | Task Integrity | CRITICAL | `tasks.md:T01` | Task marked complete but logic missing in `auth.ts` | Implement logic or uncheck task |
-| V2 | Boundary | HIGH | `ctrl/user.ts` | Database query found in Controller layer | Move query to Repository/Data layer |
+| ID | Category | Severity | Location(s) | Target | Summary | Recommendation |
+|:---|:---|:---|:---|:---|:---|:---|
+| V1 | Task Integrity | CRITICAL | `tasks.md:T01` | `tasks.md` | Task marked complete but logic missing in `auth.ts` | Implement logic or uncheck task |
+| V2 | Boundary | HIGH | `ctrl/user.ts` | `{adapter_path:plan}` | Database query found in Controller layer | Move query to Repository/Data layer |
 
 ### Task Status Analysis
 For each task in `tasks.md`:

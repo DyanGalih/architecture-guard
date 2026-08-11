@@ -105,7 +105,7 @@ Run:
 ```
 
 Inputs to consider:
-- The generated `plan.md`.
+- The generated the technical design artifact.
 - `{adapter_path:arch-constitution}`.
 - Flash-Mem context (if available).
 - `security-constraints.md` (if available).
