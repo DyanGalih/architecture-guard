@@ -1,3 +1,8 @@
+## 2.3.4
+- Evolved `ag-apply` into an orchestrator that resolves findings across all artifact types (`proposal.md`, `spec.md`, `design.md`, `tasks.md`).
+- Added pre-classification `Target:` fields to `ag-review-artifacts` and `ag-verify` output.
+- Delegated upstream artifact fixes (`proposal.md`, `spec.md`) to SDD native update capabilities after user confirmation.
+
 ## 2.3.3
 - Removed generated dist artifacts from version control while preserving build and npm packaging behavior.
 
