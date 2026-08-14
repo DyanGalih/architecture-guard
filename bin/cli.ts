@@ -70,8 +70,10 @@ program
 
 program
   .command('archive <changeName>')
-  .description('Archive a completed OpenSpec change')
-  .action(runArchive);
+  .description('Finalize or archive a completed SDD feature')
+  .option('--json', 'Output a machine-readable result')
+  .option('--framework <framework>', 'Override detection: speckit | openspec')
+  .action(async (changeName, options) => { await runArchive(changeName, options); });
 
 import { runSelfUpdate } from '../cli/self-update';
 

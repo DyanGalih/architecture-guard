@@ -22,7 +22,7 @@ Verifies, then finalizes a completed feature. Changelog, memory, Git, and worksp
 - Determine the active framework via `adapters/detect.md`.
 - **All frameworks**: Use the loaded adapter's `verify` mapping first and stop if verification fails or has unresolved blocking findings.
 - **If OpenSpec**: After verification and explicit approval, use the adapter's `archive` mapping; ask for the change name if it is ambiguous.
-- **If SpecKit**: After verification and explicit approval, ask for the archive destination and move the active feature artifacts there; then use the adapter's `consolidate-specs` mapping to refresh the fallback index.
+- **If SpecKit**: After verification and explicit approval, retain the active feature artifacts in their native `specs/<feature>/` directory and incrementally update `specs/system_context.md`. Report index update failures as non-blocking warnings; do not move the feature artifacts.
 - **If Generic**: Use the adapter's inline verification fallback. Explain that there is no native archive command, ask for an archive destination, and move artifacts only after explicit approval.
 
 ### Step 2 — Automated Changelog Update

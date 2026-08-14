@@ -34,8 +34,8 @@ Use this adapter when the active SDD tool is **Spec Kit** (`.specify/` directory
 
 | Canonical Key | SpecKit Invocation or Fallback |
 |---|---|
-| create-spec | `/speckit.specify`; if unavailable, create `{adapter_path:spec}` inline from user intent and governing context |
-| create-change | Require or create the feature workspace before specification creation |
+| create-spec | `/speckit.specify`; if unavailable, create `{adapter_path:spec}` inline from user intent and governing context, enforcing SpecKit numbering rules (`NNN-<short-name>`) and updating `.specify/feature.json` |
+| create-change | Require or create the feature workspace following `.specify/init-options.json` numbering conventions before specification creation, and maintain `.specify/feature.json` |
 | archive | SpecKit has no native archive command; after verification, move active feature artifacts to the configured archive location only with explicit user approval |
 | verify | Use the registered Architecture Guard verification capability, or run the verification workflow inline |
 | clarify-spec | `/speckit.clarify`; if unavailable, ask and apply an inline ambiguity-resolution loop |
@@ -54,6 +54,22 @@ Use this adapter when the active SDD tool is **Spec Kit** (`.specify/` directory
 | architecture-review | Use the registered architecture-review capability or review the resolved artifacts inline |
 | refactor-generator | Use the registered refactor-generator capability or generate refactor tasks inline |
 | violation-detection | Use the registered violation-detection capability or detect drift inline |
+
+## Feature Directory & State Management
+
+SpecKit enforces explicit directory naming and state persistence rules:
+1. **Directory Numbering Resolution**:
+   - Check `.specify/init-options.json` for `feature_numbering`.
+   - If `"sequential"` or absent: directory name MUST be `specs/NNN-<short-name>` (where `NNN` is the next available 3-digit number after scanning `specs/`, e.g. `specs/001-safe-dashboard-users-invoices`).
+   - If `"timestamp"`: directory name MUST be `specs/YYYYMMDD-HHMMSS-<short-name>`.
+2. **State Tracking File (`.specify/feature.json`)**:
+   - When a feature is selected or created, persist the resolved directory path:
+     ```json
+     {
+       "feature_directory": "specs/001-feature-name"
+     }
+     ```
+   - Downstream commands (`create-plan`, `create-tasks`, `implement`, `analyze`) read `.specify/feature.json` first to identify the active feature directory.
 
 ## Constitution Layout
 

@@ -40,8 +40,8 @@ Before creating, planning, or modifying any active change:
 
 ## Phase 1 — Detect the Active Feature and Integrations
 
-1. Resolve the active feature from the user's explicit path, Spec Kit feature metadata, current branch, or a single unambiguous directory under `specs/`, in that order.
-2. If no active feature directories exist (ignoring archives), automatically derive a kebab-case name from the user's goal and create the new feature directory using the active SDD tool's workflow.
+1. Resolve the active feature from the user's explicit path, `.specify/feature.json` (for SpecKit), Spec Kit feature metadata, current branch, or a single unambiguous directory under `specs/`, in that order.
+2. If no active feature directories or specifications exist (ignoring archives), run the adapter-registered `governed-spec` capability (or `/speckit.specify`) to properly initialize the feature workspace and specification following native SDD tool numbering rules.
 3. Do not guess when multiple feature directories are plausible. Ask the user to identify the feature.
 4. Detect `flash-mem` as an MCP service. Do not look for it in `.specify/extensions.yml`.
 5. Detect Security Review from `.specify/extensions.yml`. Accept `security-review` as the canonical extension id and `spec-kit-security-review` as a compatibility alias.
