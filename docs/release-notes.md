@@ -1,5 +1,6 @@
 ## 2.3.5
-- Bumped patch version to 2.3.5.
+- Hardened archive framework routing: preserve SpecKit feature history in `specs/<feature>/` and incrementally update `specs/system_context.md`.
+- Enhanced governed delivery active feature resolution via `.specify/feature.json`.
 
 ## 2.3.4
 - Evolved `ag-apply` into an orchestrator that resolves findings across all artifact types (`proposal.md`, `spec.md`, `design.md`, `tasks.md`).
