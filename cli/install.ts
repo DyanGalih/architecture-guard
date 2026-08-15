@@ -268,14 +268,9 @@ async function installCommand(agentType: any, commandName: any, cmdDir: any, opt
   const yes = !!opts.yes;
   const overwrite = opts.overwrite;
 
-  // Read from orchestration dir if it exists, fallback to commands dir
-  const orchestrationPath = path.join(ROOT_DIR, 'orchestration', `${commandName}.md`);
-  const commandsPath = path.join(ROOT_DIR, 'commands', `${commandName}.md`);
-  const promptPath = fs.existsSync(orchestrationPath) ? orchestrationPath : commandsPath;
-
+  const promptPath = path.join(ROOT_DIR, 'orchestration', `${commandName}.md`);
   if (!fs.existsSync(promptPath)) {
-    console.error(`  ✗ ${commandName}: prompt file not found`);
-    return;
+    throw new Error(`Canonical orchestration prompt not found: orchestration/${commandName}.md`);
   }
 
   const content = readPrompt(promptPath);
@@ -333,7 +328,7 @@ ${selectedAgents.map(agent => `- \`${path.join(AGENT_CONFIGS[agent].dir, '*')}\`
 
 - **Ponytail Core Contract**: Before spec/plan/tasks/implement, read and apply the ponytail pragmatism contract.
 - **After each phase**: Run architecture review for boundary drift, DRY violations, and repository hygiene.
-- **Framework detection**: Project uses auto-detected SDD framework. Read \`adapters/detect.md\` before first command.
+- **SDD Adapter Resolution**: Project uses the adapter selected during CLI init. Read \`adapters/resolve.md\` before first command.
 `;
 
   if (fs.existsSync(agentsPath)) {
@@ -597,7 +592,7 @@ async function runInit(targetDir, opts) {
   if (fs.existsSync(srcAdaptersDir)) {
     fs.mkdirSync(adaptersDir, { recursive: true });
     const adapter = framework === 'none' ? 'generic' : framework;
-    for (const f of ['detect.md', `${adapter}.md`]) {
+    for (const f of ['resolve.md', `${adapter}.md`]) {
       const src = path.join(srcAdaptersDir, f);
       const dest = path.join(adaptersDir, f);
       if (!fs.existsSync(dest)) {
@@ -618,7 +613,7 @@ async function runInit(targetDir, opts) {
   console.log(`Commands installed: ${selectedCommands.length}`);
   console.log(`Agents: ${selectedAgents.join(', ')}`);
   console.log(`Adapter: adapters/${framework === 'none' ? 'generic' : framework}.md`);
-  console.log(`Detection: adapters/detect.md`);
+  console.log(`Resolution: adapters/resolve.md`);
 }
 
 export async function runInstallCommand(target: any, opts: any) {

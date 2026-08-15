@@ -14,11 +14,11 @@ Your role is to identify architectural drift in specifications, plans, and imple
 
 ## Flash-Mem-First Architecture Context Retrieval
 
-When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. After analysis, store only validated durable architecture knowledge. If retrieval is unavailable or insufficient, fall back to repository artifacts and constitution files.
+When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. After analysis, propose only validated durable architecture knowledge and write it only after explicit user approval. If retrieval is unavailable or insufficient, fall back to repository artifacts and constitution files.
 
 ## Operating Constraints
 
-- **STRICTLY READ-ONLY**: This command is analytical. Do **not** modify any files.
+- **STRICTLY READ-ONLY**: This command is analytical. Do **not** modify files or memory. Durable-memory candidates may be proposed, but require explicit user approval before a separate write.
 - **Progressive Disclosure**: Load context incrementally. Start with design artifacts before deep-diving into code.
 - **Evidence-Based**: Every violation must cite specific "Implementation Evidence" (file paths, line numbers, or code patterns) or its absence.
 
@@ -90,7 +90,7 @@ Before analysis, build internal representations (do not output these):
 
 ## Security-Architecture Conflict (Detailed)
 
-A Security-Architecture Conflict occurs when security requirements and architecture boundaries create opposing design constraints. These must be flagged with **CRITICAL** severity and routed to both security and architecture workflows.
+A Security-Architecture Conflict occurs when security requirements and architecture boundaries create opposing design constraints. Assign severity from the active security and governance policies, and route the finding to both security and architecture workflows. A blocking Security Review decision remains independently blocking.
 
 ### Examples
 
@@ -127,7 +127,8 @@ A Security-Architecture Conflict occurs when security requirements and architect
 4. **Scan Principles**: Apply detection scope across boundaries and contracts.
 5. **Security & Governance Cross-Check**: Ensure architecture decisions do not violate `security_constitution.md` or `security-constraints.md`.
 6. **Assign Severity**:
-   - `Critical`: Constitution MUST breach (including Security), Security Constraint violation, or zero evidence for a required boundary.
+   - `Critical`: Constitution P0/MUST breach or another condition marked Critical by active policy.
+   - Security findings use the active security policy's severity and blocking semantics rather than a fixed category mapping.
    - `High`: Significant boundary erosion, contract inconsistency, or intent divergence.
    - `Medium`: Local drift or debt.
    - `Low`: Minor shape or naming drift.
@@ -140,6 +141,8 @@ Return only:
 Violations:
 - Type:
   Severity:
+  Blocking: [Yes / No, from governing policy]
+  Priority: [P0 only when explicitly policy-blocking / P1 / P2 / P3]
   Location:
   Description:
   Evidence:

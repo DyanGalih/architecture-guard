@@ -2,9 +2,9 @@
 description: Initialize or refine the project governance and architecture constitutions for Architecture Guard.
 ---
 
-## SDD Tool Detection
+## SDD Adapter Resolution
 
-Read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 # Purpose
 
@@ -35,7 +35,7 @@ See the README quick start for brownfield and greenfield entrypoints.
 
 After init, the usual next step is to run the applicable governance command for the active SDD tool (planning or task generation) via the orchestration flow.
 
-When Flash-Mem is available, prefer it first for retrieving prior decisions, summaries, and existing constitution context. The repository files remain the source of truth for constitution content, and the legacy `memory-hub` name is reference-only and should not be treated as the runtime backend. If Flash-Mem is unavailable or the context is incomplete, read the repository files directly and treat them as the canonical source of truth. After refining the constitutions, sync durable summaries and major decisions back into Flash-Mem.
+When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. The repository files remain the source of truth for constitution content, and the legacy `memory-hub` name is reference-only and should not be treated as the runtime backend. If Flash-Mem is unavailable or the context is incomplete, read the repository files directly and treat them as canonical. After refinement, use `capture_artifact_memory` for changed constitution artifacts and propose validated `add_memory` or `update_memory` entries for explicit approval. Ask permission before `update_project_summary` when a summary already exists.
 
 The goal is NOT to generate generic best practices.
 
@@ -67,7 +67,8 @@ The goal is to establish:
 - Command starts technology-agnostic
 - If preset selected: Constitution gains framework-aware guidance
 - Both layers work together: abstract principles + concrete framework patterns
-- Switching frameworks: Start over, preset vocabulary changes but core governance remains
+- Switching application frameworks: preserve accepted framework-neutral rules, re-run only affected preset questions, and explicitly approve replacement of framework-specific rules; do not start over or change the selected SDD adapter implicitly
+- Refining the current framework preset: keep unaffected accepted rules and ask only questions needed for the requested refinement
 
 ---
 
@@ -286,7 +287,22 @@ Check for:
 
 ---
 
-## If BOTH files exist
+## Existing-State Rules
+
+Treat OpenSpec's `{adapter_path:constitution}` as complete when architecture and security rules are embedded there; `{adapter_path:arch-constitution}` and `{adapter_path:security-constitution}` are optional split files. If either split exists, reconcile ownership with `{adapter_path:constitution}` and remove duplication only after approval.
+
+| Existing state | Behavior |
+|---|---|
+| All three exist | Summarize, reconcile conflicts and duplication, then offer targeted refinement. |
+| Governance + architecture exist | Preserve both; offer embedded security rules or the optional security split. |
+| Governance + security exist | Preserve both; offer embedded architecture rules or the optional architecture split. |
+| Architecture + security exist | Ask for the governance artifact path/content and offer to create it; do not rewrite either split first. |
+| Governance only | Analyze embedded architecture/security rules and offer optional splits. |
+| Architecture only | Preserve it and offer governance plus security coverage. |
+| Security only | Preserve it and offer governance plus architecture coverage. |
+| None exist | Start the phased initialization interview. |
+
+## If all three files exist
 
 1. Summarize:
 
@@ -315,16 +331,17 @@ Would you like to:
 
 1. Analyze architecture-related sections.
 
-2. Detect rules that should move into:
+2. Detect architecture and security rules that could remain embedded or move into:
 
 ```text
 {adapter_path:arch-constitution}
+{adapter_path:security-constitution}
 ```
 
 3. Ask:
 
 ```text
-Would you like to split architecture rules into a dedicated architecture constitution?
+Would you like to keep these rules embedded, or split architecture and/or security rules into dedicated constitution files?
 ```
 
 ---
@@ -348,6 +365,7 @@ Determine:
 * runtime boundaries
 * application type
 * deployment shape
+* Generic adapter paths for `{adapter_path:constitution}`, `{adapter_path:arch-constitution}`, `{adapter_path:security-constitution}`, and any requested `{adapter_path:governance-config}` before generation
 
 ---
 
@@ -430,10 +448,10 @@ Are you working on this project as a solo developer, or as part of a team?
 ```
 
 If the user selects Team Development:
-1. Write `Mode: Team` into the governance rules (e.g., `openspec/config.yaml` or `.specify/memory/constitution.md`).
+1. Record `Mode: Team` for the proposed governance changes.
 2. Ask: "Which issue tracker MCP server should be used to sync User Stories? (e.g., github-mcp-server, jira, none)". Save this preference in the governance rules.
-3. Automatically scaffold a `user-stories/` directory at the project root to house global business requirements.
-4. If an issue tracker is selected (not "none"), ask for the required provider configuration (e.g., `repo` string for GitHub or `project` string for Jira). Then, automatically scaffold the `.architecture-guard/sync.yml` file configuring the chosen provider, the project/repo string, and `enabled: true`.
+3. Propose scaffolding a `user-stories/` directory at the project root and obtain explicit approval before creating it.
+4. If an issue tracker is selected (not "none"), ask for the required provider configuration (e.g., `repo` string for GitHub or `project` string for Jira). Propose `.architecture-guard/sync.yml` with the chosen provider, project/repo string, and `enabled: true`; obtain explicit approval before creating it.
 
 ---
 
@@ -903,6 +921,8 @@ DO NOT generate final documents until:
 * enough information has been collected
 * OR the user explicitly requests a draft
 
+Before creating, modifying, deleting, moving, or scaffolding any file or directory, show the exact target paths and proposed operations and obtain explicit user approval. Interviewing, detection, analysis, and previews remain read-only. This applies to `{adapter_path:draft}`, team scaffolds, Generic user-provided paths, optional OpenSpec split files, and `{adapter_path:governance-config}`.
+
 ---
 
 # Output Requirements
@@ -915,7 +935,7 @@ Generate or refine:
 
 When Budgeted Architecture Context Retrieval is selected, also generate `{adapter_path:governance-config}`. Missing configuration means targeted mode, preserving backward compatibility.
 
-If the `flash-mem` MCP server is available, you MUST run the `update_project_summary` tool to reflect any major changes in architecture, boundaries, or governance rules in the project summary. If it is unavailable, rely on the repository files directly and continue without the sync step.
+If the `flash-mem` MCP server is available, propose changed-artifact captures and durable `add_memory` or `update_memory` entries, then execute only those the user explicitly approves. For major changes in architecture, boundaries, or governance rules, propose `update_project_summary`, asking permission before any update when a summary already exists. If Flash-Mem is unavailable, rely on repository files and continue without sync.
 
 ---
 
@@ -1019,7 +1039,7 @@ The generated constitutions must reflect intentional engineering decisions.
 The init interview produces framework-specific constitution files:
 
 - **SpecKit adapter**: Writes `{adapter_path:constitution}`, `{adapter_path:arch-constitution}`, `{adapter_path:security-constitution}`
-- **OpenSpec adapter**: Updates `{adapter_path:constitution}` (config.yaml context+rules), optionally creates `{adapter_path:arch-constitution}` and `{adapter_path:security-constitution}`
+- **OpenSpec adapter**: Updates `{adapter_path:constitution}` (config context and rules); `{adapter_path:arch-constitution}` and `{adapter_path:security-constitution}` remain optional splits and, when present, are reconciled with config so each rule has one canonical owner
 
 ---
 

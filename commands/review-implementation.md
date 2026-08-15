@@ -4,6 +4,16 @@ description: Review implementation code or pre-implementation planning artifacts
 
 # Architecture Review Command
 
+## SDD Adapter Resolution
+
+Before executing this command, read `adapters/resolve.md`. Resolve the active adapter in this order:
+
+1. An explicit `--adapter` override, when provided.
+2. `.architecture-guard/selected-adapter`, which is authoritative after CLI installation.
+3. Filesystem markers only when no persisted selection exists.
+
+Load `adapters/{tool}.md` and resolve every `{adapter_path:key}` and `{adapter_command:key}` token before reviewing changed files or implementation artifacts. Stop if the adapter is missing or any token remains unresolved.
+
 ## Ponytail Core Contract
 
 Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
@@ -79,7 +89,8 @@ This pattern ensures that lower-tier models follow strict execution paths instea
 1. **Normalize Arguments**: Parse "$ARGUMENTS" to identify the `mode` (`architecture` or `performance`) and `focus` aspects (`general`, `db`, `api`, or `async`).
 2. **Identify Changed Files**:
    - If the user provided a file list or explicit instructions, follow them.
-   - Otherwise, you **MUST** execute `architecture-guard detect-changed-files --json` to detect changed files since the merge-base or in the working directory.
+   - Otherwise, use `architecture-guard detect-changed-files --json` only after confirming that capability is available.
+   - If unavailable, derive the set with the host's Git capability: include committed changes from the merge-base to `HEAD`, staged changes, unstaged changes, and untracked files. If Git is unavailable, ask the user for a file list and report that automatic detection could not run.
    - Use the `changed_files` list as the primary review set.
 
 ## Input & Context Loading
@@ -154,14 +165,16 @@ Detect violations such as:
 
 ## Review Procedure
 
-1. **Identify Scope**: Run `architecture-guard detect-changed-files --json` or use user-provided files.
+1. **Identify Scope**: Reuse the scope resolved by **Determine Review Scope**: user-provided files first, then the changed-files capability, then the host Git fallback; ask the user when none is available.
 2. **Model Context**: Load artifacts and build the Semantic Models for the identified scope.
 3. **Verify Evidence**: Check if task-referenced files exist and contain expected implementation logic.
 4. **Analyze Alignment**: Compare the initial specification intent vs. the proposed architectural design vs. implementation behavior. Ensure the implementation accurately satisfies the spec without violating constraints.
 5. **Scan Principles**: Apply Review Principles across the implemented boundaries.
 6. **Security & Governance Cross-Check**:
-  - If `security-constraints.md` or `security_constitution.md` is breached, log it as a critical violation.
-  - If a finding is primarily security-related and Security Review is available, route it to `/speckit.security-review.branch` instead of duplicating it here.
+  - Assign security finding severity and blocking status from the active security policy rather than fixing severity by category.
+  - Inspect the installed list in `.specify/extensions.yml` for `security-review` or its compatibility alias `spec-kit-security-review`. Manifest presence is not availability: invoke `/speckit.security-review.branch` only after verifying that it is registered and callable.
+  - If that command is absent, detect an independently registered Architecture Guard-compatible Security Review host capability and dispatch its branch operation for security-first findings instead of duplicating them here.
+  - If neither path is callable, report Security Review as `Unavailable`, degrade without claiming a pass, and do not substitute architecture findings for the missing review.
   - Cross-reference architecture decisions with security trust boundaries.
 7. **Ponytail Audit**: Apply both sides of the shared contract. Check for bloat and unsafe under-building; trace changed shared behavior to its callers; verify the earliest viable ladder rung was used; and confirm non-trivial logic has a runnable check.
 8. **Performance Scan (if mode=performance)**: Skip violations; focus on optimizations.
@@ -210,7 +223,7 @@ Expected Output: JSON list of CRITICAL/HIGH code quality violations mapped to ar
 
 **If inline**:
 1. **Load Rules**: Read the installed extension bundle at `.specify/extensions/architecture-guard/sonar-rules/sonarlint-rules.json` first; if running from the extension source checkout, use `sonar-rules/sonarlint-rules.json`
-2. **Scan Changed Files**: Simulate or invoke SonarLint logic on `changed_files` list
+2. **Scan Changed Files**: Apply the rules bundle heuristically to `changed_files`; label these findings `Heuristic Sonar Rules Analysis`. Label findings as actual `SonarLint` output only when a SonarLint tool was invoked and returned them.
 3. **Filter Results**: Keep only CRITICAL/HIGH severity findings related to complexity, coupling, structure
 4. **Map to Boundaries**: Correlate findings with architecture boundaries (Entry/App/Domain/Data/External)
 5. **Deduplicate**: If a violation is already in architecture violations list, suppress from SonarLint output
@@ -235,7 +248,7 @@ Expected Output: JSON list of CRITICAL/HIGH code quality violations mapped to ar
 Add a new section in the report (see Output Format below):
 
 ```markdown
-### Code Quality Findings (SonarLint)
+### Code Quality Findings ([SonarLint / Heuristic Sonar Rules Analysis])
 
 Findings that correlate with architecture concerns:
 
@@ -263,7 +276,8 @@ For all other violations, cite specific code locations, line numbers, or pattern
 
 ## Severity Guide
 
-- **CRITICAL**: Violates Constitution MUST, breaches Security Constraint, or has zero implementation evidence for a required boundary.
+- **CRITICAL**: Violates a Constitution P0/MUST rule or meets another Critical condition in active governance policy.
+- **Security findings**: Retain severity and independent blocking status from the active Security Review policy.
 - **HIGH**: Significant boundary erosion, contract inconsistency, or fundamental intent divergence.
 - **MEDIUM**: Pattern drift or local inconsistency that creates technical debt.
 - **LOW**: Minor naming, shape, or structure drift.
@@ -274,9 +288,9 @@ Return only this structure:
 
 # Architecture Review Report
 
-| ID | Category | Severity | Location(s) | Summary | Evidence/Rationale |
-|:---|:---|:---|:---|:---|:---|
-| V1 | Constitution | CRITICAL | `.specify/memory/architecture_constitution.md` | Violation of [Principle Name] | [Evidence from code/plan] |
+| ID | Category | Severity | Blocking | Location(s) | Summary | Evidence/Rationale |
+|:---|:---|:---|:---|:---|:---|:---|
+| V1 | Constitution | CRITICAL | [Yes/No, from policy] | `.specify/memory/architecture_constitution.md` | Violation of [Principle Name] | [Evidence from code/plan] |
 
 ### Task Synchronization
 - **Status**: [Synced / Drifted]
@@ -305,8 +319,8 @@ Return only this structure:
 - **Suggestion**: 
 - **Trade-off**: 
 
-(Only if `mode=architecture` and SonarLint findings detected)
-### Code Quality Findings (SonarLint)
+(Only if `mode=architecture` and code-quality findings were produced)
+### Code Quality Findings ([SonarLint / Heuristic Sonar Rules Analysis])
 
 Findings that correlate with architecture concerns:
 
@@ -341,8 +355,8 @@ Findings categorized by severity based on the active hygiene rules.
 2. **Architecture Alignment**: Resolve boundary erosion and contract mismatches.
 3. **Code Quality**: Address SonarLint findings that map to architectural concerns (if any).
 4. **DRY Alignment**: Centralize repeated business logic, validation, and mapping before duplicating it in another layer or module.
-5. **Durable Memory Preservation (Mandatory Check)**: If new architectural patterns, decisions, or repeatable lessons were identified, you **MUST automatically execute** the durable-memory capture flow immediately after providing the report. Do not just recommend it; let the formal capture flow propose entries and request user approval.
-6. **Next Step**: [e.g. Run `/speckit.security-review.branch` for security-first findings, or `/ag-apply` for architecture fixes]
+5. **Durable Memory Preservation (Mandatory Check)**: Keep memory read-only during review. If new architectural patterns, decisions, or repeatable lessons were identified, include proposed entries in the report. After returning the report, request explicit approval in a separate interaction and write only approved entries.
+6. **Next Step**: [e.g. Dispatch the selected Security Review branch operation for security-first findings, or run `/ag-apply` for architecture fixes]
 7. **Remediation**: [Concrete remediation direction for the top issues, or "None needed"]
 
 ## Framework Preset Guidance

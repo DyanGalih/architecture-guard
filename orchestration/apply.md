@@ -6,9 +6,9 @@ description: Apply approved architecture refactors by updating plan and task art
 
 Execute this workflow through `{adapter_command:architecture-apply}`; the token is the adapter-selected capability and must not be replaced with a package-specific executable name.
 
-## SDD Tool Detection
+## SDD Adapter Resolution
 
-Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter. Resolve the concrete paths for each available artifact before classifying findings.
 
 ## Ponytail Core Contract
 
@@ -56,17 +56,20 @@ Review any available:
 
 ## Finding Partitioning
 
-Before executing edits, `ag-apply` partitions all review findings into two distinct groups based on their `Target:` field:
+Before executing edits, `ag-apply` partitions all review findings into two distinct groups by comparing each `Target:` path with the concrete paths resolved by the active adapter, never by basename alone:
 
-1. **Plan/Tasks Group**: Findings targeting the adapter-resolved planning artifact (`plan.md` for SpecKit, `design.md` for OpenSpec/generic projects that use that name) or `tasks.md`.
-2. **Upstream Group**: Findings targeting `proposal.md` or `spec.md`.
+1. **Plan/Tasks Group**: Findings targeting the adapter-resolved planning, task, task-breakdown, or checklist paths.
+2. **Upstream Group**: Findings targeting adapter-resolved proposal or specification paths.
 
 For multi-artifact findings, resolution is performed in authoritative order (`spec.md` > planning artifact (`plan.md` or `design.md`) > `tasks.md` > `proposal.md`), fixing the authoritative artifact first and propagating downstream.
 
 ## Apply Procedure
 
+### Step 0: Confirm Writes
+Present the grouped findings, concrete target paths, delegation targets, and intended edits. Ask for explicit confirmation before any repository or Flash-Mem write. If confirmation is declined, perform no writes and return all findings as `Declined`.
+
 ### Step 1: Direct Apply for Plan/Tasks Group
-1. Process all findings in the **Plan/Tasks Group** directly.
+1. After confirmation, process all findings in the **Plan/Tasks Group** directly.
 2. Preserve feature intent and implementation scope.
 3. Add or refine task entries in `tasks.md` for refactors that are safe to schedule.
 4. Reorder tasks when architectural dependencies matter.
@@ -76,11 +79,10 @@ For multi-artifact findings, resolution is performed in authoritative order (`sp
 8. If an approved Constitution Update Proposal exists, reflect it as explicit follow-up work without auto-changing the Constitution itself.
 9. When a refactor removes duplication, update the plan or tasks so the shared implementation remains the single source of truth and all callers are adjusted to use it.
 
-### Step 2: Confirmation for Upstream Group
+### Step 2: Upstream Group Confirmation
 If the **Upstream Group** contains findings:
-1. Present a grouped summary table of upstream findings organized by target artifact (`proposal.md`, `spec.md`).
-2. Prompt the user for confirmation: `"Proceed with upstream artifact fixes? [Y/n]"`
-3. If the user declines/rejects, mark all upstream findings as `skipped` in the final report and exit early.
+1. Include its adapter-resolved targets and delegation plan in Step 0 confirmation; request separate confirmation only if the delegation scope changes later.
+2. If the user declines upstream fixes, mark those findings as `Declined` while continuing any separately approved direct edits.
 
 ### Step 3: Upstream Delegation / Fallback Execution
 Upon user confirmation for the **Upstream Group**:
@@ -104,17 +106,20 @@ Return a unified summary report covering both direct edits and delegated upstrea
 # Architecture Apply Summary
 
 ## Direct Edits (Plan / Tasks)
-- **Status**: [Applied / Skipped / None Needed]
+- **Status**: [Applied / Partially Applied / Declined / None Needed]
 - **Modified Artifacts**: [e.g. design.md, tasks.md]
 - **Applied Findings**: [List of applied plan/tasks findings]
 
 ## Delegated Upstream Edits (Proposal / Spec)
-- **Status**: [Applied / Delegated / Skipped by User / No Upstream Findings]
+- **Status**: [Applied / Delegated / Partially Applied / Declined / No Upstream Findings]
 - **Delegation Target**: [Native capability name or AG-Native Fallback]
 - **Upstream Findings**:
   | ID | Target | Finding | Status |
   |:---|:---|:---|:---|
-  | V1 | `spec.md` | ... | Applied / Skipped |
+  | V1 | [adapter-resolved path] | ... | Applied / Delegated / Failed / Declined |
+
+## Unapplied Findings
+- [Finding ID, status (`Failed` or `Declined`), reason, and safe next action]
 
 ## Next Step
 - [e.g. Continue to implementation or run verification]

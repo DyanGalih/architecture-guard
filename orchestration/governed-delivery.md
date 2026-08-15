@@ -4,9 +4,9 @@ description: Resume governed delivery from an active specification through plan 
 
 # Governed Delivery Command
 
-## SDD Tool Detection
+## SDD Adapter Resolution
 
-Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -30,6 +30,10 @@ Produce an implementation-ready `tasks.md` from an accepted technical plan while
 4. Advisory findings remain non-blocking, while P0 findings always stop progression; security findings block only when governing policy assigns blocking severity.
 5. A rerun resumes safely instead of recreating valid artifacts.
 
+## Write Approval Gate
+
+Before the first mutation, resolve and preview the exact branch, change container, specification, plan, and task artifacts together with all planned creation, generation, repair, and reconciliation operations. Obtain explicit user approval, then allow routine writes already previewed within this delivery phase scope without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+
 ## Mandatory Branch Preflight
 
 Before creating, planning, or modifying any active change:
@@ -45,14 +49,17 @@ Before creating, planning, or modifying any active change:
 ## Phase 1 — Detect the Active Feature and Integrations
 
 1. Resolve the active work from the user's explicit path, adapter artifact paths, current branch metadata when supported, or one unambiguous result from `{adapter_command:list-specs}`, in that order.
-2. If no active feature directories exist (ignoring archives like `openspec/changes/archive/`), automatically derive a kebab-case name from the user's goal and create the new feature directory using the active SDD tool's workflow.
-3. Do not guess when multiple active feature directories are plausible. Ask the user to identify the feature.
-4. Detect `flash-mem` as an MCP service. Do not look for it in `{adapter_path:extensions}`.
-5. Detect Security Review from the adapter when it declares a supported extensions artifact; otherwise use host capability detection. Accept `security-review` as the canonical extension id and `spec-kit-security-review` as a compatibility alias.
-6. Read constitution files directly when present because they may be ignored by repository search:
+2. If no active feature directories exist (ignoring archives like `openspec/changes/archive/`), automatically derive a kebab-case name from the user's goal, execute `{adapter_command:create-change}`, then execute `{adapter_command:create-spec}` for that new active work. Stop before planning if either step fails or the resulting specification is empty.
+3. If an existing active feature is resolved but its specification is missing or empty, execute `{adapter_command:create-spec}` for that active work. Stop before planning if the command fails or the resulting specification remains empty.
+4. Do not guess when multiple active feature directories are plausible. Ask the user to identify the feature.
+5. Detect `flash-mem` as an MCP service. Do not look for it in `{adapter_path:extensions}`.
+6. Detect Security Review as an independent host capability. It is not an SDD tool feature or extension; detect it from host registrations and never read `{adapter_path:extensions}` for it.
+7. Read constitution files directly when present because they may be ignored by repository search:
    - `{adapter_path:constitution}`
    - `{adapter_path:arch-constitution}`
-   - `{adapter_path:security-constitution}`
+    - `{adapter_path:security-constitution}`
+   Missing optional split constitutions are not errors: fall back to the governance/context sections in `{adapter_path:constitution}`. If no applicable constitution exists, continue with generic Architecture Guard rules and report the degraded state.
+8. Load `{adapter_path:governance-config}` and `{adapter_path:hygiene-rules}` when present. Apply configured exclusions and severity policy at the plan and task gates; missing optional hygiene configuration is non-blocking and must be reported.
 
 ## Phase 2 — Mandatory Memory Preflight When Available
 
@@ -95,6 +102,7 @@ If the plan is `review-required`, reuse it and run the applicable security plan 
 - Stop before task generation for unresolved P0 findings or security findings that governing policy marks blocking. P0 cannot be overridden by a simple proceed prompt.
 - Stop when resolution requires a material product or architecture choice.
 - When a safe correction is already authorized, repair the plan, rerun affected reviews, and continue.
+- Run plan-scope repository hygiene checks. Block only findings whose effective severity is configured to fail; report all others as advisory.
 
 The plan does not need to be perfect. It must be sufficiently stable and free of unresolved blocking findings.
 
@@ -111,6 +119,7 @@ The governed task phase must:
 3. Convert confirmed architecture findings into explicit work through `{adapter_command:refactor-generator}`.
 4. Run `{adapter_command:analyze}` against the complete plan and task set.
 5. Keep implementation, security, migration, and refactor work explicit.
+6. Run task-scope repository hygiene checks with the same configured severity policy.
 
 If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks.
 
@@ -118,9 +127,9 @@ If analysis exposes a plan defect, mark the plan and tasks stale, return to the 
 
 When Flash-Mem is available:
 
-1. Capture changed durable artifacts with `capture_artifact_memory` using the appropriate source type.
-2. Add or update durable memory only for validated decisions, constraints, approved exceptions, recurring violations, and reusable patterns.
-3. Do not store transient run status, speculative findings, secrets, or duplicate synthesis snapshots.
+1. Propose artifact captures and durable-memory entries, showing their sources and content summary.
+2. Execute `capture_artifact_memory`, `add_memory`, or `update_memory` only after explicit user approval.
+3. Store only validated decisions, constraints, approved exceptions, recurring violations, and reusable patterns; never store transient run status, speculative findings, secrets, or duplicate synthesis snapshots.
 
 ## Output
 

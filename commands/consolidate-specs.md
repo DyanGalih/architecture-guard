@@ -19,7 +19,8 @@ Generate `specs/system_context.md` as a compact offline fallback for Budgeted Ar
 3. If no source specs exist, report that no fallback was generated and leave any existing fallback untouched unless the user explicitly authorizes replacing it.
 4. Read each source only far enough to extract its title or one-line purpose, requirement and acceptance-criteria identifiers, shared invariants, cross-feature dependencies, and explicit conflicts. Acceptance-criteria bodies remain in the source spec.
 5. Deduplicate only statements that are clearly identical. Keep similar statements separate. Never resolve conflicts or ambiguity silently.
-6. Write the complete generated artifact in one operation with the structure below. Keep feature entries to one line plus identifiers and provenance so the fallback does not become another full specification.
+6. Report the resolved output path and preview the complete generated artifact without writing it.
+7. Request explicit user approval in a separate interaction before creating or replacing `system_context.md` at the resolved output path. On approval, write the complete artifact in one operation. Keep feature entries to one line plus identifiers and provenance so the fallback does not become another full specification.
 
 ## Required Output
 

@@ -33,7 +33,7 @@ Try Flash-Mem first: query summary and metadata context before performing archit
 3. Load full memory content only when summaries are insufficient.
 4. Reuse approved architectural decisions whenever possible.
 5. Flag conflicts between proposed changes and existing architectural decisions.
-6. After analysis, store durable architecture knowledge back into Flash-Mem:
+6. After analysis, propose durable architecture knowledge for Flash-Mem and write only entries the user explicitly approves:
    - new architecture decisions
    - approved exceptions
    - recurring violations
@@ -51,7 +51,7 @@ The workflow is serial and ownership-aware:
 2. Normalize `mode` and `focus` from the incoming command.
 3. Run the architecture review against the Constitution, memory synthesis, and generic architecture principles.
 4. If `mode=performance`, keep the pass advisory and route output to `Performance Insights` only.
-5. Route security-first findings to Security Review instead of duplicating them here.
+5. For the current artifact phase, inspect `.specify/extensions.yml` for `security-review` or `spec-kit-security-review`, then verify the applicable command is registered before invoking it: `/speckit.security-review.plan` for plans, `/speckit.security-review.tasks` for tasks, and `/speckit.security-review.branch` for implementation. Manifest presence alone is not availability. If the command is absent, dispatch the corresponding operation from an independently registered Architecture Guard-compatible Security Review host capability. If neither path is callable, report `Unavailable`, degrade without claiming a pass, and route security-first findings as unresolved handoffs instead of duplicating them here.
 6. Treat repeated business rules, approvals, validation, DTO mapping, or orchestration as DRY drift and route it to refactor extraction rather than allowing parallel copies.
    - Prefer one shared source of truth for the repeated rule, contract, transformation, or decision.
 7. If `mode=architecture` and a Constitution Update Proposal is warranted, surface it and leave application to `ag-apply`.
@@ -84,7 +84,7 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
 1. Read Flash-Mem context first if it is available in the project or workflow context, then fall back to repository files if needed.
 2. Review the current work against the Constitution and generic architecture principles.
 3. Identify whether any finding is primarily security-related.
-4. If a finding is security-related, flag it as a handoff to Security Review rather than treating it as a core architecture finding.
+4. If a finding is security-related, use the compatibility chain above for the current artifact phase and flag it as a Security Review handoff rather than treating it as a core architecture finding.
 5. Produce refactor tasks or an apply recommendation as needed.
 6. Prefer a single concise summary that tells the user what to fix next.
 
@@ -93,9 +93,11 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
 - Do not invent SDD-tool-specific conventions.
 - Do not invent unsupported SDD tool APIs.
 - Do not block implementation by default.
+- Constitution P0 architecture findings are non-overridable and stop progression until remediated.
 - Do not replace Security Review; route security-first findings to Security Review when available.
 - Do not require `flash-mem`; treat it as optional read-only context only.
 - Do not duplicate Security Review findings in the architecture output unless the issue is specifically an architectural boundary problem.
+- Preserve Security Review severity and blocking decisions independently from architecture severity and P0 handling.
 - Do not write security follow-up items into architecture tasks or plan updates.
 - Do not write memory conclusions into architecture follow-up items.
 
@@ -110,7 +112,7 @@ All governance reports MUST follow this standard template:
 
 ## Input Summary
 - **Artifacts Scanned**: [list]
-- **Extensions Used**: [`flash-mem`: yes/no, Security Review: yes/no]
+- **Extensions Used**: [`flash-mem`: yes/no, Security Review: SpecKit/host/Unavailable]
 - **Mode**: [architecture/performance]
 - **Focus**: [general/db/api/async]
 
@@ -127,7 +129,7 @@ All governance reports MUST follow this standard template:
 
 ## Context Applied
 - **`flash-mem`**: [Used context or "Not available"]
-- **Security Review**: [Findings routed or "Not available"]
+- **Security Review**: [Findings routed or `Unavailable`; never infer a pass from manifest presence]
 
 ## Recommended Next Step
 [Single clear action]

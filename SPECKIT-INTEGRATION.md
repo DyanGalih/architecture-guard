@@ -16,11 +16,11 @@ npx architecture-guard init . --agent opencode --framework spec-kit --commands a
 The installer adds:
 
 - Agent-native governance commands such as `ag-governed-spec`, `ag-review-artifacts`, and `ag-verify`.
-- `adapters/detect.md` and `adapters/spec-kit.md`.
+- `adapters/resolve.md` and `adapters/spec-kit.md`.
 - Runtime resources under `.architecture-guard/`.
 - Optional governance guidance in `AGENTS.md`.
 
-The adapter is selected from the `.specify/` project marker at command time. An installed selection is only advisory and does not override current filesystem detection.
+The adapter selected by `architecture-guard init --framework` is persisted in `.architecture-guard/selected-adapter` and is authoritative at command time. If the project switches SDD tools, rerun init with the new framework or use an explicit `--adapter` override for a single command.
 
 ## Spec Kit Artifact Mapping
 

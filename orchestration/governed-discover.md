@@ -4,9 +4,9 @@ description: Facilitate an architecture-aware discussion to flesh out ideas befo
 
 # Governed Discovery Command
 
-## SDD Tool Detection
+## SDD Adapter Resolution
 
-Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -35,20 +35,24 @@ Provide a single command that ensures:
 
 Check for the availability of:
 - `flash-mem` MCP server
-- `security-review` (or compatibility alias `spec-kit-security-review`) extension
+- `security-review` host capability
 
 **Detection Logic**:
 1. Detect `flash-mem` as an MCP-backed memory service in the current environment.
-2. If the adapter declares a supported extensions artifact, read its `installed` list for `security-review`; otherwise detect it from host registrations. If present, note it for downstream security flagging.
+2. Detect Security Review as an independent host capability, never from an SDD extensions artifact. Do not read `{adapter_path:extensions}` for it. If present, note it for downstream security flagging.
 3. If either capability is missing, degrade gracefully. Without `flash-mem`, rely on the local `{adapter_path:arch-constitution}` and `{adapter_path:security-constitution}` files.
 
 ### Step 2 — Architecture Context Retrieval
 
 Retrieve the most relevant architectural context for the user's idea before starting the discussion. Use `flash-mem` first.
 
+If the user supplied no feature idea or only a title, ask for the minimum input needed to proceed: the user/problem, desired outcome, and known scope. Ask one necessary question at a time and remain read-only.
+
 ### Step 3 — Current Implementation Review (Optional)
 
 If the user's prompt suggests modifying an existing feature, analyze the current codebase for that feature to ensure the proposed ideas fit seamlessly with the existing patterns.
+
+Keep this review read-only and scan for boundary drift, duplicated business rules or orchestration (DRY risk), misplaced/generated artifacts, temporary files, and repository hygiene risks. Carry findings into the handoff as risks; do not modify the repository.
 
 ### Step 4 — Interactive Discussion Loop
 
@@ -62,7 +66,7 @@ Enter an interactive Q&A discussion with the user.
 
 If required questions remain unresolved, ask only the next necessary questions and do not produce the final handoff draft yet.
 
-If the user proposes a feature that touches authentication, authorization, PII, or data exposure, and `security-review` (or compatibility alias `spec-kit-security-review`) was detected in Step 1, flag the idea for downstream security review.
+If the user proposes a feature that touches authentication, authorization, PII, secrets, trust boundaries, or data exposure, always flag it as security-sensitive in the handoff. If the `security-review` host capability was detected in Step 1, additionally request its downstream review; otherwise retain the flag and note that external Security Review is unavailable.
 
 ### Step 4.5 — Durable Memory Proposal
 
@@ -75,7 +79,7 @@ If the discussion surfaced new architectural decisions, rejected alternatives, o
 Once you and the user are aligned on the feature details and any blocking/P0 conflicts are resolved:
 1. Conclude the discussion.
 2. Generate a structured **Discovery Summary Draft**.
-3. Advise the user to pass this draft to the specification phase.
+3. Hand the draft to the adapter-registered governed-spec capability as its seed input.
 
 ## Output Structure
 
@@ -100,6 +104,12 @@ When the discussion is concluded and aligned, the command MUST return:
 
 ## Open Questions
 - [Non-blocking questions that can be resolved during governed-spec]
+
+## Security-Sensitive Areas
+- [Auth, PII, secrets, trust boundaries, or data-exposure concerns; state "None identified" only after checking]
+
+## Durable Memory Proposals
+- [Proposed decision/constraint/lesson, rationale, and intended Flash-Mem type; or "None"]
 
 ## Recommended Next Step
 To proceed to implementation and avoid a "Feature: Not selected" error, you must initialize the feature using the active SDD tool's workflow (e.g., creating a new OpenSpec change) before running a delivery phase.
@@ -126,8 +136,8 @@ You can now run:
 - Fall back to reading `{adapter_path:arch-constitution}` and `{adapter_path:security-constitution}` directly
 
 **Without Security Review**:
-- Skip security-relevant flagging in Step 4
-- Note missing security context in the Discovery Summary Draft
+- Continue identifying and flagging all security-sensitive ideas
+- Note that external Security Review is unavailable in the Discovery Summary Draft
 
 **Minimal Viable Workflow** (only Architecture Guard):
 - Read constitution files directly

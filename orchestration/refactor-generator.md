@@ -4,9 +4,9 @@ description: Convert architecture violations into non-blocking, structured refac
 
 # Refactor Generator Command
 
-## SDD Tool Detection
+## SDD Adapter Resolution
 
-Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -106,7 +106,7 @@ Suggested fixes should be concrete:
 
 ### Incremental Migration Strategy
 When generating refactor tasks based on architecture drift, you MUST avoid proposing full system rewrites. Prefer incremental, boundary-by-boundary, or module-by-module migrations.
-Output any requested phased migration strategy beside `{adapter_path:plan}` using the adapter's active work directory. Include coexistence strategies for old and new patterns.
+Return any requested phased migration strategy in the response first. Before writing it beside `{adapter_path:plan}` in the adapter's active work directory, show the target path and request explicit user approval. Write only after approval. Include coexistence strategies for old and new patterns.
 
 ## Architecture Migration Plan Structure
 
@@ -164,7 +164,7 @@ When creating the adapter-resolved architecture migration plan, use this structu
 
 ## Output Format
 
-Return only:
+Return only the task structure below. Any proposed migration artifact is included after the tasks as response content; approval and writing occur in a separate interaction.
 
 ```text
 Refactor Tasks:
@@ -198,6 +198,9 @@ Reason: The route currently owns a business decision that should live behind the
 Scope: Checkout request handler and checkout application service.
 Priority: P1
 Suggested Fix: Extract pricing decision logic into the checkout service or domain policy, keep the route responsible for validation, mapping, and delegation only.
+Consequence: Pricing behavior can diverge across entry points if the route continues to own the rule.
+Verification: Exercise every checkout entry point and confirm each delegates to the same pricing rule.
+Trade-off: The shared boundary gains one responsibility while routes become transport-only.
 ```
 
 ```text
@@ -208,6 +211,9 @@ Reason: The same tax rule appears in multiple checkout modules, which creates du
 Scope: Checkout service and any callers that currently reimplement the tax rule.
 Priority: P1
 Suggested Fix: Move tax calculation into one shared checkout service or domain helper, then have callers reuse that single implementation.
+Consequence: Tax changes can produce inconsistent totals while duplicate implementations remain.
+Verification: Compare all callers against one set of tax-rule cases and confirm they use the shared implementation.
+Trade-off: Callers depend on the shared checkout boundary instead of local calculations.
 ```
 
 ```text
@@ -218,6 +224,9 @@ Reason: Multiple handlers validate the same request shape in slightly different 
 Scope: Request boundary and the shared validation contract or helper used by those handlers.
 Priority: P1
 Suggested Fix: Move the validation rule into one shared schema, form request, or helper, then have each handler call the same boundary check.
+Consequence: Equivalent requests can be accepted or rejected differently across handlers.
+Verification: Run the same valid and invalid examples through every affected handler.
+Trade-off: Validation changes become coordinated through one shared contract.
 ```
 
 ```text
@@ -228,6 +237,9 @@ Reason: Multiple modules build the same response shape independently, which dupl
 Scope: Response mapping layer and the callers that currently construct the same DTO shape.
 Priority: P2
 Suggested Fix: Extract the mapping into one shared DTO factory, serializer, or adapter, then reuse that transformation everywhere the shape is needed.
+Consequence: Consumers can receive incompatible response shapes as independent mappings evolve.
+Verification: Assert every affected caller emits the shared DTO shape.
+Trade-off: Callers depend on one shared response transformation.
 ```
 
 ```text
@@ -238,6 +250,9 @@ Reason: The same approval or discount rule is enforced in multiple places, which
 Scope: Domain policy or application service and all call sites that currently reimplement the same rule.
 Priority: P1
 Suggested Fix: Move the policy into one shared domain service or policy object, then have every caller delegate to that single rule.
+Consequence: Approval or discount outcomes can differ by call path.
+Verification: Run the same policy cases through every call path and confirm delegation to the shared rule.
+Trade-off: Policy changes are centralized and therefore require shared-boundary review.
 ```
 
 ## Backward Compatibility

@@ -4,9 +4,9 @@ description: Execute implementation tasks, then review the result against availa
 
 # Governed Implement Command
 
-## SDD Tool Detection
+## SDD Adapter Resolution
 
-Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, read `adapters/resolve.md`. Resolve the active adapter in this order: explicit `--adapter` override, `.architecture-guard/selected-adapter` as the authoritative persisted selection, then filesystem markers only when no persisted selection exists. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. Resolve every adapter token before continuing.
 
 ## Ponytail Core Contract
 
@@ -30,20 +30,24 @@ Provide a single command that ensures:
 
 ## Orchestration Flow
 
+### Write Approval Gate
+
+Before the first mutation, resolve and preview the exact code, test, and task artifacts together with all planned implementation, test, and task-checkbox operations. Obtain explicit user approval, then allow routine writes already previewed within this implementation phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+
 ### Step 1 — Detect Optional Integrations
 
 Check for the availability of:
 - `flash-mem` MCP server
-- `security-review` (or compatibility alias `spec-kit-security-review`) extension
+- `security-review` host capability
 
 **Detection Logic**:
 1. Detect `flash-mem` as an MCP-backed memory service in the current environment. Do not treat it as a Spec Kit extension or look for it in `{adapter_path:extensions}`.
-2. If the adapter declares a supported extensions artifact, read its `installed` list for `security-review`; otherwise detect the capability from host registrations. Never resolve or read unsupported `{adapter_path:extensions}` or `{adapter_path:extensions-dir}` paths.
+2. Detect Security Review as an independent host capability, never from an SDD extensions artifact. Do not read `{adapter_path:extensions}` or `{adapter_path:extensions-dir}` for it.
 3. If either capability is missing, degrade gracefully by skipping only its respective steps.
 
 ### Step 2 — Flash-Mem MCP Context Retrieval (Optional)
 
-When Flash-Mem is available, use it first to gather the most relevant architectural context before implementation. Prefer summary-first context and only expand into repository files when needed.
+When Flash-Mem is available, execute both `get_project_summary` and `search_memory` scoped to the active feature, affected files, architecture boundaries, security-sensitive areas, prior decisions, and approved exceptions before implementation. Prefer summary-first context and load full entries only when those results are insufficient.
 
 If Flash-Mem is unavailable or the context is insufficient, continue with the repository artifacts and constitution files available in the workspace.
 
@@ -80,16 +84,18 @@ You must orchestrate the `{adapter_command:implement}` (core implementation) wor
    - Note in the Governance Summary that `{adapter_command:implement}` was unavailable and implementation was performed inline.
 3. **Write Code**: Perform the actual coding work (writing files, running tests) required by the tasks.
 4. **Sync the tasks**: You MUST update `{adapter_path:tasks}` to mark completed tasks with `[x]`, check them off, and add any new subtasks discovered during implementation.
+   - If implementation would expand beyond accepted spec/plan/task scope, stop and obtain explicit user approval before adding or executing that work. Record the approved expansion in the authoritative artifacts first.
 5. The implementation MUST follow current tasks and context. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, read active artifacts and constitution files directly with file-reading tools. Do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
 
 The SDD-tool-native implementation behavior is defined only by `{adapter_command:implement}`.
 
 ### Step 4 — Security Review on Implementation
 
-IF `security-review` (or compatibility alias `spec-kit-security-review`) is available:
-1. **Execute Review**: Run `{adapter_command:security-review-branch}` to review the produced implementation against security vulnerabilities.
+IF `security-review` is available as a host capability:
+1. **Execute Review**: Dispatch the detected host Security Review capability's branch/implementation operation directly. Do not execute adapter fallback prose as a command.
 2. Check for: authorization bypass, missing validation, secret leakage, injection risk, and insecure data exposure.
 3. If security findings are architecture-relevant, classify them as `Security-Architecture Conflict` for the architecture review.
+4. Independently derive each finding's effective severity and blocking status from `{adapter_path:security-constitution}` or the applicable security policy in `{adapter_path:constitution}`. Stop for policy-designated blocking findings; advisory findings do not become blocking merely because they are security findings.
 
 ### Step 5 — Architecture Review on Implementation
 
@@ -105,7 +111,7 @@ Review implementation against:
 
 ### Step 5.5 — Blocking Decision Tree
 
-**Critical Decision Point**: Evaluate architecture findings for blocking issues.
+**Critical Decision Point**: Evaluate architecture and security findings independently for blocking issues.
 
 ```
 IF Architecture Review finds CRITICAL or HIGH violations:
@@ -119,6 +125,10 @@ IF Architecture Review finds CRITICAL or HIGH violations:
     Flag for post-merge remediation
 ELSE (no critical violations):
   Continue to Step 6
+
+IF Security Review finds a policy-designated blocking violation:
+  STOP implementation completion
+  Surface the security remediation tasks independently of architecture findings
 ```
 
 **Rationale**: This ensures architectural integrity while preserving delivery momentum for non-blocking issues.
@@ -127,16 +137,20 @@ ELSE (no critical violations):
 
 IF architecture violations exist:
 1. Run `{adapter_command:refactor-generator}`.
-2. Generate non-blocking refactor, migration, or correction tasks.
+2. Generate blocking remediation tasks for unresolved P0 or policy-designated blocking findings; generate advisory refactor, migration, or correction tasks for all other findings.
 3. Skip performance refactors unless explicitly requested.
 
-### Step 7 — Proactive Durable Memory Preservation
+### Step 7 — Mandatory Verification Gate
+
+Run `{adapter_command:verify}` after implementation and reviews. Do not mark the workflow complete or ready to merge until verification passes with no unresolved blocking findings; if unavailable as a registered capability, execute the Architecture Guard verification workflow inline.
+
+### Step 8 — Proactive Durable Memory Preservation
 
 If the implementation review or security audit identified new architectural patterns, critical decisions, or repeatable lessons:
 1. **Approval Required**: Propose validated durable-memory entries and execute the capture flow only after explicit user approval.
 2. **Standard**: Do not silently write memory outside the approved capture flow.
 
-### Step 8 — Implementation Governance Summary
+### Step 9 — Implementation Governance Summary
 
 Produce a final `Governed Implementation Summary`.
 
@@ -145,7 +159,7 @@ Produce a final `Governed Implementation Summary`.
 **Without Flash-Mem MCP**:
 - Skip Step 2 (Flash-Mem MCP Context Retrieval)
 - Continue to `{adapter_command:implement}` directly
-- Assume no historical implementation constraints beyond Constitution
+- Use active spec, plan, tasks, repository evidence, and any present constitutions as current authority; report that historical memory context was unavailable rather than assuming no historical constraints exist
 
 **Without Security Review**:
 - Skip Step 4 (Security Review on Implementation)
@@ -166,6 +180,7 @@ Produce a final `Governed Implementation Summary`.
 - Execute implementation through `{adapter_command:implement}` or its inline fallback
 - Run architecture review on output
 - Generate non-blocking refactor tasks
+- Pass mandatory verification
 - Produce summary
 
 ## Output Structure
@@ -182,7 +197,7 @@ The command MUST return:
 ## Security Review
 - **Findings**: [List of security vulnerabilities found]
 - **Constraints**: [Trust boundaries validated]
-- **Blocking Concerns**: [Any P0 security risks]
+- **Blocking Concerns**: [Policy-designated blocking security findings]
 
 ## Architecture Review
 - **Violations**: [Drift findings or Security-Architecture Conflicts]
@@ -197,7 +212,7 @@ The command MUST return:
 - [e.g., Revise implementation to address Security Conflict]
 - [e.g., Run `{adapter_command:architecture-apply}`]
 - **Durable Memory Preservation**: (Proactively triggered) Review the proposed memory entries below.
-- **Verification Gate**: Run the adapter's registered architecture-verify capability to ensure all tasks are delivered and requirements are met.
+- **Verification Gate**: [Passed / Blocked / Unavailable fallback executed]
 ```
 
 ## Security + Architecture Conflict Handling

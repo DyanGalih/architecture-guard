@@ -23,7 +23,7 @@ Create a reliable current-state baseline before any architectural or delivery gu
 3. Note any current conventions, constraints, and risky areas.
 4. Capture known gaps between the current codebase and the desired governance model.
 5. Identify existing pragmatic patterns (Ponytail principles: YAGNI, standard library preference, minimal abstractions) to preserve in the constitution.
-6. Produce an initial brownfield plan instead of assuming a greenfield setup.
+6. Produce a **Brownfield Recommendation Outline** instead of assuming a greenfield setup.
 7. Count and estimate the size of active `specs/**/spec.md` files, excluding generated or explicitly archived artifacts.
 8. Offer Budgeted Architecture Context Retrieval when repeated historical-spec loading is likely to be material.
 
@@ -33,13 +33,14 @@ Create a reliable current-state baseline before any architectural or delivery gu
 - System boundaries and dependency map
 - Existing conventions and exceptions
 - Migration or refactor candidates
-- First-pass plan for bringing the project under governance
+- Brownfield Recommendation Outline for bringing the project under governance
 
 ## Guidance
 
 - Prefer observation over assumption.
 - Treat existing code as the source of truth.
 - Keep the first pass lightweight and non-destructive.
+- Establish a read-only baseline of current boundary drift, security-sensitive areas and trust boundaries, duplicated business rules or orchestration (DRY risk), and repository hygiene issues such as misplaced, generated, or temporary artifacts.
 - Ask for confirmation before suggesting broad refactors.
 - Recommend targeted mode for small spec sets. For larger histories, explain that budgeted mode queries Flash-Mem first, loads `specs/system_context.md` only as an offline fallback, and never replaces active feature artifacts.
 - If the user wants budgeted mode, record the recommendation in the brownfield output and hand it to `/ag-init`. Do not create configuration or generate `system_context.md` during this non-destructive mapping pass.

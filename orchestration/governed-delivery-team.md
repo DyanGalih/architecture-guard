@@ -4,9 +4,9 @@ description: Run team delivery with stakeholder approval of the User Story befor
 
 # Governed Team Delivery Command
 
-## SDD Tool Detection
+## SDD Adapter Resolution
 
-Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -31,6 +31,10 @@ Produce an approved User Story and an implementation-ready `tasks.md` from an ac
 5. Advisory findings remain non-blocking, while P0 findings always stop progression; security findings block only when governing policy assigns blocking severity.
 6. A rerun resumes safely instead of recreating valid artifacts.
 
+## Write Approval Gate
+
+Before the first mutation, resolve and preview the exact branch, change container, User Story, plan, and task artifacts together with all planned creation, status, linkage, generation, repair, and reconciliation operations. Obtain explicit user approval, then allow routine writes already previewed within this team-delivery phase scope without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+
 ## Mandatory Branch Preflight
 
 Before creating, planning, or modifying any active change:
@@ -46,14 +50,16 @@ Before creating, planning, or modifying any active change:
 ## Phase 1 — Detect the Active Feature and Integrations
 
 1. Resolve the active work from the user's explicit path, adapter artifact paths, current branch metadata when supported, or one unambiguous result from `{adapter_command:list-specs}`, in that order.
-2. If no active feature directories exist (ignoring archives like `openspec/changes/archive/`), automatically derive a kebab-case name from the user's goal and create the new feature directory using the active SDD tool's workflow.
+2. If no active feature directories exist (ignoring archives like `openspec/changes/archive/`), automatically derive a kebab-case name from the user's goal and execute `{adapter_command:create-change}` before creating specification artifacts.
 3. Do not guess when multiple active feature directories are plausible. Ask the user to identify the feature.
 4. Detect `flash-mem` as an MCP service. Do not look for it in `{adapter_path:extensions}`.
-5. Detect Security Review from the adapter when it declares a supported extensions artifact; otherwise use host capability detection. Accept `security-review` as the canonical extension id and `spec-kit-security-review` as a compatibility alias.
+5. Detect Security Review as an independent host capability. It is not an SDD tool feature or extension; detect it from host registrations and never read `{adapter_path:extensions}` for it.
 6. Read constitution files directly when present because they may be ignored by repository search:
    - `{adapter_path:constitution}`
    - `{adapter_path:arch-constitution}`
-   - `{adapter_path:security-constitution}`
+    - `{adapter_path:security-constitution}`
+   Missing optional split constitutions fall back to applicable governance/context sections in `{adapter_path:constitution}`; report when only generic Architecture Guard rules are available.
+7. Load `{adapter_path:governance-config}` and `{adapter_path:hygiene-rules}` when present and apply configured exclusions and effective severity at plan and task gates.
 
 ## Phase 2 — Mandatory Memory Preflight When Available
 
@@ -81,11 +87,11 @@ Before engineering planning begins, generate a business-oriented User Story repr
 3. Ensure the User Story is understandable by technical and non-technical stakeholders.
 4. Persist the generated User Story as `<feature-name>.md` in the `<root>/user-stories/` directory with status `draft`.
 5. Present it for stakeholder review and stop before engineering planning until the user explicitly accepts it. Record the result as `approved` in the file.
-6. Once the User Story is approved, check for the presence of `.architecture-guard/sync.yml`. If it exists:
+6. Once the User Story is approved, check for `.architecture-guard/sync.yml`. External synchronization is a separate side effect and requires explicit approval of the resolved provider, repository/project, and target before the first push:
    - Run `npx tsx src/cli/validate-sync-config.ts` to strictly validate the configuration.
-   - If the configuration is valid and `enabled: true`, read the User Story content and push it to the configured provider (e.g., via your `github-mcp-server` to create an issue).
-   - Record the resulting issue ID or URL in `.architecture-guard/sync_status.json` (e.g., `{ "status": "success", "issue_url": "..." }`).
-   - If the push fails, write `{ "status": "failed" }` to `.architecture-guard/sync_status.json` and output a non-blocking warning. Do NOT stop the delivery workflow.
+   - If valid, enabled, and approved, use the recorded external ID/URL for this story when present and update that item instead of creating a duplicate. Otherwise create one item and persist its provider, target, ID/URL, story path, and content fingerprint in `.architecture-guard/sync_status.json`.
+   - Skip a push when the same target and content fingerprint already succeeded.
+   - On validation, approval, or provider failure, do not create/update an external item. Record `disabled`, `approval-required`, or `failed` with the target and error; warn without blocking local delivery. Never report success without a confirmed external ID/URL.
 7. If a previously approved User Story has been modified after engineering artifacts were generated, mark it `review-required`, warn the user, and require re-approval before proceeding.
 
 ## Phase 4 — Inspect Resume State
@@ -113,20 +119,22 @@ Do not use timestamps as the only evidence of material staleness. Compare artifa
 
 Before technical planning can occur, the feature must be formally proposed and specified according to the active SDD tool.
 1. Check if the adapter requires a proposal (e.g., `proposal.md` or `specs/`).
-2. If missing, you MUST require the execution of `ag-governed-spec` to correctly generate the SDD-specific specification artifacts before allowing the Plan Gate to open.
+2. If missing, you MUST execute `ag-governed-spec` for the active feature and stop the Plan Gate if governed specification does not complete successfully.
 
 ## Phase 5 — Plan Gate
 
 If the plan is `missing` or `stale`, run `ag-governed-plan` with the active feature context.
-- **Linkage metadata**: When generating the new technical plan (the technical design artifact, `design.md`, or `proposal.md`), inject the YAML frontmatter `Story: ../../../user-stories/<selected-story>.md` to establish the explicit link between the technical change and the business epic.
 
 If the plan is `review-required`, reuse it and run the applicable security plan review plus the adapter-registered violation-detection capability. Do not regenerate a plan merely because review is needed.
+
+- **Linkage metadata for every plan state**: Resolve the actual plan path and selected story path, then validate `Story:` against their normalized relative path (or an absolute path when no relative representation is possible). Add or correct stale linkage only after showing the change and receiving approval. Never assume a fixed directory depth.
 
 - Continue automatically when there are no blocking findings.
 - Record advisory architecture drift without stopping.
 - Stop before task generation for unresolved P0 findings or security findings that governing policy marks blocking. P0 cannot be overridden by a simple proceed prompt.
 - Stop when resolution requires a material product or architecture choice.
 - When a safe correction is already authorized, repair the plan, rerun affected reviews, and continue.
+- Run plan-scope hygiene checks and block only findings whose effective configured severity is failing.
 
 The plan does not need to be perfect. It must be sufficiently stable and free of unresolved blocking findings.
 
@@ -143,6 +151,7 @@ The governed task phase must:
 3. Convert confirmed architecture findings into explicit work through `{adapter_command:refactor-generator}`.
 4. Run `{adapter_command:analyze}` against the complete plan and task set.
 5. Keep implementation, security, migration, and refactor work explicit.
+6. Run task-scope hygiene checks with the same exclusions and effective severity policy.
 
 If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks.
 
@@ -150,9 +159,9 @@ If analysis exposes a plan defect, mark the plan and tasks stale, return to the 
 
 When Flash-Mem is available:
 
-1. Capture changed durable artifacts with `capture_artifact_memory` using the appropriate source type.
-2. Add or update durable memory only for validated decisions, constraints, approved exceptions, recurring violations, and reusable patterns.
-3. Do not store transient run status, speculative findings, secrets, or duplicate synthesis snapshots.
+1. Propose artifact captures and durable-memory entries, showing their sources and content summary.
+2. Execute `capture_artifact_memory`, `add_memory`, or `update_memory` only after explicit user approval.
+3. Store only validated decisions, constraints, approved exceptions, recurring violations, and reusable patterns; never store transient run status, speculative findings, secrets, or duplicate synthesis snapshots.
 
 ## Output
 

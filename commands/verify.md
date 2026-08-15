@@ -46,6 +46,8 @@ Build internal representations:
 - **Task-Boundary Map**: Associate each task with its intended architecture layer (Entry, Application, Domain, Data, External).
 - **Implementation Evidence**: For each completed task (`[x]`), scan referenced files for logic that addresses the task description.
 - **Contract Inventory**: Extract planned API/Data signatures from the design artifact (the technical design artifact, `design.md`, or `proposal.md`).
+- **Requirement/Acceptance Evidence Map**: Map every specification requirement and acceptance criterion to tasks and concrete implementation or test evidence.
+- **Artifact Consistency Check**: Compare specification, design, plan, tasks, and security constraints for contradictions that make implementation intent or acceptance ambiguous.
 - **Duplication Check**: Look for repeated business logic, validation, or transformation across files and confirm it has been centralized or explicitly justified.
 
 **Common DRY Signals**
@@ -69,28 +71,50 @@ Build internal representations:
 - **Rule Check**: Does the implementation violate any "MUST" rules in the `architecture_constitution.md`?
 - **Pattern Match**: Does the code follow the mandated architectural patterns (e.g., DTOs, Repositories, Events)?
 
-#### D. Security Review on Implementation
-- If `security-review` (or compatibility alias `spec-kit-security-review`) is available, run `/speckit.security-review.branch` against the verified implementation.
-- If security findings are architecture-relevant, classify them as `Security-Architecture Conflict`.
+#### D. Requirement and Artifact Integrity
+- **Coverage Gaps**: Requirements or acceptance criteria without task and implementation/test evidence.
+- **Contradictions**: Conflicting requirements, contracts, boundaries, or completion claims across authoritative artifacts. Mark contradictions blocking when they prevent reliable acceptance or safe implementation verification.
 
-#### E. Repository Hygiene Validation
+#### E. Security Review on Implementation
+- Inspect the installed list in `.specify/extensions.yml` for `security-review` or its compatibility alias `spec-kit-security-review`.
+- Manifest presence is not availability. If either name is installed, invoke `/speckit.security-review.branch` only after verifying that command is registered and callable.
+- If that command is absent, detect an independently registered Architecture Guard-compatible Security Review host capability and dispatch its branch operation.
+- If neither path is callable, report Security Review as `Unavailable`, degrade without claiming a pass, and do not substitute an Architecture Guard scan.
+- If security findings are architecture-relevant, classify them as `Security-Architecture Conflict`.
+- Preserve Security Review's independent severity and blocking decision.
+
+#### F. Repository Hygiene Validation
 - Run all loaded hygiene rules against the repository, respecting configured exclusions from `repository_hygiene` config.
 - If a finding's severity matches the `fail_on` list in the configuration, elevate it to CRITICAL to fail the verification gate.
 - Other findings should be reported as Warnings or Info based on their base severity or the `warn_on` configuration.
 
 ### 4. Severity Assignment
 
-- **CRITICAL**: Task marked done but implementation is missing; Constitution "MUST" violation; Boundary bypass (e.g., direct DB access from UI).
+- **CRITICAL**: Task marked done but implementation is missing; Constitution P0/MUST violation; or another condition marked Critical by active governance policy.
+- **Security findings**: Retain severity and independent blocking status from the active Security Review policy.
 - **HIGH**: Contract mismatch; Missing error-handling/edge-cases from spec; Major boundary erosion; repeated business rules with no shared extraction.
 - **MEDIUM**: Pattern drift; Task-referenced file exists but logic is incomplete.
 - **LOW**: Naming inconsistencies; Minor structure drift.
 
 ## Verification Report
 
-| ID | Category | Severity | Location(s) | Target | Summary | Recommendation |
-|:---|:---|:---|:---|:---|:---|:---|
-| V1 | Task Integrity | CRITICAL | `tasks.md:T01` | `tasks.md` | Task marked complete but logic missing in `auth.ts` | Implement logic or uncheck task |
-| V2 | Boundary | HIGH | `ctrl/user.ts` | `{adapter_path:plan}` | Database query found in Controller layer | Move query to Repository/Data layer |
+| ID | Category | Severity | Blocking | Status | Location(s) | Target | Summary | Recommendation |
+|:---|:---|:---|:---|:---|:---|:---|:---|:---|
+| V1 | Task Integrity | CRITICAL | Yes | Open | `tasks.md:T01` | `tasks.md` | Task marked complete but logic missing in `auth.ts` | Implement logic or uncheck task |
+| V2 | Boundary | HIGH | No | Open | `ctrl/user.ts` | `{adapter_path:plan}` | Database query found in Controller layer | Move query to Repository/Data layer |
+
+### Requirement and Acceptance Evidence
+For each requirement and acceptance criterion:
+- **Source**: [Artifact and requirement/criterion ID]
+- **Tasks**: [Mapped task IDs]
+- **Evidence**: [Implementation and test locations]
+- **Status**: [Verified / Partial / Missing / Contradicted]
+- **Blocking**: [Yes/No under active governance policy]
+
+### Artifact Contradictions
+- **Contradiction**: [Conflicting artifact statements or None]
+- **Blocking**: [Yes/No]
+- **Resolution Required**: [Authoritative artifact and decision needed]
 
 ### Task Status Analysis
 For each task in `tasks.md`:

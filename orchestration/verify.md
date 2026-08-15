@@ -4,9 +4,9 @@ description: Verify implementation against specification, design, plan, tasks, a
 
 # Architecture Verification
 
-## SDD Tool Detection
+## SDD Adapter Resolution
 
-Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -30,15 +30,15 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 
 - **REPOSITORY READ-ONLY**: This analytical gate does not modify repository files. It may write validated durable knowledge to Flash-Mem only after explicit user approval.
 - **Evidence-Based**: Every "Verified" or "Missing" status must cite specific files or code patterns.
-- **Constitution Authority**: The `architecture_constitution.md` is the non-negotiable standard for this check.
+- **Constitution Authority**: The adapter-resolved architecture rules are the non-negotiable standard. When an adapter declares the split architecture constitution optional, use the architecture rules embedded in `{adapter_path:constitution}` and record that provenance; if neither exists, mark architecture coverage `Degraded` and do not claim compliance.
 
 ## Execution Steps
 
 ### 1. Initialize Context
 
-1. Resolve explicit artifact paths from native user input first; otherwise discover existing artifacts by matching `{adapter_path:tasks}`, `{adapter_path:plan}`, and `{adapter_path:spec}`. If multiple active sets are plausible, ask the user instead of guessing.
+1. Resolve explicit artifact paths from native user input first; otherwise discover existing artifacts by matching `{adapter_path:tasks}`, `{adapter_path:plan}`, and `{adapter_path:spec}`. If multiple active sets are plausible, ask the user instead of guessing. If an optional artifact is absent, use an adapter-documented fallback only for the checks it can support, record its provenance, and mark unsupported checks `Degraded` rather than inventing evidence.
 2. Resolve the selected artifact set to absolute paths without invoking SDD-tool-specific prerequisite scripts.
-3. Load the Architecture Constitution: `{adapter_path:arch-constitution}`.
+3. Load `{adapter_path:arch-constitution}` when present; otherwise use adapter-documented architecture rules embedded in `{adapter_path:constitution}` and record the fallback.
 4. Load the Repository Hygiene Config: `{adapter_path:governance-config}` (fallback to `repository_hygiene` block in constitution).
 5. Load the Repository Hygiene Rules: `{adapter_path:hygiene-rules}`.
 
@@ -48,6 +48,7 @@ Build internal representations:
 - **Task-Boundary Map**: Associate each task with its intended architecture layer (Entry, Application, Domain, Data, External).
 - **Implementation Evidence**: For each completed task (`[x]`), scan referenced files for logic that addresses the task description.
 - **Contract Inventory**: Extract planned API/Data signatures from the technical design artifact.
+- **Requirement Evidence Map**: Map every specification requirement and acceptance criterion to its plan/tasks representation and concrete implementation/test evidence.
 - **Duplication Check**: Look for repeated business logic, validation, or transformation across files and confirm it has been centralized or explicitly justified.
 
 **Common DRY Signals**
@@ -61,6 +62,8 @@ Build internal representations:
 - **Ghost Tasks**: Tasks marked complete but with no evidence in the referenced files.
 - **Orphaned Code**: Implementation logic present in files that wasn't planned in `tasks.md`.
 - **Missing Files**: Files referenced in tasks that do not exist on disk.
+- **Requirement Coverage**: Every requirement and acceptance criterion must be `Verified`, `Partial`, `Missing`, or `Not Applicable` with cited artifact and code/test evidence.
+- **Artifact Contradictions**: Report conflicting requirements, acceptance criteria, design decisions, or completion claims across spec, plan, and tasks; do not resolve contradictions by silently choosing one artifact.
 
 #### B. Boundary Integrity
 - **Layer Violation**: Logic from one layer (e.g., Database queries) appearing in another layer (e.g., Controllers/Entry).
@@ -72,27 +75,35 @@ Build internal representations:
 - **Pattern Match**: Does the code follow the mandated architectural patterns (e.g., DTOs, Repositories, Events)?
 
 #### D. Security Review on Implementation
-- If `security-review` (or compatibility alias `spec-kit-security-review`) is available, run `{adapter_command:security-review}` against the verified implementation.
+- Detect Security Review independently from host registrations, never from the selected SDD tool or extension files.
+- If available, dispatch the detected host Security Review capability's implementation operation directly and include a separate Security Review section in the output. Do not execute adapter fallback prose as a command.
+- If unavailable, perform only architecture-visible security checks required by loaded constitutions, mark the independent security review `Unavailable`, and report degraded coverage without claiming a pass.
 - If security findings are architecture-relevant, classify them as `Security-Architecture Conflict`.
 
 #### E. Repository Hygiene Validation
 - Run all loaded hygiene rules against the repository, respecting configured exclusions from `repository_hygiene` config.
-- If a finding's severity matches the `fail_on` list in the configuration, elevate it to CRITICAL to fail the verification gate.
-- Other findings should be reported as Warnings or Info based on their base severity or the `warn_on` configuration.
+- Determine effective severity and blocking status from the applicable policy: architecture P0 rules, security policy, and hygiene `fail_on`/`warn_on` configuration remain independent. A finding blocks only when its governing policy says it blocks; category alone never changes severity.
 
 ### 4. Severity Assignment
 
-- **CRITICAL**: Task marked done but implementation is missing; Constitution "MUST" violation; Boundary bypass (e.g., direct DB access from UI).
+- Preserve each governing policy's native severity, then record `Blocking: Yes/No` separately. Architecture P0 and configured hygiene/security blocking levels fail the gate; advisory findings do not.
+- **CRITICAL**: Task marked done but implementation is missing; policy-designated critical Constitution violation; Boundary bypass (e.g., direct DB access from UI).
 - **HIGH**: Contract mismatch; Missing error-handling/edge-cases from spec; Major boundary erosion; repeated business rules with no shared extraction.
 - **MEDIUM**: Pattern drift; Task-referenced file exists but logic is incomplete.
 - **LOW**: Naming inconsistencies; Minor structure drift.
 
 ## Verification Report
 
-| ID | Category | Severity | Location(s) | Target | Summary | Recommendation |
-|:---|:---|:---|:---|:---|:---|:---|
-| V1 | Task Integrity | CRITICAL | `tasks.md:T01` | `tasks.md` | Task marked complete but logic missing in `auth.ts` | Implement logic or uncheck task |
-| V2 | Boundary | HIGH | `ctrl/user.ts` | `{adapter_path:plan}` | Database query found in Controller layer | Move query to Repository/Data layer |
+| ID | Category | Severity | Blocking | Location(s) | Target | Summary | Recommendation |
+|:---|:---|:---|:---|:---|:---|:---|:---|
+| V1 | Task Integrity | CRITICAL | Yes | `tasks.md:T01` | `tasks.md` | Task marked complete but logic missing in `auth.ts` | Implement logic or uncheck task |
+| V2 | Boundary | HIGH | No | `ctrl/user.ts` | `{adapter_path:plan}` | Database query found in Controller layer | Move query to Repository/Data layer |
+
+### Requirement Evidence
+
+| Requirement / Acceptance Criterion | Status | Spec Evidence | Plan / Task Evidence | Code / Test Evidence |
+|:---|:---|:---|:---|:---|
+| [Requirement ID or summary] | [Verified / Partial / Missing / Not Applicable] | [Path:line] | [Path:line] | [Path:line or explicit absence] |
 
 ### Task Status Analysis
 For each task in `tasks.md`:
@@ -104,6 +115,11 @@ For each task in `tasks.md`:
 - **Critical Issues**: [List any hygiene issues that fail verification]
 - **Warnings**: [List non-blocking hygiene warnings]
 - **Info**: [List minor hygiene notes]
+
+### Security Review Status
+- **Capability**: [Available / Unavailable]
+- **Coverage**: [Independent / Degraded]
+- **Blocking Findings**: [Policy-derived findings or None]
 
 ### Metrics
 - **Tasks Verified**: [Completed / Total]

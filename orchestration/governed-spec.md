@@ -4,9 +4,9 @@ description: Orchestrate governed specification with memory, framework-native sp
 
 # Governed Specification Command
 
-## SDD Tool Detection
+## SDD Adapter Resolution
 
-Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -31,27 +31,35 @@ Provide a single command that ensures:
 
 ## Orchestration Flow
 
+### Write Approval Gate
+
+Before the first mutation, resolve and preview the exact branch and target artifacts for change creation, specification generation, clarification updates, and any fallback-index refresh, together with the planned operations. Obtain explicit user approval, then allow routine writes already previewed within this specification phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+
 ### Step 1 — Detect Optional Integrations
 
 Check for the availability of:
 - `flash-mem` MCP server
-- `security-review` (or compatibility alias `spec-kit-security-review`) extension
+- `security-review` host capability
 
 **Detection Logic**:
 1. Detect `flash-mem` as an MCP-backed memory service in the current environment.
-2. If the adapter declares a supported extensions artifact, read its `installed` list for `security-review`; otherwise detect the capability from host registrations without resolving or reading `{adapter_path:extensions}`.
+2. Detect Security Review as an independent host capability, never from an SDD extensions artifact. Do not read `{adapter_path:extensions}` for it.
 3. If either capability is missing, degrade gracefully by skipping only its respective steps.
 
 ### Step 2 — Flash-Mem MCP Context Retrieval (Optional)
 
 When Flash-Mem is available, use it first to gather the most relevant architectural context before generating the specification.
 
+### Step 2.5 — Required Governance Inputs
+
+Resolve `{adapter_path:constitution}`, `{adapter_path:arch-constitution}`, and `{adapter_path:security-constitution}`. For Generic mode, ask the user for every unresolved required path and the destination specification path before continuing; resolve that destination as `{adapter_path:spec}` and never guess or write until it is supplied. For adapters with optional split files, rules embedded in `{adapter_path:constitution}` satisfy the corresponding input. If governance or architecture rules are missing entirely, stop and direct the user to the adapter-registered init capability. If security rules are missing, report the gap and require explicit user confirmation before continuing with baseline security checks and optional host Security Review.
+
 ### Step 3 — Branch Management
 
 Before generating the specification, you MUST ensure work happens on a feature branch.
 1. Check the current git branch.
-2. If on `main`, `master`, `dev*` (e.g., `dev`, `develop`, `development`), or `staging`, ask the user if they want to create a new branch for this feature.
-3. If they approve, create the branch using available tools before proceeding.
+2. If on `main`, `master`, `dev*` (e.g., `dev`, `develop`, `development`), or `staging`, require creation or selection of a feature branch before any specification write.
+3. Ask approval before branch creation, create it using available tools, and stop if creation or checkout fails or approval is declined. If the adapter requires stricter branch handling, enforce it.
 
 ### Step 4 — Create or Select the Change Container
 
@@ -72,24 +80,27 @@ You must orchestrate the `{adapter_command:create-spec}` workflow directly.
 
 You must orchestrate the `{adapter_command:clarify-spec}` workflow directly.
 
-1. **Execute Clarify**: Run `{adapter_command:clarify-spec}` to resolve ambiguities in the newly generated `spec.md`.
+1. **Execute Clarify**: Run `{adapter_command:clarify-spec}` to resolve ambiguities in the newly generated `{adapter_path:spec}`.
 2. Ensure clarification considers `{adapter_path:arch-constitution}` and `{adapter_path:security-constitution}`.
 
 ### Step 7 — Architecture Validation
 
 Run an inline architecture validation against the clarified specification.
 Inputs to consider:
-- The generated `spec.md`.
+- The generated `{adapter_path:spec}`.
 - `{adapter_path:arch-constitution}`.
 - Flash-Mem context (if available).
 
-Detect any `Security-Architecture Conflict` or architectural drift present in the specification's assumptions or boundaries.
+Detect any `Security-Architecture Conflict` or architectural drift present in the specification's assumptions or boundaries. Explicitly validate that repeated business rules, approvals, validation, DTO mapping, transformations, and orchestration have one intended owner (DRY), and that proposed paths, generated artifacts, temporary files, and repository placement comply with hygiene rules from `{adapter_path:hygiene-rules}`.
+
+If the host exposes Security Review and the specification is security-sensitive or security rules are missing, invoke that host capability directly with `{adapter_path:spec}` and applicable constitutions. Do not execute adapter fallback prose as a command. Record its findings separately and feed architecture-boundary conflicts into this validation.
 
 ### Step 8 — Proactive Durable Memory Preservation
 
 If the specification process or architecture validation identified new architectural patterns or critical decisions:
-1. **Proactive Execution**: You **MUST automatically execute** the durable-memory capture flow.
-2. **Standard**: Do not silently write memory outside the capture flow; let the formal capture flow propose entries and handle user approval.
+1. **Proactive Proposal**: You **MUST automatically launch** the durable-memory capture flow in proposal-only mode.
+2. **Approval Required**: Show the proposed entries and obtain explicit user approval before invoking any memory write tool.
+3. **Standard**: Do not silently write memory inside or outside the capture flow.
 
 ### Step 9 — Generate Governance Summary
 

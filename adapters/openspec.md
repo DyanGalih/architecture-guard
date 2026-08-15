@@ -1,6 +1,6 @@
 # OpenSpec Adapter
 
-Use this adapter when the active SDD tool is **OpenSpec** (`openspec/config.yaml` detected).
+Use this adapter when `.architecture-guard/selected-adapter` is `openspec`. The `openspec/config.yaml` marker is only a fallback for uninitialized projects.
 
 ## Path Map
 
@@ -38,19 +38,19 @@ Use this adapter when the active SDD tool is **OpenSpec** (`openspec/config.yaml
 |---|---|
 | create-spec | Read `openspec instructions specs --change "{change}" --json`, then create the requested change-level specs inline |
 | create-change | If the named change does not exist, run `openspec new change "{change}"`; otherwise reuse it |
-| archive | Run `architecture-guard archive "{change}"` |
+| archive | Run the native `openspec archive "{change}"` command once; do not invoke Architecture Guard archive recursively |
 | verify | Run the Architecture Guard verification workflow against the active change |
 | clarify-spec | Unsupported natively; ask and apply an inline ambiguity-resolution loop |
 | create-plan | Read `openspec instructions design --change "{change}" --json`, then create `{adapter_path:plan}` inline |
 | create-tasks | Read `openspec instructions tasks --change "{change}" --json`, then create `{adapter_path:tasks}` inline |
 | implement | Use the registered OpenSpec apply-change capability; if unavailable, execute unchecked tasks inline and update their status |
 | analyze | Run `openspec validate "{change}"`; supplement it with an inline spec/plan/tasks coverage check |
-| security-review | Unsupported natively; use the optional Security Review capability or report the skipped review |
-| security-review-plan | Unsupported natively; use the optional Security Review capability or report the skipped review |
-| security-review-tasks | Unsupported natively; use the optional Security Review capability or report the skipped review |
-| security-review-branch | Unsupported natively; use the optional Security Review capability or report the skipped review |
+| security-review | Not part of OpenSpec; detect the optional Security Review host capability or report the skipped review |
+| security-review-plan | Not part of OpenSpec; detect the optional Security Review host capability or report the skipped review |
+| security-review-tasks | Not part of OpenSpec; detect the optional Security Review host capability or report the skipped review |
+| security-review-branch | Not part of OpenSpec; detect the optional Security Review host capability or report the skipped review |
 | subagent-synthesize | Unsupported natively; synthesize inline unless the host exposes an equivalent capability |
-| list-specs | `openspec list --specs --json` |
+| list-specs | Run `openspec list --specs --json`, group capability specs by their parent change, and return parent change artifact sets; never treat a capability name as a change identifier |
 | consolidate-specs | Unsupported: use `list-specs` as the fallback index and do not write a consolidated artifact |
 | architecture-apply | Apply plan/tasks findings directly inline; delegate upstream findings (`proposal.md`, `spec.md`) to `openspec-update-change` (or native update capability) with finding details as input context after user confirmation |
 | architecture-review | Use the registered architecture-review capability or review the resolved artifacts inline |

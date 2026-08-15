@@ -14,7 +14,9 @@ Convert architecture violations into structured tasks that preserve delivery mom
 
 ## Flash-Mem-First Architecture Context Retrieval
 
-When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. After analysis, store only validated durable architecture knowledge. If retrieval is unavailable or insufficient, fall back to repository artifacts and constitution files.
+When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. After analysis, propose only validated durable architecture knowledge and write it only after explicit user approval. If retrieval is unavailable or insufficient, fall back to repository artifacts and constitution files.
+
+This command does not write files or memory. Return proposed tasks and durable-memory candidates for approval; use a separate write-capable flow only after explicit user approval.
 
 Use the same normalized command context as the review workflow. When `mode=performance`, do not invent refactor tasks from performance guidance; that mode is advisory and belongs to `ag-review-implementation` output only.
 
@@ -102,7 +104,7 @@ Suggested fixes should be concrete:
 
 ### Incremental Migration Strategy
 When generating refactor tasks based on architecture drift, you MUST avoid proposing full system rewrites. Prefer incremental, boundary-by-boundary, or module-by-module migrations.
-Output your phased migration strategy to `specs/<feature>/architecture-migration-plan.md`. Include coexistence strategies for old and new patterns.
+Propose a phased migration strategy for `specs/<feature>/architecture-migration-plan.md`. Do not write it until the user explicitly approves the proposed content. Include coexistence strategies for old and new patterns.
 
 ## Architecture Migration Plan Structure
 

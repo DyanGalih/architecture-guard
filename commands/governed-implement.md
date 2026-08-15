@@ -4,6 +4,10 @@ description: Execute implementation tasks, then review the result against availa
 
 # Governed Implement Command
 
+## SDD Adapter Resolution
+
+Before executing command, read `adapters/resolve.md`. Resolve the active adapter in this order: explicit `--adapter` override, `.architecture-guard/selected-adapter` as the authoritative persisted selection, then filesystem markers only when no persisted selection exists. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. Resolve every adapter token before continuing.
+
 ## Ponytail Core Contract
 
 Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
@@ -26,16 +30,23 @@ Provide a single command that ensures:
 
 ## Orchestration Flow
 
+### Write Approval Gate
+
+Before the first mutation, resolve and preview the exact code, test, and task artifacts together with all planned implementation, test, and task-checkbox operations. Obtain explicit user approval, then allow routine writes already previewed within this implementation phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+
 ### Step 1 — Detect Optional Integrations
 
 Check for the availability of:
 - `flash-mem` MCP server
-- `security-review` (or compatibility alias `spec-kit-security-review`) extension
+- Security Review integration
 
 **Detection Logic**:
 1. Detect `flash-mem` as an MCP-backed memory service in the current environment. Do not treat it as a Spec Kit extension or look for it in `.specify/extensions.yml`.
-2. Read `.specify/extensions.yml` and check the `installed` list for `security-review` (or compatibility alias `spec-kit-security-review`). Fall back to checking for the extension directory in `.specify/extensions/` only if the YAML is missing or the list is empty.
-3. If either capability is missing, degrade gracefully by skipping only its respective steps.
+2. Inspect the installed list in `.specify/extensions.yml` for `security-review` or its compatibility alias `spec-kit-security-review`.
+3. Manifest presence is not availability. If either name is installed, verify that `/speckit.security-review.branch` is registered and callable before selecting it.
+4. If that command is absent, detect an independently registered Architecture Guard-compatible Security Review host capability with a branch operation and select it instead.
+5. If neither path is callable, mark Security Review `Unavailable` and degrade without claiming a pass.
+6. If either optional integration is missing, degrade gracefully by skipping only its respective steps.
 
 ### Step 2 — Flash-Mem MCP Context Retrieval (Optional)
 
@@ -82,8 +93,8 @@ NOTE: The core Spec Kit command is `speckit.implement`. Do not use `speckit.impl
 
 ### Step 4 — Security Review on Implementation
 
-IF `security-review` (or compatibility alias `spec-kit-security-review`) is available:
-1. **Execute Review**: Run `/speckit.security-review.branch` to review the produced implementation against security vulnerabilities.
+IF Security Review is available:
+1. **Execute Review**: Invoke `/speckit.security-review.branch` when selected; otherwise dispatch the selected host capability's branch operation.
 2. Check for: authorization bypass, missing validation, secret leakage, injection risk, and insecure data exposure.
 3. If security findings are architecture-relevant, classify them as `Security-Architecture Conflict` for the architecture review.
 
@@ -104,17 +115,16 @@ Review implementation against:
 **Critical Decision Point**: Evaluate architecture findings for blocking issues.
 
 ```
-IF Architecture Review finds CRITICAL or HIGH violations:
-  IF Constitution marks violation as P0 (blocking):
-    STOP implementation
-    Surface violations in report
-    Ask user: "Critical architecture violation detected. Proceed? (y/n)"
-    IF user says no:
-      Return early with architecture remediation tasks
-  ELSE (violation is HIGH but not Constitution P0):
-    Continue with warning
-    Create non-blocking refactor tasks
-    Flag for post-merge remediation
+IF Constitution marks an architecture violation as P0 (blocking):
+  STOP implementation with no override path
+  Surface violations and return architecture remediation tasks
+ELSE IF Security Review reports a blocking finding under its own policy:
+  STOP implementation independently of architecture severity
+  Surface security findings and return security remediation guidance
+ELSE IF Architecture Review finds CRITICAL or HIGH violations:
+  Continue with warning when they are not Constitution P0
+  Create non-blocking refactor tasks
+  Flag for post-merge remediation
 ELSE (no critical violations):
   Continue to Step 6
 ```
@@ -128,13 +138,17 @@ IF architecture violations exist:
 2. Generate non-blocking refactor, migration, or correction tasks.
 3. Skip performance refactors unless explicitly requested.
 
-### Step 7 — Proactive Durable Memory Preservation
+### Step 7 — Mandatory Verification Gate
+
+Run `/ag-verify` after implementation and reviews. Do not mark implementation complete or ready to merge until verification passes with no unresolved blocking findings. If `/ag-verify` is not registered and callable, execute the workflow in `verify.md` inline and report the fallback. Stop and return remediation guidance when verification reports any blocking finding.
+
+### Step 8 — Proactive Durable Memory Preservation
 
 If the implementation review or security audit identified new architectural patterns, critical decisions, or repeatable lessons:
-1. **Proactive Execution**: You **MUST automatically execute** the durable-memory capture flow as the final part of this turn. Do not just recommend it; run the command.
-2. **Standard**: Do not silently write memory outside the capture flow; let the formal capture flow propose entries and handle user approval. Do not ask the user if they want to capture; identify the lessons and trigger the command immediately after the summary.
+1. **Approval Required**: Propose validated durable-memory entries and write them only after explicit user approval.
+2. **Standard**: Do not silently write memory outside the approved capture flow.
 
-### Step 8 — Implementation Governance Summary
+### Step 9 — Implementation Governance Summary
 
 Produce a final `Governed Implementation Summary`.
 
@@ -148,7 +162,11 @@ Produce a final `Governed Implementation Summary`.
 **Without Security Review**:
 - Skip Step 4 (Security Review on Implementation)
 - Continue to architecture review directly
-- Flag missing security implementation review in summary
+- Report Security Review as `Unavailable` and flag missing security implementation review in the summary; do not claim a pass
+
+**Blocking Security Findings Found**:
+- STOP independently when the registered Security Review capability marks a finding blocking under its policy.
+- Do not downgrade, merge, or override that decision through Architecture Guard severity handling.
 
 **Critical Architecture Violations Found**:
 - If Constitution marks as P0 (blocking):
@@ -164,6 +182,7 @@ Produce a final `Governed Implementation Summary`.
 - Execute implementation via core Spec Kit
 - Run architecture review on output
 - Generate non-blocking refactor tasks
+- Pass mandatory verification, using the inline fallback when `/ag-verify` is unavailable
 - Produce summary
 
 ## Output Structure
@@ -178,9 +197,10 @@ The command MUST return:
 - **Relevant Decisions**: [Durable lessons applied during implementation]
 
 ## Security Review
+- **Status**: [Reviewed / Advisory / Blocked / Unavailable]
 - **Findings**: [List of security vulnerabilities found]
 - **Constraints**: [Trust boundaries validated]
-- **Blocking Concerns**: [Any P0 security risks]
+- **Blocking Concerns**: [Findings marked blocking by Security Review policy]
 
 ## Architecture Review
 - **Violations**: [Drift findings or Security-Architecture Conflicts]
@@ -194,8 +214,8 @@ The command MUST return:
 - [e.g., Merge changes]
 - [e.g., Revise implementation to address Security Conflict]
 - [e.g., Run /ag-apply]
-- **Durable Memory Preservation**: (Proactively triggered) Review the proposed memory entries below.
-- **Verification Gate**: Run `/ag-verify` to ensure all tasks are delivered and requirements are met.
+- **Durable Memory Preservation**: [Approved and captured / Awaiting approval / Skipped]
+- **Verification Gate**: [Passed / Blocked / Inline fallback passed]
 ```
 
 ## Security + Architecture Conflict Handling
