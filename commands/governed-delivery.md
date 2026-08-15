@@ -23,8 +23,12 @@ Produce an implementation-ready `tasks.md` from an accepted technical plan while
 1. Flash-Mem context is retrieved before planning or task generation when the MCP server is available.
 2. The plan passes its architecture and applicable security gates before tasks are generated.
 3. Tasks are regenerated or reconciled whenever their source plan changes materially.
-4. Advisory findings remain non-blocking, while P0 architecture findings and Critical security findings stop progression.
+4. Advisory findings remain non-blocking, while Constitution P0 architecture findings and findings marked blocking by Security Review policy stop progression independently.
 5. A rerun resumes safely instead of recreating valid artifacts.
+
+## Write Approval Gate
+
+Before the first mutation, resolve and preview the exact branch, change container, specification or proposal, plan, and task artifacts together with all planned creation, generation, repair, and reconciliation operations. Obtain explicit user approval, then allow routine writes already previewed within this delivery phase scope without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 
 ## Mandatory Branch Preflight
 
@@ -44,9 +48,10 @@ Before creating, planning, or modifying any active change:
 2. If no active feature directories or specifications exist (ignoring archives), run the adapter-registered `governed-spec` capability (or `/speckit.specify`) to properly initialize the feature workspace and specification following native SDD tool numbering rules.
 3. Do not guess when multiple feature directories are plausible. Ask the user to identify the feature.
 4. Detect `flash-mem` as an MCP service. Do not look for it in `.specify/extensions.yml`.
-5. Detect Security Review from `.specify/extensions.yml`. Accept `security-review` as the canonical extension id and `spec-kit-security-review` as a compatibility alias.
-6. Detect OpenSpec by looking for `openspec/config.yaml` or an `openspec` directory.
-7. Read constitution files directly when present because they may be ignored by repository search:
+5. Inspect the installed list in `.specify/extensions.yml` for `security-review` or its compatibility alias `spec-kit-security-review`. Manifest presence alone is not availability.
+6. For each phase, select the SpecKit integration only after verifying its applicable command is registered and callable: `/speckit.security-review.plan` for plan review and `/speckit.security-review.tasks` for task review. If an applicable command is absent, detect an independently registered Architecture Guard-compatible Security Review host capability and use its corresponding plan or tasks operation. If neither path is callable, mark that phase's Security Review `Unavailable` and degrade without claiming a pass.
+7. Detect OpenSpec by looking for `openspec/config.yaml` or an `openspec` directory.
+8. Read constitution files directly when present because they may be ignored by repository search:
    - `.specify/memory/constitution.md`
    - `.specify/memory/architecture_constitution.md`
    - `.specify/memory/security_constitution.md`
@@ -82,7 +87,7 @@ Classify the plan:
 
 - `missing`: the design artifact (the technical design artifact, `design.md`, or `proposal.md`) does not exist or is empty.
 - `stale`: `spec.md` or governing constraints changed materially after the plan was produced.
-- `blocked`: an unresolved P0 architecture finding, Critical security finding, or material design decision prevents safe task generation.
+- `blocked`: an unresolved Constitution P0 architecture finding, independently blocking Security Review finding, or material design decision prevents safe task generation.
 - `review-required`: the plan exists but has not been validated against current inputs.
 - `accepted`: the plan matches current inputs and has no unresolved blocking findings.
 
@@ -99,11 +104,11 @@ Do not use timestamps as the only evidence of material staleness. Compare artifa
 
 If the plan is `missing` or `stale`, execute the full `/ag-governed-plan` (or `/ag-governed-plan`) workflow.
 
-If the plan is `review-required`, reuse it and run the applicable security plan review plus `/ag-review-artifacts`. Do not regenerate a plan merely because review is needed.
+If the plan is `review-required`, reuse it and run the selected security plan operation plus `/ag-review-artifacts`. Recheck command or host-operation registration immediately before dispatch. Do not regenerate a plan merely because review is needed.
 
 - Continue automatically when there are no blocking findings.
 - Record advisory architecture drift without stopping.
-- Stop before task generation for unresolved P0 architecture or Critical security findings.
+- Stop before task generation for unresolved Constitution P0 architecture findings or independently blocking Security Review findings.
 - Stop when resolution requires a material product or architecture choice.
 - When a safe correction is already authorized, repair the plan, rerun affected reviews, and continue.
 
@@ -118,7 +123,7 @@ If tasks are `missing`, `stale`, or `review-required`, execute `/ag-governed-tas
 The governed task phase must:
 
 1. Generate or reconcile `tasks.md` through `/speckit.tasks` (or the SDD tool's native task generator/inline fallback).
-2. Run the applicable security task review.
+2. Run the selected security tasks operation, after rechecking that the command or host operation is registered.
 3. Convert confirmed architecture findings into explicit work through `ag-refactor-generator`.
 4. Run analysis (e.g., `/speckit.analyze`) against the complete plan and task set if available in the SDD tool.
 5. Keep implementation, security, migration, and refactor work explicit.
@@ -129,9 +134,9 @@ If analysis exposes a plan defect, mark the plan and tasks stale, return to the 
 
 When Flash-Mem is available:
 
-1. Capture changed durable artifacts with `capture_artifact_memory` using the appropriate source type.
-2. Add or update durable memory only for validated decisions, constraints, approved exceptions, recurring violations, and reusable patterns.
-3. Do not store transient run status, speculative findings, secrets, or duplicate synthesis snapshots.
+1. Propose artifact captures and durable-memory entries, showing their sources and content summary.
+2. Execute `capture_artifact_memory`, `add_memory`, or `update_memory` only after explicit user approval.
+3. Store only validated decisions, constraints, approved exceptions, recurring violations, and reusable patterns; never store transient run status, speculative findings, secrets, or duplicate synthesis snapshots.
 
 ## Output
 

@@ -7,6 +7,54 @@ const { spawnSync } = require('node:child_process');
 
 const installer = path.join(__dirname, 'bin', 'cli.js');
 
+test('standalone orchestration and legacy Spec Kit extension expose the same skills', () => {
+  const root = path.join(__dirname, '..');
+  const manifest = require('yaml').parse(fs.readFileSync(path.join(root, 'extension.yml'), 'utf8'));
+  const legacyFiles = manifest.provides.commands.map(command => command.file);
+  const legacyNames = legacyFiles.map(file => path.basename(file)).sort();
+  const orchestrationNames = fs.readdirSync(path.join(root, 'orchestration'))
+    .filter(file => file.endsWith('.md'))
+    .sort();
+  const installerNames = require('./cli/install').COMMANDS
+    .map(command => `${command}.md`)
+    .sort();
+
+  assert.deepEqual(legacyNames, orchestrationNames);
+  assert.deepEqual(installerNames, orchestrationNames);
+  for (const file of legacyFiles) {
+    assert.ok(fs.existsSync(path.join(root, file)), `Missing legacy Spec Kit prompt: ${file}`);
+  }
+});
+
+test('Security Review stays in the legacy Spec Kit extension channel', () => {
+  const root = path.join(__dirname, '..');
+  const cases = [
+    ['governed-plan.md', 'plan'],
+    ['governed-tasks.md', 'tasks'],
+    ['governed-implement.md', 'branch'],
+    ['verify.md', 'branch'],
+    ['review-implementation.md', 'branch'],
+  ];
+
+  for (const [file, operation] of cases) {
+    const prompt = fs.readFileSync(path.join(root, 'commands', file), 'utf8');
+    assert.match(prompt, /\.specify\/extensions\.yml/);
+    assert.match(prompt, /spec-kit-security-review/);
+    assert.match(prompt, new RegExp(`/speckit\\.security-review\\.${operation}`));
+    assert.match(prompt, /Architecture Guard-compatible Security Review host capability/);
+    assert.match(prompt, /Unavailable/);
+  }
+
+  const specKitAdapter = fs.readFileSync(path.join(root, 'adapters', 'spec-kit.md'), 'utf8');
+  assert.match(specKitAdapter, /Unsupported in standalone SDD orchestration/);
+  assert.doesNotMatch(specKitAdapter, /\/speckit\.security-review\./);
+
+  for (const file of fs.readdirSync(path.join(root, 'orchestration')).filter(file => file.endsWith('.md'))) {
+    const prompt = fs.readFileSync(path.join(root, 'orchestration', file), 'utf8');
+    assert.doesNotMatch(prompt, /spec-kit-security-review|\/speckit\.security-review\./);
+  }
+});
+
 function install(input, cwd) {
   const result = spawnSync(process.execPath, [installer, 'init'], { cwd, input, encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
@@ -20,7 +68,7 @@ test('installs every agent format at the project root with selected resources on
   assert.equal(Object.keys(require('./cli/install').AGENT_CONFIGS).length, 35);
   assert.ok(fs.existsSync(path.join(cwd, '.opencode/commands/ag-init.md')));
   assert.ok(!fs.existsSync(path.join(cwd, cwd.slice(1), '.opencode/commands/ag-init.md')));
-  assert.ok(fs.existsSync(path.join(cwd, 'adapters/detect.md')));
+   assert.ok(fs.existsSync(path.join(cwd, 'adapters/resolve.md')));
   assert.ok(fs.existsSync(path.join(cwd, 'adapters/spec-kit.md')));
   assert.ok(!fs.existsSync(path.join(cwd, 'adapters/openspec.md')));
   assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-adapter'), 'utf8').trim(), 'spec-kit');
@@ -43,7 +91,7 @@ test('existing commands skip by default, replace, or keep both', () => {
   install('1\n3\n2\n3\n\nn\n', cwd);
   assert.equal(fs.readFileSync(dest, 'utf8'), 'original');
   assert.ok(fs.existsSync(path.join(cwd, '.opencode/commands/ag-init.architecture-guard.md')));
-  assert.ok(fs.existsSync(path.join(cwd, 'adapters/detect.md')));
+   assert.ok(fs.existsSync(path.join(cwd, 'adapters/resolve.md')));
   assert.ok(fs.existsSync(path.join(cwd, 'adapters/generic.md')));
   assert.ok(!fs.existsSync(path.join(cwd, 'adapters/spec-kit.md')));
   assert.ok(!fs.existsSync(path.join(cwd, 'adapters/openspec.md')));
@@ -88,6 +136,23 @@ test('rejects missing runtime resources with actionable error', () => {
   }
 });
 
+test('reports missing canonical prompts without a stack trace', () => {
+  const orchestration = path.join(__dirname, '..', 'orchestration');
+  const moved = orchestration + ".test-backup";
+  fs.renameSync(orchestration, moved);
+  try {
+    const result = spawnSync(process.execPath, [installer, 'init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit', '--commands', 'init'], {
+      cwd: fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-')),
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Error: Canonical orchestration prompt not found/);
+    assert.doesNotMatch(result.stderr, /at installCommand/);
+  } finally {
+    fs.renameSync(moved, orchestration);
+  }
+});
+
 test('escapes TOML triple quotes and emits safe YAML metadata', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   const toml = path.join(cwd, 'test.toml');
@@ -127,6 +192,31 @@ test('--yes non-interactive flags install without stdin and respect target arg',
   assert.ok(fs.existsSync(path.join(cwd, 'adapters/openspec.md')));
   assert.ok(!fs.existsSync(path.join(cwd, 'adapters/spec-kit.md')));
   assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-adapter'), 'utf8').trim(), 'openspec');
+});
+
+test('governed delivery installs the adapter-driven orchestration command', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit', '--commands', 'governed-delivery'], cwd);
+
+  const command = fs.readFileSync(path.join(cwd, '.opencode/commands/ag-governed-delivery.md'), 'utf8');
+   assert.match(command, /adapters\/resolve\.md/);
+   assert.doesNotMatch(command, /adapters\/detect\.md/);
+  assert.match(command, /adapter_command:list-specs/);
+  assert.doesNotMatch(command, /If OpenSpec is detected.*openspec new change/s);
+});
+
+test('installer never falls back to legacy Spec Kit prompts', () => {
+  const prompt = path.join(__dirname, '..', 'orchestration', 'governed-delivery.md');
+  const moved = `${prompt}.test-backup`;
+  fs.renameSync(prompt, moved);
+  try {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+    const result = spawnSync(process.execPath, [installer, 'init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit', '--commands', 'governed-delivery'], { cwd, encoding: 'utf8' });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Canonical orchestration prompt not found/);
+  } finally {
+    fs.renameSync(moved, prompt);
+  }
 });
 
 test('init accepts target directory positional argument', () => {

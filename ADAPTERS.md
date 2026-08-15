@@ -8,7 +8,7 @@ Adapters are the bridge between Architecture Guard's tool-agnostic governance co
 Orchestration command (e.g., init.md)
          │
          ▼
-  adapters/detect.md  ─── detects active SDD tool
+  adapters/resolve.md  ─── resolves the selected SDD adapter
          │
          ▼
   adapters/{tool}.md  ─── provides path map + command map + gaps
@@ -75,8 +75,8 @@ When governance checks should run in relation to the SDD tool's lifecycle.
 3. Replace the Command Map with your tool's CLI commands or agent commands.
 4. Declare any gaps your tool has.
 5. Place the file at `adapters/{tool-name}.md`.
-6. Update `adapters/detect.md` detection chain to recognize your tool's marker.
+6. Update `adapters/resolve.md` fallback markers to recognize your tool.
 
 Adapter files are self-contained markdown. No code changes needed.
 
-Installed shared resources always resolve under `.architecture-guard/{templates,presets,hygiene-rules,sonar-rules,scripts}`. SDD tool directories hold SDD artifacts only. Before a command body runs, detection resolves every adapter token; missing keys stop with `AdapterMissingKey: <kind>:<key>` and unresolved substitutions stop with `AdapterUnresolvedToken: <token>`.
+Installed shared resources always resolve under `.architecture-guard/{templates,presets,hygiene-rules,sonar-rules,scripts}`. SDD tool directories hold SDD artifacts only. Before a command body runs, the resolution preamble resolves every adapter token; missing keys stop with `AdapterMissingKey: <kind>:<key>` and unresolved substitutions stop with `AdapterUnresolvedToken: <token>`.

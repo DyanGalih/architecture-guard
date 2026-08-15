@@ -27,27 +27,39 @@ Provide a single command that ensures:
 
 ## Orchestration Flow
 
+### Write Approval Gate
+
+Before the first mutation, resolve and preview the exact branch and target artifacts for feature creation, specification generation, clarification updates, and any `system_context.md` refresh, together with the planned operations. Obtain explicit user approval, then allow routine writes already previewed within this specification phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+
 ### Step 1 — Detect Optional Integrations
 
 Check for the availability of:
 - `flash-mem` MCP server
-- `security-review` (or compatibility alias `spec-kit-security-review`) extension
+- Security Review integration
 
 **Detection Logic**:
 1. Detect `flash-mem` as an MCP-backed memory service in the current environment.
-2. Read `.specify/extensions.yml` and check the `installed` list for `security-review` (or compatibility alias `spec-kit-security-review`).
-3. If either capability is missing, degrade gracefully by skipping only its respective steps.
+2. Inspect the installed list in `.specify/extensions.yml` for `security-review` or its compatibility alias `spec-kit-security-review`.
+3. Manifest presence is not availability. Treat the SpecKit integration as available only if at least one phase command needed downstream (`/speckit.security-review.plan`, `/speckit.security-review.tasks`, or `/speckit.security-review.branch`) is registered and callable.
+4. If no applicable SpecKit command is registered, detect an independently registered Architecture Guard-compatible Security Review host capability with a corresponding plan, tasks, or branch operation.
+5. Record available operations and flag security-sensitive specification content for the applicable downstream review; this workflow need not invoke a phase command because it has no dedicated Security Review execution step.
+6. If neither path is callable, record Security Review as `Unavailable` and degrade without claiming a pass.
+7. If either optional integration is missing, degrade gracefully by skipping only its respective steps.
 
 ### Step 2 — Flash-Mem MCP Context Retrieval (Optional)
 
 When Flash-Mem is available, use it first to gather the most relevant architectural context before generating the specification.
 
+### Step 2.5 — Required Governance Inputs
+
+Require `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, and `.specify/memory/security_constitution.md` as active inputs. If governance or architecture rules are missing, stop and direct the user to `/ag-init`. If security rules are missing, report the gap and require explicit confirmation before continuing with baseline security checks and the available Security Review handoff.
+
 ### Step 3 — Branch Management
 
 Before generating the specification, you MUST ensure work happens on a feature branch.
 1. Check the current git branch.
-2. If on `main`, `master`, `dev*` (e.g., `dev`, `develop`, `development`), or `staging`, ask the user if they want to create a new branch for this feature.
-3. If they approve, create the branch using available tools before proceeding.
+2. If on `main`, `master`, `dev*` (e.g., `dev`, `develop`, `development`), or `staging`, require approval to create or select a feature branch before any specification write.
+3. Stop if approval is declined or branch creation, selection, or checkout fails.
 
 ### Step 4 — Orchestrate Spec Kit Specification
 
@@ -73,13 +85,14 @@ Inputs to consider:
 - `.specify/memory/architecture_constitution.md`.
 - Flash-Mem context (if available).
 
-Detect any `Security-Architecture Conflict` or architectural drift present in the specification's assumptions or boundaries.
+Detect any `Security-Architecture Conflict` or architectural drift present in the specification's assumptions or boundaries. Explicitly validate one canonical owner for repeated business rules, approvals, validation, DTO mapping, transformations, and orchestration (DRY), plus artifact placement, temporary/generated files, and repository hygiene.
 
 ### Step 7 — Proactive Durable Memory Preservation
 
 If the specification process or architecture validation identified new architectural patterns or critical decisions:
-1. **Proactive Execution**: You **MUST automatically execute** the durable-memory capture flow.
-2. **Standard**: Do not silently write memory outside the capture flow; let the formal capture flow propose entries and handle user approval.
+1. **Proactive Proposal**: You **MUST automatically launch** the durable-memory capture flow in proposal-only mode.
+2. **Approval Required**: Show the proposed entries and obtain explicit user approval before invoking any memory write tool.
+3. **Standard**: Do not silently write memory inside or outside the capture flow.
 
 ### Step 8 — Generate Governance Summary
 
@@ -110,6 +123,7 @@ The command MUST return:
 - **Key Constraints**: [Bullet points of architectural context used]
 
 ## Architecture & Security Review
+- **Security Review Availability**: [Available operations / Unavailable]
 - **Violations Detected**: [Drift findings, missing boundaries, or Security-Architecture Conflicts in the spec]
 - **Consistency Risks**: [How the specification aligns with the Constitution]
 

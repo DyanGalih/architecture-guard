@@ -34,7 +34,15 @@ program
   .option('--framework <f>', 'spec-kit | openspec | none')
   .option('--commands <list>', 'Comma-separated command names or indices')
   .option('--overwrite <mode>', 'replace | skip | keep-both')
-  .action(runInstallCommand);
+  .action(async (target, options) => {
+    try {
+      await runInstallCommand(target, options);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Error: " + message);
+      process.exitCode = 1;
+    }
+  });
 
 program
   .command('detect-changed-files')

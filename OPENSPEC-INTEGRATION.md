@@ -38,7 +38,7 @@ Then select:
 ### What Gets Installed
 
 - Command files in your agent's commands/skills directory
-- `adapters/detect.md` and `adapters/openspec.md` in project root
+- `adapters/resolve.md` and `adapters/openspec.md` in project root
 - AGENTS.md governance rules (optional)
 
 ## Key Differences From SpecKit
@@ -61,9 +61,9 @@ OpenSpec does not automatically:
 3. **Verify task-to-code evidence** — After archive, Architecture Guard reads tasks.md checkboxes and validates against code.
 4. **Detect DRY violations** — Architecture Guard scans for duplicated business rules across modules.
 
-## SDD Tool Detection
+## SDD Adapter Resolution
 
-Architecture Guard auto-detects OpenSpec by checking for `openspec/config.yaml`. Detection runs at the start of every orchestration command. Override with `--adapter openspec` if needed.
+Architecture Guard uses `openspec` when `.architecture-guard/selected-adapter` contains `openspec`. The `openspec/config.yaml` marker is only a fallback when no adapter has been persisted. Use `--adapter openspec` for a one-command override.
 
 ## Agent Files
 

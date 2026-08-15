@@ -26,18 +26,29 @@ Provide a single command that ensures:
 
 ## Orchestration Flow
 
+### Write Approval Gate
+
+Before the first mutation, resolve and preview the exact target plan and constraint artifacts together with all planned generation, correction, and constraint-write operations. Obtain explicit user approval, then allow routine writes already previewed within this planning phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+
+### Required Active Inputs
+
+Require the active feature `spec.md` plus `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, and `.specify/memory/security_constitution.md`. If the active specification, governance rules, or architecture rules are missing, stop and direct the user to `/ag-governed-spec` or `/ag-init`; if security rules are missing, report the gap and obtain explicit confirmation before baseline security validation.
+
 ### Step 1 — Detect Optional Integrations
 
 Check for the availability of:
 - `flash-mem` MCP server
 - Memory MD local CLI
-- `security-review` (or compatibility alias `spec-kit-security-review`) extension
+- Security Review integration
 
 **Detection Logic**:
 1. Treat `flash-mem` as available only when its MCP tools are already exposed in the current environment. Do not treat it as a Spec Kit extension, look for it in `.specify/extensions.yml`, or repeatedly probe for hidden MCP/global-promotion capabilities.
 2. Check for the Memory MD runtime directly with `test -f .specify/extensions/memory-md/dist/bin/speckit-memory.js`. If present, invoke supported local operations with `node .specify/extensions/memory-md/dist/bin/speckit-memory.js <command>`. Do not use default `rg --files` to decide that this runtime is missing: `dist/` and `node_modules/` may be gitignored. If additional discovery is necessary, use `find` or `rg --files -uu`.
-3. Read `.specify/extensions.yml` and check the `installed` list for `security-review` (or compatibility alias `spec-kit-security-review`). Fall back to checking for the extension directory in `.specify/extensions/` only if the YAML is missing or the list is empty.
-4. If an optional capability is missing, degrade gracefully by skipping only its respective steps. A missing Flash-Mem MCP service does not make an available Memory MD CLI unavailable.
+3. Inspect the installed list in `.specify/extensions.yml` for the canonical `security-review` extension or compatibility alias `spec-kit-security-review`.
+4. Manifest presence is not availability. If either extension name is installed, verify that `/speckit.security-review.plan` is registered and callable before selecting the SpecKit integration.
+5. If that command is absent, detect an independently registered Architecture Guard-compatible Security Review host capability with a plan operation and select it instead.
+6. If neither path is callable, mark Security Review `Unavailable` and degrade without claiming a pass.
+7. If an optional capability is missing, degrade gracefully by skipping only its respective steps. A missing Flash-Mem MCP service does not make an available Memory MD CLI unavailable.
 
 ### Step 2 — Flash-Mem MCP Context Retrieval (Optional)
 
@@ -86,8 +97,8 @@ You must orchestrate the `/speckit.plan` workflow directly.
 
 ### Step 4 — Security Review (Optional)
 
-IF `security-review` (or compatibility alias `spec-kit-security-review`) is available:
-1. **Execute Review**: Run `/speckit.security-review.plan` to review the plan and save `specs/<feature>/security-constraints.md`.
+IF Security Review is available:
+1. **Execute Review**: Invoke `/speckit.security-review.plan` when selected; otherwise dispatch the selected host capability's plan operation. Preview the exact `specs/<feature>/security-constraints.md` changes and require explicit user approval before writing them.
 2. Focus on:
     - Trust boundaries and authorization assumptions.
     - Data isolation and validation risks.
@@ -106,13 +117,13 @@ Inputs to consider:
 - Flash-Mem context (if available).
 - `security-constraints.md` (if available).
 
-Detect any `Security-Architecture Conflict` or architectural drift.
+Detect any `Security-Architecture Conflict` or architectural drift. Explicitly validate one canonical owner for repeated business rules, approvals, validation, DTO mapping, transformations, and orchestration (DRY), plus artifact placement, temporary/generated files, and repository hygiene.
 
 ### Step 6 — Proactive Durable Memory Preservation
 
 If the planning process or architecture validation identified new architectural patterns, critical decisions, or repeatable lessons:
 1. **Capability Gate**: Use a Flash-Mem write tool only when that tool is already exposed in the current environment. Otherwise, if the Memory MD CLI detected in Step 1 supports the required local capture operation, use `node .specify/extensions/memory-md/dist/bin/speckit-memory.js <command>`.
-2. **Proactive Execution**: When either explicit capture path is available, you **MUST automatically execute** that durable-memory capture flow as the final action of this turn. Do not just recommend it; run the command.
+2. **Approval Required**: When either explicit capture path is available, propose the durable-memory entries and write them only after explicit user approval.
 3. **Bounded Degradation**: Do not probe for Flash-Mem, `speckit_memory_share_lesson`, another MCP wrapper, or global/shared promotion when such a capability is not already exposed. Complete any available local capture or synthesis, report global promotion as unavailable, and finish the governed workflow.
 4. **Standard**: Do not silently write memory outside an available formal capture flow; let that flow propose entries and handle user approval when its interface requires approval.
 
@@ -131,7 +142,7 @@ Produce a final `Governed Planning Summary` for the user.
 **Without Security Review**:
 - Skip Step 4 (Security Review)
 - Continue to violation-detection directly
-- Flag missing security validation in governance summary
+- Report Security Review as `Unavailable` and flag missing security validation in the governance summary; do not claim a pass
 - Plan-level review proceeds with architecture constraints only
 
 **Minimal Viable Workflow** (only Architecture Guard + Spec Kit):
@@ -154,7 +165,7 @@ The command MUST return:
 - **Key Constraints**: [Bullet points of architectural context used]
 
 ## Security Review
-- **Status**: [Reviewed / Skipped]
+- **Status**: [Reviewed / Advisory / Blocked / Unavailable]
 - **Constraints Found**: [Key security-architecture boundaries]
 - **Warnings**: [Any high-risk authorization or isolation issues]
 
@@ -173,5 +184,6 @@ The command MUST return:
 
 - **SDD-Tool-Agnostic**: Do not assume specific SDD tool conventions unless provided via a preset.
 - **Non-Blocking**: Findings should be advisory by default unless they violate a P0 rule in the Constitution.
+- **Independent Security Policy**: Preserve Security Review severity and blocking decisions independently from architecture severity and P0 handling.
 - **Incremental**: Prefer suggestions for incremental migration over full rewrites.
 - **Decoupled**: Do not tightly couple the logic to the internals of other extensions; rely on documented context and repository artifacts.

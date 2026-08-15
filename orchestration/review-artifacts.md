@@ -4,13 +4,23 @@ description: Review specification and planning artifacts against architectural r
 
 # Architecture Review Command
 
+## SDD Adapter Resolution
+
+Before executing this command, read `adapters/resolve.md`. Resolve the active adapter in this order:
+
+1. An explicit `--adapter` override, when provided.
+2. `.architecture-guard/selected-adapter`, which is authoritative after CLI installation.
+3. Filesystem markers only when no persisted selection exists.
+
+Load `adapters/{tool}.md` and resolve every `{adapter_path:key}` token before reading review artifacts. Stop if the adapter is missing or any token remains unresolved.
+
 ## Ponytail Core Contract
 
 Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
 ## Budgeted Context Contract
 
-Read and apply `{adapter_path:budgeted-context-template}` (or `templates/budgeted_context.md` in the extension source checkout). Available active specification documents (the exact filenames depend on the active SDD tool), security constraints, applicable constitutions, and relevant code evidence are authoritative. Use fallback provenance to open historical specs only for named review gaps.
+Read and apply `{adapter_path:budgeted-context-template}` (or `templates/budgeted_context.md` in the extension source checkout). Available active specification documents (the exact filenames depend on the active SDD tool), security constraints, and applicable constitutions are authoritative. Use fallback provenance to open historical specs only for named review gaps.
 
 You are running `architecture-guard`, a technology-agnostic architecture review extension designed for high-integrity governance.
 
@@ -39,7 +49,7 @@ You are running `architecture-guard`, a technology-agnostic architecture review 
 
 **Coexistence Model**:
 - Review always starts technology-agnostic
-- If preset detected in `.specify/presets/` or the Constitution: Enhance with framework vocabulary
+- If adapter-resolved preset guidance or Constitution guidance is available: Enhance with framework vocabulary
 - Violations list remains the same; explanation becomes framework-native
 - Example: "Entry boundary contamination" (agnostic) → "Controller mixing HTTP and business logic" (Laravel-aware)
 
@@ -79,10 +89,10 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
 ## Semantic Modeling
 
 Before analysis, build internal representations (do not output these):
-1. **Boundary Model**: Map the expected boundaries (Entry, Application, Domain, Data, External) vs. actual directory structure.
+1. **Boundary Model**: Map the expected boundaries (Entry, Application, Domain, Data, External) to the structure proposed by the planning artifacts.
 2. **Contract Inventory**: Identify shared data shapes, API signatures, and event structures.
-3. **Task-Implementation Map**: Map `tasks.md` IDs to specific code files and check completion status.
-4. **Dependency Graph**: Map module-to-module dependencies to detect coupling or layering violations.
+3. **Task-Coverage Map**: Map task IDs to planned requirements, boundaries, and verification work.
+4. **Planned Dependency Graph**: Map proposed module dependencies to detect planned coupling or layering violations.
 
 ## Review Principles
 
@@ -94,27 +104,27 @@ Use these core principles to detect drift:
 - **Isolation**: Data access, external APIs, and infrastructure must be isolated.
 - **Consistency**: Comparable endpoints or modules must use compatible patterns.
 - **DRY / Single Source of Truth**: Repeated business rules, validation, transformations, or orchestration should be centralized once and reused instead of copied across modules.
-- **Ponytail Pragmatism (YAGNI)**: Apply the shared decision ladder in order. Implementations must be minimal without weakening correctness, safety, accessibility, or verification.
+- **Ponytail Pragmatism (YAGNI)**: Apply the shared decision ladder in order. Planned work must be minimal without weakening correctness, safety, accessibility, or verification coverage.
 - **Non-Blocking**: Identify drift without converting style preferences into hard failures.
 
 ## Detection Scope
 
 Detect violations such as:
-- **Intent Divergence**: Implementation deviates fundamentally from the specification or design intent.
-- **Hallucinated Abstractions**: Plan mentions an abstraction (e.g., Repository) that is missing in code.
-- **Boundary Erosion**: Business logic leaking into entry points or UI.
-- **Tight Coupling**: Circular dependencies or cross-module leakage.
-- **Duplication Drift**: The same rule, validation, mapping, or workflow is implemented in multiple places instead of a shared boundary.
+- **Intent Divergence**: The design or tasks deviate fundamentally from the specification intent.
+- **Unsupported Abstractions**: The plan introduces an abstraction without a requirement, ownership boundary, or task coverage.
+- **Boundary Erosion**: The plan assigns business logic to entry points or UI.
+- **Tight Coupling**: The planned module relationships introduce circular dependencies or cross-module leakage.
+- **Duplication Drift**: The same rule, validation, mapping, or workflow is planned in multiple places instead of a shared boundary.
 - **Contract Mismatch**: Mismatch between API, UI, or service shapes.
-- **Ponytail Violation (Bloat)**: Code is over-engineered, duplicates an existing capability, adds avoidable files or dependencies, includes unnecessary boilerplate or future-proofing, or bypasses a correct standard-library or native-platform feature.
+- **Ponytail Violation (Bloat)**: The plan introduces unnecessary abstractions, modules, dependencies, boilerplate, or future-proofing instead of the smallest design that satisfies the requirements.
 - **Ponytail Violation (Unsafe Simplification)**: A small diff removes required validation, authorization, data-loss prevention, accessibility, external-system safeguards, or verification.
-- **Root-Cause Miss**: A symptom is patched in one caller while sibling callers remain exposed to the same shared defect.
+- **Root-Cause Miss**: The plan addresses one affected path while omitting sibling paths that share the same defect.
 - **Constitution Breach**: Any conflict with a "MUST" principle in the Constitution.
 
 **Duplication Drift Example**
-- Finding: Both `checkout/controller.ts` and `checkout/service.ts` calculate the same tax rule.
-- Evidence: Each file applies the same conditional logic for the same inputs.
-- Recommended Fix: Keep the rule in the shared service/domain boundary and make the controller delegate to it.
+- Finding: The plan assigns the same tax rule to both the checkout entry boundary and application service.
+- Evidence: Separate plan or task entries assign the same decision to both boundaries.
+- Recommended Fix: Plan one owner in the service/domain boundary and make the entry boundary delegate to it.
 
 **Common DRY Signals**
 - Repeated business rules, approvals, validation, DTO mapping, or orchestration across multiple layers.
@@ -129,7 +139,7 @@ Detect violations such as:
 4. **Scan Principles**: Apply Review Principles across the planned boundaries.
 5. **Target Classification**: Determine which artifact each finding targets based on the finding's source evidence. Emit the adapter-resolved filename: `plan.md` for SpecKit planning artifacts, `design.md` for OpenSpec design artifacts, and the applicable `proposal.md`, `spec.md`, or `tasks.md` otherwise. For multi-artifact findings, set `Target:` to the authoritative artifact (`spec.md` > planning artifact (`plan.md` or `design.md`) > `tasks.md` > `proposal.md`).
 6. **Security & Governance Cross-Check**:
-  - If `security-constraints.md` or `security_constitution.md` is breached, log it as a critical violation.
+  - If a security constraint is breached, preserve the severity and blocking status defined by the governing security policy; category alone does not make it Critical.
   - Cross-reference architecture decisions with security trust boundaries.
 7. **Ponytail Audit**: Apply both sides of the shared contract to the plan. Check for planned bloat and unsafe under-building.
 8. **Performance Scan (if mode=performance)**: Skip violations; focus on optimizations.
@@ -153,7 +163,7 @@ For all other violations, cite specific planning locations, lines, or patterns. 
 
 ## Severity Guide
 
-- **CRITICAL**: Violates Constitution MUST, breaches Security Constraint, or has zero implementation evidence for a required boundary.
+- **CRITICAL**: Policy-designated critical Constitution or security violation, or omission of all planned structure/design/task coverage for a required boundary. Record blocking status separately from severity.
 - **HIGH**: Significant boundary erosion, contract inconsistency, or fundamental intent divergence.
 - **MEDIUM**: Pattern drift or local inconsistency that creates technical debt.
 - **LOW**: Minor naming, shape, or structure drift.
@@ -164,14 +174,14 @@ Return only this structure:
 
 # Architecture Review Report
 
-| ID | Category | Severity | Location(s) | Target | Summary | Evidence/Rationale |
-|:---|:---|:---|:---|:---|:---|:---|
-| V1 | Constitution | CRITICAL | `{adapter_path:arch-constitution}` | `{adapter_path:plan}` | Violation of [Principle Name] | [Evidence from spec/plan/tasks] |
+| ID | Category | Severity | Blocking | Location(s) | Target | Summary | Evidence/Rationale |
+|:---|:---|:---|:---|:---|:---|:---|:---|
+| V1 | Constitution | CRITICAL | [Yes/No, from policy] | `{adapter_path:arch-constitution}` | `{adapter_path:plan}` | Violation of [Principle Name] | [Evidence from spec/plan/tasks] |
 
 ### Task Synchronization
 - **Status**: [Synced / Drifted]
-- **Missing Implementations**: [Files referenced in tasks but missing/empty]
-- **Pending Tasks**: [Incomplete tasks blocking architecture]
+- **Missing Coverage**: [Requirements or planned boundaries without tasks]
+- **Planning Gaps**: [Missing design or verification work that blocks architecture]
 
 ### Metrics
 - **Constitution Compliance**: [e.g. 90%]
@@ -217,7 +227,7 @@ Findings categorized by severity based on the active hygiene rules.
 1. **Critical Fixes**: Address Constitution and Security violations first.
 2. **Architecture Alignment**: Resolve boundary erosion and contract mismatches.
 3. **DRY Alignment**: Centralize repeated business logic, validation, and mapping before duplicating it in another layer or module.
-4. **Durable Memory Preservation (Mandatory Check)**: If new architectural patterns, decisions, or repeatable lessons were identified, you **MUST automatically execute** the durable-memory capture flow immediately after providing the report. Do not just recommend it; let the formal capture flow propose entries and request user approval.
+4. **Durable Memory Preservation (Mandatory Check)**: If new architectural patterns, decisions, or repeatable lessons were identified, include proposed memory entries in the report. After returning the report-only structure, request approval in a separate interaction and write only approved entries.
 5. **Next Step**: Run `/ag-apply` to resolve all findings (plan/tasks findings will be applied directly; upstream findings in `proposal.md` or `spec.md` will be delegated with confirmation).
 6. **Remediation**: [Concrete remediation direction for the top issues, or "None needed"]
 

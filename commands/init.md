@@ -426,10 +426,10 @@ Are you working on this project as a solo developer, or as part of a team?
 ```
 
 If the user selects Team Development:
-1. Write `Mode: Team` into the governance rules (e.g., `openspec/config.yaml` or `.specify/memory/constitution.md`).
-2. Ask: "Which issue tracker MCP server should be used to sync User Stories? (e.g., github-mcp-server, jira, none)". Save this preference in the governance rules.
-3. Automatically scaffold a `user-stories/` directory at the project root to house global business requirements.
-4. If an issue tracker is selected (not "none"), ask for the required provider configuration (e.g., `repo` string for GitHub or `project` string for Jira). Then, automatically scaffold the `.architecture-guard/sync.yml` file configuring the chosen provider, the project/repo string, and `enabled: true`.
+1. Ask: "Which issue tracker MCP server should be used to sync User Stories? (e.g., github-mcp-server, jira, none)".
+2. If an issue tracker is selected (not "none"), ask for the required provider configuration (e.g., `repo` string for GitHub or `project` string for Jira).
+3. Preview the exact proposed governance changes and team scaffolding, including `Mode: Team`, the tracker preference, `user-stories/`, and `.architecture-guard/sync.yml` when applicable.
+4. Require explicit user approval of that preview before writing governance rules or creating any team scaffolding. If approval is declined, make no team-mode writes.
 
 ---
 
@@ -808,6 +808,8 @@ DO NOT generate final documents until:
 * enough information has been collected
 * OR the user explicitly requests a draft
 
+Before creating, modifying, deleting, moving, or scaffolding any file or directory, show the exact target paths and proposed operations and obtain explicit user approval.
+
 ---
 
 # Output Requirements
@@ -820,7 +822,7 @@ Generate or refine:
 
 When Budgeted Architecture Context Retrieval is selected, also generate `.specify/config/architecture_guard.yml`. Missing configuration means targeted mode, preserving backward compatibility.
 
-If the `flash-mem` MCP server is available, you MUST run the `update_project_summary` tool to reflect any major changes in architecture, boundaries, or governance rules in the project summary. If it is unavailable, rely on the repository files directly and continue without the sync step.
+If the `flash-mem` MCP server is available, propose `update_project_summary` for major changes in architecture, boundaries, or governance rules and execute it only after explicit user approval. If it is unavailable, rely on the repository files directly and continue without the sync step.
 
 ---
 

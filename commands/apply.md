@@ -59,8 +59,13 @@ For multi-artifact findings, resolution is performed in authoritative order (`sp
 
 ## Apply Procedure
 
+### Step 0: Confirm All Writes
+1. Present the exact findings to apply, target artifacts, and proposed write scope.
+2. Prompt the user for explicit confirmation before modifying any file or invoking any write-capable delegated capability.
+3. If confirmation is not explicit or the user declines, perform no writes and report the apply as skipped.
+
 ### Step 1: Direct Apply for Plan/Tasks Group
-1. Process all findings in the **Plan/Tasks Group** directly.
+1. After Step 0 confirmation, process all findings in the **Plan/Tasks Group** directly.
 2. Preserve feature intent and implementation scope.
 3. Add or refine task entries in `tasks.md` for refactors that are safe to schedule.
 4. Reorder tasks when architectural dependencies matter.
@@ -70,7 +75,7 @@ For multi-artifact findings, resolution is performed in authoritative order (`sp
 8. If an approved Constitution Update Proposal exists, reflect it as explicit follow-up work without auto-changing the Constitution itself.
 9. When a refactor removes duplication, update the plan or tasks so the shared implementation remains the single source of truth and all callers are adjusted to use it.
 
-### Step 2: Confirmation for Upstream Group
+### Step 2: Additional Confirmation for Upstream Group
 If the **Upstream Group** contains findings:
 1. Present a grouped summary table of upstream findings organized by target artifact (`proposal.md`, `spec.md`).
 2. Prompt the user for confirmation: `"Proceed with upstream artifact fixes? [Y/n]"`

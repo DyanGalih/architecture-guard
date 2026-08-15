@@ -31,12 +31,15 @@ Provide a single command that ensures:
 
 Check for the availability of:
 - `flash-mem` MCP server
-- `security-review` (or compatibility alias `spec-kit-security-review`) extension
+- Security Review integration
 
 **Detection Logic**:
 1. Detect `flash-mem` as an MCP-backed memory service in the current environment.
-2. Read `.specify/extensions.yml` and check the `installed` list for `security-review` (or compatibility alias `spec-kit-security-review`). If present, note it for downstream security flagging.
-3. If either capability is missing, degrade gracefully. Without `flash-mem`, rely on the local `.specify/memory/architecture_constitution.md` and `.specify/memory/security_constitution.md` files.
+2. Inspect the installed list in `.specify/extensions.yml` for `security-review` or its compatibility alias `spec-kit-security-review`.
+3. Manifest presence is not availability. Treat the SpecKit integration as available only if at least one phase command needed downstream (`/speckit.security-review.plan`, `/speckit.security-review.tasks`, or `/speckit.security-review.branch`) is registered and callable.
+4. If no applicable SpecKit command is registered, detect an independently registered Architecture Guard-compatible Security Review host capability with a corresponding plan, tasks, or branch operation.
+5. Record the available operations for downstream security flagging; discovery need not invoke them. If neither path is callable, record Security Review as `Unavailable` and degrade without claiming a pass.
+6. If either optional integration is missing, degrade gracefully. Without `flash-mem`, rely on the local `.specify/memory/architecture_constitution.md` and `.specify/memory/security_constitution.md` files.
 
 ### Step 2 — Architecture Context Retrieval
 
@@ -45,6 +48,8 @@ Retrieve the most relevant architectural context for the user's idea before star
 ### Step 3 — Current Implementation Review (Optional)
 
 If the user's prompt suggests modifying an existing feature, analyze the current codebase for that feature to ensure the proposed ideas fit seamlessly with the existing patterns.
+
+Keep this review read-only and scan for boundary drift, duplicated business rules or orchestration (DRY risk), misplaced/generated artifacts, temporary files, and repository hygiene risks. Carry findings into the handoff; do not modify the repository.
 
 ### Step 4 — Interactive Discussion Loop
 
@@ -58,7 +63,7 @@ Enter an interactive Q&A discussion with the user.
 
 If required questions remain unresolved, ask only the next necessary questions and do not produce the final handoff draft yet.
 
-If the user proposes a feature that touches authentication, authorization, PII, or data exposure, and `security-review` (or compatibility alias `spec-kit-security-review`) was detected in Step 1, flag the idea for downstream security review.
+If the user proposes a feature that touches authentication, authorization, PII, secrets, trust boundaries, or data exposure, always mark it security-sensitive in the handoff. If Security Review was detected in Step 1, flag it for downstream review; otherwise retain the security-sensitive flag and mark Security Review `Unavailable`.
 
 ### Step 4.5 — Durable Memory Proposal
 
@@ -97,6 +102,12 @@ When the discussion is concluded and aligned, the command MUST return:
 ## Open Questions
 - [Non-blocking questions that can be resolved during governed-spec]
 
+## Security-Sensitive Areas
+- [Auth, PII, secrets, trust boundaries, or data-exposure concerns; state "None identified" only after checking]
+
+## DRY & Repository Hygiene Risks
+- [Duplicate ownership, repeated logic, misplaced/generated artifacts, temporary files, or "None identified"]
+
 ## Recommended Next Step
 To proceed to implementation and avoid a "Feature: Not selected" error, you must initialize the feature using the active SDD tool's workflow (e.g., creating a new OpenSpec change) before running a delivery phase.
 
@@ -122,8 +133,8 @@ You can now run:
 - Fall back to reading `.specify/memory/architecture_constitution.md` and `.specify/memory/security_constitution.md` directly
 
 **Without Security Review**:
-- Skip security-relevant flagging in Step 4
-- Note missing security context in the Discovery Summary Draft
+- Still flag security-sensitive ideas for downstream review, but mark Security Review `Unavailable`
+- Note missing security review capability in the Discovery Summary Draft; do not claim a pass
 
 **Minimal Viable Workflow** (only Architecture Guard):
 - Read constitution files directly

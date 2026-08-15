@@ -50,7 +50,7 @@ Select SDD tool or workflow:
   3. none (generic Markdown workflow)
 ```
 
-Architecture Guard detects your SDD tool at runtime from filesystem markers:
+Architecture Guard uses the adapter selected during CLI initialization:
 
 | SDD Tool or Workflow | Detection Marker | Works When |
 | :--- | :--- | :--- |
@@ -58,9 +58,9 @@ Architecture Guard detects your SDD tool at runtime from filesystem markers:
 | **OpenSpec** | `openspec/config.yaml` exists | OpenSpec projects |
 | **Generic** | No known markers, or user declines | Any project |
 
-Detection runs at the start of every orchestration command. It never overwrites your filesystem markers. If both `.specify/` and `openspec/` exist, it asks which adapter to use.
+The selected adapter is persisted in `.architecture-guard/selected-adapter` and loaded at the start of every orchestration command. Filesystem markers are inspected only when no selection exists. If both markers exist during first-time initialization, the user must choose an adapter.
 
-Override detection with `--adapter` in the command itself, or select the SDD tool explicitly via the CLI installer.
+Override the persisted adapter for one command with `--adapter`, or change the persisted selection by rerunning the CLI installer with a new `--framework`.
 
 ## 4. Choose Your Commands
 
@@ -91,7 +91,7 @@ You can select one, several, or `all`. The installer writes only the commands yo
 After you select agents, an SDD tool or workflow, and commands, `install.js` writes:
 
 - **Command files** in your agent's directory (markdown, skill, TOML, or YAML)
-- **Adapters** — `adapters/detect.md` plus your SDD tool's adapter (e.g., `adapters/openspec.md`, `adapters/spec-kit.md`)
+- **Adapters** — `adapters/resolve.md` plus your SDD tool's adapter (e.g., `adapters/openspec.md`, `adapters/spec-kit.md`)
 - **Runtime resources** — `templates/`, `presets/`, `hygiene-rules/`, `sonar-rules/` under `.architecture-guard/`
 - **`AGENTS.md` governance rules** (optional — the installer offers on completion)
 
@@ -141,11 +141,11 @@ architecture-guard init /path/to/project --yes --agent claude --framework opensp
 
 The target argument specifies which directory to install into (default: current directory).
 
-## 8. SDD Tool Detection in Practice
+## 8. SDD Adapter Resolution in Practice
 
 When an orchestration command runs, it:
 
-1. Reads `adapters/detect.md` and scans project root for SDD tool markers
+1. Reads `adapters/resolve.md` and loads the persisted adapter selection
 2. Loads `adapters/{tool}.md` — the adapter for that SDD tool
 3. Resolves every `{adapter_path:key}` and `{adapter_command:key}` from the adapter
 4. Executes the command body using adapter-resolved paths and commands
@@ -153,7 +153,7 @@ When an orchestration command runs, it:
 The same orchestration command `governed-spec` creates:
 
 - SpecKit project: `specs/<feature>/spec.md` via `/speckit.specify`
-   - OpenSpec project: `openspec/changes/{change}/specs/{capability}/spec.md` via `openspec new change` + inline spec writes
+- OpenSpec project: `openspec/changes/{change}/specs/{capability}/spec.md` via `openspec new change` + inline spec writes
 
 You choose the SDD tool once; Architecture Guard adapts the rest.
 

@@ -28,16 +28,27 @@ Provide a single command that ensures:
 
 ## Orchestration Flow
 
+### Write Approval Gate
+
+Before the first mutation, resolve and preview the exact target task and constraint artifacts together with all planned task-generation, reconciliation, refactor, analysis-fix, and constraint-write operations. Obtain explicit user approval, then allow routine writes already previewed within this task phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+
+### Required Active Inputs
+
+Require the active feature specification and technical design artifacts plus `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, and `.specify/memory/security_constitution.md`. If the specification, design, governance rules, or architecture rules are missing, stop and direct the user to the corresponding governed phase or `/ag-init`; if security rules are missing, report the gap and obtain explicit confirmation before baseline security task validation.
+
 ### Step 1 — Detect Optional Integrations
 
 Check for the availability of:
 - `flash-mem` MCP server
-- `security-review` (or compatibility alias `spec-kit-security-review`) extension
+- Security Review integration
 
 **Detection Logic**:
 1. Detect `flash-mem` as an MCP-backed memory service in the current environment. Do not treat it as a Spec Kit extension or look for it in `.specify/extensions.yml`.
-2. Read `.specify/extensions.yml` and check the `installed` list for `security-review` (or compatibility alias `spec-kit-security-review`). Fall back to checking for the extension directory in `.specify/extensions/` only if the YAML is missing or the list is empty.
-3. If either capability is missing, degrade gracefully by skipping only its respective steps.
+2. Inspect the installed list in `.specify/extensions.yml` for `security-review` or its compatibility alias `spec-kit-security-review`.
+3. Manifest presence is not availability. If either name is installed, verify that `/speckit.security-review.tasks` is registered and callable before selecting it.
+4. If that command is absent, detect an independently registered Architecture Guard-compatible Security Review host capability with a tasks operation and select it instead.
+5. If neither path is callable, mark Security Review `Unavailable` and degrade without claiming a pass.
+6. If either optional integration is missing, degrade gracefully by skipping only its respective steps.
 
 ### Step 2 — Flash-Mem MCP Context Retrieval (Optional)
 
@@ -84,12 +95,12 @@ You must orchestrate the `/speckit.tasks` workflow directly.
 
 ### Step 4 — Security Review on Tasks
 
-IF `security-review` (or compatibility alias `spec-kit-security-review`) is available:
-1. **Execute Review**: Run `/speckit.security-review.tasks` to review the task list.
+IF Security Review is available:
+1. **Execute Review**: Invoke `/speckit.security-review.tasks` when selected; otherwise dispatch the selected host capability's tasks operation.
 2. Check for missing tasks related to:
     - Validation, authorization, and trust boundaries.
     - Secure integration and audit/logging.
-3. Update `specs/<feature>/security-constraints.md` with any new findings.
+3. Preview the exact `specs/<feature>/security-constraints.md` changes and require explicit user approval before writing them.
 
 ### Step 5 — Architecture Refactor Generation
 
@@ -108,13 +119,15 @@ It MUST convert architecture findings into:
 You must orchestrate the `/speckit.analyze` workflow directly to serve as the formal analyst.
 
 1. **Execute Analyze**: Run `/speckit.analyze` on the complete task list and architecture refactors.
-2. **Architecture Validation**: Detect any gaps, missing requirements, or high-severity execution risks present in the implementation plan or task list.
+2. **Architecture Validation**: Detect any gaps, missing requirements, or high-severity execution risks present in the implementation plan or task list. Explicitly verify DRY coverage for repeated business rules, approvals, validation, DTO mapping, transformations, and orchestration, plus repository hygiene and required cleanup/placement tasks.
+3. **Task Identity Reconciliation**: After adding security or refactor work, ensure every task has one unique, stable sequential ID; update references without reusing or silently renumbering completed IDs.
 
 ### Step 7 — Proactive Durable Memory Preservation
 
 If the task generation or security review identified new architectural lessons or reusable patterns:
-1. **Proactive Execution**: You **MUST automatically execute** the durable-memory capture flow as the final part of this turn. Do not just recommend it; run the command.
-2. **Standard**: Do not silently write memory outside the capture flow; let the formal capture flow propose entries and handle user approval.
+1. **Proactive Proposal**: You **MUST automatically launch** the durable-memory capture flow in proposal-only mode as the final part of this turn.
+2. **Approval Required**: Show the proposed entries and obtain explicit user approval before invoking any memory write tool.
+3. **Standard**: Do not silently write memory inside or outside the capture flow.
 
 ### Step 8 — Task Governance Summary
 
@@ -123,9 +136,10 @@ Produce a final `Governed Tasks Summary` for the user.
 ### Step 9 — Automatic Analyst Loop
 
 If the analyst (`/speckit.analyze`) finds any gaps, missing steps, or high severity issues in Step 6:
-1. **Pause and Ask**: Conclude your response by asking the user:
+1. **Blocking Gate**: If any finding is a Constitution P0 architecture violation or independently policy-designated blocking security finding, stop progression, surface remediation tasks, and do not allow a simple proceed prompt to override it.
+2. **Pause and Ask for Advisory Findings**: For remaining non-blocking findings, conclude your response by asking the user:
    > *"The analyst found [number] gaps/severities in the tasks. Would you like me to automatically clarify and revise the tasks to address these findings?"*
-2. **Execute if Approved**: If the user answers "yes" (or equivalent) in their next message, you must:
+3. **Execute if Approved**: If the user answers "yes" (or equivalent) in their next message, you must:
    - Automatically rewrite `specs/<feature>/tasks.md` to resolve the detected gaps.
    - Present the clean result.
 
@@ -139,7 +153,7 @@ If the analyst (`/speckit.analyze`) finds any gaps, missing steps, or high sever
 **Without Security Review**:
 - Skip Step 4 (Security Review on Tasks)
 - Continue to refactor-generator directly
-- Flag missing security task validation in summary
+- Report Security Review as `Unavailable` and flag missing security task validation in the summary; do not claim a pass
 
 **If No Architecture Violations**:
 - Report "Architecture refactor tasks: None"
@@ -163,6 +177,7 @@ The command MUST return:
 - **Relevant Decisions**: [List of historical constraints affecting these tasks]
 
 ## Security Task Review
+- **Status**: [Reviewed / Advisory / Blocked / Unavailable]
 - **Missing Security Tasks**: [List of missing auth/val/audit tasks]
 - **Constraints**: [Key security boundaries to respect]
 
@@ -183,3 +198,4 @@ The command MUST return:
 - **Separation**: Clearly separate implementation tasks, security tasks, and architecture refactor tasks.
 - **Precision**: Do NOT merge findings into vague task items.
 - **Non-Blocking**: Findings are advisory by default.
+- **Independent Security Policy**: Preserve Security Review severity and blocking decisions independently from architecture findings.

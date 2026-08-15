@@ -1,21 +1,25 @@
-# SDD Tool Detection
+# SDD Adapter Resolution
 
-This preamble loads before every orchestration command. Its job: detect which SDD tool or workflow the project uses, load the right adapter, and fail gracefully when detection is ambiguous.
+This preamble loads before every orchestration command. Its job is to resolve the adapter selected by CLI initialization, load its mappings, and provide a marker fallback for uninitialized projects.
 
-## Detection Chain
+## Resolution Chain
 
-1. Apply an explicit adapter override (`--adapter spec-kit`, `--adapter openspec`, or `--adapter generic`) before marker detection.
-2. Check for `.specify/` directory in project root → **SpecKit**
+1. Apply an explicit adapter override (`--adapter spec-kit`, `--adapter openspec`, or `--adapter generic`) before persisted selection.
+2. Read `.architecture-guard/selected-adapter` when present. This is the installed project's source of truth and selects the adapter named in the file.
+3. If no persisted selection exists, check for both the `.specify/` directory and `openspec/config.yaml` before making either single-marker choice. If both markers exist, ask the user which adapter to initialize.
+4. If only `.specify/` exists in project root → **SpecKit**
    - Also verify `.specify/memory/` or `.specify/extensions.yml` presence for confidence.
-3. Check for `openspec/config.yaml` in project root → **OpenSpec**
+5. If only `openspec/config.yaml` exists in project root → **OpenSpec**
    - Also verify `openspec/changes/` or `openspec/specs/` for confidence.
-4. If both markers exist, ask the user which adapter to use unless an explicit CLI override was supplied.
-5. Fallback: No SDD tool detected → ask user:
+6. Fallback: No adapter is persisted → ask user:
    ```
-   No SDD tool detected. Which one are you using?
+   No adapter is persisted. Which one are you using?
    1. SpecKit (`.specify/`)
    2. OpenSpec (`openspec/`)
-    3. None (load `adapters/generic.md` and ask for artifact paths as needed)
+   3. None (load `adapters/generic.md` and ask for artifact paths as needed)
+
+   Rerun `architecture-guard init --framework <tool>` to persist a selection,
+   or pass `--adapter <tool>` for this command only.
    ```
 
 ## Load Adapter
@@ -32,12 +36,12 @@ Read `adapters/{tool}.md` → this file contains:
 
 All subsequent path references in the orchestration command use adapter-mapped paths.
 
-## Session Persistence
+## Selection Persistence
 
-The selected SDD tool may be reused within the current AI session, but marker detection runs at the start of every command.
-- A session selection never silently overrides changed filesystem markers. If the markers now identify a different SDD tool, or both markers are present, ask again.
-- A persisted selection file or installer-selected adapter is advisory only and never outranks current markers.
-- If the user explicitly overrides mid-session (`--adapter openspec`), the new adapter is used for subsequent commands.
+The CLI-selected adapter is reused for every command until the user changes it.
+- Filesystem markers do not override `.architecture-guard/selected-adapter`.
+- If the user switches SDD tools, rerun `architecture-guard init` with the new `--framework` value.
+- An explicit `--adapter` override applies only to the current command and does not change the persisted selection.
 
 ## Generic Workflow Mode
 
@@ -56,7 +60,7 @@ Generic workflow mode:
 | Condition | Behavior |
 |---|---|
 | Adapter file missing | Report error: "Adapter file not found at adapters/{tool}.md" |
-| Tool directory exists but empty | Detect as that SDD tool, adapter loads normally |
+| Tool directory exists but empty | Resolve that SDD tool as a marker fallback, then load its adapter |
 | Flash-Mem unavailable | Skip MCP steps, proceed with file-based context |
 | No git repo | Skip branch-related gap fills, continue with remaining steps |
 

@@ -4,13 +4,23 @@ description: Review specification and planning artifacts against architectural r
 
 # Architecture Review Command
 
+## SDD Adapter Resolution
+
+Before executing this command, read `.specify/extensions/architecture-guard/adapters/resolve.md` (or `adapters/resolve.md` in a standalone install or source checkout). Resolve the active adapter in this order:
+
+1. An explicit `--adapter` override, when provided.
+2. `.architecture-guard/selected-adapter`, which is authoritative after CLI installation.
+3. Filesystem markers only when no persisted selection exists.
+
+Load `.specify/extensions/architecture-guard/adapters/{tool}.md` (or `adapters/{tool}.md` in a standalone install or source checkout) and resolve every `{adapter_path:key}` token before reading review artifacts. Stop if the adapter is missing or any token remains unresolved.
+
 ## Ponytail Core Contract
 
 Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
 ## Budgeted Context Contract
 
-Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). Available active specification documents (the exact filenames depend on the active SDD tool), security constraints, applicable constitutions, and relevant code evidence are authoritative. Use fallback provenance to open historical specs only for named review gaps.
+Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). Available active specification, design, and task documents (the exact filenames depend on the active SDD tool), security constraints, and applicable constitutions are authoritative. Use fallback provenance to open historical planning artifacts only for named review gaps.
 
 You are running `architecture-guard`, a technology-agnostic architecture review extension designed for high-integrity governance.
 
@@ -79,10 +89,10 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
 ## Semantic Modeling
 
 Before analysis, build internal representations (do not output these):
-1. **Boundary Model**: Map the expected boundaries (Entry, Application, Domain, Data, External) vs. actual directory structure.
-2. **Contract Inventory**: Identify shared data shapes, API signatures, and event structures.
-3. **Task-Implementation Map**: Map `tasks.md` IDs to specific code files and check completion status.
-4. **Dependency Graph**: Map module-to-module dependencies to detect coupling or layering violations.
+1. **Planned Boundary Model**: Map boundaries proposed by the specification and design (Entry, Application, Domain, Data, External).
+2. **Planned Contract Inventory**: Identify data shapes, API signatures, and event structures described by the artifacts.
+3. **Task Coverage Map**: Map `tasks.md` IDs to planned requirements, boundaries, and deliverables without checking implementation.
+4. **Planned Dependency Graph**: Map proposed module dependencies to detect design-time coupling or layering violations.
 
 ## Review Principles
 
@@ -100,13 +110,13 @@ Use these core principles to detect drift:
 ## Detection Scope
 
 Detect violations such as:
-- **Intent Divergence**: Implementation deviates fundamentally from the specification or design intent.
-- **Hallucinated Abstractions**: Plan mentions an abstraction (e.g., Repository) that is missing in code.
+- **Intent Divergence**: The design or tasks deviate fundamentally from specification intent.
+- **Unsupported Abstractions**: The plan introduces an abstraction without specification, design, or task justification.
 - **Boundary Erosion**: Business logic leaking into entry points or UI.
 - **Tight Coupling**: Circular dependencies or cross-module leakage.
 - **Duplication Drift**: The same rule, validation, mapping, or workflow is implemented in multiple places instead of a shared boundary.
 - **Contract Mismatch**: Mismatch between API, UI, or service shapes.
-- **Ponytail Violation (Bloat)**: Code is over-engineered, duplicates an existing capability, adds avoidable files or dependencies, includes unnecessary boilerplate or future-proofing, or bypasses a correct standard-library or native-platform feature.
+- **Ponytail Violation (Bloat)**: The plan is over-engineered, duplicates a planned capability, adds avoidable files or dependencies, includes unnecessary boilerplate or future-proofing, or bypasses a documented standard-library or native-platform option.
 - **Ponytail Violation (Unsafe Simplification)**: A small diff removes required validation, authorization, data-loss prevention, accessibility, external-system safeguards, or verification.
 - **Root-Cause Miss**: A symptom is patched in one caller while sibling callers remain exposed to the same shared defect.
 - **Constitution Breach**: Any conflict with a "MUST" principle in the Constitution.
@@ -129,7 +139,7 @@ Detect violations such as:
 4. **Scan Principles**: Apply Review Principles across the planned boundaries.
 5. **Target Classification**: Determine which artifact each finding targets based on the finding's source evidence. Emit the adapter-resolved filename: `plan.md` for SpecKit planning artifacts, `design.md` for OpenSpec design artifacts, and the applicable `proposal.md`, `spec.md`, or `tasks.md` otherwise. For multi-artifact findings, set `Target:` to the authoritative artifact (`spec.md` > planning artifact (`plan.md` or `design.md`) > `tasks.md` > `proposal.md`).
 6. **Security & Governance Cross-Check**:
-  - If `security-constraints.md` or `security_constitution.md` is breached, log it as a critical violation.
+  - Assign security finding severity and blocking status from the active security policy; do not fix severity by category.
   - Cross-reference architecture decisions with security trust boundaries.
 7. **Ponytail Audit**: Apply both sides of the shared contract to the plan. Check for planned bloat and unsafe under-building.
 8. **Performance Scan (if mode=performance)**: Skip violations; focus on optimizations.
@@ -144,7 +154,7 @@ Every violation MUST cite evidence or explicitly note its absence. Evidence can 
 - **Pattern**: Behavioral observation like `All 5 proposed endpoints lack standard response contract definitions`
 - **Absence**: Missing planning detail like `Task references Repository pattern but no data access module is planned`
 
-**Absence Evidence** is acceptable for CRITICAL violations only. Example:
+**Absence Evidence** is acceptable when active governance policy assigns the resulting violation CRITICAL severity. Example:
 - "Constitution requires data access abstraction but the technical design artifact does not specify one"
 
 For all other violations, cite specific planning locations, lines, or patterns. Vague claims like "business logic is leaking" without specific evidence are insufficient.
@@ -153,7 +163,8 @@ For all other violations, cite specific planning locations, lines, or patterns. 
 
 ## Severity Guide
 
-- **CRITICAL**: Violates Constitution MUST, breaches Security Constraint, or has zero implementation evidence for a required boundary.
+- **CRITICAL**: Violates a Constitution P0/MUST rule or meets another Critical condition in active governance policy.
+- **Security severity**: Use the active security policy's severity and independent blocking semantics.
 - **HIGH**: Significant boundary erosion, contract inconsistency, or fundamental intent divergence.
 - **MEDIUM**: Pattern drift or local inconsistency that creates technical debt.
 - **LOW**: Minor naming, shape, or structure drift.
@@ -164,14 +175,14 @@ Return only this structure:
 
 # Architecture Review Report
 
-| ID | Category | Severity | Location(s) | Target | Summary | Evidence/Rationale |
-|:---|:---|:---|:---|:---|:---|:---|
-| V1 | Constitution | CRITICAL | `.specify/memory/architecture_constitution.md` | `plan.md` | Violation of [Principle Name] | [Evidence from spec/plan/tasks] |
+| ID | Category | Severity | Blocking | Location(s) | Target | Summary | Evidence/Rationale |
+|:---|:---|:---|:---|:---|:---|:---|:---|
+| V1 | Constitution | CRITICAL | [Yes/No, from policy] | `.specify/memory/architecture_constitution.md` | `plan.md` | Violation of [Principle Name] | [Evidence from spec/plan/tasks] |
 
-### Task Synchronization
-- **Status**: [Synced / Drifted]
-- **Missing Implementations**: [Files referenced in tasks but missing/empty]
-- **Pending Tasks**: [Incomplete tasks blocking architecture]
+### Task Coverage
+- **Status**: [Covered / Gaps Found]
+- **Missing Planned Work**: [Requirements or design elements without task coverage]
+- **Pending Planning Decisions**: [Unresolved artifact decisions blocking architecture]
 
 ### Metrics
 - **Constitution Compliance**: [e.g. 90%]
@@ -217,7 +228,7 @@ Findings categorized by severity based on the active hygiene rules.
 1. **Critical Fixes**: Address Constitution and Security violations first.
 2. **Architecture Alignment**: Resolve boundary erosion and contract mismatches.
 3. **DRY Alignment**: Centralize repeated business logic, validation, and mapping before duplicating it in another layer or module.
-4. **Durable Memory Preservation (Mandatory Check)**: If new architectural patterns, decisions, or repeatable lessons were identified, you **MUST automatically execute** the durable-memory capture flow immediately after providing the report. Do not just recommend it; let the formal capture flow propose entries and request user approval.
+4. **Durable Memory Preservation (Mandatory Check)**: Keep memory read-only during review. If new architectural patterns, decisions, or repeatable lessons were identified, include proposed entries in the report. After returning the report, request explicit approval in a separate interaction and write only approved entries.
 5. **Next Step**: Run `/ag-apply` to resolve all findings (plan/tasks findings will be applied directly; upstream findings in `proposal.md` or `spec.md` will be delegated with confirmation).
 6. **Remediation**: [Concrete remediation direction for the top issues, or "None needed"]
 

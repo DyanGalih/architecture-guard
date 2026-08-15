@@ -4,9 +4,9 @@ description: Perform brownfield-first project initialization and discovery for e
 
 # init-brownfield
 
-## SDD Tool Detection
+## SDD Adapter Resolution
 
-Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -27,7 +27,7 @@ Create a reliable current-state baseline before any architectural or delivery gu
 3. Note any current conventions, constraints, and risky areas.
 4. Capture known gaps between the current codebase and the desired governance model.
 5. Identify existing pragmatic patterns (Ponytail principles: YAGNI, standard library preference, minimal abstractions) to preserve in the constitution.
-6. Produce an initial brownfield plan instead of assuming a greenfield setup.
+6. Produce a recommendation outline for bringing the project under governance, not the canonical `{adapter_path:plan}`.
 7. Use `{adapter_command:list-specs}` to count and estimate active `{adapter_path:spec}` artifacts, excluding generated or explicitly archived artifacts.
 8. Offer Budgeted Architecture Context Retrieval when repeated historical-spec loading is likely to be material.
 
@@ -41,6 +41,7 @@ Create a reliable current-state baseline before any architectural or delivery gu
 
 ## Guidance
 
+- Before recommendations, run a read-only baseline gate covering architecture boundaries and dependency direction, security-sensitive entrypoints and trust boundaries, duplicated business rules/validation/mapping/orchestration (DRY), and repository hygiene. Report evidence, severity, and unknowns; do not mutate artifacts or code.
 - Prefer observation over assumption.
 - Treat existing code as the source of truth.
 - Keep the first pass lightweight and non-destructive.
@@ -48,6 +49,7 @@ Create a reliable current-state baseline before any architectural or delivery gu
 - Recommend targeted mode for small spec sets. For larger histories, explain that budgeted mode queries Flash-Mem first, uses `{adapter_path:fallback-spec-index}` only when supported, and never replaces active artifacts.
 - If the user wants budgeted mode, record the recommendation in the brownfield output and hand it to the adapter-registered init capability. Do not create configuration or generate `system_context.md` during this non-destructive mapping pass.
 - Do not promise token savings before representative measurement and do not write operational settings into constitution files.
+- Label the result `Brownfield Recommendation Outline`. The canonical technical plan is created later by the adapter-registered governed-plan capability after active constitutions and a specification exist.
 
 ## When to use
 

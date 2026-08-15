@@ -4,9 +4,9 @@ description: Generate a compact, non-authoritative local fallback index from fea
 
 # Consolidate Specs Command
 
-## SDD Tool Detection
+## SDD Adapter Resolution
 
-Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -24,6 +24,10 @@ Provide the adapter's compact offline fallback for Budgeted Architecture Context
 4. Read each source only far enough to extract its title or one-line purpose, requirement and acceptance-criteria identifiers, shared invariants, cross-feature dependencies, and explicit conflicts. Acceptance-criteria bodies remain in the source spec.
 5. Deduplicate only statements that are clearly identical. Keep similar statements separate. Never resolve conflicts or ambiguity silently.
 6. Write the complete generated artifact in one operation with the structure below. Keep feature entries to one line plus identifiers and provenance so the fallback does not become another full specification.
+
+## User Interaction and Result
+
+In Generic workflow mode, ask the user for source specification paths and the desired fallback output path when the adapter cannot resolve them. Before writing or replacing a fallback, show the resolved output path and request explicit confirmation. A decline or unsupported consolidation returns the available adapter-native index or source manifest without writing.
 
 ## Required Output
 
@@ -54,7 +58,11 @@ Provide the adapter's compact offline fallback for Budgeted Architecture Context
 
 ## Completion Report
 
-Report the output path, source count, conflicts found, excluded sources, and whether regeneration was complete. Do not claim exact token savings; those require representative benchmark runs.
+Report status (`Generated`, `Declined`, `Unsupported`, `No Sources`, or `Partial`), output path, source count, conflicts found, excluded or unreadable sources, and whether regeneration was complete. Do not claim exact token savings; those require representative benchmark runs.
+
+## Next-Step Handoff
+
+Return the adapter-resolved fallback path when generated, or the returned index/manifest otherwise, as the context input for the next review or planning command. Preserve unresolved conflicts verbatim so the receiving workflow can request a decision rather than treating the fallback as authoritative.
 
 ## Backward Compatibility
 

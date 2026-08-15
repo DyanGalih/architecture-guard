@@ -4,9 +4,9 @@ description: Run a single architecture workflow with optional memory context and
 
 # Architecture Workflow Command
 
-## SDD Tool Detection
+## SDD Adapter Resolution
 
-Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -63,11 +63,11 @@ The workflow is serial and ownership-aware:
 
 ## Goal
 
-Review the current specification, plan, task list, or implementation with a single workflow and produce the most useful next step.
+Review one resolved active specification, plan, task list, or implementation set with a single workflow and produce the most useful next step.
 
 ## Inputs To Consider
 
-Review any available artifacts from these common locations. **IMPORTANT**: You MUST read these files explicitly using your file-reading tools (absolute or relative paths). Do not rely solely on workspace search or semantic indexers, as these files are often in `.gitignore`:
+Resolve explicit user paths first; otherwise use `{adapter_path:spec}`, `{adapter_path:plan}`, `{adapter_path:tasks}`, and `{adapter_path:security-constraints}` for one active adapter artifact set. If branch metadata and adapter paths identify different sets, or multiple sets remain plausible, stop and ask the user instead of combining them. Read resolved files explicitly because they may be ignored by search.
 
 1. **Governance & Security Constitution**:
    - `{adapter_path:constitution}`
@@ -78,7 +78,7 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
 
 3. **Feature-Specific Context**:
    - `{adapter_path:security-constraints}`
-   - `spec.md`, the technical design artifact, `tasks.md`, `data-model.md`
+   - `{adapter_path:spec}`, `{adapter_path:plan}`, and `{adapter_path:tasks}`
    - Stored architecture decisions from Flash-Mem, if present.
    - Security Review findings, if present.
    - Optional preset guidance, if present.
@@ -87,16 +87,17 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
 
 1. Read Flash-Mem context first if it is available in the project or workflow context, then fall back to repository files if needed.
 2. Review the current work against the Constitution and generic architecture principles.
-3. Identify whether any finding is primarily security-related.
-4. If a finding is security-related, flag it as a handoff to Security Review rather than treating it as a core architecture finding.
+3. Detect Security Review independently from host registrations, not adapter extension support, and identify whether any finding is primarily security-related.
+4. If Security Review is available, hand off security-first findings. If unavailable, report the capability as unavailable, perform only constitution-required architecture-visible security checks, and mark security coverage degraded without claiming a security pass.
 5. Produce refactor tasks or an apply recommendation as needed.
 6. Prefer a single concise summary that tells the user what to fix next.
+7. Run hygiene rules only across the resolved review scope plus repository-level files explicitly required by each rule. Apply configured exclusions, preserve policy severity, and record blocking status separately.
 
 ## Rules
 
 - Do not invent framework-specific conventions.
 - Do not invent unsupported framework APIs; use adapter behavior and fallbacks.
-- Do not block implementation by default.
+- Do not block implementation by default. Block only architecture P0 or findings whose applicable security/hygiene policy explicitly designates them blocking; capability availability and finding category do not imply severity.
 - Do not replace Security Review; route security-first findings to Security Review when available.
 - Do not require `flash-mem`; treat it as optional read-only context only.
 - Do not duplicate Security Review findings in the architecture output unless the issue is specifically an architectural boundary problem.
@@ -114,7 +115,7 @@ All governance reports MUST follow this standard template:
 
 ## Input Summary
 - **Artifacts Scanned**: [list]
-- **Extensions Used**: [`flash-mem`: yes/no, Security Review: yes/no]
+- **Capabilities Used**: [`flash-mem`: yes/no, Security Review: available/unavailable]
 - **Mode**: [architecture/performance]
 - **Focus**: [general/db/api/async]
 
@@ -132,6 +133,7 @@ All governance reports MUST follow this standard template:
 ## Context Applied
 - **`flash-mem`**: [Used context or "Not available"]
 - **Security Review**: [Findings routed or "Not available"]
+- **Security Coverage**: [Independent / Degraded]
 
 ## Recommended Next Step
 [Single clear action]

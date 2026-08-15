@@ -4,9 +4,9 @@ description: Detect technology-agnostic architecture violations in plans, tasks,
 
 # Violation Detection Command
 
-## SDD Tool Detection
+## SDD Adapter Resolution
 
-Before executing command, read `adapters/detect.md` to determine the active SDD tool. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Ponytail Core Contract
 
@@ -120,21 +120,24 @@ A Security-Architecture Conflict occurs when security requirements and architect
 
 ## Review Procedure
 
-1. **Model Context**: Load artifacts and build the Semantic Models.
+1. **Resolve Bounded Scope**: Use an explicit user-provided file list first. Otherwise, use `architecture-guard detect-changed-files --json` only after confirming that capability is available. If unavailable, derive the set with the host's Git capability, including committed changes from the merge-base to `HEAD`, staged changes, unstaged changes, and untracked files. If Git is unavailable, ask the user for a file list and do not scan an unbounded repository scope.
+2. **Model Context**: Load artifacts and build the Semantic Models for the resolved scope.
 
     #### Flash-Mem Context Retrieval
     When Flash-Mem is available, use it first to gather the most relevant architecture context before judging violations. Prefer summary-first context and only expand into repository files when needed.
 
     If Flash-Mem is unavailable or the context is insufficient, continue with the repository artifacts and constitution files available in the workspace.
-2. **Verify Evidence**: Check if task-referenced files exist and contain expected implementation logic.
-3. **Analyze Alignment**: Compare `spec.md` intent vs. the technical design artifact architecture vs. actual behavior.
-4. **Scan Principles**: Apply detection scope across boundaries and contracts.
-5. **Security & Governance Cross-Check**: Ensure architecture decisions do not violate `{adapter_path:security-constitution}` or `{adapter_path:security-constraints}`.
-6. **Assign Severity**:
+3. **Verify Evidence**: Check if task-referenced files exist and contain expected implementation logic.
+4. **Analyze Alignment**: Compare `spec.md` intent vs. the technical design artifact architecture vs. actual behavior.
+5. **Scan Principles**: Apply detection scope across boundaries and contracts.
+6. **Security & Governance Cross-Check**: Ensure architecture decisions do not violate `{adapter_path:security-constitution}` or `{adapter_path:security-constraints}`. Classify severity and blocking status from the applicable policy, regardless of whether the finding is categorized as security, architecture, or governance.
+7. **Assign Severity, Blocking, and Priority**:
    - `Critical`: A governing rule explicitly assigns Critical/P0, or zero evidence exists for a required boundary. Security category alone does not set severity.
    - `High`: Significant boundary erosion, contract inconsistency, or intent divergence.
    - `Medium`: Local drift or debt.
    - `Low`: Minor shape or naming drift.
+   - `Blocking`: `Yes` only when the applicable policy explicitly marks the violation blocking; otherwise `No`. Severity does not imply blocking.
+   - `Priority`: `P0` only when `Blocking: Yes`; otherwise assign the applicable non-P0 priority from policy or severity.
 
 ## Output Format
 
@@ -144,6 +147,8 @@ Return only:
 Violations:
 - Type:
   Severity:
+  Blocking:
+  Priority:
   Location:
   Description:
   Evidence:
@@ -169,8 +174,7 @@ Feed detected violations to `{adapter_command:refactor-generator}` so they can b
 
 If framework preset guidance exists, use it to map the Generic Architecture Model to framework primitives and detect stack-specific anti-patterns.
 
-Preset path:
-- `{adapter_path:presets}/architecture-guard-preset.md`
+Preset guidance: use the adapter-resolved `{adapter_path:presets}` content when it exists.
 
 ## Backward Compatibility
 

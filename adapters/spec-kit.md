@@ -1,6 +1,6 @@
 # SpecKit Adapter
 
-Use this adapter when the active SDD tool is **Spec Kit** (`.specify/` directory detected).
+Use this adapter when `.architecture-guard/selected-adapter` is `spec-kit`. The `.specify/` marker is only a fallback for uninitialized projects.
 
 ## Path Map
 
@@ -36,17 +36,17 @@ Use this adapter when the active SDD tool is **Spec Kit** (`.specify/` directory
 |---|---|
 | create-spec | `/speckit.specify`; if unavailable, create `{adapter_path:spec}` inline from user intent and governing context, enforcing SpecKit numbering rules (`NNN-<short-name>`) and updating `.specify/feature.json` |
 | create-change | Require or create the feature workspace following `.specify/init-options.json` numbering conventions before specification creation, and maintain `.specify/feature.json` |
-| archive | SpecKit has no native archive command; after verification, move active feature artifacts to the configured archive location only with explicit user approval |
+| archive | SpecKit has no native archive command; retain verified feature artifacts in place and incrementally update `{adapter_path:fallback-spec-index}` with explicit user approval |
 | verify | Use the registered Architecture Guard verification capability, or run the verification workflow inline |
 | clarify-spec | `/speckit.clarify`; if unavailable, ask and apply an inline ambiguity-resolution loop |
 | create-plan | `/speckit.plan`; if unavailable, create `{adapter_path:plan}` inline from the active spec |
 | create-tasks | `/speckit.tasks`; if unavailable, create `{adapter_path:tasks}` inline from the active plan |
 | implement | `/speckit.implement`; if unavailable, execute unchecked tasks inline and update their status |
 | analyze | `/speckit.analyze`; if unavailable, compare spec, plan, and tasks inline for coverage and contradictions |
-| security-review | Unsupported natively; use the optional Security Review capability or report the skipped review |
-| security-review-plan | Unsupported natively; use the optional Security Review capability or report the skipped review |
-| security-review-tasks | Unsupported natively; use the optional Security Review capability or report the skipped review |
-| security-review-branch | Unsupported natively; use the optional Security Review capability or report the skipped review |
+| security-review | Unsupported in standalone SDD orchestration; report `Unavailable`. Current SpecKit extension integration exists only in the legacy `commands/` delivery channel |
+| security-review-plan | Unsupported in standalone SDD orchestration; report `Unavailable`. Current SpecKit extension integration exists only in the legacy `commands/` delivery channel |
+| security-review-tasks | Unsupported in standalone SDD orchestration; report `Unavailable`. Current SpecKit extension integration exists only in the legacy `commands/` delivery channel |
+| security-review-branch | Unsupported in standalone SDD orchestration; report `Unavailable`. Current SpecKit extension integration exists only in the legacy `commands/` delivery channel |
 | subagent-synthesize | `/speckit.subagent.synthesize` when registered; otherwise synthesize inline |
 | list-specs | Enumerate files matching `{adapter_path:spec}` in normalized path order |
 | consolidate-specs | Build `{adapter_path:fallback-spec-index}` inline from `list-specs` results |

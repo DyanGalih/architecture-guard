@@ -4,6 +4,16 @@ description: Review implementation code or pre-implementation planning artifacts
 
 # Architecture Review Command
 
+## SDD Adapter Resolution
+
+Before executing this command, read `adapters/resolve.md`. Resolve the active adapter in this order:
+
+1. An explicit `--adapter` override, when provided.
+2. `.architecture-guard/selected-adapter`, which is authoritative after CLI installation.
+3. Filesystem markers only when no persisted selection exists.
+
+Load `adapters/{tool}.md` and resolve every `{adapter_path:key}` and `{adapter_command:key}` token before reviewing changed files or implementation artifacts. Stop if the adapter is missing or any token remains unresolved.
+
 ## Ponytail Core Contract
 
 Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
@@ -36,8 +46,7 @@ When you see this marker in a step, evaluate these conditions:
    - OR the Flash-Mem context contains $> 20$ memory documents.
    - Otherwise, you **MUST** execute inline.
 3. **Override Command:** Explicit `--inline` or `--delegate` CLI flags override the auto-detection triggers above, but `--delegate` cannot bypass the capability gate.
-4. **Execution Syntax:** To delegate, call the sub-agent via the following pattern:
-   `/[extension_name].[sub_agent_command] --files=[comma_separated_file_list] --rules=[path_to_rules]`
+4. **Execution Semantics:** Use the host's registered sub-agent/task delegation capability, passing the target files, rules path, context, and expected output as structured input. Wait for its result and validate the returned evidence before integrating it. If the host has no such capability, execute inline and report that delegation was unavailable.
 5. **Strict Handoff Template:** When spawning the sub-agent, you must format your invocation prompt exactly like this:
    ```yaml
    Task: Analyze code quality and boundary violations.
@@ -68,7 +77,7 @@ This pattern ensures that lower-tier models follow strict execution paths instea
 
 **Coexistence Model**:
 - Review always starts technology-agnostic
-- If preset detected in `.specify/presets/` or the Constitution: Enhance with framework vocabulary
+- If adapter-resolved preset guidance or Constitution guidance is available: Enhance with framework vocabulary
 - Violations list remains the same; explanation becomes framework-native
 - Example: "Entry boundary contamination" (agnostic) → "Controller mixing HTTP and business logic" (Laravel-aware)
 
@@ -79,7 +88,8 @@ This pattern ensures that lower-tier models follow strict execution paths instea
 1. **Normalize Arguments**: Parse "$ARGUMENTS" to identify the `mode` (`architecture` or `performance`) and `focus` aspects (`general`, `db`, `api`, or `async`).
 2. **Identify Changed Files**:
    - If the user provided a file list or explicit instructions, follow them.
-   - Otherwise, you **MUST** execute `architecture-guard detect-changed-files --json` to detect changed files since the merge-base or in the working directory.
+   - Otherwise, use `architecture-guard detect-changed-files --json` only after confirming that capability is available.
+   - If unavailable, derive the set with the host's Git capability: include committed changes from the merge-base to `HEAD`, staged changes, unstaged changes, and untracked files. If Git is unavailable, ask the user for a file list and report that automatic detection could not run.
    - Use the `changed_files` list as the primary review set.
 
 ## Input & Context Loading
@@ -89,6 +99,7 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
 1. **Governance & Security Constitution**:
     - `{adapter_path:constitution}`
     - `{adapter_path:security-constitution}`
+    - Missing optional constitution files do not stop review; use the available constitutions and report each fallback or omission.
 
 2. **Architecture Constitution**:
     - `{adapter_path:arch-constitution}`
@@ -154,14 +165,14 @@ Detect violations such as:
 
 ## Review Procedure
 
-1. **Identify Scope**: Run `architecture-guard detect-changed-files --json` or use user-provided files.
+1. **Identify Scope**: Reuse the scope resolved by **Determine Review Scope**: user-provided files first, then `architecture-guard detect-changed-files --json` when available, then the host Git fallback; ask the user when none is available.
 2. **Model Context**: Load artifacts and build the Semantic Models for the identified scope.
 3. **Verify Evidence**: Check if task-referenced files exist and contain expected implementation logic.
 4. **Analyze Alignment**: Compare the initial specification intent vs. the proposed architectural design vs. implementation behavior. Ensure the implementation accurately satisfies the spec without violating constraints.
 5. **Scan Principles**: Apply Review Principles across the implemented boundaries.
 6. **Security & Governance Cross-Check**:
-  - If `security-constraints.md` or `security_constitution.md` is breached, log it as a critical violation.
-  - If a finding is primarily security-related and Security Review is available, route it to `/speckit.security-review.branch` instead of duplicating it here.
+  - If a security constraint is breached, preserve the severity and blocking status defined by the governing security policy; category alone does not make it Critical.
+  - If a finding is primarily security-related and Security Review is available, dispatch the detected host capability's branch/implementation operation directly instead of duplicating it here.
   - Cross-reference architecture decisions with security trust boundaries.
 7. **Ponytail Audit**: Apply both sides of the shared contract. Check for bloat and unsafe under-building; trace changed shared behavior to its callers; verify the earliest viable ladder rung was used; and confirm non-trivial logic has a runnable check.
 8. **Performance Scan (if mode=performance)**: Skip violations; focus on optimizations.
@@ -186,15 +197,14 @@ When the extension is installed, load the bundle from `{adapter_path:sonar-rules
 
 ### Scope-Based Delegation (Hybrid Model)
 
-**Capability Gate:** First confirm that `/analyze-sonar-violations` is registered and callable. If it is unavailable, execute inline regardless of size.
+**Capability Gate:** First confirm that a host sub-agent capable of Sonar analysis is registered and callable. If it is unavailable, execute the heuristic rules-bundle analysis inline regardless of size.
 
 **Trigger Condition:** When the capability is available, you **MUST** delegate to the sub-agent if:
 - Changed files is $\ge 15$.
 - OR total lines in diff is $\ge 500$.
 - Otherwise, you **MUST** execute inline.
 
-**Execution Syntax:**
-* Custom command: `/analyze-sonar-violations --files=[comma_separated_file_list] --rules={adapter_path:sonar-rules}/sonarlint-rules.json`.
+**Execution Semantics:** Use the host's registered sub-agent/task delegation capability with the handoff below, wait for completion, and validate returned file/line evidence before integration.
 
 **Strict Handoff Template:**
 When delegating, write the sub-agent invocation prompt exactly like this:
@@ -210,7 +220,7 @@ Expected Output: JSON list of CRITICAL/HIGH code quality violations mapped to ar
 
 **If inline**:
 1. **Load Rules**: Read the installed extension bundle at `{adapter_path:sonar-rules}/sonarlint-rules.json` first; if running from the extension source checkout, use `sonar-rules/sonarlint-rules.json`
-2. **Scan Changed Files**: Simulate or invoke SonarLint logic on `changed_files` list
+2. **Scan Changed Files**: Apply the rules bundle heuristically to `changed_files`; label these findings `Heuristic Sonar Rules Analysis`. Label findings as actual `SonarLint` output only when a SonarLint tool was invoked and returned them.
 3. **Filter Results**: Keep only CRITICAL/HIGH severity findings related to complexity, coupling, structure
 4. **Map to Boundaries**: Correlate findings with architecture boundaries (Entry/App/Domain/Data/External)
 5. **Deduplicate**: If a violation is already in architecture violations list, suppress from SonarLint output
@@ -235,7 +245,7 @@ Expected Output: JSON list of CRITICAL/HIGH code quality violations mapped to ar
 Add a new section in the report (see Output Format below):
 
 ```markdown
-### Code Quality Findings (SonarLint)
+### Code Quality Findings ([SonarLint / Heuristic Sonar Rules Analysis])
 
 Findings that correlate with architecture concerns:
 
@@ -263,7 +273,7 @@ For all other violations, cite specific code locations, line numbers, or pattern
 
 ## Severity Guide
 
-- **CRITICAL**: Violates Constitution MUST, breaches Security Constraint, or has zero implementation evidence for a required boundary.
+- **CRITICAL**: Policy-designated critical Constitution or security violation, or zero implementation evidence for a required boundary. Record blocking status separately from severity.
 - **HIGH**: Significant boundary erosion, contract inconsistency, or fundamental intent divergence.
 - **MEDIUM**: Pattern drift or local inconsistency that creates technical debt.
 - **LOW**: Minor naming, shape, or structure drift.
@@ -274,9 +284,9 @@ Return only this structure:
 
 # Architecture Review Report
 
-| ID | Category | Severity | Location(s) | Summary | Evidence/Rationale |
-|:---|:---|:---|:---|:---|:---|
-| V1 | Constitution | CRITICAL | `{adapter_path:arch-constitution}` | Violation of [Principle Name] | [Evidence from code/plan] |
+| ID | Category | Severity | Blocking | Location(s) | Summary | Evidence/Rationale |
+|:---|:---|:---|:---|:---|:---|:---|
+| V1 | Constitution | CRITICAL | [Yes/No, from policy] | `{adapter_path:arch-constitution}` | Violation of [Principle Name] | [Evidence from code/plan] |
 
 ### Task Synchronization
 - **Status**: [Synced / Drifted]
@@ -305,14 +315,14 @@ Return only this structure:
 - **Suggestion**: 
 - **Trade-off**: 
 
-(Only if `mode=architecture` and SonarLint findings detected)
-### Code Quality Findings (SonarLint)
+(Only if `mode=architecture` and code-quality findings were produced)
+### Code Quality Findings ([SonarLint / Heuristic Sonar Rules Analysis])
 
 Findings that correlate with architecture concerns:
 
 | Rule | Severity | File | Issue | Architecture Signal |
 |:---|:---|:---|:---|:---|
-| `brain-overload::...` | HIGH | service/checkout.ts:45 | Function has 8 parameters | Hidden boundary: pricing logic should be in dedicated module |
+| `[Tool rule key or heuristic identifier]` | HIGH | service/checkout.ts:45 | Function has 8 parameters | Hidden boundary: pricing logic should be in dedicated module |
 
 **Note**: Pure style violations (formatting, naming) are filtered out. Only findings related to complexity, coupling, and structure are included.
 
@@ -341,13 +351,12 @@ Findings categorized by severity based on the active hygiene rules.
 2. **Architecture Alignment**: Resolve boundary erosion and contract mismatches.
 3. **Code Quality**: Address SonarLint findings that map to architectural concerns (if any).
 4. **DRY Alignment**: Centralize repeated business logic, validation, and mapping before duplicating it in another layer or module.
-5. **Durable Memory Preservation (Mandatory Check)**: If new architectural patterns, decisions, or repeatable lessons were identified, you **MUST automatically execute** the durable-memory capture flow immediately after providing the report. Do not just recommend it; let the formal capture flow propose entries and request user approval.
-6. **Next Step**: [e.g. Run `/speckit.security-review.branch` for security-first findings, or `/ag-apply` for architecture fixes]
+5. **Durable Memory Preservation (Mandatory Check)**: Include proposed durable-memory entries in the report when warranted. Return the complete report first; then request approval in a separate interaction and write only approved entries.
+6. **Next Step**: [e.g. Dispatch the detected host Security Review capability for security-first findings, or run `/ag-apply` for architecture fixes]
 7. **Remediation**: [Concrete remediation direction for the top issues, or "None needed"]
 
 ## Framework Preset Guidance
 
 If framework preset guidance exists, it is **mandatory** to use it to map generic principles to framework primitives and detect stack-specific anti-patterns.
 
-Preset path:
-- `{adapter_path:presets}`
+Preset guidance: use only `{adapter_path:presets}` when it resolves to an existing adapter-provided preset.
