@@ -136,6 +136,23 @@ test('rejects missing runtime resources with actionable error', () => {
   }
 });
 
+test('reports missing canonical prompts without a stack trace', () => {
+  const orchestration = path.join(__dirname, '..', 'orchestration');
+  const moved = orchestration + ".test-backup";
+  fs.renameSync(orchestration, moved);
+  try {
+    const result = spawnSync(process.execPath, [installer, 'init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit', '--commands', 'init'], {
+      cwd: fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-')),
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Error: Canonical orchestration prompt not found/);
+    assert.doesNotMatch(result.stderr, /at installCommand/);
+  } finally {
+    fs.renameSync(moved, orchestration);
+  }
+});
+
 test('escapes TOML triple quotes and emits safe YAML metadata', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   const toml = path.join(cwd, 'test.toml');

@@ -77,8 +77,8 @@ Resolve explicit user paths first; otherwise use `{adapter_path:spec}`, `{adapte
    - `{adapter_path:arch-constitution}`
 
 3. **Feature-Specific Context**:
-    - `{adapter_path:security-constraints}`
-    - `{adapter_path:spec}`, `{adapter_path:plan}`, and `{adapter_path:tasks}`
+   - `{adapter_path:security-constraints}`
+   - `{adapter_path:spec}`, `{adapter_path:plan}`, and `{adapter_path:tasks}`
    - Stored architecture decisions from Flash-Mem, if present.
    - Security Review findings, if present.
    - Optional preset guidance, if present.
