@@ -1,3 +1,6 @@
+## 2.3.5
+- Bumped patch version to 2.3.5.
+
 ## 2.3.4
 - Evolved `ag-apply` into an orchestrator that resolves findings across all artifact types (`proposal.md`, `spec.md`, `design.md`, `tasks.md`).
 - Added pre-classification `Target:` fields to `ag-review-artifacts` and `ag-verify` output.
