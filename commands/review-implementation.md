@@ -6,13 +6,13 @@ description: Review implementation code or pre-implementation planning artifacts
 
 ## SDD Adapter Resolution
 
-Before executing this command, read `adapters/resolve.md`. Resolve the active adapter in this order:
+Before executing this command, read `.specify/extensions/architecture-guard/adapters/resolve.md` (or `adapters/resolve.md` in a standalone install or source checkout). Resolve the active adapter in this order:
 
 1. An explicit `--adapter` override, when provided.
 2. `.architecture-guard/selected-adapter`, which is authoritative after CLI installation.
 3. Filesystem markers only when no persisted selection exists.
 
-Load `adapters/{tool}.md` and resolve every `{adapter_path:key}` and `{adapter_command:key}` token before reviewing changed files or implementation artifacts. Stop if the adapter is missing or any token remains unresolved.
+Load `.specify/extensions/architecture-guard/adapters/{tool}.md` (or `adapters/{tool}.md` in a standalone install or source checkout) and resolve every `{adapter_path:key}` and `{adapter_command:key}` token before reviewing changed files or implementation artifacts. Stop if the adapter is missing or any token remains unresolved.
 
 ## Ponytail Core Contract
 
