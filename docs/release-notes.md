@@ -1,3 +1,9 @@
+## 2.3.6
+
+- Aligned SDD orchestration and legacy skills across adapters, commands, and workflows.
+- Fixed adapter path resolution in legacy commands.
+- Improved installer failure reporting and added regression coverage.
+
 ## 2.3.5
 - Hardened archive framework routing: preserve SpecKit feature history in `specs/<feature>/` and incrementally update `specs/system_context.md`.
 - Enhanced governed delivery active feature resolution via `.specify/feature.json`.
