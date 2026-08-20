@@ -34,7 +34,7 @@ if (require.main === module) {
   try {
     const configPath = process.argv[2] || '.architecture-guard/sync.yml';
     const config = validateSyncConfig(configPath);
-    console.log(JSON.stringify(config, null, 2));
+    console.log(JSON.stringify(config));
     process.exit(0);
   } catch (e) {
     console.error(e instanceof Error ? e.message : e);
