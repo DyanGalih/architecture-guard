@@ -129,9 +129,10 @@ Flags:
 | :--- | :--- | :--- |
 | `--yes` | (none) | Skip all prompts |
 | `--agent` | `opencode,claude` | Comma-separated agent keys |
-| `--framework` | `spec-kit | openspec | none` | Framework to target |
+| `--framework` | `spec-kit \| openspec \| none` | Framework to target |
 | `--commands` | `init,review` | Comma-separated command names or indices |
 | `--overwrite` | `replace` (default) / `skip` / `keep-both` | Existing file policy with `--yes` |
+| `--claude-agent-teams` | (none) | Enable Claude Code Agent Teams (Beta / Experimental) |
 
 Positional target:
 

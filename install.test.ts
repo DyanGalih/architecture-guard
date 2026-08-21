@@ -254,3 +254,19 @@ test('installer exposes init only and publishes linked documentation', () => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /unknown command 'review'/i);
 });
+
+test('configures claude agent teams in .claude/settings.json when enabled via flag or prompt', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  // Run with --agent claude --claude-agent-teams
+  runArgs(['init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init', '--claude-agent-teams'], cwd);
+  const settingsFile = path.join(cwd, '.claude', 'settings.json');
+  assert.ok(fs.existsSync(settingsFile));
+  const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
+  assert.equal(settings.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, '1');
+
+  // Verify --yes without flag does not create or set it
+  const cwdNoFlag = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  runArgs(['init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init'], cwdNoFlag);
+  assert.ok(!fs.existsSync(path.join(cwdNoFlag, '.claude', 'settings.json')));
+});
+

@@ -82,6 +82,22 @@ You must orchestrate the `{adapter_command:implement}` (core implementation) wor
    - Read all applicable constitution files and any available Flash-Mem context before coding.
    - Perform the actual coding work (writing files, running tests) for each task, enforcing Ponytail minimalism.
    - Note in the Governance Summary that `{adapter_command:implement}` was unavailable and implementation was performed inline.
+
+#### Claude Code Agent Teams Coordination (When Active)
+
+When running in Claude Code with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`:
+- **Teammate C (Partitioned Implementers)**:
+  - Decompose `tasks.md` into independent modules/file boundaries.
+  - Partition sub-teammates as needed:
+    - **Teammate C.1**: Core domain / backend services.
+    - **Teammate C.2**: Entrypoints / CLI / Frontend.
+    - **Teammate C.3**: Unit tests and runnable checks.
+  - Teammates work concurrently using git task locking, strictly avoiding parallel edits to the same files.
+- **Teammate D (Implementation Reviewer)**:
+  - Audits code changes across boundaries, reviews security constraints, and verifies tests before handoff.
+- **Human-in-the-Loop Gate**:
+  - Lead session collects implementation evidence, presents the completed task checklist, and requires explicit user confirmation before concluding or advancing to `/ag-verify`.
+
 3. **Write Code**: Perform the actual coding work (writing files, running tests) required by the tasks.
 4. **Sync the tasks**: You MUST update `{adapter_path:tasks}` to mark completed tasks with `[x]`, check them off, and add any new subtasks discovered during implementation.
    - If implementation would expand beyond accepted spec/plan/task scope, stop and obtain explicit user approval before adding or executing that work. Record the approved expansion in the authoritative artifacts first.
