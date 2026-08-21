@@ -97,6 +97,13 @@ You must orchestrate the `{adapter_command:create-plan}` workflow directly.
    - Generate `{adapter_path:plan}` directly, incorporating all context above and enforcing Ponytail minimalism.
    - Note in the Governance Summary that `{adapter_command:create-plan}` was unavailable and planning was performed inline.
 
+#### Claude Code Agent Teams Coordination (When Active)
+
+When running in Claude Code with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`:
+- **Teammate A (Spec & Plan Author)**: Drafts the technical design artifact (`{adapter_path:plan}` / `design.md`) and decomposes requirements.
+- **Teammate B (Spec Reviewer & Challenger)**: Audits the authored markdown artifacts against the Architecture Constitution, Ponytail pragmatism, DRY boundaries, and security constraints via inter-agent mailbox.
+- **Lead Session**: Coordinates Teammate A and B, resolves design debates, synthesizes the final plan, and pauses for explicit **Human Approval** before proceeding to task generation.
+
 3. The planning process must incorporate the Project Constitution documents and memory synthesis. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, read constitution files directly with file-reading tools. Do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
 4. Prefer the cached synthesis and selected index entries over reopening the full durable memory set.
 
