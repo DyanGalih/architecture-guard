@@ -129,6 +129,22 @@ Best for most features. It automatically chains Spec, Plan, and Task generation 
 6. **Implementation Review:** Run `ag-review-implementation` to check your coded solution for drift or anti-patterns before finalizing.
 7. **Verification:** Run `/ag-verify` as your final gate. **Ready to commit!**
 
+### Path 3: Claude Code Agent Teams Workflow (Beta / Experimental)
+
+When running inside Claude Code with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`:
+
+1. **Discovery:** Run `/ag-governed-discover` to shape the feature.
+2. **Delivery (Plan & Spec):** Run `/ag-governed-delivery`.
+   - **Teammate A (Author)**: Drafts `proposal.md`, `spec.md`, `design.md`, and `tasks.md`.
+   - **Teammate B (Spec Reviewer)**: Audits artifacts against the Constitution, Ponytail pragmatism, and DRY rules.
+   - **Human Checkpoint**: Lead synthesizes the plan and pauses for your approval.
+3. **Artifact Review & Apply:** Run `ag-review-artifacts` (and `/ag-apply` if needed).
+4. **Governed Implementation:** Run `/ag-governed-implement`.
+   - **Teammate C (Partitioned Implementers)**: Subdivided into C.1 (Core/Domain), C.2 (CLI/UI), C.3 (Tests/Verification) executing concurrently via git task locking.
+   - **Teammate D (Implementation Reviewer)**: Performs cross-boundary code review and test verification.
+   - **Human Checkpoint**: Lead presents the completed checklist for your confirmation.
+5. **Verification & Archiving:** Run `/ag-verify` as the final verification gate before `/ag-governed-archive`.
+
 If you are specifically cleaning up duplicated logic (Brownfield), follow the [DRY Cleanup Guide](dry-cleanup.md) after your initialization pass. This keeps architecture concerns visible throughout the delivery lifecycle instead of concentrating them at the end.
 
 ## User Story Tracker Sync (Team Delivery)

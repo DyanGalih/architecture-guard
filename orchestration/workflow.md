@@ -58,8 +58,11 @@ The workflow is serial and ownership-aware:
 5. Route security-first findings to Security Review instead of duplicating them here.
 6. Treat repeated business rules, approvals, validation, DTO mapping, or orchestration as DRY drift and route it to refactor extraction rather than allowing parallel copies.
    - Prefer one shared source of truth for the repeated rule, contract, transformation, or decision.
-7. If `mode=architecture` and a Constitution Update Proposal is warranted, surface it and leave application to `ag-apply`.
-8. Produce refactor tasks or an apply recommendation for architecture findings.
+7. When running under Claude Code with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`:
+   - Coordinate Teammate A (Spec/Plan Author), Teammate B (Spec Reviewer), Teammate C (Partitioned Implementers C.1/C.2/C.3), and Teammate D (Implementation Reviewer).
+   - Enforce human-in-the-loop checkpoints at each lifecycle gate: Discovery → Delivery/Plan → Implementation → Review → Verify.
+8. If `mode=architecture` and a Constitution Update Proposal is warranted, surface it and leave application to `ag-apply`.
+9. Produce refactor tasks or an apply recommendation for architecture findings.
 
 ## Goal
 

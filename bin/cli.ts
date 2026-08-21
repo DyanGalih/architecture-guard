@@ -34,8 +34,13 @@ program
   .option('--framework <f>', 'spec-kit | openspec | none')
   .option('--commands <list>', 'Comma-separated command names or indices')
   .option('--overwrite <mode>', 'replace | skip | keep-both')
+  .option('--claude-agent-teams', 'Enable Claude Code Agent Teams (Beta / Experimental)')
+  .option('--claude-teams', 'Alias for --claude-agent-teams')
   .action(async (target, options) => {
     try {
+      if (options.claudeTeams) {
+        options.claudeAgentTeams = true;
+      }
       await runInstallCommand(target, options);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

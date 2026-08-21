@@ -121,6 +121,12 @@ The governed task phase must:
 5. Keep implementation, security, migration, and refactor work explicit.
 6. Run task-scope repository hygiene checks with the same configured severity policy.
 
+#### Claude Code Agent Teams Coordination (When Active)
+
+When running in Claude Code with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`:
+- **Teammate A (Author)** & **Teammate B (Reviewer)**: Coordinate plan drafting and task breakdown through shared mailbox and task list, bypassing `delivery-team` user-story branching.
+- **Human-in-the-Loop Gate**: Lead session presents the reconciled `tasks.md` and requires explicit human approval before concluding delivery or advancing to implementation.
+
 If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks.
 
 ## Phase 6 — Durable Memory Preservation
