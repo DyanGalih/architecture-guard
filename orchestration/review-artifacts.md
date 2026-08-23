@@ -84,7 +84,7 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
 
 5. **Repository Hygiene**:
     - Config: `{adapter_path:governance-config}` (or `repository_hygiene` block in constitution).
-    - Rules: `{adapter_path:hygiene-rules}`
+    - Rules: Load rules in deterministic order from `{adapter_path:hygiene-rules}`, `.specify/extensions/architecture-guard/hygiene-rules/*.md`, or source checkout `hygiene-rules/*.md`. Missing optional hygiene rules are non-blocking; report if unavailable.
 
 ## Semantic Modeling
 

@@ -38,7 +38,7 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 2. Derive absolute paths for active specification, design, and task artifacts.
 3. Load the Architecture Constitution: `.specify/memory/architecture_constitution.md`.
 4. Load the Repository Hygiene Config: `.specify/config/repository_hygiene.yml` (fallback to `repository_hygiene` block in constitution).
-5. Load the Repository Hygiene Rules: `.specify/extensions/architecture-guard/hygiene-rules/*.md`.
+5. Load the Repository Hygiene Rules in deterministic order from `.specify/extensions/architecture-guard/hygiene-rules/*.md`, `.architecture-guard/hygiene-rules/*.md`, or source checkout `hygiene-rules/*.md`. Missing optional hygiene rules are non-blocking; report if unavailable.
 
 ### 2. Semantic Modeling (Internal)
 

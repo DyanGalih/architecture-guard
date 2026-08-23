@@ -84,7 +84,7 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
 
 5. **Repository Hygiene**:
     - Config: `.specify/config/repository_hygiene.yml` (or `repository_hygiene` block in constitution).
-    - Rules: `.specify/extensions/architecture-guard/hygiene-rules/*.md`
+    - Rules: Load rules in deterministic order from `.specify/extensions/architecture-guard/hygiene-rules/*.md`, `.architecture-guard/hygiene-rules/*.md`, or source checkout `hygiene-rules/*.md`. Missing optional hygiene rules are non-blocking; report if unavailable.
 
 ## Semantic Modeling
 
