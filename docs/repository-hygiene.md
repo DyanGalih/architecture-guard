@@ -61,7 +61,7 @@ The following hygiene categories are checked by default:
 
 ## Custom Rules
 
-You can add custom rules by placing markdown files into the `.specify/extensions/architecture-guard/hygiene-rules/` directory. 
+You can add custom rules by placing markdown files into the `.architecture-guard/hygiene-rules/` directory (or `.specify/extensions/architecture-guard/hygiene-rules/` when using legacy Spec Kit extensions, or `hygiene-rules/` in repository checkouts). 
 
 Each rule should follow this format:
 
