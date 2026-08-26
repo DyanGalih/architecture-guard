@@ -39,6 +39,7 @@ Do not add one defensive patch per caller when a smaller shared root-cause corre
 - Add no avoidable dependency or boilerplate.
 - Prefer deletion over addition, boring over clever, and fewer files over unnecessary fragmentation.
 - Between equally small options, choose the one that remains correct on edge cases.
+- Shift quality and hygiene left: enforce bounded collection reads, explicit response/request DTO envelopes, parameter validation, and strict typing at the owning boundary. Zero tolerance for leftover temporary/scratch files, commented-out code, or unverified schema clones.
 - Deliver the simplest valid solution while clearly challenging unnecessary complexity; do not stall safe progress merely because the request could be simpler.
 - When accepting a deliberate limitation with a real ceiling, add a `ponytail:` note in the relevant code or artifact that names the ceiling and the upgrade path. Do not comment ordinary simplifications.
 

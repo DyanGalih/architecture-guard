@@ -79,7 +79,12 @@ If Flash-Mem is unavailable or the context is insufficient, continue with the re
 You must orchestrate the `{adapter_command:create-tasks}` workflow directly.
 
 **CRITICAL INSTRUCTION**: You must NOT just advise the user or stop here. You must actually generate the tasks:
-1. **Apply Ponytail Pragmatism**: Instruct the agent to act as a "lazy senior developer." Break down the work into the absolute minimal tasks needed. Refuse to add boilerplate, unnecessary abstractions, or "future-proofing" tasks.
+1. **Apply Ponytail Pragmatism & Quality-Enriched Decomposition**: Instruct the agent to act as a "lazy senior developer." Break down the work into the absolute minimal tasks needed. Refuse to add boilerplate, unnecessary abstractions, or "future-proofing" tasks.
+   - Embed explicit SonarLint/quality acceptance criteria in tasks:
+     - Type safety: strict discriminated unions, no unvalidated `any`/`unknown` casts.
+     - Controller/API boundaries: explicit parameter parsing/validation (e.g. UUID) and documented DTO response serialization.
+     - Localized verification: runnable unit/integration tests and lint/typecheck command execution.
+     - Hygiene confirmation: clean workspace with no leftover `.tmp`, `.new`, or commented-out code.
    - If the same logic appears in multiple modules, create a single extraction task instead of parallel copy-paste tasks.
 2. **Execute Tasks**: Run `{adapter_command:create-tasks}` to generate and save `{adapter_path:tasks}`.
 
