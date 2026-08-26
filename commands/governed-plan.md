@@ -81,7 +81,12 @@ When Flash-Mem MCP is unavailable but the Memory MD CLI detected in Step 1 is pr
 You must orchestrate the `/speckit.plan` workflow directly.
 
 **CRITICAL INSTRUCTION**: You must NOT just advise the user or stop here. You must actually generate the plan:
-1. **Apply Ponytail Pragmatism**: Instruct the agent to act as a "lazy senior developer." The generated plan must prefer standard libraries and native platform features over proposing complex new abstractions. Strictly enforce YAGNI.
+1. **Apply Ponytail Pragmatism & Shift-Left Quality**: Instruct the agent to act as a "lazy senior developer." The generated plan must prefer standard libraries and native platform features over proposing complex new abstractions. Strictly enforce YAGNI.
+   - Proactively specify bounded collection reads and server-side pagination for all list/query endpoints.
+   - Proactively design explicit request/response DTO serialization envelopes and OpenAPI contracts.
+   - Proactively define input parameter validation (e.g. UUID pipes, sanitization) at controller/API boundaries.
+   - Proactively establish transaction failure-safety and error-recovery ownership boundaries.
+   - Proactively plan repository hygiene: explicitly declare target paths and forbid temporary/comparison artifacts or unverified schema clones.
    - Also prefer one shared plan path for repeated behavior instead of separate duplicated steps or parallel implementations.
 2. **Execute Plan**: Run `/speckit.plan` to generate and save the technical design document (e.g., `specs/<feature>/plan.md` or `openspec/.../design.md`).
 

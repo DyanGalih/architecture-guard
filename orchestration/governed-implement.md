@@ -83,9 +83,13 @@ You must orchestrate the `{adapter_command:implement}` (core implementation) wor
    - Perform the actual coding work (writing files, running tests) for each task, enforcing Ponytail minimalism.
    - Note in the Governance Summary that `{adapter_command:implement}` was unavailable and implementation was performed inline.
 3. **Write Code**: Perform the actual coding work (writing files, running tests) required by the tasks.
-4. **Sync the tasks**: You MUST update `{adapter_path:tasks}` to mark completed tasks with `[x]`, check them off, and add any new subtasks discovered during implementation.
+4. **Inline Pre-Completion Self-Verification Gate**: Before marking any task complete:
+   - **Repository Hygiene Check**: Inspect changed files against `{adapter_path:hygiene-rules}` (no `.tmp`, `.new`, or scratch files left behind; no commented-out code; no dead imports).
+   - **Heuristic SonarLint Scan**: Check changed files against `{adapter_path:sonar-rules}/sonarlint-rules.json` (ensure no cognitive overload, tight coupling, loose `any`/`unknown` casts, or missing parameter validation).
+   - **Immediate Remediation**: Correct any detected quality or hygiene violations immediately at the current task boundary.
+5. **Sync the tasks**: You MUST update `{adapter_path:tasks}` to mark completed tasks with `[x]`, check them off, and add any new subtasks discovered during implementation.
    - If implementation would expand beyond accepted spec/plan/task scope, stop and obtain explicit user approval before adding or executing that work. Record the approved expansion in the authoritative artifacts first.
-5. The implementation MUST follow current tasks and context. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, read active artifacts and constitution files directly with file-reading tools. Do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
+6. The implementation MUST follow current tasks and context. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, read active artifacts and constitution files directly with file-reading tools. Do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
 
 The SDD-tool-native implementation behavior is defined only by `{adapter_command:implement}`.
 

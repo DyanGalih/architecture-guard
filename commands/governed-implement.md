@@ -86,8 +86,12 @@ You must orchestrate the `/speckit.implement` (core implementation) workflow dir
    - Perform the actual coding work (writing files, running tests) for each task, enforcing Ponytail minimalism.
    - Note in the Governance Summary that `/speckit.implement` was unavailable and implementation was performed inline.
 3. **Write Code**: Perform the actual coding work (writing files, running tests) required by the tasks.
-4. **Sync the tasks**: You MUST update `specs/<feature>/tasks.md` to mark completed tasks with `[x]`, check them off, and add any new subtasks discovered during implementation.
-5. The implementation MUST follow current tasks and context. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, read active artifacts and constitution files directly with file-reading tools. Do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
+4. **Inline Pre-Completion Self-Verification Gate**: Before marking any task complete:
+   - **Repository Hygiene Check**: Inspect changed files against hygiene rules (no `.tmp`, `.new`, or scratch files left behind; no commented-out code; no dead imports).
+   - **Heuristic SonarLint Scan**: Check changed files against SonarLint rules (ensure no cognitive overload, tight coupling, loose `any`/`unknown` casts, or missing parameter validation).
+   - **Immediate Remediation**: Correct any detected quality or hygiene violations immediately at the current task boundary.
+5. **Sync the tasks**: You MUST update `specs/<feature>/tasks.md` to mark completed tasks with `[x]`, check them off, and add any new subtasks discovered during implementation.
+6. The implementation MUST follow current tasks and context. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, read active artifacts and constitution files directly with file-reading tools. Do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
 
 NOTE: The core Spec Kit command is `speckit.implement`. Do not use `speckit.implementation` as it is not a registered command.
 
