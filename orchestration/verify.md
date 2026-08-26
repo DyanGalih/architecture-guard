@@ -40,7 +40,8 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 2. Resolve the selected artifact set to absolute paths without invoking SDD-tool-specific prerequisite scripts.
 3. Load `{adapter_path:arch-constitution}` when present; otherwise use adapter-documented architecture rules embedded in `{adapter_path:constitution}` and record the fallback.
 4. Load the Repository Hygiene Config: `{adapter_path:governance-config}` (fallback to `repository_hygiene` block in constitution).
-5. Load the Repository Hygiene Rules: `{adapter_path:hygiene-rules}`.
+5. Load the Repository Hygiene Rules in deterministic order from `{adapter_path:hygiene-rules}`, `.specify/extensions/architecture-guard/hygiene-rules/*.md`, or source checkout `hygiene-rules/*.md`.
+   - **Direct Discovery Guard**: When checking adapter-resolved hidden paths such as `.architecture-guard/**`, use direct directory inspection first, then read listed files. A Glob/search no-match result is inconclusive and MUST NOT be reported as missing. Report a path as unavailable only after direct inspection confirms it does not exist. The verification report MUST explicitly list loaded rule files and counts. Missing optional hygiene rules are non-blocking.
 
 ### 2. Semantic Modeling (Internal)
 

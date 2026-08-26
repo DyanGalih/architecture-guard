@@ -84,7 +84,8 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
 
 5. **Repository Hygiene**:
     - Config: `.specify/config/repository_hygiene.yml` (or `repository_hygiene` block in constitution).
-    - Rules: `.specify/extensions/architecture-guard/hygiene-rules/*.md`
+    - Rules: Load rules in deterministic order from `.specify/extensions/architecture-guard/hygiene-rules/*.md`, `.architecture-guard/hygiene-rules/*.md`, or source checkout `hygiene-rules/*.md`.
+    - **Direct Discovery Guard**: When checking adapter-resolved hidden paths such as `.architecture-guard/**`, use direct directory inspection first, then read listed files. A Glob/search no-match result is inconclusive and MUST NOT be reported as missing. Report a path as unavailable only after direct inspection confirms it does not exist. The review report MUST explicitly list loaded rule files and counts. Missing optional hygiene rules are non-blocking.
 
 ## Semantic Modeling
 
