@@ -8,6 +8,7 @@ A preset does not automatically require every pattern or dependency it mentions.
 
 | Preset | File | Init interview focus | Review focus |
 | --- | --- | --- | --- |
+| Angular | [`angular.md`](../presets/angular.md) | Component style, Signals and state ownership, DI pattern, OnPush change detection, HTTP/DTO contracts, deep Angular flow concerns | Standalone components, Signals discipline, subscription safety, DI injection, presentation isolation |
 | Django | [`django.md`](../presets/django.md) | MVT organization, view and contract style, dependency wiring, ORM ownership, transactions, async workers | Thin views, model boundaries, Forms and Serializers, QuerySets, signals |
 | Express.js | [`expressjs.md`](../presets/expressjs.md) | Route and service structure, dependency wiring, schema validation, persistence, workers | Route handlers, middleware, validation, errors, service boundaries |
 | Laravel | [`laravel.md`](../presets/laravel.md) | Application style, MVC and use-case structure, Actions, DTOs, authorization, container usage, Eloquent, queues | Controllers, Form Requests, Resources, Actions and Services, models, policies, Spatie packages when adopted |

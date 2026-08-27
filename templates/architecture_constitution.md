@@ -8,7 +8,7 @@
 
 - **Style**: [Monolith / Modular Monolith / Microservices / Event-driven / Hybrid / Other]
 - **Primary stack**: [e.g., Laravel + Vue, NestJS + React, Django + HTMX]
-- **Preset guidance**: [None / Laravel / NestJS / Next.js / Nuxt / Django / Spring Boot / React / React Native / Vue / Express]
+- **Preset guidance**: [None / Angular / Laravel / NestJS / Next.js / Nuxt / Django / Spring Boot / React / React Native / Vue / Express]
 
 ## Layer Boundaries
 
