@@ -367,7 +367,7 @@ Examples:
 
 ### Framework Preset
 
-If the technology stack matches a built-in preset (e.g., Laravel, NestJS, Next.js, Nuxt.js, Django, Spring Boot, React, React Native, Vue, or Express), ask:
+If the technology stack matches a built-in preset (e.g., Angular, Laravel, NestJS, Next.js, Nuxt.js, Django, Spring Boot, React, React Native, Vue, or Express), ask:
 
 ```text
 Would you like to use the [Framework] Architecture Preset?

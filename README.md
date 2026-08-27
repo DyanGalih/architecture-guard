@@ -96,7 +96,7 @@ architecture-guard/
     ├── governance-model.md      ← Constitution layers and delegation model
     ├── workflows.md             ← Governed discovery, specification, planning, task, and implementation flows
     ├── reference-manual.md      ← Setup, commands, install, and validation details
-    ├── presets.md               ← Supported framework presets (Django, Laravel, Next.js, etc.)
+    ├── presets.md               ← Supported framework presets (Angular, React, Vue, Next.js, Laravel, NestJS, etc.)
     ├── dry-cleanup.md           ← Brownfield DRY cleanup flow and duplication signals
     ├── repository-hygiene.md    ← Repository Hygiene rules and configuration
     └── release-notes.md         ← Change history and workflow updates

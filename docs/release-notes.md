@@ -1,3 +1,9 @@
+## 2.3.7
+
+- Added Angular architecture preset (`presets/angular.md`) supporting modern Angular conventions (Signals, Standalone components, `inject()` DI, `OnPush` change detection, typed reactive forms, DTOs, and functional guards/interceptors).
+- Added deep interactive interview inquiry flow for Angular-specific concerns (Signals-to-RxJS interop, Hydration/SSR & `@defer`, Micro-frontends/Module Federation, and `@angular-eslint`).
+- Updated preset documentation, templates, and init command options.
+
 ## 2.3.6
 
 - Aligned SDD orchestration and legacy skills across adapters, commands, and workflows.
