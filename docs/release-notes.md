@@ -1,3 +1,9 @@
+## 2.3.8
+
+- Added Deprecated & Dangerous Code hygiene rule (`hygiene-rules/deprecated-and-dangerous-code.md`) with default Critical (blocking) severity, cataloging obsolete language and framework patterns (PHP, JS/TS, Node.js, Angular, React, Security).
+- Added pre-implementation and task preflight deprecation checks to `governed-implement` workflow.
+- Updated repository hygiene documentation and configuration options.
+
 ## 2.3.7
 
 - Added Angular architecture preset (`presets/angular.md`) supporting modern Angular conventions (Signals, Standalone components, `inject()` DI, `OnPush` change detection, typed reactive forms, DTOs, and functional guards/interceptors).

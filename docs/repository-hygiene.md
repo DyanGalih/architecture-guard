@@ -58,6 +58,7 @@ The following hygiene categories are checked by default:
 - **TODO / FIXME**: Unresolved markers (configurable severity).
 - **Commented-Out Code**: Large blocks of disabled source code.
 - **Generated Artifacts**: Compiled outputs accidentally committed.
+- **Deprecated & Dangerous Code**: Deprecated, obsolete, or unsafe language and framework APIs (e.g. PHP deprecated syntax/functions, unmanaged Angular subscriptions, dangerous `eval`/`unserialize`, insecure hashing) that cause runtime failures or security risks. Defaults to **Critical** (blocking).
 
 ## Custom Rules
 

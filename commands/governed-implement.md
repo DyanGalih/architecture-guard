@@ -87,8 +87,9 @@ You must orchestrate the `/speckit.implement` (core implementation) workflow dir
    - Note in the Governance Summary that `/speckit.implement` was unavailable and implementation was performed inline.
 3. **Write Code**: Perform the actual coding work (writing files, running tests) required by the tasks.
 4. **Inline Pre-Completion Self-Verification Gate**: Before marking any task complete:
-   - **Repository Hygiene Check**: Inspect changed files against hygiene rules (no `.tmp`, `.new`, or scratch files left behind; no commented-out code; no dead imports).
-   - **Heuristic SonarLint Scan**: Check changed files against SonarLint rules (ensure no cognitive overload, tight coupling, loose `any`/`unknown` casts, or missing parameter validation).
+   - **Deprecated & Dangerous Code Check**: Check changed and target files against `.specify/extensions/architecture-guard/hygiene-rules/deprecated-and-dangerous-code.md` (or local hygiene rules) to ensure no obsolete, deprecated, or fatal language/framework patterns are introduced.
+   - **Repository Hygiene Check**: Inspect changed files against `.specify/extensions/architecture-guard/hygiene-rules` (no `.tmp`, `.new`, or scratch files left behind; no commented-out code; no dead imports).
+   - **Heuristic SonarLint Scan**: Check changed files against `.specify/extensions/architecture-guard/sonar-rules/sonarlint-rules.json` (ensure no cognitive overload, tight coupling, loose `any`/`unknown` casts, or missing parameter validation).
    - **Immediate Remediation**: Correct any detected quality or hygiene violations immediately at the current task boundary.
 5. **Sync the tasks**: You MUST update `specs/<feature>/tasks.md` to mark completed tasks with `[x]`, check them off, and add any new subtasks discovered during implementation.
 6. The implementation MUST follow current tasks and context. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, read active artifacts and constitution files directly with file-reading tools. Do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
