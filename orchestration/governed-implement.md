@@ -84,6 +84,7 @@ You must orchestrate the `{adapter_command:implement}` (core implementation) wor
    - Note in the Governance Summary that `{adapter_command:implement}` was unavailable and implementation was performed inline.
 3. **Write Code**: Perform the actual coding work (writing files, running tests) required by the tasks.
 4. **Inline Pre-Completion Self-Verification Gate**: Before marking any task complete:
+   - **Deprecated & Dangerous Code Check**: Check changed and target files against `{adapter_path:hygiene-rules}/deprecated-and-dangerous-code.md` (or local hygiene rules) to ensure no obsolete, deprecated, or fatal language/framework patterns are introduced.
    - **Repository Hygiene Check**: Inspect changed files against `{adapter_path:hygiene-rules}` (no `.tmp`, `.new`, or scratch files left behind; no commented-out code; no dead imports).
    - **Heuristic SonarLint Scan**: Check changed files against `{adapter_path:sonar-rules}/sonarlint-rules.json` (ensure no cognitive overload, tight coupling, loose `any`/`unknown` casts, or missing parameter validation).
    - **Immediate Remediation**: Correct any detected quality or hygiene violations immediately at the current task boundary.
