@@ -1,0 +1,164 @@
+[
+  {
+    "key": "java:S3972",
+    "name": "Classes should not have too many methods",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "java",
+    "tags": ["brain-overload", "structure"],
+    "description": "A class with too many methods is difficult to understand and maintain. Consider splitting responsibilities."
+  },
+  {
+    "key": "java:S1448",
+    "name": "Methods should not be too complex",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "java",
+    "tags": ["brain-overload", "complexity"],
+    "description": "The cyclomatic complexity of methods should not exceed a threshold. High complexity indicates hidden boundaries or mixed concerns."
+  },
+  {
+    "key": "java:S1104",
+    "name": "Public fields should not be used",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "java",
+    "tags": ["structure", "dependency"],
+    "description": "Public fields violate encapsulation. Use accessors instead to maintain boundary contracts."
+  },
+  {
+    "key": "javascript:S3776",
+    "name": "Cognitive Complexity of functions should not be too high",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "javascript",
+    "tags": ["brain-overload", "complexity"],
+    "description": "High cognitive complexity indicates functions that do too much. Consider splitting into smaller, well-defined functions."
+  },
+  {
+    "key": "javascript:S1116",
+    "name": "A callback function should not throw exceptions",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "javascript",
+    "tags": ["structure"],
+    "description": "Unhandled exceptions in callbacks can indicate missing error boundary or poor isolation."
+  },
+  {
+    "key": "javascript:S1192",
+    "name": "String literals should not be duplicated",
+    "type": "CODE_SMELL",
+    "severity": "MINOR",
+    "lang": "javascript",
+    "tags": ["structure"],
+    "description": "Duplicated strings may indicate missing constants or enums at contract boundaries."
+  },
+  {
+    "key": "javascript:S6428",
+    "name": "Calling 'setState' directly in render",
+    "type": "CODE_SMELL",
+    "severity": "CRITICAL",
+    "lang": "javascript",
+    "tags": ["structure", "brain-overload"],
+    "description": "Setting state in render() indicates boundary violation between presentational and state management logic."
+  },
+  {
+    "key": "python:S1186",
+    "name": "Functions should not be empty",
+    "type": "CODE_SMELL",
+    "severity": "MINOR",
+    "lang": "python",
+    "tags": ["structure"],
+    "description": "Empty functions may indicate incomplete implementation or missing abstraction."
+  },
+  {
+    "key": "python:S3776",
+    "name": "Cognitive Complexity of functions should not be too high",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "python",
+    "tags": ["brain-overload", "complexity"],
+    "description": "High cognitive complexity indicates functions that do too much. Refactor into smaller, focused functions."
+  },
+  {
+    "key": "python:S100",
+    "name": "Function names should comply with a naming convention",
+    "type": "CODE_SMELL",
+    "severity": "MINOR",
+    "lang": "python",
+    "tags": ["structure"],
+    "description": "Inconsistent naming may indicate mixed concerns or missing module-level organization."
+  },
+  {
+    "key": "typescript:S3776",
+    "name": "Cognitive Complexity of functions should not be too high",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "typescript",
+    "tags": ["brain-overload", "complexity"],
+    "description": "Functions with high cognitive complexity often violate single responsibility principle."
+  },
+  {
+    "key": "typescript:S6745",
+    "name": "Depending on component implementation details",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "typescript",
+    "tags": ["dependency", "structure"],
+    "description": "Tests or code depending on component internals indicate tight coupling. Use public interfaces instead."
+  },
+  {
+    "key": "typescript:S1192",
+    "name": "String literals should not be duplicated",
+    "type": "CODE_SMELL",
+    "severity": "MINOR",
+    "lang": "typescript",
+    "tags": ["structure"],
+    "description": "Duplicated strings may indicate missing constants or enums at contract boundaries."
+  },
+  {
+    "key": "typescript:S3973",
+    "name": "Cyclic module dependencies should be avoided",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "typescript",
+    "tags": ["dependency", "brain-overload"],
+    "description": "Circular dependencies create tight coupling and hidden boundaries. Refactor to eliminate cycles."
+  },
+  {
+    "key": "common:S1219",
+    "name": "Catch exceptions instead of the generic Exception",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "java,javascript,python,typescript",
+    "tags": ["structure"],
+    "description": "Catching generic exceptions indicates missing error boundary definition."
+  },
+  {
+    "key": "common:S6069",
+    "name": "Large files should be split",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "java,javascript,python,typescript",
+    "tags": ["brain-overload", "structure"],
+    "description": "Large files often contain multiple responsibilities. Refactor into smaller, focused modules."
+  },
+  {
+    "key": "common:S1200",
+    "name": "Classes should not be too complex",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "java,javascript,python,typescript",
+    "tags": ["brain-overload", "complexity"],
+    "description": "Classes with high complexity often violate separation of concerns. Consider splitting into multiple classes."
+  },
+  {
+    "key": "common:S1135",
+    "name": "TODO/FIXME comments indicate incomplete boundary definition",
+    "type": "CODE_SMELL",
+    "severity": "MINOR",
+    "lang": "java,javascript,python,typescript",
+    "tags": ["structure"],
+    "description": "TODOs may indicate uncertain architectural boundaries. Clarify or document the decision."
+  }
+]
