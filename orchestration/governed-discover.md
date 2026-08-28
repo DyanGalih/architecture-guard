@@ -108,6 +108,9 @@ When the discussion is concluded and aligned, the command MUST return:
 ## Security-Sensitive Areas
 - [Auth, PII, secrets, trust boundaries, or data-exposure concerns; state "None identified" only after checking]
 
+## DRY & Repository Hygiene Risks
+- [Duplicate ownership, repeated logic, misplaced/generated artifacts, temporary files, or "None identified"]
+
 ## Durable Memory Proposals
 - [Proposed decision/constraint/lesson, rationale, and intended Flash-Mem type; or "None"]
 

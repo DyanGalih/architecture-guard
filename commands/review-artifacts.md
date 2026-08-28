@@ -12,7 +12,7 @@ Before executing this command, read `.specify/extensions/architecture-guard/adap
 2. `.architecture-guard/selected-adapter`, which is authoritative after CLI installation.
 3. Filesystem markers only when no persisted selection exists.
 
-Load `.specify/extensions/architecture-guard/adapters/{tool}.md` (or `adapters/{tool}.md` in a standalone install or source checkout) and resolve every `{adapter_path:key}` token before reading review artifacts. Stop if the adapter is missing or any token remains unresolved.
+Load `.specify/extensions/architecture-guard/adapters/{tool}.md` (or `adapters/{tool}.md` in a standalone install or source checkout) and resolve every adapter path token (for example, a token whose key is `spec`) before reading review artifacts. Stop if the adapter is missing or any token remains unresolved.
 
 ## Ponytail Core Contract
 
@@ -234,11 +234,11 @@ Findings categorized by severity based on the active hygiene rules.
 6. **Remediation**: [Concrete remediation direction for the top issues, or "None needed"]
 
 ### Claude Code Agent Teams Review Protocol (When Active)
-When running with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`:
+Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
 - **Analyst Reviewer** evaluates the report against constitutions.
 - **HITL Gate 1**: If gaps are found, Analyst Reviewer prompts the user:
   - `[Apply Fix]`: Analyst Reviewer sends a peer message to **Analyst Creator** detailing the needed corrections. Analyst Creator fixes the artifacts and requests a re-review.
-  - `[Ignore / Proceed]`: Analyst Reviewer dispatches the accepted artifacts to the **Implementor teammates** (`BE`, `FE`, `TEST`).
+  - `[Accept Risk / Proceed]`: For non-blocking findings only, Analyst Reviewer records the accepted risk before dispatching the artifacts to the **Implementor teammates** (`BE`, `FE`, `TEST`). Blocking findings cannot use this option.
 
 ## Framework Preset Guidance
 

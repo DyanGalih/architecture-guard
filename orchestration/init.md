@@ -455,10 +455,11 @@ If the user selects Team Development:
 4. If an issue tracker is selected (not "none"), ask for the required provider configuration (e.g., `repo` string for GitHub or `project` string for Jira). Propose `.architecture-guard/sync.yml` with the chosen provider, project/repo string, and `enabled: true`; obtain explicit approval before creating it.
 
 If the user selects Claude Code Agent Teams:
-1. Preview the proposed agent teams configuration based on `{adapter_path:ponytail-template}/../agents_template.yml` (or `.architecture-guard/templates/agents_template.yml`).
-2. Generate `.architecture-guard/agents.yml` (or `.specify/config/agents.yml`).
-3. Set `topology: claude-code-agent-teams` and document role boundaries in `{adapter_path:constitution}`.
-4. Note that Agent Teams requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` when running in Claude Code, and will gracefully fall back to single-agent execution in other environments.
+1. Preview the proposed Architecture Guard role profile from `.architecture-guard/templates/agents_template.yml`.
+2. Explain that the profile is not a native Claude Code configuration file; current Claude Code uses an implicit team and named teammate spawning.
+3. Include creation of `.architecture-guard/agents.yml` and the exact `{adapter_path:constitution}` changes in the write preview, then require explicit approval before either write.
+4. After approval, set `topology: claude-code-agent-teams`, record role boundaries in `{adapter_path:constitution}`, and write the profile.
+5. Note that Agent Teams also requires host support and `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Fall back to single-agent execution when either is absent.
 
 ---
 

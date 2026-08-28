@@ -1,4 +1,5 @@
-# Claude Code Agent Teams Configuration for Architecture Guard
+# Architecture Guard role profile for Claude Code Agent Teams
+# This is consumed as prompt context by Architecture Guard; it is not a native Claude Code config schema.
 version: 1
 topology: claude-code-agent-teams
 runtime_env_flag: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS
@@ -10,7 +11,8 @@ roles:
     system_prompt: |
       You are the Analyst Creator teammate. Your role is to formulate technical designs, specifications,
       and task breakdowns aligned with the project constitution and architecture standards.
-      Always annotate each implementation task with its target teammate: [BE], [FE], or [TEST].
+      Always annotate each implementation task with its target owner: [BE], [FE], [TEST], or [ORCHESTRATION].
+      [ORCHESTRATION] denotes a lead-session task that is not assigned concurrently to an implementor.
     model: inherit
     can_message:
       - analyst_reviewer
