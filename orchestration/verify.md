@@ -133,6 +133,12 @@ For each task in `tasks.md`:
 2. **Architecture Alignment**: Resolve boundary violations in [Files] using suggested refactor tasks.
 3. **Completion**: If all CRITICAL/HIGH findings are resolved, propose any validated Flash-Mem lessons and write them only after explicit user approval.
 
+### Claude Code Agent Teams Verification Protocol (When Active)
+When running with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`:
+- **Code Reviewer** leads the verification gate.
+- If verification passes without blocking violations, the team advances directly to archive (`/ag-governed-archive`).
+- If verification exposes boundary drift or unfulfilled tasks, **HITL Gate 2** prompts the user to route back to **Analyst Creator** for task updates and re-assignment.
+
 **Next Step**: [e.g. "Run `{adapter_command:architecture-apply}` to fix V2"]
 
 ## Backward Compatibility

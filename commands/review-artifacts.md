@@ -233,6 +233,13 @@ Findings categorized by severity based on the active hygiene rules.
 5. **Next Step**: Run `/ag-apply` to resolve all findings (plan/tasks findings will be applied directly; upstream findings in `proposal.md` or `spec.md` will be delegated with confirmation).
 6. **Remediation**: [Concrete remediation direction for the top issues, or "None needed"]
 
+### Claude Code Agent Teams Review Protocol (When Active)
+When running with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`:
+- **Analyst Reviewer** evaluates the report against constitutions.
+- **HITL Gate 1**: If gaps are found, Analyst Reviewer prompts the user:
+  - `[Apply Fix]`: Analyst Reviewer sends a peer message to **Analyst Creator** detailing the needed corrections. Analyst Creator fixes the artifacts and requests a re-review.
+  - `[Ignore / Proceed]`: Analyst Reviewer dispatches the accepted artifacts to the **Implementor teammates** (`BE`, `FE`, `TEST`).
+
 ## Framework Preset Guidance
 
 If framework preset guidance exists, it is **mandatory** to use it to map generic principles to framework primitives and detect stack-specific anti-patterns.

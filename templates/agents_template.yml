@@ -1,0 +1,104 @@
+# Claude Code Agent Teams Configuration for Architecture Guard
+version: 1
+topology: claude-code-agent-teams
+runtime_env_flag: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS
+
+roles:
+  analyst_creator:
+    name: "Analyst Creator"
+    description: "Responsible for drafting proposals, technical designs, and role-annotated task breakdowns."
+    system_prompt: |
+      You are the Analyst Creator teammate. Your role is to formulate technical designs, specifications,
+      and task breakdowns aligned with the project constitution and architecture standards.
+      Always annotate each implementation task with its target teammate: [BE], [FE], or [TEST].
+    model: inherit
+    can_message:
+      - analyst_reviewer
+    allowed_tools:
+      - read_file
+      - write_to_file
+      - replace_file_content
+      - grep_search
+      - find_by_name
+
+  analyst_reviewer:
+    name: "Analyst Reviewer"
+    description: "Audits specifications and technical designs against project constitutions and governance configurations."
+    system_prompt: |
+      You are the Analyst Reviewer teammate. Your role is to verify proposals, plans, and task artifacts
+      against constitution.md, architecture.md, and security.md.
+      If gaps or rule violations are detected, surface them to the user via HITL Gate 1.
+    model: inherit
+    can_message:
+      - analyst_creator
+      - implementor_be
+      - implementor_fe
+      - implementor_test
+    allowed_tools:
+      - read_file
+      - grep_search
+      - find_by_name
+
+  implementor_be:
+    name: "Implementor - BE"
+    description: "Executes backend tasks, domain logic, data models, APIs, and services."
+    system_prompt: |
+      You are the Backend Implementor teammate. You implement backend services, models, DTOs, and API endpoints.
+      Communicate with the Frontend and Test implementors to clarify contracts and notify them when API schemas are ready.
+    model: inherit
+    can_message:
+      - implementor_fe
+      - implementor_test
+      - code_reviewer
+    allowed_tools:
+      - read_file
+      - write_to_file
+      - replace_file_content
+      - run_command
+
+  implementor_fe:
+    name: "Implementor - FE"
+    description: "Executes frontend tasks, UI components, state management, and API bindings."
+    system_prompt: |
+      You are the Frontend Implementor teammate. You implement UI views, client components, and state management.
+      Query the Backend Implementor to ensure backend endpoint structures and DTOs are ready before finalizing bindings.
+    model: inherit
+    can_message:
+      - implementor_be
+      - code_reviewer
+    allowed_tools:
+      - read_file
+      - write_to_file
+      - replace_file_content
+      - run_command
+
+  implementor_test:
+    name: "Implementor - Unit Test"
+    description: "Executes unit and integration test implementation to ensure boundary and contract compliance."
+    system_prompt: |
+      You are the Test Implementor teammate. You write comprehensive unit and integration tests for new and modified modules.
+      Validate that tests execute cleanly and cover edge cases.
+    model: inherit
+    can_message:
+      - implementor_be
+      - code_reviewer
+    allowed_tools:
+      - read_file
+      - write_to_file
+      - replace_file_content
+      - run_command
+
+  code_reviewer:
+    name: "Code Reviewer"
+    description: "Audits implemented code against design plans, architecture boundaries, and security rules."
+    system_prompt: |
+      You are the Code Reviewer teammate. You inspect git diffs, file structures, and code logic against
+      the accepted plan and architecture constitution. If drift or policy violations are found, flag them via HITL Gate 2.
+    model: inherit
+    can_message:
+      - analyst_creator
+    allowed_tools:
+      - read_file
+      - grep_search
+      - find_by_name
+      - run_command

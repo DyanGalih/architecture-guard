@@ -414,15 +414,16 @@ Examples:
 
 ---
 
-### Delivery Topology (Team vs Solo)
+### Delivery Topology (Solo vs Team vs Agent Teams)
 
 Ask:
 
 ```text
-Are you working on this project as a solo developer, or as part of a team?
+How will development be delivered on this project?
 
-- Solo Development
-- Team Development
+- Solo Development (Single developer / AI pair)
+- Team Development (Human team with Issue Tracker sync)
+- Claude Code Agent Teams (Autonomous 6-role agent team: Analyst Creator, Analyst Reviewer, BE, FE, Unit Test, Code Reviewer)
 ```
 
 If the user selects Team Development:
@@ -430,6 +431,12 @@ If the user selects Team Development:
 2. If an issue tracker is selected (not "none"), ask for the required provider configuration (e.g., `repo` string for GitHub or `project` string for Jira).
 3. Preview the exact proposed governance changes and team scaffolding, including `Mode: Team`, the tracker preference, `user-stories/`, and `.architecture-guard/sync.yml` when applicable.
 4. Require explicit user approval of that preview before writing governance rules or creating any team scaffolding. If approval is declined, make no team-mode writes.
+
+If the user selects Claude Code Agent Teams:
+1. Preview the proposed agent teams configuration based on `.architecture-guard/templates/agents_template.yml`.
+2. Generate `.architecture-guard/agents.yml` (or `.specify/config/agents.yml`).
+3. Set `topology: claude-code-agent-teams` and document role boundaries in `.specify/memory/constitution.md`.
+4. Note that Agent Teams requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` when running in Claude Code, and will gracefully fall back to single-agent execution in other environments.
 
 ---
 

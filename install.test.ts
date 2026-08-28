@@ -302,3 +302,22 @@ test('configures claude agent teams in .claude/settings.json when enabled via fl
   assert.ok(!fs.existsSync(path.join(cwdNoFlag, '.claude', 'settings.json')));
 });
 
+test('installs Claude Code Agent Teams templates and configs', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  install('1\n1\n1\nn\n', cwd);
+
+  const templateFile = path.join(cwd, '.architecture-guard', 'templates', 'agents_template.yml');
+  assert.ok(fs.existsSync(templateFile), 'Missing agents_template.yml');
+  const templateContent = fs.readFileSync(templateFile, 'utf8');
+  assert.match(templateContent, /topology: claude-code-agent-teams/);
+  assert.match(templateContent, /analyst_creator/);
+  assert.match(templateContent, /analyst_reviewer/);
+  assert.match(templateContent, /implementor_be/);
+  assert.match(templateContent, /implementor_fe/);
+  assert.match(templateContent, /implementor_test/);
+  assert.match(templateContent, /code_reviewer/);
+
+  const commsFile = path.join(cwd, '.architecture-guard', 'templates', 'agent_communication.md');
+  assert.ok(fs.existsSync(commsFile), 'Missing agent_communication.md');
+});
+
