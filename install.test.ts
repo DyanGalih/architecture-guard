@@ -21,12 +21,39 @@ test('standalone orchestration and legacy Spec Kit extension expose the same ski
 
   assert.deepEqual(legacyNames, orchestrationNames);
   assert.deepEqual(installerNames, orchestrationNames);
-  for (const file of legacyFiles) {
-    assert.ok(fs.existsSync(path.join(root, file)), `Missing legacy Spec Kit prompt: ${file}`);
+  for (const command of manifest.provides.commands) {
+    const promptPath = path.join(root, command.file);
+    assert.ok(fs.existsSync(promptPath), `Missing legacy Spec Kit prompt: ${command.file}`);
+    const prompt = fs.readFileSync(promptPath, 'utf8');
+    const description = prompt.match(/^---\r?\n[\s\S]*?^description:\s*(.+)$/m);
+    assert.ok(description, `Missing prompt description: ${command.file}`);
+    assert.equal(command.description, description[1].trim(), `Manifest description drift: ${command.file}`);
   }
 });
 
-test('Security Review stays in the legacy Spec Kit extension channel', () => {
+test('every orchestration adapter token resolves for every supported adapter', () => {
+  const root = path.join(__dirname, '..');
+  const adapterNames = ['generic', 'openspec', 'spec-kit'];
+  const adapterMaps = Object.fromEntries(adapterNames.map(name => {
+    const content = fs.readFileSync(path.join(root, 'adapters', `${name}.md`), 'utf8');
+    const pathSection = content.split('## Path Map')[1].split('## Command Map')[0];
+    const commandSection = content.split('## Command Map')[1].split('## Constitution Layout')[0];
+    const keys = section => new Set([...section.matchAll(/^\|\s*([a-z0-9-]+)\s*\|/gm)].map(match => match[1]));
+    return [name, { path: keys(pathSection), command: keys(commandSection) }];
+  }));
+
+  for (const file of fs.readdirSync(path.join(root, 'orchestration')).filter(file => file.endsWith('.md'))) {
+    const prompt = fs.readFileSync(path.join(root, 'orchestration', file), 'utf8');
+    const tokens = [...prompt.matchAll(/\{adapter_(path|command):([^}]+)\}/g)];
+    for (const adapter of adapterNames) {
+      for (const [, kind, key] of tokens) {
+        assert.ok(adapterMaps[adapter][kind].has(key), `${file}: ${adapter} missing ${kind}:${key}`);
+      }
+    }
+  }
+});
+
+test('Security Review stays in the legacy SpecKit extension channel', () => {
   const root = path.join(__dirname, '..');
   const cases = [
     ['governed-plan.md', 'plan'],
@@ -286,3 +313,38 @@ test('installer exposes init only and publishes linked documentation', () => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /unknown command 'review'/i);
 });
+
+test('configures claude agent teams in .claude/settings.json when enabled via flag or prompt', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  // Run with --agent claude --claude-agent-teams
+  runArgs(['init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init', '--claude-agent-teams'], cwd);
+  const settingsFile = path.join(cwd, '.claude', 'settings.json');
+  assert.ok(fs.existsSync(settingsFile));
+  const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
+  assert.equal(settings.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, '1');
+
+  // Verify --yes without flag does not create or set it
+  const cwdNoFlag = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  runArgs(['init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init'], cwdNoFlag);
+  assert.ok(!fs.existsSync(path.join(cwdNoFlag, '.claude', 'settings.json')));
+});
+
+test('installs Claude Code Agent Teams templates and configs', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  install('1\n1\n1\nn\n', cwd);
+
+  const templateFile = path.join(cwd, '.architecture-guard', 'templates', 'agents_template.yml');
+  assert.ok(fs.existsSync(templateFile), 'Missing agents_template.yml');
+  const templateContent = fs.readFileSync(templateFile, 'utf8');
+  assert.match(templateContent, /topology: claude-code-agent-teams/);
+  assert.match(templateContent, /analyst_creator/);
+  assert.match(templateContent, /analyst_reviewer/);
+  assert.match(templateContent, /implementor_be/);
+  assert.match(templateContent, /implementor_fe/);
+  assert.match(templateContent, /implementor_test/);
+  assert.match(templateContent, /code_reviewer/);
+
+  const commsFile = path.join(cwd, '.architecture-guard', 'templates', 'agent_communication.md');
+  assert.ok(fs.existsSync(commsFile), 'Missing agent_communication.md');
+});
+
