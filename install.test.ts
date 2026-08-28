@@ -274,7 +274,7 @@ test('--help prints usage and exits without writing files', () => {
 
 test('installer exposes init only and publishes linked documentation', () => {
   const pkg = require('../package.json');
-  assert.equal(require('./cli/self-update').compareSemver('2.3.0', '2.2.2'), 1);
+  assert.equal(require('./cli/self-update').compareSemver('2.4.0', '2.2.2'), 1);
   assert.equal(require('./cli/self-update').compareSemver('2.2.2', '2.2.2'), 0);
   assert.equal(require('./cli/self-update').compareSemver('2.2.1', '2.2.2'), -1);
   assert.equal(require('./cli/self-update').compareSemver('v2.2.2', '2.2.2'), 0);
