@@ -265,7 +265,6 @@ function availableCopy(dest, cfg, sk, cmdDir, agentType) {
 async function installCommand(agentType: any, commandName: any, cmdDir: any, opts: any = {}, workflowsDir: any = null) {
   const cfg = AGENT_CONFIGS[agentType];
   if (!cfg) return;
-  const yes = !!opts.yes;
   const overwrite = opts.overwrite;
 
   const promptPath = path.join(ROOT_DIR, 'orchestration', `${commandName}.md`);
@@ -278,14 +277,8 @@ async function installCommand(agentType: any, commandName: any, cmdDir: any, opt
   let dest = commandDestination(cfg, sk, cmdDir, agentType);
 
   if (fs.existsSync(dest)) {
-    // ponytail: --yes is for CI idempotency — repeated runs should replace, not accumulate
-    // `init.architecture-guard-2.md`, `-3.md`, ... Save-the-original behavior is opt-in via
-    // `--overwrite keep-both`; interactive users still get the 3-way prompt.
-    const action = yes || opts.batchPrompted
-      ? (overwrite === 'keep-both' ? 'keep both' : (overwrite === 'skip' ? 'skip' : 'replace'))
-      : (await ask(`  ${path.relative(process.cwd(), dest)} exists:`, ['skip', 'replace', 'keep both']) || 'skip');
+    const action = overwrite === 'keep-both' ? 'keep both' : (overwrite === 'skip' ? 'skip' : 'replace');
     if (action !== 'replace' && action !== 'keep both') {
-      console.log(`  → ${commandName}: skipped (action: ${action}, exists: ${fs.existsSync(dest)}, dest: ${dest}, batchPrompted: ${opts.batchPrompted})`);
       return;
     }
     if (action === 'keep both') dest = availableCopy(dest, cfg, sk, cmdDir, agentType);
@@ -302,15 +295,11 @@ async function installCommand(agentType: any, commandName: any, cmdDir: any, opt
       installYaml(sk, content, cmdDir, dest);
     }
     
-    let wfMsg = '';
     if (workflowsDir) {
       const wfDest = path.join(workflowsDir, `agx-${sk}.md`);
       fs.mkdirSync(path.dirname(wfDest), { recursive: true });
       fs.writeFileSync(wfDest, content);
-      wfMsg = ' (+ workflow)';
     }
-    
-    console.log(`  ✓ ${commandName} → ${agentType}${wfMsg}`);
   } catch (err) {
     console.error(`  ✗ ${commandName}: ${err.message}`);
   }
@@ -336,24 +325,17 @@ ${selectedAgents.map(agent => `- \`${path.join(AGENT_CONFIGS[agent].dir, '*')}\`
     const current = fs.readFileSync(agentsPath, 'utf8');
     if (!current.includes('Architecture Guard')) {
       fs.appendFileSync(agentsPath, preamble);
-      console.log(`  ✓ Appended rules to AGENTS.md`);
-    } else {
-      console.log(`  → AGENTS.md already has Architecture Guard rules, skipped`);
     }
   } else {
     fs.writeFileSync(agentsPath, preamble.trimStart());
-    console.log(`  ✓ Created AGENTS.md with Architecture Guard rules`);
   }
 }
 
-async function installRuntimeResources(runtimeDir, yes = false) {
-  const hasResources = fs.existsSync(runtimeDir);
-  const action = hasResources
-    ? (yes ? 'replace' : await ask('Runtime resources exist:', ['skip', 'replace']))
-    : 'replace';
+async function installRuntimeResources(runtimeDir, opts: any = {}) {
+  const overwrite = typeof opts === 'object' && opts !== null ? opts.overwrite : (opts ? 'replace' : null);
+  const action = overwrite === 'skip' ? 'skip' : 'replace';
 
   if (action !== 'replace') {
-    console.log('  → Runtime resources: skipped');
     return;
   }
 
@@ -419,11 +401,11 @@ Options:
   --agent <names>     Comma-separated agent keys (e.g. opencode,claude)
   --framework <f>     spec-kit | openspec | none
   --commands <list>   Comma-separated command names or indices (e.g. init,init-brownfield or 1,2)
-  --overwrite <mode>  With --yes: replace | skip | keep-both (default: replace for CI idempotency)
+  --overwrite <mode>  replace | skip | keep-both (default: replace)
 
 When --yes is set, --agent/--framework/--commands are honored; any missing value
-falls back to its first valid option. Without --overwrite, --yes replaces existing
-files; use --overwrite keep-both to preserve originals, or --overwrite skip to skip them.`);
+falls back to its first valid option. By default, existing files are replaced;
+use --overwrite keep-both to preserve originals, or --overwrite skip to skip them.`);
 }
 
 const REQUIRED_RESOURCES = ['templates', 'presets', 'hygiene-rules', 'sonar-rules'];
@@ -488,7 +470,18 @@ async function runInit(targetDir, opts) {
   const frameworks = ['spec-kit', 'openspec', 'none (framework-agnostic)'];
   let selectedFramework = opts.framework;
   if (!selectedFramework) {
-    selectedFramework = await ask('\nSelect SDD framework:', frameworks, false);
+    const hasOpenspec = fs.existsSync(path.join(targetDir, 'openspec', 'config.yaml')) || fs.existsSync(path.join(targetDir, 'openspec'));
+    const hasSpeckit = fs.existsSync(path.join(targetDir, '.specify'));
+
+    if (hasOpenspec && !hasSpeckit) {
+      selectedFramework = 'openspec';
+      console.log(`\nAuto-detected SDD framework: openspec`);
+    } else if (hasSpeckit && !hasOpenspec) {
+      selectedFramework = 'spec-kit';
+      console.log(`\nAuto-detected SDD framework: spec-kit`);
+    } else {
+      selectedFramework = await ask('\nSelect SDD framework:', frameworks, false);
+    }
   } else {
     const match = frameworks.find(f => f === selectedFramework || f.startsWith(selectedFramework));
     selectedFramework = match || (selectedFramework === 'none' ? 'none (framework-agnostic)' : selectedFramework);
@@ -508,12 +501,7 @@ async function runInit(targetDir, opts) {
       .map(s => /^\d+$/.test(s.trim()) ? COMMANDS[parseInt(s.trim(), 10) - 1] : s.trim())
       .filter(c => COMMANDS.includes(c));
   } else {
-    const choices = ['All', ...COMMANDS];
-    selectedCommands = await ask('\nSelect governance commands to install:', choices, true);
-    
-    if (selectedCommands && selectedCommands.includes('All')) {
-      selectedCommands = [...COMMANDS];
-    }
+    selectedCommands = [...COMMANDS];
   }
 
   if (!selectedCommands || selectedCommands.length === 0) {
@@ -521,72 +509,26 @@ async function runInit(targetDir, opts) {
     process.exit(0);
   }
 
-  let agyScope = null;
-  const userPath = opts.target;
-  if (selectedAgents.includes('antigravity')) {
-    if (!userPath) {
-      const choices = ['Global (~/.gemini/antigravity-cli/skills)', 'Shared (~/.gemini/skills)', 'Workspace (current directory)'];
-      const scopeChoice = opts.yes ? choices[0] : (await ask('\nNo target path provided. Where would you like to install Antigravity skills?', choices, false) || '');
-      if (scopeChoice.startsWith('Global')) agyScope = 'global';
-      else if (scopeChoice.startsWith('Shared')) agyScope = 'shared';
-      else agyScope = 'workspace';
-    } else {
-      agyScope = 'workspace';
-    }
-  }
-
-  console.log(`\nInstalling ${selectedCommands.length} commands for ${selectedAgents.length} agent(s)...\n`);
-
   for (const agent of selectedAgents) {
     const isAgy = agent === 'antigravity';
     let cmdDir;
     let workflowsDir = null;
     
     if (isAgy) {
-      if (agyScope === 'global') {
-        cmdDir = path.join(require('os').homedir(), '.gemini/antigravity-cli/skills');
-        workflowsDir = path.join(require('os').homedir(), '.gemini/antigravity-cli/workflows');
-      } else if (agyScope === 'shared') {
-        cmdDir = path.join(require('os').homedir(), '.gemini/skills');
-        workflowsDir = path.join(require('os').homedir(), '.gemini/workflows');
-      } else {
-        cmdDir = path.join(targetDir, '.agent/skills');
-        workflowsDir = path.join(targetDir, '.agent/workflows');
-      }
+      cmdDir = path.join(targetDir, '.agent/skills');
+      workflowsDir = path.join(targetDir, '.agent/workflows');
     } else {
       const cfg = AGENT_CONFIGS[agent];
       cmdDir = path.join(targetDir, cfg.dir);
     }
 
-    let batchOverwrite = opts.overwrite;
-    let batchPrompted = false;
-    if (!opts.yes && !batchOverwrite && selectedCommands.length > 1) {
-      let anyExists = false;
-      for (const cmd of selectedCommands) {
-        const sk = slug(cmd);
-        const cfg = AGENT_CONFIGS[agent];
-        const dest = isAgy ? path.join(cmdDir, `ag-${sk}`, 'SKILL.md') : commandDestination(cfg, sk, cmdDir, agent);
-        if (fs.existsSync(dest)) {
-          anyExists = true; break;
-        }
-      }
-      if (anyExists) {
-        const action = (await ask(`\nSome files already exist for ${agent}. What would you like to do for all of them?`, ['skip', 'replace', 'keep both'])) || 'skip';
-        batchOverwrite = action === 'keep both' ? 'keep-both' : action;
-        batchPrompted = true;
-      }
-    }
-
-    const currentOpts = { ...opts, overwrite: batchOverwrite || opts.overwrite, batchPrompted };
-
     for (const cmd of selectedCommands) {
-      await installCommand(agent, cmd, cmdDir, currentOpts, isAgy ? workflowsDir : null);
+      await installCommand(agent, cmd, cmdDir, opts, isAgy ? workflowsDir : null);
     }
-    console.log();
   }
 
   const runtimeDir = path.join(targetDir, '.architecture-guard');
-  await installRuntimeResources(runtimeDir, opts.yes);
+  await installRuntimeResources(runtimeDir, opts);
 
   const adaptersDir = path.join(targetDir, 'adapters');
   const srcAdaptersDir = path.join(ROOT_DIR, 'adapters');
@@ -598,16 +540,12 @@ async function runInit(targetDir, opts) {
       const dest = path.join(adaptersDir, f);
       if (!fs.existsSync(dest)) {
         fs.copyFileSync(src, dest);
-        console.log(`  ✓ Copied adapters/${f}`);
       }
     }
   }
   fs.writeFileSync(path.join(runtimeDir, 'selected-adapter'), `${framework === 'none' ? 'generic' : framework}\n`);
 
-  const updateAgents = opts.yes || (await ask('\nAppend governance rules to AGENTS.md? (y/n): ', null));
-  if (updateAgents && (opts.yes || ['y', 'yes'].includes(String(updateAgents).toLowerCase()))) {
-    appendAgentsMd(targetDir, selectedAgents);
-  }
+  appendAgentsMd(targetDir, selectedAgents);
 
   console.log('\nInstallation complete!');
   console.log(`Target: ${targetDir}`);

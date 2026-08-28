@@ -1,14 +1,13 @@
-## 2.3.8
-
-- Added Deprecated & Dangerous Code hygiene rule (`hygiene-rules/deprecated-and-dangerous-code.md`) with default Critical (blocking) severity, cataloging obsolete language and framework patterns (PHP, JS/TS, Node.js, Angular, React, Security).
-- Added pre-implementation and task preflight deprecation checks to `governed-implement` workflow.
-- Updated repository hygiene documentation and configuration options.
-
-## 2.3.7
+## 2.4.0
 
 - Added Angular architecture preset (`presets/angular.md`) supporting modern Angular conventions (Signals, Standalone components, `inject()` DI, `OnPush` change detection, typed reactive forms, DTOs, and functional guards/interceptors).
 - Added deep interactive interview inquiry flow for Angular-specific concerns (Signals-to-RxJS interop, Hydration/SSR & `@defer`, Micro-frontends/Module Federation, and `@angular-eslint`).
-- Updated preset documentation, templates, and init command options.
+- Added Deprecated & Dangerous Code hygiene rule (`hygiene-rules/deprecated-and-dangerous-code.md`) with default Critical (blocking) severity, cataloging obsolete language and framework patterns (PHP, JS/TS, Node.js, Angular, React, Security).
+- Added pre-implementation and task preflight deprecation checks to `governed-implement` workflow.
+- Streamlined interactive CLI initialization: auto-detects single SDD frameworks, installs all commands by default, automatically replaces skills/resources, scopes Antigravity to workspace, and auto-updates `AGENTS.md` without prompt fatigue.
+- Updated preset documentation, repository hygiene documentation, templates, and init command options.
+
+
 
 ## 2.3.6
 

@@ -63,12 +63,12 @@ function install(input, cwd) {
 
 test('installs every agent format at the project root with selected resources only', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
-  install('all\n1\n1\nn\n', cwd);
+  install('all\n1\n', cwd);
 
   assert.equal(Object.keys(require('./cli/install').AGENT_CONFIGS).length, 35);
   assert.ok(fs.existsSync(path.join(cwd, '.opencode/commands/ag-init.md')));
   assert.ok(!fs.existsSync(path.join(cwd, cwd.slice(1), '.opencode/commands/ag-init.md')));
-   assert.ok(fs.existsSync(path.join(cwd, 'adapters/resolve.md')));
+  assert.ok(fs.existsSync(path.join(cwd, 'adapters/resolve.md')));
   assert.ok(fs.existsSync(path.join(cwd, 'adapters/spec-kit.md')));
   assert.ok(!fs.existsSync(path.join(cwd, 'adapters/openspec.md')));
   assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-adapter'), 'utf8').trim(), 'spec-kit');
@@ -77,21 +77,26 @@ test('installs every agent format at the project root with selected resources on
   }
 });
 
-test('existing commands skip by default, replace, or keep both', () => {
+test('existing commands auto-replace by default, and support --overwrite skip or keep-both', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   const dest = path.join(cwd, '.opencode/commands/ag-init.md');
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.writeFileSync(dest, 'original');
 
-  install('1\n3\n2\n\nn\n', cwd);
-  assert.equal(fs.readFileSync(dest, 'utf8'), 'original');
-  install('1\n3\n2\n2\n\nn\n', cwd);
+  // Default interactive install without --overwrite automatically replaces existing files
+  install('1\n3\n', cwd);
   assert.notEqual(fs.readFileSync(dest, 'utf8'), 'original');
+
+  // With --overwrite skip, existing file is preserved
   fs.writeFileSync(dest, 'original');
-  install('1\n3\n2\n3\n\nn\n', cwd);
+  spawnSync(process.execPath, [installer, 'init', '--overwrite', 'skip'], { cwd, input: '1\n3\n', encoding: 'utf8' });
+  assert.equal(fs.readFileSync(dest, 'utf8'), 'original');
+
+  // With --overwrite keep-both, existing file is preserved and sibling is created
+  spawnSync(process.execPath, [installer, 'init', '--overwrite', 'keep-both'], { cwd, input: '1\n3\n', encoding: 'utf8' });
   assert.equal(fs.readFileSync(dest, 'utf8'), 'original');
   assert.ok(fs.existsSync(path.join(cwd, '.opencode/commands/ag-init.architecture-guard.md')));
-   assert.ok(fs.existsSync(path.join(cwd, 'adapters/resolve.md')));
+  assert.ok(fs.existsSync(path.join(cwd, 'adapters/resolve.md')));
   assert.ok(fs.existsSync(path.join(cwd, 'adapters/generic.md')));
   assert.ok(!fs.existsSync(path.join(cwd, 'adapters/spec-kit.md')));
   assert.ok(!fs.existsSync(path.join(cwd, 'adapters/openspec.md')));
@@ -103,23 +108,47 @@ test('keep both creates a discoverable sibling skill', () => {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.writeFileSync(dest, 'original');
 
-  install('1\n3\n2\n3\nn\n', cwd);
+  spawnSync(process.execPath, [installer, 'init', '--overwrite', 'keep-both'], { cwd, input: '1\n3\n', encoding: 'utf8' });
   assert.equal(fs.readFileSync(dest, 'utf8'), 'original');
   assert.ok(fs.existsSync(path.join(cwd, '.claude/skills/ag-init-2/SKILL.md')));
 });
 
 test('uses discoverable skill layouts and selected destinations in AGENTS.md', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
-  install('2,8,35,10\n1\n2\n3\nn\n', cwd);
+  install('2,8,35,10\n1\n', cwd);
   assert.ok(fs.existsSync(path.join(cwd, '.cursor/skills/ag-init/SKILL.md')));
   assert.ok(fs.existsSync(path.join(cwd, '.codex/skills/ag-init/SKILL.md')));
   assert.ok(fs.existsSync(path.join(cwd, '.agents/skills/zed/ag-init/SKILL.md')) || true); // skip exact index test
   assert.ok(fs.existsSync(path.join(cwd, '.agents/skills/ag-init/SKILL.md')) || true);
 
   const agentsPath = path.join(cwd, 'AGENTS.md');
-  require('./cli/install').appendAgentsMd(cwd, ['opencode']);
-  assert.match(fs.readFileSync(agentsPath, 'utf8'), /\.opencode\/commands/);
-  assert.doesNotMatch(fs.readFileSync(agentsPath, 'utf8'), /\.agent\/skills\/codex/);
+  assert.match(fs.readFileSync(agentsPath, 'utf8'), /\.cursor\/skills/);
+  assert.match(fs.readFileSync(agentsPath, 'utf8'), /\.codex\/skills/);
+
+  const isolatedCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-isolated-'));
+  const isolatedAgentsPath = path.join(isolatedCwd, 'AGENTS.md');
+  require('./cli/install').appendAgentsMd(isolatedCwd, ['opencode']);
+  assert.match(fs.readFileSync(isolatedAgentsPath, 'utf8'), /\.opencode\/commands/);
+  assert.doesNotMatch(fs.readFileSync(isolatedAgentsPath, 'utf8'), /\.agent\/skills\/codex/);
+});
+
+test('framework auto-detects when single SDD tool marker exists', () => {
+  // Test openspec auto-detection
+  const cwdOpenspec = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-openspec-'));
+  fs.mkdirSync(path.join(cwdOpenspec, 'openspec'), { recursive: true });
+  fs.writeFileSync(path.join(cwdOpenspec, 'openspec', 'config.yaml'), 'schema: spec-driven\n');
+  // Only agent choice needed (1 prompt)
+  install('1\n', cwdOpenspec);
+  assert.equal(fs.readFileSync(path.join(cwdOpenspec, '.architecture-guard/selected-adapter'), 'utf8').trim(), 'openspec');
+  assert.ok(fs.existsSync(path.join(cwdOpenspec, 'adapters/openspec.md')));
+
+  // Test speckit auto-detection
+  const cwdSpeckit = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-speckit-'));
+  fs.mkdirSync(path.join(cwdSpeckit, '.specify'), { recursive: true });
+  // Only agent choice needed (1 prompt)
+  install('1\n', cwdSpeckit);
+  assert.equal(fs.readFileSync(path.join(cwdSpeckit, '.architecture-guard/selected-adapter'), 'utf8').trim(), 'spec-kit');
+  assert.ok(fs.existsSync(path.join(cwdSpeckit, 'adapters/spec-kit.md')));
 });
 
 test('rejects missing runtime resources with actionable error', () => {
@@ -163,15 +192,18 @@ test('escapes TOML triple quotes and emits safe YAML metadata', () => {
   assert.match(fs.readFileSync(yaml, 'utf8'), /title: "ag-init"/);
 });
 
-test('runtime resources default to skip and replace on approval', () => {
+test('runtime resources auto-replace by default and can be skipped with --overwrite skip', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
-  install('1\n3\n2\nn\n', cwd);
+  install('1\n3\n', cwd);
   const template = path.join(cwd, '.architecture-guard/templates/ponytail_core.md');
   fs.writeFileSync(template, 'custom');
 
-  install('1\n3\n2\n\nn\n', cwd);
+  // With --overwrite skip, custom template is preserved
+  spawnSync(process.execPath, [installer, 'init', '--overwrite', 'skip'], { cwd, input: '1\n3\n', encoding: 'utf8' });
   assert.equal(fs.readFileSync(template, 'utf8'), 'custom');
-  install('1\n3\n2\n2\n2\nn\n', cwd);
+
+  // Default replaces custom template with latest
+  install('1\n3\n', cwd);
   assert.notEqual(fs.readFileSync(template, 'utf8'), 'custom');
 });
 
@@ -242,7 +274,7 @@ test('--help prints usage and exits without writing files', () => {
 
 test('installer exposes init only and publishes linked documentation', () => {
   const pkg = require('../package.json');
-  assert.equal(require('./cli/self-update').compareSemver('2.3.0', '2.2.2'), 1);
+  assert.equal(require('./cli/self-update').compareSemver('2.4.0', '2.2.2'), 1);
   assert.equal(require('./cli/self-update').compareSemver('2.2.2', '2.2.2'), 0);
   assert.equal(require('./cli/self-update').compareSemver('2.2.1', '2.2.2'), -1);
   assert.equal(require('./cli/self-update').compareSemver('v2.2.2', '2.2.2'), 0);
