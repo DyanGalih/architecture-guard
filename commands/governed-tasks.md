@@ -86,13 +86,14 @@ You must orchestrate the `/speckit.tasks` workflow directly.
      - Localized verification: runnable unit/integration tests and lint/typecheck command execution.
      - Hygiene confirmation: clean workspace with no leftover `.tmp`, `.new`, or commented-out code.
    - If the same logic appears in multiple modules, create a single extraction task instead of parallel copy-paste tasks.
+   - **Claude Code Agent Teams Role Tagging**: When agent teams mode is active or configured in `agents.yml`, the **Analyst Creator** MUST tag every task with its assigned teammate role: `[BE]` (Backend), `[FE]` (Frontend), `[TEST]` (Unit/Integration Test), or `[ORCHESTRATION]`.
 2. **Execute Tasks**: Run `/speckit.tasks` to generate and save `specs/<feature>/tasks.md`.
 
    **If `/speckit.tasks` is not available as a registered command** (i.e., the AI agent does not recognize it as a slash command), fall back to inline task generation:
    - Read the technical design document (e.g., `specs/<feature>/plan.md` or `openspec/.../design.md`) (and `spec.md` if present).
    - Read all applicable constitution files (`.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`).
    - Use Flash-Mem context and `specs/<feature>/security-constraints.md` if available.
-   - Generate `specs/<feature>/tasks.md` directly, breaking down the plan into implementation-ready tasks with checkbox format. Enforce Ponytail minimalism.
+   - Generate `specs/<feature>/tasks.md` directly, breaking down the plan into implementation-ready tasks with checkbox format. Enforce Ponytail minimalism and role tags.
    - Note in the Governance Summary that `/speckit.tasks` was unavailable and task generation was performed inline.
 
 2. The generated tasks MUST use the Project Constitution documents and feature context. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, read constitution files and feature security constraints directly with file-reading tools. Do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
