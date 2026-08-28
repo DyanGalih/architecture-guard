@@ -1,75 +1,83 @@
 ---
-description: Run end-to-end SDD lifecycle orchestration (Discovery -> Delivery -> Plan -> Implementation -> Verify) with interactive Claude Code Agent Teams coordination and memory context.
+description: Run the governed SDD lifecycle from discovery or an active change through specification, planning, tasks, implementation, verification, and optional archival.
 ---
 
 # Architecture Workflow Command
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing this command, read `adapters/resolve.md`, load the selected `adapters/{tool}.md`, and resolve all adapter path and command tokens used by each delegated phase.
 
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+Before continuing, read and apply `{adapter_path:ponytail-template}` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
-You are running `architecture-guard` as the unified end-to-end orchestration entry point.
+Use this command as the end-to-end Architecture Guard entry point. Delegate each phase to its registered Architecture Guard capability instead of reproducing that phase's internal prompt.
 
-Use this command when the user wants an integrated SDD lifecycle that guides work from initial discovery/intent to verified completion, with interactive multi-agent teammate coordination and strict human-in-the-loop checkpoints at every phase transition.
+## Agent Teams Activation
 
-## Step 0 — Interactive Agent Teams Detection & Mode Prompt
+Agent Teams mode is active only when all of the following are true:
 
-1. Inspect workspace `.claude/settings.json` (or active environment) for `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"`.
-2. **If Agent Teams is configured/active**:
-   - Prompt the user interactively before starting:
-     > *"Claude Code Agent Teams configuration detected. Would you like to orchestrate this workflow using multi-agent Teammates (Author, Reviewer, Implementers, Quality Gate) or standard single-agent mode?"*
-   - **If User selects Teammates**: Enable Teammates A, B, C, D multi-agent coordination across phases.
-   - **If User selects Single-Agent**: Execute standard sequential single-agent lifecycle.
-3. **If Agent Teams is not configured**: Proceed in standard single-agent mode.
+1. The host is Claude Code and exposes named teammate spawning and messaging.
+2. `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled in the active environment or `.claude/settings.json`.
+3. The user explicitly selects Agent Teams for this run, or the native command arguments explicitly request it.
 
-## Step 1 — Architecture Context Retrieval (Flash-Mem First)
+When the environment flag is present, explain that `.architecture-guard/agents.yml` is an Architecture Guard role profile, not a native Claude Code configuration file. Use it to shape named teammate prompts when present. If any activation condition is absent, run in single-agent mode without simulating teammates or claiming parallel execution.
 
-1. Search Flash-Mem for relevant architecture decisions, constraints, patterns, and lessons learned.
-2. If Flash-Mem is unavailable, fall back to `{adapter_path:constitution}`, `{adapter_path:arch-constitution}`, and `{adapter_path:security-constitution}`.
+## Lifecycle
 
-## Step 2 — Discovery & Delivery Phase (Spec & Plan)
+### Step 1 - Resolve the Starting Point
 
-- **Single-Agent Mode**: Orchestrate `{adapter_command:governed-delivery}` to produce and reconcile `spec.md`, `design.md`, and `tasks.md`.
-- **Agent Teams Mode**:
-  - **Teammate A (Author)**: Drafts `proposal.md`, `spec.md`, `design.md`, and `tasks.md`.
-  - **Teammate B (Spec Reviewer)**: Audits artifacts against the Constitution, Ponytail pragmatism, and DRY rules.
-  - **Lead Session**: Synthesizes the final plan and presents the plan/task review to the user.
+1. Read Flash-Mem context when its tools are available; otherwise use `{adapter_path:constitution}`, `{adapter_path:arch-constitution}`, and `{adapter_path:security-constitution}` with adapter-documented fallbacks.
+2. Resolve any user-supplied change name and artifact paths before filesystem discovery.
+3. If the request is still exploratory or materially ambiguous, run the registered `ag-governed-discover` capability and use its Discovery Summary Draft as the specification seed.
+4. If no active specification exists, run the registered `ag-governed-spec` capability. Do not enter planning until specification creation and clarification succeed.
+5. If an active specification already exists, confirm the intended active change when more than one candidate is plausible.
 
-### 🛑 Human Gate 1: Plan & Task Approval
-Pause execution. Present the generated plan and task breakdown to the user. **Obtain explicit user approval before proceeding to implementation.**
+### Step 2 - Governed Planning and Tasks
 
-## Step 3 — Governed Implementation Phase
+- In single-agent mode, run the registered `ag-governed-delivery` capability.
+- In Agent Teams mode, run `ag-governed-delivery-team` when stakeholder User Story approval is required; otherwise run `ag-governed-delivery` with the active team profile.
+- Let the delegated delivery prompt perform its own plan, task, security, architecture, analysis, and write-approval gates.
 
-- **Single-Agent Mode**: Orchestrate `{adapter_command:implement}` sequentially executing tasks from `tasks.md`.
-- **Agent Teams Mode**:
-  - **Teammate C (Partitioned Implementers)**:
-    - Partition sub-tasks across distinct module/file boundaries (e.g. C.1 Core/Domain, C.2 CLI/UI, C.3 Tests).
-    - Teammates work concurrently using git task locking without concurrent writes to identical files.
-  - **Teammate D (Implementation Reviewer)**: Performs whitebox verification, boundary validation, and test execution.
+### Human Gate 1 - Approve Plan and Tasks
 
-### 🛑 Human Gate 2: Implementation Review Approval
-Pause execution. Present the implementation summary, modified files, and test results. **Obtain explicit user approval before running final verification.**
+Present the resolved plan and task artifacts plus any blocking findings. Obtain explicit user approval before starting implementation. Approval of artifacts does not approve unrelated writes or Git operations.
 
-## Step 4 — Verification Gate (`ag-verify`)
+### Step 3 - Governed Implementation
 
-Run the adapter-registered `{adapter_command:verify}`:
-1. Verify task-code alignment (100% tasks completed).
-2. Validate layer boundaries and constitution compliance.
-3. Confirm all runnable tests and checks pass.
+Run the registered `ag-governed-implement` capability. In Agent Teams mode, the lead assigns non-overlapping task and file ownership before spawning implementors. If an overlap is discovered, pause one owner and coordinate a handoff; do not rely on an invented Git locking mechanism or allow concurrent edits to the same file.
 
-## Step 5 — Completion & Archival Handoff
+### Human Gate 2 - Review Implementation
 
-Present the final Governance & Verification Summary. Offer the user options to:
-1. Archive feature via `{adapter_command:archive}`.
-2. Commit and push changes via Git.
-3. Keep feature active for further additions.
+Present modified files, completed tasks, review findings, and test results. Obtain explicit user approval before final verification.
 
-## Rules & Guardrails
+### Step 4 - Verification
 
-- Maintain strict Human-in-the-Loop gates at every phase transition. Teammates collaborate autonomously within a phase, but cannot cross phase gates without user approval.
-- Enforce Ponytail Core pragmatism and DRY single source of truth across all code and artifacts.
-- Degrade gracefully to single-agent mode when teammate mode is declined or unsupported.
+Run the registered `ag-verify` capability. A pass requires task and requirement evidence, architecture and security-policy compliance, repository hygiene results, and no unresolved blocking findings. Do not equate unavailable optional integrations with a pass.
+
+### Step 5 - Optional Archival Handoff
+
+After verification passes, present the final governance summary and offer to run `ag-governed-archive`. Archival, changelog, memory, Git, and cleanup actions retain the separate approvals required by that capability. If the user declines, leave the active work intact.
+
+## Output
+
+Return a concise lifecycle summary containing:
+
+- selected adapter, mode, and active change/artifact paths;
+- completed, skipped, blocked, and degraded phases;
+- approvals obtained and approvals still required;
+- verification status and unresolved findings;
+- the next safe action.
+
+## Guardrails
+
+- Preserve the delegated phase prompts as the source of truth for phase behavior.
+- Never skip discovery/specification merely because no active artifact exists.
+- Never cross a human gate based on an earlier phase's approval.
+- Never claim Agent Teams behavior when the host capability is unavailable.
+- Preserve unrelated and uncommitted work throughout the lifecycle.
+
+## Backward Compatibility
+
+The SpecKit extension version of this workflow is under `commands/workflow.md`.

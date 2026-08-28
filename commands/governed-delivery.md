@@ -118,7 +118,7 @@ The plan does not need to be perfect. It must be sufficiently stable and free of
 
 Only enter this phase after the plan is `accepted`.
 
-If tasks are `missing`, `stale`, or `review-required`, execute `/ag-governed-tasks` (or `/ag-governed-tasks`) with the accepted plan and cached context.
+If tasks are `missing`, `stale`, or `review-required`, execute `/ag-governed-tasks` with the accepted plan and cached context.
 
 The governed task phase must:
 
@@ -130,8 +130,8 @@ The governed task phase must:
 
 #### Claude Code Agent Teams Coordination (When Active)
 
-When running in Claude Code with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`:
-- **Analyst Creator** drafts the plan and role-annotated task breakdown (`[BE]`, `[FE]`, `[TEST]`).
+Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
+- **Analyst Creator** drafts the plan and role-annotated task breakdown (`[BE]`, `[FE]`, `[TEST]`, `[ORCHESTRATION]`).
 - **Analyst Reviewer** evaluates the generated artifacts against constitutions via peer messaging and triggers HITL Gate 1 if gaps are identified.
 - **Implementor Dispatch**: Upon approval, tasks are handed off to the Implementor teammates (`BE`, `FE`, `TEST`) for concurrent execution.
 - **Fallback**: If not running in Claude Code Agent Teams mode, execute standard single-agent plan-to-task delivery.

@@ -32,7 +32,9 @@ Analyst Reviewer identified the following gaps:
 
 Options:
 1. [Apply Fix] -> Message Analyst Creator to revise artifacts.
-2. [Ignore / Proceed] -> Dispatch to Implementors.
+2. [Accept Risk / Proceed] -> For non-blocking findings only, record the accepted risk and dispatch to Implementors.
+
+Blocking findings offer only [Apply Fix] or [Stop].
 ```
 
 ### HITL Gate 2 (Code Drift - Code Reviewer -> Human)
@@ -44,5 +46,7 @@ Code Reviewer identified boundary drift in implementation:
 
 Options:
 1. [Request Fix] -> Message Analyst Creator to update tasks.md and re-assign to Implementor.
-2. [Approve & Archive] -> Proceed to /ag-governed-archive.
+2. [Accept Risk / Verify] -> For non-blocking findings only, record the accepted risk and proceed to verification.
+
+Blocking findings offer only [Request Fix] or [Stop]. Archival remains a separate approval-gated workflow.
 ```
