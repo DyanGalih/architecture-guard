@@ -279,7 +279,6 @@ async function installCommand(agentType: any, commandName: any, cmdDir: any, opt
   if (fs.existsSync(dest)) {
     const action = overwrite === 'keep-both' ? 'keep both' : (overwrite === 'skip' ? 'skip' : 'replace');
     if (action !== 'replace' && action !== 'keep both') {
-      console.log(`  → ${commandName}: skipped`);
       return;
     }
     if (action === 'keep both') dest = availableCopy(dest, cfg, sk, cmdDir, agentType);
@@ -296,15 +295,11 @@ async function installCommand(agentType: any, commandName: any, cmdDir: any, opt
       installYaml(sk, content, cmdDir, dest);
     }
     
-    let wfMsg = '';
     if (workflowsDir) {
       const wfDest = path.join(workflowsDir, `agx-${sk}.md`);
       fs.mkdirSync(path.dirname(wfDest), { recursive: true });
       fs.writeFileSync(wfDest, content);
-      wfMsg = ' (+ workflow)';
     }
-    
-    console.log(`  ✓ ${commandName} → ${agentType}${wfMsg}`);
   } catch (err) {
     console.error(`  ✗ ${commandName}: ${err.message}`);
   }
@@ -330,13 +325,9 @@ ${selectedAgents.map(agent => `- \`${path.join(AGENT_CONFIGS[agent].dir, '*')}\`
     const current = fs.readFileSync(agentsPath, 'utf8');
     if (!current.includes('Architecture Guard')) {
       fs.appendFileSync(agentsPath, preamble);
-      console.log(`  ✓ Appended rules to AGENTS.md`);
-    } else {
-      console.log(`  → AGENTS.md already has Architecture Guard rules, skipped`);
     }
   } else {
     fs.writeFileSync(agentsPath, preamble.trimStart());
-    console.log(`  ✓ Created AGENTS.md with Architecture Guard rules`);
   }
 }
 
@@ -345,7 +336,6 @@ async function installRuntimeResources(runtimeDir, opts: any = {}) {
   const action = overwrite === 'skip' ? 'skip' : 'replace';
 
   if (action !== 'replace') {
-    console.log('  → Runtime resources: skipped');
     return;
   }
 
@@ -519,8 +509,6 @@ async function runInit(targetDir, opts) {
     process.exit(0);
   }
 
-  console.log(`\nInstalling ${selectedCommands.length} commands for ${selectedAgents.length} agent(s)...\n`);
-
   for (const agent of selectedAgents) {
     const isAgy = agent === 'antigravity';
     let cmdDir;
@@ -537,7 +525,6 @@ async function runInit(targetDir, opts) {
     for (const cmd of selectedCommands) {
       await installCommand(agent, cmd, cmdDir, opts, isAgy ? workflowsDir : null);
     }
-    console.log();
   }
 
   const runtimeDir = path.join(targetDir, '.architecture-guard');
@@ -553,7 +540,6 @@ async function runInit(targetDir, opts) {
       const dest = path.join(adaptersDir, f);
       if (!fs.existsSync(dest)) {
         fs.copyFileSync(src, dest);
-        console.log(`  ✓ Copied adapters/${f}`);
       }
     }
   }
