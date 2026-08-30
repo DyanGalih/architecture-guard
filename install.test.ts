@@ -31,26 +31,48 @@ test('standalone orchestration and legacy Spec Kit extension expose the same ski
   }
 });
 
-test('every orchestration adapter token resolves for every supported adapter', () => {
+test('every orchestration and governed command adapter token resolves for every supported adapter', () => {
   const root = path.join(__dirname, '..');
   const adapterNames = ['generic', 'openspec', 'spec-kit'];
   const adapterMaps = Object.fromEntries(adapterNames.map(name => {
     const content = fs.readFileSync(path.join(root, 'adapters', `${name}.md`), 'utf8');
     const pathSection = content.split('## Path Map')[1].split('## Command Map')[0];
     const commandSection = content.split('## Command Map')[1].split('## Constitution Layout')[0];
-    const keys = section => new Set([...section.matchAll(/^\|\s*([a-z0-9-]+)\s*\|/gm)].map(match => match[1]));
-    return [name, { path: keys(pathSection), command: keys(commandSection) }];
+    const parseMap = section => new Map([...section.matchAll(/^\|\s*([a-z0-9-]+)\s*\|\s*([^|]+)\s*\|/gm)].map(match => [match[1].trim(), match[2].trim()]));
+    return [name, { path: parseMap(pathSection), command: parseMap(commandSection) }];
   }));
 
-  for (const file of fs.readdirSync(path.join(root, 'orchestration')).filter(file => file.endsWith('.md'))) {
-    const prompt = fs.readFileSync(path.join(root, 'orchestration', file), 'utf8');
-    const tokens = [...prompt.matchAll(/\{adapter_(path|command):([^}]+)\}/g)];
-    for (const adapter of adapterNames) {
-      for (const [, kind, key] of tokens) {
-        assert.ok(adapterMaps[adapter][kind].has(key), `${file}: ${adapter} missing ${kind}:${key}`);
+  // Collect all command directories (orchestration and legacy commands)
+  const promptDirs = [path.join(root, 'orchestration')];
+  if (fs.existsSync(path.join(root, 'commands'))) {
+    promptDirs.push(path.join(root, 'commands'));
+  }
+
+  const allTokens = new Set();
+  for (const dir of promptDirs) {
+    for (const file of fs.readdirSync(dir).filter(file => file.endsWith('.md'))) {
+      const prompt = fs.readFileSync(path.join(dir, file), 'utf8');
+      const tokens = [...prompt.matchAll(/\{adapter_(path|command):([^}]+)\}/g)];
+      for (const tokenMatch of tokens) {
+        allTokens.add(tokenMatch[0]);
+      }
+      for (const adapter of adapterNames) {
+        for (const [, kind, key] of tokens) {
+          const map = adapterMaps[adapter][kind];
+          assert.ok(map.has(key), `${file}: ${adapter} missing ${kind}:${key}`);
+          const value = map.get(key);
+          assert.ok(value && value.length > 0, `${file}: ${adapter} has empty mapping for ${kind}:${key}`);
+        }
       }
     }
   }
+
+  // Contract requirement: ensure canonical verify and archive mappings in OpenSpec
+  const openspecCommands = adapterMaps['openspec'].command;
+  assert.ok(openspecCommands.has('verify'), 'OpenSpec adapter must define verify');
+  assert.match(openspecCommands.get('verify'), /openspec validate.*--strict/);
+  assert.ok(openspecCommands.has('archive'), 'OpenSpec adapter must define archive');
+  assert.match(openspecCommands.get('archive'), /openspec archive.*--yes/);
 });
 
 test('Security Review stays in the legacy SpecKit extension channel', () => {
@@ -99,8 +121,11 @@ test('installs every agent format at the project root with selected resources on
   assert.ok(fs.existsSync(path.join(cwd, 'adapters/spec-kit.md')));
   assert.ok(!fs.existsSync(path.join(cwd, 'adapters/openspec.md')));
   assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-adapter'), 'utf8').trim(), 'spec-kit');
-  for (const dir of ['templates', 'presets', 'hygiene-rules', 'sonar-rules']) {
-    assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard', dir)));
+  assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard/config.yml')));
+  assert.match(fs.readFileSync(path.join(cwd, '.architecture-guard/config.yml'), 'utf8'), /adapter:\s*spec-kit/);
+  // Immutable directories should not exist in default lean mode
+  for (const dir of ['templates', 'presets', 'sonar-rules']) {
+    assert.ok(!fs.existsSync(path.join(cwd, '.architecture-guard', dir)));
   }
 });
 
@@ -219,18 +244,37 @@ test('escapes TOML triple quotes and emits safe YAML metadata', () => {
   assert.match(fs.readFileSync(yaml, 'utf8'), /title: "ag-init"/);
 });
 
-test('runtime resources auto-replace by default and can be skipped with --overwrite skip', () => {
+test('--vendor copies full runtime resources for air-gapped environments', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-vendor-'));
+  spawnSync(process.execPath, [installer, 'init', '--vendor', '--yes', '--agent', 'opencode', '--framework', 'spec-kit'], { cwd, encoding: 'utf8' });
+  for (const dir of ['templates', 'presets', 'hygiene-rules', 'sonar-rules']) {
+    assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard', dir)));
+  }
+});
+
+test('default init purges legacy unmodifiable engine directories', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-legacy-'));
+  const legacyDir = path.join(cwd, '.architecture-guard/templates');
+  fs.mkdirSync(legacyDir, { recursive: true });
+  fs.writeFileSync(path.join(legacyDir, 'legacy.md'), 'legacy');
+
+  spawnSync(process.execPath, [installer, 'init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit'], { cwd, encoding: 'utf8' });
+  assert.ok(!fs.existsSync(legacyDir), 'legacy templates dir should be purged');
+  assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard/config.yml')));
+});
+
+test('vendor mode runtime resources auto-replace by default and can be skipped with --overwrite skip', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
-  install('1\n3\n', cwd);
+  spawnSync(process.execPath, [installer, 'init', '--vendor', '--yes', '--agent', 'opencode', '--framework', 'spec-kit'], { cwd, encoding: 'utf8' });
   const template = path.join(cwd, '.architecture-guard/templates/ponytail_core.md');
   fs.writeFileSync(template, 'custom');
 
   // With --overwrite skip, custom template is preserved
-  spawnSync(process.execPath, [installer, 'init', '--overwrite', 'skip'], { cwd, input: '1\n3\n', encoding: 'utf8' });
+  spawnSync(process.execPath, [installer, 'init', '--vendor', '--overwrite', 'skip', '--yes', '--agent', 'opencode', '--framework', 'spec-kit'], { cwd, encoding: 'utf8' });
   assert.equal(fs.readFileSync(template, 'utf8'), 'custom');
 
-  // Default replaces custom template with latest
-  install('1\n3\n', cwd);
+  // Default vendor replaces custom template with latest
+  spawnSync(process.execPath, [installer, 'init', '--vendor', '--yes', '--agent', 'opencode', '--framework', 'spec-kit'], { cwd, encoding: 'utf8' });
   assert.notEqual(fs.readFileSync(template, 'utf8'), 'custom');
 });
 
@@ -329,12 +373,12 @@ test('configures claude agent teams in .claude/settings.json when enabled via fl
   assert.ok(!fs.existsSync(path.join(cwdNoFlag, '.claude', 'settings.json')));
 });
 
-test('installs Claude Code Agent Teams templates and configs', () => {
+test('installs Claude Code Agent Teams templates in vendor mode and resolves dynamically', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
-  install('1\n1\n1\nn\n', cwd);
+  spawnSync(process.execPath, [installer, 'init', '--vendor', '--yes', '--agent', 'claude', '--framework', 'openspec'], { cwd, encoding: 'utf8' });
 
   const templateFile = path.join(cwd, '.architecture-guard', 'templates', 'agents_template.yml');
-  assert.ok(fs.existsSync(templateFile), 'Missing agents_template.yml');
+  assert.ok(fs.existsSync(templateFile), 'Missing agents_template.yml in vendor mode');
   const templateContent = fs.readFileSync(templateFile, 'utf8');
   assert.match(templateContent, /topology: claude-code-agent-teams/);
   assert.match(templateContent, /analyst_creator/);
@@ -345,6 +389,13 @@ test('installs Claude Code Agent Teams templates and configs', () => {
   assert.match(templateContent, /code_reviewer/);
 
   const commsFile = path.join(cwd, '.architecture-guard', 'templates', 'agent_communication.md');
-  assert.ok(fs.existsSync(commsFile), 'Missing agent_communication.md');
+  assert.ok(fs.existsSync(commsFile), 'Missing agent_communication.md in vendor mode');
+
+  // Verify dynamic resolution from lean workspace without vendor files
+  const leanCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-lean-'));
+  spawnSync(process.execPath, [installer, 'init', '--yes', '--agent', 'claude', '--framework', 'openspec'], { cwd: leanCwd, encoding: 'utf8' });
+  const resolved = require('./cli/resolve').resolveResource('template', 'agents_template', { target: leanCwd });
+  assert.strictEqual(resolved.source, 'bundled');
+  assert.match(resolved.content, /topology: claude-code-agent-teams/);
 });
 

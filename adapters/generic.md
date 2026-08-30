@@ -1,6 +1,6 @@
-# Generic SDD Adapter
+# Generic Workflow Adapter
 
-Use this adapter when no supported SDD tool is selected. Ask the user for active artifact paths when a command needs them; never guess.
+Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/selected-adapter` is `generic`. It maps governance concepts to the current directory with user-prompt fallbacks for missing artifact paths; never guess.
 
 ## Path Map
 

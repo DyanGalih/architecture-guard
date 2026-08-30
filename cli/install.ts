@@ -281,7 +281,11 @@ async function installCommand(agentType: any, commandName: any, cmdDir: any, opt
     if (action !== 'replace' && action !== 'keep both') {
       return;
     }
-    if (action === 'keep both') dest = availableCopy(dest, cfg, sk, cmdDir, agentType);
+    if (action === 'keep both') {
+      dest = availableCopy(dest, cfg, sk, cmdDir, agentType);
+    } else if (action === 'replace') {
+      fs.rmSync(dest, { recursive: true, force: true });
+    }
   }
 
   try {
@@ -385,7 +389,7 @@ function configureClaudeAgentTeams(targetDir: string) {
 }
 
 function parseArgs(argv) {
-  const opts = { target: null, agents: null, framework: null, commands: null, overwrite: null, yes: false, help: false, version: false, claudeAgentTeams: false, values: [] };
+  const opts = { target: null, agents: null, framework: null, commands: null, overwrite: null, yes: false, help: false, version: false, claudeAgentTeams: false, vendor: false, values: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
@@ -397,6 +401,8 @@ function parseArgs(argv) {
         opts.yes = true; break;
       case '--claude-agent-teams': case '--claude-teams':
         opts.claudeAgentTeams = true; break;
+      case '--vendor': case '--full':
+        opts.vendor = true; break;
       case '--overwrite':
         opts.overwrite = argv[++i]; break;
       case '--agent': case '--agents':
@@ -413,6 +419,7 @@ function parseArgs(argv) {
         else if (a.startsWith('--commands=')) opts.commands = a.slice('--commands='.length);
         else if (a.startsWith('--overwrite=')) opts.overwrite = a.slice('--overwrite='.length);
         else if (a === '--claude-agent-teams' || a === '--claude-teams') opts.claudeAgentTeams = true;
+        else if (a === '--vendor' || a === '--full') opts.vendor = true;
         else if (!a.startsWith('-')) { opts.values.push(a); }
         break;
     }
@@ -435,6 +442,7 @@ Options:
   --framework <f>       spec-kit | openspec | none
   --commands <list>     Comma-separated command names or indices (e.g. init,init-brownfield or 1,2)
   --overwrite <mode>    replace | skip | keep-both (default: replace)
+  --vendor, --full      Copy immutable runtime resources locally (for air-gapped setups)
   --claude-agent-teams  Enable Claude Code Agent Teams (Beta / Experimental)
 
 When --yes is set, --agent/--framework/--commands are honored; any missing value
@@ -575,7 +583,20 @@ async function runInit(targetDir, opts) {
   }
 
   const runtimeDir = path.join(targetDir, '.architecture-guard');
-  await installRuntimeResources(runtimeDir, opts);
+  fs.mkdirSync(runtimeDir, { recursive: true });
+
+  const isVendor = Boolean(opts.vendor || opts.full);
+  if (isVendor) {
+    await installRuntimeResources(runtimeDir, opts);
+  } else {
+    // Purge legacy static unmodifiable directories
+    for (const dir of ['templates', 'presets', 'sonar-rules']) {
+      const legacyDir = path.join(runtimeDir, dir);
+      if (fs.existsSync(legacyDir)) {
+        fs.rmSync(legacyDir, { recursive: true, force: true });
+      }
+    }
+  }
 
   const adaptersDir = path.join(targetDir, 'adapters');
   const srcAdaptersDir = path.join(ROOT_DIR, 'adapters');
@@ -590,7 +611,11 @@ async function runInit(targetDir, opts) {
       }
     }
   }
-  fs.writeFileSync(path.join(runtimeDir, 'selected-adapter'), `${framework === 'none' ? 'generic' : framework}\n`);
+
+  const adapter = framework === 'none' ? 'generic' : framework;
+  const configYml = `adapter: ${adapter}\npresets: []\n`;
+  fs.writeFileSync(path.join(runtimeDir, 'config.yml'), configYml);
+  fs.writeFileSync(path.join(runtimeDir, 'selected-adapter'), `${adapter}\n`);
 
   appendAgentsMd(targetDir, selectedAgents);
 

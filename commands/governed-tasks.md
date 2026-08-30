@@ -90,7 +90,7 @@ You must orchestrate the `/speckit.tasks` workflow directly.
 2. **Execute Tasks**: Run `/speckit.tasks` to generate and save `specs/<feature>/tasks.md`.
 
    **If `/speckit.tasks` is not available as a registered command** (i.e., the AI agent does not recognize it as a slash command), fall back to inline task generation:
-   - Read the technical design document at `specs/<feature>/plan.md` (and `spec.md` if present).
+   - Read the technical design document at `specs/<feature>/plan.md` for SpecKit, or the active OpenSpec `openspec/.../design.md` artifact (and `spec.md` if present).
    - Read all applicable constitution files (`.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`).
    - Use Flash-Mem context and `specs/<feature>/security-constraints.md` if available.
    - Generate `specs/<feature>/tasks.md` directly, breaking down the plan into implementation-ready tasks with checkbox format. Enforce Ponytail minimalism and role tags.

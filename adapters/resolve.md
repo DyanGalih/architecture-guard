@@ -5,7 +5,7 @@ This preamble loads before every orchestration command. Its job is to resolve th
 ## Resolution Chain
 
 1. Apply an explicit adapter override (`--adapter spec-kit`, `--adapter openspec`, or `--adapter generic`) before persisted selection.
-2. Read `.architecture-guard/selected-adapter` when present. This is the installed project's source of truth and selects the adapter named in the file.
+2. Read `.architecture-guard/config.yml` (or legacy `.architecture-guard/selected-adapter`) when present. This is the installed project's source of truth and selects the adapter named in the file.
 3. If no persisted selection exists, check for both the `.specify/` directory and `openspec/config.yaml` before making either single-marker choice. If both markers exist, ask the user which adapter to initialize.
 4. If only `.specify/` exists in project root → **SpecKit**
    - Also verify `.specify/memory/` or `.specify/extensions.yml` presence for confidence.

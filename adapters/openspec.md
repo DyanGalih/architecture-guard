@@ -1,6 +1,6 @@
 # OpenSpec Adapter
 
-Use this adapter when `.architecture-guard/selected-adapter` is `openspec`. The `openspec/config.yaml` marker is only a fallback for uninitialized projects.
+Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/selected-adapter` is `openspec`. The `openspec/config.yaml` marker is only a fallback for uninitialized projects.
 
 ## Path Map
 
@@ -38,8 +38,8 @@ Use this adapter when `.architecture-guard/selected-adapter` is `openspec`. The 
 |---|---|
 | create-spec | Read `openspec instructions specs --change "{change}" --json`, then create the requested change-level specs inline |
 | create-change | If the named change does not exist, run `openspec new change "{change}"`; otherwise reuse it |
-| archive | Run the native `openspec archive "{change}"` command once; do not invoke Architecture Guard archive recursively |
-| verify | Run the Architecture Guard verification workflow against the active change |
+| archive | After explicit user approval and collision preflight, run `openspec archive "{change}" --yes`. |
+| verify | Run the registered Architecture Guard architecture-verify capability; if unavailable, run `openspec validate "{change}" --strict` and perform the documented inline task-to-code verification. |
 | clarify-spec | Unsupported natively; ask and apply an inline ambiguity-resolution loop |
 | create-plan | Read `openspec instructions design --change "{change}" --json`, then create `{adapter_path:plan}` inline |
 | create-tasks | Read `openspec instructions tasks --change "{change}" --json`, then create `{adapter_path:tasks}` inline |
