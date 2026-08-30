@@ -1,3 +1,12 @@
+## 2.5.0
+
+- Added dynamic CLI resource resolver (`architecture-guard resolve <category> [name]`) for on-demand resolution of immutable engine templates, presets, hygiene rules, and SonarLint rules.
+- Implemented lean workspace initialization: `architecture-guard init` now writes a compact `.architecture-guard/config.yml` and avoids copying static unmodifiable files into target repositories.
+- Added legacy static directory purge during `init` to remove obsolete asset folders from `.architecture-guard/`.
+- Added `--vendor` / `--full` flag to `architecture-guard init` for air-gapped setups requiring full local copying.
+- Enforced clean force-replacement of `ag-*` agent skills/commands across selected agent directories.
+- Implemented strict path traversal bounds validation (CWE-22) in resource resolution.
+
 ## 2.4.0
 
 - Added Angular architecture preset (`presets/angular.md`) supporting modern Angular conventions (Signals, Standalone components, `inject()` DI, `OnPush` change detection, typed reactive forms, DTOs, and functional guards/interceptors).

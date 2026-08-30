@@ -1,6 +1,6 @@
 # SpecKit Adapter
 
-Use this adapter when `.architecture-guard/selected-adapter` is `spec-kit`. The `.specify/` marker is only a fallback for uninitialized projects.
+Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/selected-adapter` is `spec-kit`. The `.specify/` marker is only a fallback for uninitialized projects.
 
 ## Path Map
 

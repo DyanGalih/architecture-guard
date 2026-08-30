@@ -34,6 +34,8 @@ program
   .option('--framework <f>', 'spec-kit | openspec | none')
   .option('--commands <list>', 'Comma-separated command names or indices')
   .option('--overwrite <mode>', 'replace | skip | keep-both')
+  .option('--vendor', 'Copy immutable runtime resources locally (for air-gapped setups)')
+  .option('--full', 'Alias for --vendor')
   .option('--claude-agent-teams', 'Enable Claude Code Agent Teams (Beta / Experimental)')
   .option('--claude-teams', 'Alias for --claude-agent-teams')
   .action(async (target, options) => {
@@ -87,6 +89,18 @@ program
   .option('--json', 'Output a machine-readable result')
   .option('--framework <framework>', 'Override detection: speckit | openspec')
   .action(async (changeName, options) => { await runArchive(changeName, options); });
+
+import { runResolveCommand } from '../cli/resolve';
+
+program
+  .command('resolve <category> [name]')
+  .description('Resolve Architecture Guard engine assets or local overrides')
+  .option('--path', 'Print the resolved file path instead of file content')
+  .option('--json', 'Output structured JSON metadata')
+  .option('--target <dir>', 'Target workspace directory (default: current working directory)')
+  .action(async (category, name, options) => {
+    await runResolveCommand(category, name, options);
+  });
 
 import { runSelfUpdate } from '../cli/self-update';
 

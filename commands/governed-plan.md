@@ -88,13 +88,13 @@ You must orchestrate the `/speckit.plan` workflow directly.
    - Proactively establish transaction failure-safety and error-recovery ownership boundaries.
    - Proactively plan repository hygiene: explicitly declare target paths and forbid temporary/comparison artifacts or unverified schema clones.
    - Also prefer one shared plan path for repeated behavior instead of separate duplicated steps or parallel implementations.
-2. **Execute Plan**: Run `/speckit.plan` to generate and save the technical design document at `specs/<feature>/plan.md`.
+2. **Execute Plan**: Run `/speckit.plan` when the active project is SpecKit to generate and save `specs/<feature>/plan.md`. If the active project uses OpenSpec, generate its native `openspec/.../design.md` artifact through the OpenSpec workflow instead.
 
    **If `/speckit.plan` is not available as a registered command** (i.e., the AI agent does not recognize it as a slash command), fall back to inline planning:
    - Read the active spec at `specs/<feature>/spec.md` (or the path provided by the user).
    - Read all applicable constitution files (`.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`).
    - Use Flash-Mem context if available.
-   - Generate the technical design document at `specs/<feature>/plan.md` directly, incorporating all context above and enforcing Ponytail minimalism.
+   - Generate the technical design document at `specs/<feature>/plan.md` for SpecKit, or the active OpenSpec `openspec/.../design.md` path, incorporating all context above and enforcing Ponytail minimalism.
    - Note in the Governance Summary that `/speckit.plan` was unavailable and planning was performed inline.
 
 #### Claude Code Agent Teams Coordination (When Active)
