@@ -50,6 +50,7 @@ Build internal representations:
 - **Implementation Evidence**: For each completed task (`[x]`), scan referenced files for logic that addresses the task description.
 - **Contract Inventory**: Extract planned API/Data signatures from the technical design artifact.
 - **Requirement Evidence Map**: Map every specification requirement and acceptance criterion to its plan/tasks representation and concrete implementation/test evidence.
+- **Artifact Consistency Check**: Compare specification, plan, tasks, and security constraints for contradictions that make implementation intent or acceptance ambiguous.
 - **Duplication Check**: Look for repeated business logic, validation, or transformation across files and confirm it has been centralized or explicitly justified.
 
 **Common DRY Signals**
@@ -63,7 +64,7 @@ Build internal representations:
 - **Ghost Tasks**: Tasks marked complete but with no evidence in the referenced files.
 - **Orphaned Code**: Implementation logic present in files that wasn't planned in `tasks.md`.
 - **Missing Files**: Files referenced in tasks that do not exist on disk.
-- **Requirement Coverage**: Every requirement and acceptance criterion must be `Verified`, `Partial`, `Missing`, or `Not Applicable` with cited artifact and code/test evidence.
+- **Requirement Coverage**: Every requirement and acceptance criterion must be `Verified`, `Partial`, `Missing`, `Contradicted`, or `Not Applicable` with cited artifact and code/test evidence.
 - **Artifact Contradictions**: Report conflicting requirements, acceptance criteria, design decisions, or completion claims across spec, plan, and tasks; do not resolve contradictions by silently choosing one artifact.
 
 #### B. Boundary Integrity
@@ -102,9 +103,14 @@ Build internal representations:
 
 ### Requirement Evidence
 
-| Requirement / Acceptance Criterion | Status | Spec Evidence | Plan / Task Evidence | Code / Test Evidence |
-|:---|:---|:---|:---|:---|
-| [Requirement ID or summary] | [Verified / Partial / Missing / Not Applicable] | [Path:line] | [Path:line] | [Path:line or explicit absence] |
+| Requirement / Acceptance Criterion | Status | Blocking | Spec Evidence | Plan / Task Evidence | Code / Test Evidence |
+|:---|:---|:---|:---|:---|:---|
+| [Requirement ID or summary] | [Verified / Partial / Missing / Contradicted / Not Applicable] | [Yes/No under active policy] | [Path:line] | [Path:line] | [Path:line or explicit absence] |
+
+### Artifact Contradictions
+- **Contradiction**: [Conflicting artifact statements or None]
+- **Blocking**: [Yes/No under active policy]
+- **Resolution Required**: [Authoritative artifact and decision needed]
 
 ### Task Status Analysis
 For each task in `tasks.md`:
@@ -132,6 +138,12 @@ For each task in `tasks.md`:
 1. **Critical Gaps**: Address missing implementation for tasks [IDs] immediately.
 2. **Architecture Alignment**: Resolve boundary violations in [Files] using suggested refactor tasks.
 3. **Completion**: If all CRITICAL/HIGH findings are resolved, propose any validated Flash-Mem lessons and write them only after explicit user approval.
+
+### Claude Code Agent Teams Verification Protocol (When Active)
+Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
+- **Code Reviewer** leads the verification gate.
+- If verification passes without blocking violations, the lead offers the separate governed archive workflow after reporting verification evidence; archival still requires its own approvals.
+- If verification exposes boundary drift or unfulfilled tasks, **HITL Gate 2** prompts the user to route back to **Analyst Creator** for task updates and re-assignment.
 
 **Next Step**: [e.g. "Run `{adapter_command:architecture-apply}` to fix V2"]
 

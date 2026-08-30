@@ -1,144 +1,83 @@
 ---
-description: Run a single architecture workflow with optional memory context and Security Review handoff.
+description: Run the governed SDD lifecycle from discovery or an active change through specification, planning, tasks, implementation, verification, and optional archival.
 ---
 
 # Architecture Workflow Command
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing this command, read `adapters/resolve.md`, load the selected `adapters/{tool}.md`, and resolve all adapter path and command tokens used by each delegated phase.
 
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+Before continuing, read and apply `{adapter_path:ponytail-template}` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
-You are running `architecture-guard` as the single orchestration entry point for architecture review.
+Use this command as the end-to-end Architecture Guard entry point. Delegate each phase to its registered Architecture Guard capability instead of reproducing that phase's internal prompt.
 
-Use this command when the user wants one pass that covers architecture review, memory-first context when available, Security Review handoff when available, and optional performance mode without manually chaining multiple commands.
+## Agent Teams Activation
 
-## Flash-Mem-First Architecture Context Retrieval
+Agent Teams mode is active only when all of the following are true:
 
-Try Flash-Mem first: query summary and metadata context before performing architecture analysis.
+1. The host is Claude Code and exposes named teammate spawning and messaging.
+2. `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled in the active environment or `.claude/settings.json`.
+3. The user explicitly selects Agent Teams for this run, or the native command arguments explicitly request it.
 
-1. Search Flash-Mem for relevant architecture context:
-   - architecture decisions
-   - ADRs
-   - design constraints
-   - coding conventions
-   - prior guard findings
-   - approved exceptions
-   - architectural patterns
-2. Prefer summary-first retrieval:
-   - use summaries
-   - use metadata
-   - use confidence
-   - use tags
-   - use related files
-3. Load full memory content only when summaries are insufficient.
-4. Reuse approved architectural decisions whenever possible.
-5. Flag conflicts between proposed changes and existing architectural decisions.
-6. After analysis, propose durable architecture knowledge for Flash-Mem and write it only after explicit user approval:
-   - new architecture decisions
-   - approved exceptions
-   - recurring violations
-   - architectural constraints
-   - project conventions
-   - validated design patterns
+When the environment flag is present, explain that `.architecture-guard/agents.yml` is an Architecture Guard role profile, not a native Claude Code configuration file. Use it to shape named teammate prompts when present. If any activation condition is absent, run in single-agent mode without simulating teammates or claiming parallel execution.
 
-If Flash-Mem is unavailable or the retrieved summaries are insufficient, continue with the repository artifacts and constitution files available in the workspace.
+## Lifecycle
 
-This command accepts the same normalized command context as `ag-review-artifacts` and `ag-review-implementation`, including semantic and dot-style aliases.
+### Step 1 - Resolve the Starting Point
 
-The workflow is serial and ownership-aware:
+1. Read Flash-Mem context when its tools are available; otherwise use `{adapter_path:constitution}`, `{adapter_path:arch-constitution}`, and `{adapter_path:security-constitution}` with adapter-documented fallbacks.
+2. Resolve any user-supplied change name and artifact paths before filesystem discovery.
+3. If the request is still exploratory or materially ambiguous, run the registered `ag-governed-discover` capability and use its Discovery Summary Draft as the specification seed.
+4. If no active specification exists, run the registered `ag-governed-spec` capability. Do not enter planning until specification creation and clarification succeed.
+5. If an active specification already exists, confirm the intended active change when more than one candidate is plausible.
 
-1. Read Flash-Mem context first when it is available, then fall back to repository files if needed.
-2. Normalize `mode` and `focus` from the incoming command.
-3. Run the architecture review against the Constitution, memory synthesis, and generic architecture principles.
-4. If `mode=performance`, keep the pass advisory and route output to `Performance Insights` only.
-5. Route security-first findings to Security Review instead of duplicating them here.
-6. Treat repeated business rules, approvals, validation, DTO mapping, or orchestration as DRY drift and route it to refactor extraction rather than allowing parallel copies.
-   - Prefer one shared source of truth for the repeated rule, contract, transformation, or decision.
-7. If `mode=architecture` and a Constitution Update Proposal is warranted, surface it and leave application to `ag-apply`.
-8. Produce refactor tasks or an apply recommendation for architecture findings.
+### Step 2 - Governed Planning and Tasks
 
-## Goal
+- In single-agent mode, run the registered `ag-governed-delivery` capability.
+- In Agent Teams mode, run `ag-governed-delivery-team` when stakeholder User Story approval is required; otherwise run `ag-governed-delivery` with the active team profile.
+- Let the delegated delivery prompt perform its own plan, task, security, architecture, analysis, and write-approval gates.
 
-Review one resolved active specification, plan, task list, or implementation set with a single workflow and produce the most useful next step.
+### Human Gate 1 - Approve Plan and Tasks
 
-## Inputs To Consider
+Present the resolved plan and task artifacts plus any blocking findings. Obtain explicit user approval before starting implementation. Approval of artifacts does not approve unrelated writes or Git operations.
 
-Resolve explicit user paths first; otherwise use `{adapter_path:spec}`, `{adapter_path:plan}`, `{adapter_path:tasks}`, and `{adapter_path:security-constraints}` for one active adapter artifact set. If branch metadata and adapter paths identify different sets, or multiple sets remain plausible, stop and ask the user instead of combining them. Read resolved files explicitly because they may be ignored by search.
+### Step 3 - Governed Implementation
 
-1. **Governance & Security Constitution**:
-   - `{adapter_path:constitution}`
-   - `{adapter_path:security-constitution}`
+Run the registered `ag-governed-implement` capability. In Agent Teams mode, the lead assigns non-overlapping task and file ownership before spawning implementors. If an overlap is discovered, pause one owner and coordinate a handoff; do not rely on an invented Git locking mechanism or allow concurrent edits to the same file.
 
-2. **Architecture Constitution**:
-   - `{adapter_path:arch-constitution}`
+### Human Gate 2 - Review Implementation
 
-3. **Feature-Specific Context**:
-   - `{adapter_path:security-constraints}`
-   - `{adapter_path:spec}`, `{adapter_path:plan}`, and `{adapter_path:tasks}`
-   - Stored architecture decisions from Flash-Mem, if present.
-   - Security Review findings, if present.
-   - Optional preset guidance, if present.
+Present modified files, completed tasks, review findings, and test results. Obtain explicit user approval before final verification.
 
-## Workflow
+### Step 4 - Verification
 
-1. Read Flash-Mem context first if it is available in the project or workflow context, then fall back to repository files if needed.
-2. Review the current work against the Constitution and generic architecture principles.
-3. Detect Security Review independently from host registrations, not adapter extension support, and identify whether any finding is primarily security-related.
-4. If Security Review is available, hand off security-first findings. If unavailable, report the capability as unavailable, perform only constitution-required architecture-visible security checks, and mark security coverage degraded without claiming a security pass.
-5. Produce refactor tasks or an apply recommendation as needed.
-6. Prefer a single concise summary that tells the user what to fix next.
-7. Run hygiene rules only across the resolved review scope plus repository-level files explicitly required by each rule. Apply configured exclusions, preserve policy severity, and record blocking status separately.
+Run the registered `ag-verify` capability. A pass requires task and requirement evidence, architecture and security-policy compliance, repository hygiene results, and no unresolved blocking findings. Do not equate unavailable optional integrations with a pass.
 
-## Rules
+### Step 5 - Optional Archival Handoff
 
-- Do not invent framework-specific conventions.
-- Do not invent unsupported framework APIs; use adapter behavior and fallbacks.
-- Do not block implementation by default. Block only architecture P0 or findings whose applicable security/hygiene policy explicitly designates them blocking; capability availability and finding category do not imply severity.
-- Do not replace Security Review; route security-first findings to Security Review when available.
-- Do not require `flash-mem`; treat it as optional read-only context only.
-- Do not duplicate Security Review findings in the architecture output unless the issue is specifically an architectural boundary problem.
-- Do not write security follow-up items into architecture tasks or plan updates.
-- Do not write memory conclusions into architecture follow-up items.
+After verification passes, present the final governance summary and offer to run `ag-governed-archive`. Archival, changelog, memory, Git, and cleanup actions retain the separate approvals required by that capability. If the user declines, leave the active work intact.
 
-When `mode=performance`, do not produce violations or refactor tasks.
+## Output
 
-## Output Format
+Return a concise lifecycle summary containing:
 
-All governance reports MUST follow this standard template:
+- selected adapter, mode, and active change/artifact paths;
+- completed, skipped, blocked, and degraded phases;
+- approvals obtained and approvals still required;
+- verification status and unresolved findings;
+- the next safe action.
 
-```markdown
-# Architecture Governance Report
+## Guardrails
 
-## Input Summary
-- **Artifacts Scanned**: [list]
-- **Capabilities Used**: [`flash-mem`: yes/no, Security Review: available/unavailable]
-- **Mode**: [architecture/performance]
-- **Focus**: [general/db/api/async]
-
-## Findings
-
-### Violations
-[Table format with: ID | Category | Severity | Location | Summary | Evidence]
-
-### Refactor Tasks (if any)
-[Task list or "None"]
-
-### Constitution Update Proposals (if any)
-[Proposals or "None"]
-
-## Context Applied
-- **`flash-mem`**: [Used context or "Not available"]
-- **Security Review**: [Findings routed or "Not available"]
-- **Security Coverage**: [Independent / Degraded]
-
-## Recommended Next Step
-[Single clear action]
-```
+- Preserve the delegated phase prompts as the source of truth for phase behavior.
+- Never skip discovery/specification merely because no active artifact exists.
+- Never cross a human gate based on an earlier phase's approval.
+- Never claim Agent Teams behavior when the host capability is unavailable.
+- Preserve unrelated and uncommitted work throughout the lifecycle.
 
 ## Backward Compatibility
 
-The original SpecKit-specific version remains in the repository source checkout under `commands/workflow.md` for direct SpecKit use.
+The SpecKit extension version of this workflow is under `commands/workflow.md`.

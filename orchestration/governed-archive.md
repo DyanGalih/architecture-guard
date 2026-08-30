@@ -23,6 +23,7 @@ Verifies, then finalizes a completed feature. Changelog, memory, Git, and worksp
 - **All frameworks**: Trigger `{adapter_command:verify}` first and stop if verification fails or has unresolved blocking findings.
 - **If OpenSpec**: After verification and explicit approval, trigger `{adapter_command:archive}`; ask for the change name and archive destination if either is ambiguous.
 - **If SpecKit**: After verification and explicit approval, execute the adapter's retain-in-place archive behavior: keep the active feature artifacts in `{adapter_path:spec}`'s feature directory and incrementally update `{adapter_path:fallback-spec-index}`. Report index update failures as non-blocking warnings; do not move the feature artifacts.
+- **If Generic**: Explain that native archival is unsupported. Ask for and preview an archive destination; move only the explicitly selected artifacts after approval, and never overwrite an existing destination.
 - Before any write, inspect uncommitted changes and report files the archive would touch. Never discard, stage, commit, or overwrite unrelated changes.
 - Preflight every destination for collisions. Do not overwrite or merge an existing archive/index entry without explicit approval and a stated overwrite strategy.
 - Treat archive, index/spec sync, changelog, memory, Git, and cleanup as separate operations. Stop dependent operations after a failure, preserve completed results, and report `Partial` rather than attempting an unsafe rollback.
@@ -56,7 +57,9 @@ The command MUST return:
 - **Framework**: [OpenSpec / SpecKit / etc.]
 - **Status**: [Success / Partial / Blocked / Failed / Retained In Place]
 - **Synced/Consolidated**: [Success / Partial / Skipped / Failed]
+- **Destination**: [Retained in place / archive path / None]
 - **Collision/Overwrite**: [None / Approval Required / Approved strategy]
+- **Partial Failure Recovery**: [Not needed / completed operations, failed operations, and safe resume steps]
 
 ## Changelog
 - **Status**: [Appended / Skipped / Failed]

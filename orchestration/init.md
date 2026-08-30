@@ -436,15 +436,16 @@ Examples:
 
 ---
 
-### Delivery Topology (Team vs Solo)
+### Delivery Topology (Solo vs Team vs Agent Teams)
 
 Ask:
 
 ```text
-Are you working on this project as a solo developer, or as part of a team?
+How will development be delivered on this project?
 
-- Solo Development
-- Team Development
+- Solo Development (Single developer / AI pair)
+- Team Development (Human team with Issue Tracker sync)
+- Claude Code Agent Teams (Autonomous 6-role agent team: Analyst Creator, Analyst Reviewer, BE, FE, Unit Test, Code Reviewer)
 ```
 
 If the user selects Team Development:
@@ -452,6 +453,13 @@ If the user selects Team Development:
 2. Ask: "Which issue tracker MCP server should be used to sync User Stories? (e.g., github-mcp-server, jira, none)". Save this preference in the governance rules.
 3. Propose scaffolding a `user-stories/` directory at the project root and obtain explicit approval before creating it.
 4. If an issue tracker is selected (not "none"), ask for the required provider configuration (e.g., `repo` string for GitHub or `project` string for Jira). Propose `.architecture-guard/sync.yml` with the chosen provider, project/repo string, and `enabled: true`; obtain explicit approval before creating it.
+
+If the user selects Claude Code Agent Teams:
+1. Preview the proposed Architecture Guard role profile from `.architecture-guard/templates/agents_template.yml`.
+2. Explain that the profile is not a native Claude Code configuration file; current Claude Code uses an implicit team and named teammate spawning.
+3. Include creation of `.architecture-guard/agents.yml` and the exact `{adapter_path:constitution}` changes in the write preview, then require explicit approval before either write.
+4. After approval, set `topology: claude-code-agent-teams`, record role boundaries in `{adapter_path:constitution}`, and write the profile.
+5. Note that Agent Teams also requires host support and `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Fall back to single-agent execution when either is absent.
 
 ---
 
