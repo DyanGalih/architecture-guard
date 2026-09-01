@@ -1,3 +1,9 @@
+## 2.4.1
+
+- Enforce schema-compliant OpenSpec artifact keys in `rules:` (`proposal`, `specs`, `design`, `tasks`).
+- Relocate verification-only requirements and testing standards into top-level shared `context:` block in `openspec/config.yaml` and `ag-init` templates.
+- Update `ag-init` guidance and OpenSpec adapter documentation to prevent schema validation warnings across agents.
+
 ## 2.4.0
 
 - Added Angular architecture preset (`presets/angular.md`) supporting modern Angular conventions (Signals, Standalone components, `inject()` DI, `OnPush` change detection, typed reactive forms, DTOs, and functional guards/interceptors).
