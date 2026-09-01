@@ -79,10 +79,15 @@ context: |
   ## Testing Standards
   - [Per project]
 
-# Per-artifact rules
+# Per-artifact rules (MUST only use schema artifact IDs: proposal, specs, design, tasks)
+# Verification requirements and quality standards belong in context: (e.g. ## Testing Standards), not under rules.
 rules:
   proposal:
     - Keep proposals under 500 words
+  specs:
+    - Include measurable acceptance criteria
+  design:
+    - Document data structures and boundary contracts
   tasks:
     - Break tasks into chunks of max 2 hours
 ```

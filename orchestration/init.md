@@ -762,7 +762,8 @@ Examples:
 Ask:
 
 ```text
-If the active adapter supports per-artifact rules (for example, OpenSpec rules), do you want lightweight checklists for specs and design?
+If the active adapter supports per-artifact rules (for example, OpenSpec rules), do you want lightweight checklists for proposal, specs, design, or tasks?
+(Note: OpenSpec rules must strictly map to schema artifact IDs: proposal, specs, design, tasks. Verification/testing rules belong in the shared context block.)
 (Skip if the active adapter lacks a per-artifact rule mechanism)
 ```
 
@@ -1039,7 +1040,7 @@ The generated constitutions must reflect intentional engineering decisions.
 The init interview produces framework-specific constitution files:
 
 - **SpecKit adapter**: Writes `{adapter_path:constitution}`, `{adapter_path:arch-constitution}`, `{adapter_path:security-constitution}`
-- **OpenSpec adapter**: Updates `{adapter_path:constitution}` (config context and rules); `{adapter_path:arch-constitution}` and `{adapter_path:security-constitution}` remain optional splits and, when present, are reconciled with config so each rule has one canonical owner
+- **OpenSpec adapter**: Updates `{adapter_path:constitution}` (config context and rules). The `rules:` mapping MUST strictly use schema artifact IDs (`proposal`, `specs`, `design`, `tasks`). Verification-only and testing requirements belong in the shared `context:` block (e.g. under `## Testing Standards`) rather than under `rules.verify`. `{adapter_path:arch-constitution}` and `{adapter_path:security-constitution}` remain optional splits and, when present, are reconciled with config so each rule has one canonical owner
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "name": "architecture-guard",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "SDD-tool-agnostic architecture governance orchestrator for Spec Kit, OpenSpec, and generic Markdown workflows. Resolves the selected SDD adapter and applies its mappings automatically.",
   "bin": {
     "architecture-guard": "./dist/bin/cli.js"
