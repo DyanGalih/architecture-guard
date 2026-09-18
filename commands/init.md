@@ -282,52 +282,20 @@ Check for:
 
 ---
 
-## If BOTH files exist
+## Existing-State Rules
 
-1. Summarize:
+| Existing state | Behavior |
+|---|---|
+| All three exist | Summarize governance, architecture, security, conflicts, and duplication; offer targeted refinement. |
+| Governance + architecture exist | Preserve both; offer embedded security rules or creation of the security constitution. |
+| Governance + security exist | Preserve both; offer embedded architecture rules or creation of the architecture constitution. |
+| Architecture + security exist | Preserve both; offer creation of the governance constitution before any restructuring. |
+| Governance only | Analyze embedded architecture/security rules and offer dedicated files. |
+| Architecture only | Preserve it and offer governance plus security coverage. |
+| Security only | Preserve it and offer governance plus architecture coverage. |
+| None exist | Start the phased initialization interview. |
 
-* governance principles
-* architecture rules
-* duplicated rules
-* conflicting standards
-* unclear sections
-
-2. Ask:
-
-```text
-Would you like to:
-- refine governance rules
-- refine architecture rules
-- reduce duplication
-- evolve architecture direction
-- regenerate one of the files
-```
-
-3. NEVER overwrite rules automatically.
-
----
-
-## If ONLY the governance Constitution exists
-
-1. Analyze architecture-related sections.
-
-2. Detect rules that should move into:
-
-```text
-.specify/memory/architecture_constitution.md
-```
-
-3. Ask:
-
-```text
-Would you like to split architecture rules into a dedicated architecture constitution?
-```
-
----
-
-## If NO constitution files exist
-
-Start phased initialization interview.
+Never describe a partial state as fully initialized. Preview exact target files and proposed ownership changes, obtain explicit approval before writing, and never overwrite existing rules automatically.
 
 ---
 
@@ -414,15 +382,16 @@ Examples:
 
 ---
 
-### Delivery Topology (Team vs Solo)
+### Delivery Topology (Solo vs Team vs Agent Teams)
 
 Ask:
 
 ```text
-Are you working on this project as a solo developer, or as part of a team?
+How will development be delivered on this project?
 
-- Solo Development
-- Team Development
+- Solo Development (Single developer / AI pair)
+- Team Development (Human team with Issue Tracker sync)
+- Claude Code Agent Teams (Autonomous 6-role agent team: Analyst Creator, Analyst Reviewer, BE, FE, Unit Test, Code Reviewer)
 ```
 
 If the user selects Team Development:
@@ -430,6 +399,13 @@ If the user selects Team Development:
 2. If an issue tracker is selected (not "none"), ask for the required provider configuration (e.g., `repo` string for GitHub or `project` string for Jira).
 3. Preview the exact proposed governance changes and team scaffolding, including `Mode: Team`, the tracker preference, `user-stories/`, and `.architecture-guard/sync.yml` when applicable.
 4. Require explicit user approval of that preview before writing governance rules or creating any team scaffolding. If approval is declined, make no team-mode writes.
+
+If the user selects Claude Code Agent Teams:
+1. Preview the proposed Architecture Guard role profile based on `.architecture-guard/templates/agents_template.yml`.
+2. Explain that the profile is not a native Claude Code configuration file; current Claude Code uses an implicit team and named teammate spawning.
+3. Include creation of `.architecture-guard/agents.yml` and the exact constitution changes in the write preview, then require explicit approval before either write.
+4. After approval, set `topology: claude-code-agent-teams`, record role boundaries in `.specify/memory/constitution.md`, and write the profile.
+5. Note that Agent Teams also requires host support and `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Fall back to single-agent execution when either is absent.
 
 ---
 

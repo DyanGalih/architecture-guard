@@ -12,7 +12,7 @@ Before executing this command, read `adapters/resolve.md`. Resolve the active ad
 2. `.architecture-guard/selected-adapter`, which is authoritative after CLI installation.
 3. Filesystem markers only when no persisted selection exists.
 
-Load `adapters/{tool}.md` and resolve every `{adapter_path:key}` token before reading review artifacts. Stop if the adapter is missing or any token remains unresolved.
+Load `adapters/{tool}.md` and resolve every adapter path token (for example, a token whose key is `spec`) before reading review artifacts. Stop if the adapter is missing or any token remains unresolved.
 
 ## Ponytail Core Contract
 
@@ -231,6 +231,13 @@ Findings categorized by severity based on the active hygiene rules.
 4. **Durable Memory Preservation (Mandatory Check)**: If new architectural patterns, decisions, or repeatable lessons were identified, include proposed memory entries in the report. After returning the report-only structure, request approval in a separate interaction and write only approved entries.
 5. **Next Step**: Run `/ag-apply` to resolve all findings (plan/tasks findings will be applied directly; upstream findings in `proposal.md` or `spec.md` will be delegated with confirmation).
 6. **Remediation**: [Concrete remediation direction for the top issues, or "None needed"]
+
+### Claude Code Agent Teams Review Protocol (When Active)
+Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
+- **Analyst Reviewer** evaluates the report against constitutions.
+- **HITL Gate 1**: If gaps are found, Analyst Reviewer prompts the user:
+  - `[Apply Fix]`: Analyst Reviewer sends a peer message to **Analyst Creator** detailing the needed corrections. Analyst Creator fixes the artifacts and requests a re-review.
+  - `[Accept Risk / Proceed]`: For non-blocking findings only, Analyst Reviewer records the accepted risk before dispatching the artifacts to the **Implementor teammates** (`BE`, `FE`, `TEST`). Blocking findings cannot use this option.
 
 ## Framework Preset Guidance
 

@@ -354,8 +354,38 @@ function validateRuntimeResources() {
   }
 }
 
+function configureClaudeAgentTeams(targetDir: string) {
+  const claudeDir = path.join(targetDir, '.claude');
+  const settingsPath = path.join(claudeDir, 'settings.json');
+  let settings: Record<string, any> = {};
+
+  if (fs.existsSync(settingsPath)) {
+    try {
+      const raw = fs.readFileSync(settingsPath, 'utf8');
+      settings = JSON.parse(raw);
+    } catch (err) {
+      console.warn(`  ⚠ Could not parse existing ${path.relative(process.cwd(), settingsPath)}, creating fresh env config`);
+      settings = {};
+    }
+  }
+
+  if (typeof settings !== 'object' || settings === null || Array.isArray(settings)) {
+    settings = {};
+  }
+
+  if (!settings.env || typeof settings.env !== 'object' || Array.isArray(settings.env)) {
+    settings.env = {};
+  }
+
+  settings.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1';
+
+  fs.mkdirSync(claudeDir, { recursive: true });
+  fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+  console.log(`  ✓ Configured Claude Code Agent Teams (Beta) in ${path.relative(process.cwd(), settingsPath)}`);
+}
+
 function parseArgs(argv) {
-  const opts = { target: null, agents: null, framework: null, commands: null, overwrite: null, yes: false, help: false, version: false, values: [] };
+  const opts = { target: null, agents: null, framework: null, commands: null, overwrite: null, yes: false, help: false, version: false, claudeAgentTeams: false, values: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
@@ -365,6 +395,8 @@ function parseArgs(argv) {
         opts.version = true; break;
       case '-y': case '--yes':
         opts.yes = true; break;
+      case '--claude-agent-teams': case '--claude-teams':
+        opts.claudeAgentTeams = true; break;
       case '--overwrite':
         opts.overwrite = argv[++i]; break;
       case '--agent': case '--agents':
@@ -380,6 +412,7 @@ function parseArgs(argv) {
         else if (a.startsWith('--framework=')) opts.framework = a.slice('--framework='.length);
         else if (a.startsWith('--commands=')) opts.commands = a.slice('--commands='.length);
         else if (a.startsWith('--overwrite=')) opts.overwrite = a.slice('--overwrite='.length);
+        else if (a === '--claude-agent-teams' || a === '--claude-teams') opts.claudeAgentTeams = true;
         else if (!a.startsWith('-')) { opts.values.push(a); }
         break;
     }
@@ -393,15 +426,16 @@ function printHelp() {
 Install governance commands and adapters for an AI agent in the target directory.
 
 Arguments:
-  target              Target directory (default: current directory)
+  target                Target directory (default: current directory)
 
 Options:
-  -h, --help          Show this help
-  -y, --yes           Non-interactive: use defaults or required flags
-  --agent <names>     Comma-separated agent keys (e.g. opencode,claude)
-  --framework <f>     spec-kit | openspec | none
-  --commands <list>   Comma-separated command names or indices (e.g. init,init-brownfield or 1,2)
-  --overwrite <mode>  replace | skip | keep-both (default: replace)
+  -h, --help            Show this help
+  -y, --yes             Non-interactive: use defaults or required flags
+  --agent <names>       Comma-separated agent keys (e.g. opencode,claude)
+  --framework <f>       spec-kit | openspec | none
+  --commands <list>     Comma-separated command names or indices (e.g. init,init-brownfield or 1,2)
+  --overwrite <mode>    replace | skip | keep-both (default: replace)
+  --claude-agent-teams  Enable Claude Code Agent Teams (Beta / Experimental)
 
 When --yes is set, --agent/--framework/--commands are honored; any missing value
 falls back to its first valid option. By default, existing files are replaced;
@@ -524,6 +558,19 @@ async function runInit(targetDir, opts) {
 
     for (const cmd of selectedCommands) {
       await installCommand(agent, cmd, cmdDir, opts, isAgy ? workflowsDir : null);
+    }
+  }
+
+  if (selectedAgents.includes('claude')) {
+    let enableTeams = opts.claudeAgentTeams;
+    if (!enableTeams && !opts.yes) {
+      const answer = await ask('\nEnable Claude Code Agent Teams / Teammates (Beta / Experimental - unstable)? (y/n): ', null);
+      if (answer && ['y', 'yes'].includes(String(answer).toLowerCase())) {
+        enableTeams = true;
+      }
+    }
+    if (enableTeams) {
+      configureClaudeAgentTeams(targetDir);
     }
   }
 

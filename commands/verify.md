@@ -139,4 +139,10 @@ For each task in `tasks.md`:
 2. **Architecture Alignment**: Resolve boundary violations in [Files] using suggested refactor tasks.
 3. **Completion**: If all CRITICAL/HIGH are resolved, you **MUST automatically execute** the durable-memory capture flow to preserve lessons. Do not just recommend it; let the formal capture flow propose entries and request user approval.
 
+### Claude Code Agent Teams Verification Protocol (When Active)
+Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
+- **Code Reviewer** leads the verification gate.
+- If verification passes without blocking violations, the lead offers `/ag-governed-archive` after reporting verification evidence; archival still requires its own approvals.
+- If verification exposes boundary drift or unfulfilled tasks, **HITL Gate 2** prompts the user to route back to **Analyst Creator** for task updates and re-assignment.
+
 **Next Step**: [e.g. "Run `/ag-apply` to fix V2"]

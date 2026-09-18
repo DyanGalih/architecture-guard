@@ -82,6 +82,17 @@ You must orchestrate the `{adapter_command:implement}` (core implementation) wor
    - Read all applicable constitution files and any available Flash-Mem context before coding.
    - Perform the actual coding work (writing files, running tests) for each task, enforcing Ponytail minimalism.
    - Note in the Governance Summary that `{adapter_command:implement}` was unavailable and implementation was performed inline.
+
+#### Claude Code Agent Teams Coordination (When Active)
+
+Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
+- **Implementors (BE, FE, TEST)**:
+  - Map role-tagged tasks to the matching named implementor; keep `[ORCHESTRATION]` work in the lead session.
+  - Before spawning, the lead assigns non-overlapping tasks and explicit file ownership. If overlap is discovered, pause one owner and coordinate a handoff; never edit the same file concurrently.
+- **Code Reviewer** audits code changes across boundaries, reviews security constraints, and verifies tests before handoff.
+- **Human-in-the-Loop Gate**:
+  - Lead session collects implementation evidence, presents the completed task checklist, and requires explicit user confirmation before concluding or advancing to `/ag-verify`.
+
 3. **Write Code**: Perform the actual coding work (writing files, running tests) required by the tasks.
 4. **Inline Pre-Completion Self-Verification Gate**: Before marking any task complete:
    - **Deprecated & Dangerous Code Check**: Check changed and target files against `{adapter_path:hygiene-rules}/deprecated-and-dangerous-code.md` (or local hygiene rules) to ensure no obsolete, deprecated, or fatal language/framework patterns are introduced.
@@ -104,15 +115,12 @@ IF `security-review` is available as a host capability:
 
 ### Step 5 — Architecture Review on Implementation
 
-Run:
-```text
-`{adapter_command:architecture-review}`
-```
+Resolve `{adapter_command:architecture-review}`. If it identifies a registered capability, invoke it; otherwise perform the adapter's documented inline review. Never execute descriptive fallback prose as a shell or slash command.
 
 Review implementation against:
 - `{adapter_path:arch-constitution}`.
-- Plan, tasks, and `security-constraints.md`.
-   - Accepted deviations and any available Flash-Mem context.
+- Plan, tasks, and `{adapter_path:security-constraints}`.
+- Accepted deviations and any available Flash-Mem context.
 
 ### Step 5.5 — Blocking Decision Tree
 

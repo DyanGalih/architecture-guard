@@ -97,6 +97,13 @@ You must orchestrate the `{adapter_command:create-plan}` workflow directly.
    - Generate `{adapter_path:plan}` directly, incorporating all context above and enforcing Ponytail minimalism.
    - Note in the Governance Summary that `{adapter_command:create-plan}` was unavailable and planning was performed inline.
 
+#### Claude Code Agent Teams Coordination (When Active)
+
+Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
+- **Analyst Creator** drafts the technical design artifact at `{adapter_path:plan}` and decomposes requirements.
+- **Analyst Reviewer** audits the artifacts against the constitutions, Ponytail pragmatism, DRY boundaries, and security constraints through host messaging.
+- **Lead Session** resolves review findings, synthesizes the final plan, and pauses for explicit human approval before task generation.
+
 3. The planning process must incorporate the Project Constitution documents and memory synthesis. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, read constitution files directly with file-reading tools. Do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
 4. Prefer the cached synthesis and selected index entries over reopening the full durable memory set.
 
@@ -111,16 +118,13 @@ IF `security-review` is available as a host capability:
 
 ### Step 5 — Architecture Validation
 
-Run:
-```text
-`{adapter_command:violation-detection}`
-```
+Resolve `{adapter_command:violation-detection}`. If it identifies a registered capability, invoke it; otherwise perform the adapter's documented inline validation. Never execute descriptive fallback prose as a shell or slash command.
 
 Inputs to consider:
-- The generated the technical design artifact.
+- The generated technical design artifact.
 - `{adapter_path:arch-constitution}`.
 - Flash-Mem context (if available).
-- `security-constraints.md` (if available).
+- `{adapter_path:security-constraints}` (if available).
 
 Detect any `Security-Architecture Conflict` or architectural drift. Explicitly validate one canonical owner for repeated business rules, approvals, validation, DTO mapping, transformations, and orchestration (DRY), plus artifact locations, temporary/generated files, and repository cleanliness against `{adapter_path:hygiene-rules}`.
 

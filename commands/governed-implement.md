@@ -85,6 +85,15 @@ You must orchestrate the `/speckit.implement` (core implementation) workflow dir
    - Read all applicable constitution files and any available Flash-Mem context before coding.
    - Perform the actual coding work (writing files, running tests) for each task, enforcing Ponytail minimalism.
    - Note in the Governance Summary that `/speckit.implement` was unavailable and implementation was performed inline.
+
+#### Claude Code Agent Teams Coordination (When Active)
+
+Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
+- The lead maps `[BE]`, `[FE]`, and `[TEST]` tasks to named implementors and keeps `[ORCHESTRATION]` tasks in the lead session.
+- Before spawning, the lead assigns non-overlapping tasks and explicit file ownership. If overlap is discovered, pause one owner and coordinate a handoff; never edit the same file concurrently.
+- The Code Reviewer audits boundary compliance, security constraints, and runnable checks before handoff.
+- The lead presents implementation evidence and requires explicit user confirmation before advancing to `/ag-verify`.
+
 3. **Write Code**: Perform the actual coding work (writing files, running tests) required by the tasks.
 4. **Inline Pre-Completion Self-Verification Gate**: Before marking any task complete:
    - **Deprecated & Dangerous Code Check**: Check changed and target files against `.specify/extensions/architecture-guard/hygiene-rules/deprecated-and-dangerous-code.md` (or local hygiene rules) to ensure no obsolete, deprecated, or fatal language/framework patterns are introduced.
@@ -113,7 +122,7 @@ Run:
 Review implementation against:
 - `.specify/memory/architecture_constitution.md`.
 - Plan, tasks, and `security-constraints.md`.
-   - Accepted deviations and any available Flash-Mem context.
+- Accepted deviations and any available Flash-Mem context.
 
 ### Step 5.5 — Blocking Decision Tree
 
