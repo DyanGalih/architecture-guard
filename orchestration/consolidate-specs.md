@@ -8,9 +8,30 @@ description: Generate a compact, non-authoritative local fallback index from fea
 
 Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
+## Standalone Resource Resolution
+
+Architecture Guard engine resources are standalone package resources. Never search an SDD-tool directory, an extension directory, or a source checkout for them. An adapter path under `.architecture-guard` is an editable local override location, not proof that the resource was copied.
+
+- Directly inspect the matching `.architecture-guard/<category>/` directory first for workspace overrides.
+- If the named local resource exists, read it. Otherwise run `architecture-guard resolve <category> <name>` and use the returned content.
+- For a resource collection, run `architecture-guard resolve <category> --list`, then resolve every returned name individually in deterministic order so local overrides replace bundled files without hiding bundled defaults.
+- If the CLI is unavailable and a mandatory resource is not vendored locally, stop and report the missing runtime dependency. For optional resources, report `Unavailable` and continue only when this command explicitly permits degradation.
+
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+Before continuing, you **MUST** resolve and apply the `ponytail_core` template with `architecture-guard resolve template ponytail_core` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+
+## Capability Composition
+
+Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
+
+## Input & Context Loading
+
+Before making decisions or delegating work, read these inputs explicitly with file-reading tools:
+
+1. **Manifest & Configuration**: Read `openspec/config.yaml` first when the OpenSpec adapter is active (otherwise read the selected adapter project configuration), then inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
+2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. For OpenSpec, explicitly check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`. For SpecKit, use the adapter-resolved `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file.
+3. **Active Artifacts**: Read the feature, review, plan, task, or current-state artifacts required by this skill.
 
 ## Purpose
 
@@ -18,8 +39,8 @@ Provide the adapter's compact offline fallback for Budgeted Architecture Context
 
 ## Procedure
 
-1. Resolve `{adapter_command:consolidate-specs}` and `{adapter_path:fallback-spec-index}`.
-2. If consolidation is unsupported, execute `{adapter_command:list-specs}`, return that adapter-native index, and do not write a fallback artifact. Otherwise execute `{adapter_command:consolidate-specs}` and enumerate `{adapter_path:spec}` in normalized path order, excluding the fallback, generated artifacts, and explicitly archived sources.
+1. Resolve {adapter_command:consolidate-specs} and `{adapter_path:fallback-spec-index}`.
+2. If consolidation is unsupported, execute {adapter_command:list-specs}, return that adapter-native index, and do not write a fallback artifact. Otherwise execute {adapter_command:consolidate-specs} and enumerate `{adapter_path:spec}` in normalized path order, excluding the fallback, generated artifacts, and explicitly archived sources.
 3. If no source specs exist, report that no fallback was generated and leave any existing fallback untouched unless the user explicitly authorizes replacing it.
 4. Read each source only far enough to extract its title or one-line purpose, requirement and acceptance-criteria identifiers, shared invariants, cross-feature dependencies, and explicit conflicts. Acceptance-criteria bodies remain in the source spec.
 5. Deduplicate only statements that are clearly identical. Keep similar statements separate. Never resolve conflicts or ambiguity silently.
@@ -63,7 +84,3 @@ Report status (`Generated`, `Declined`, `Unsupported`, `No Sources`, or `Partial
 ## Next-Step Handoff
 
 Return the adapter-resolved fallback path when generated, or the returned index/manifest otherwise, as the context input for the next review or planning command. Preserve unresolved conflicts verbatim so the receiving workflow can request a decision rather than treating the fallback as authoritative.
-
-## Backward Compatibility
-
-The original SpecKit-specific version remains in the repository source checkout under `commands/consolidate-specs.md` for direct SpecKit use.

@@ -6,15 +6,35 @@ description: Resume governed delivery from an active specification through plan 
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Read `.architecture-guard/selected-adapter` directly when it exists, then load the matching `adapters/{tool}.md`. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. If either adapter file is missing or the persisted value is unsupported, report `Unavailable` with the exact path/value and stop before running an SDD command.
+
+## Standalone Resource Resolution
+
+Architecture Guard engine resources are standalone package resources. Never search an SDD-tool directory, an extension directory, or a source checkout for them. An adapter path under `.architecture-guard` is an editable local override location, not proof that the resource was copied.
+
+- Directly inspect the matching `.architecture-guard/<category>/` directory first for workspace overrides.
+- If the named local resource exists, read it. Otherwise run `architecture-guard resolve <category> <name>` and use the returned content.
+- For a resource collection, run `architecture-guard resolve <category> --list`, then resolve every returned name individually in deterministic order so local overrides replace bundled files without hiding bundled defaults.
+- Valid resource categories are engine resources such as `template`, `preset`, `hygiene-rules`, `sonar-rules`, and `manifest`/`config`; adapter selection is file-based and is not one of these categories.
+- If the CLI is unavailable and a mandatory resource is not vendored locally, stop and report the missing runtime dependency. For optional resources, report `Unavailable` and continue only when this command explicitly permits degradation.
 
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+Before continuing, you **MUST** resolve and apply the `ponytail_core` template with `architecture-guard resolve template ponytail_core` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+
+## Capability Composition
+
+Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
+
+## OpenSpec Change Scope
+
+When the selected adapter is `openspec`, establish `CHANGE_ID` before any OpenSpec artifact lookup. Resolve it from an explicit user-provided change, one unambiguous active change from `openspec list --specs --json`, or a new kebab-case name approved for creation. Create or reuse that change first.
+
+Do not run `openspec instructions`, `openspec status`, or `openspec validate` before `CHANGE_ID` is set. Pass `--change "$CHANGE_ID"` to every `openspec instructions` and `openspec status` command. OpenSpec validation uses the change id as its item argument, so run `openspec validate "$CHANGE_ID" --strict` rather than an unscoped validate command. Reuse the same id for spec, design, task, analysis, verification, and archive operations. A capability name is not a change id.
 
 ## Budgeted Context Contract
 
-Read and apply `{adapter_path:budgeted-context-template}`. At each resumable phase, active adapter artifacts and applicable constitutions are authoritative. Reuse one sufficient Flash-Mem synthesis instead of loading a fallback index.
+Resolve and apply the `budgeted_context_sdd` template with `architecture-guard resolve template budgeted_context_sdd`. At each resumable phase, active adapter artifacts and applicable constitutions are authoritative. Reuse one sufficient Flash-Mem synthesis instead of loading a fallback index.
 
 You are orchestrating `ag-governed-delivery`, the recommended plan-to-tasks entry point for Architecture Guard.
 
@@ -48,18 +68,16 @@ Before creating, planning, or modifying any active change:
 
 ## Phase 1 — Detect the Active Feature and Integrations
 
-1. Resolve the active work from the user's explicit path, adapter artifact paths, current branch metadata when supported, or one unambiguous result from `{adapter_command:list-specs}`, in that order.
-2. If no active feature directories exist (ignoring archives like `openspec/changes/archive/`), automatically derive a kebab-case name from the user's goal, execute `{adapter_command:create-change}`, then execute `{adapter_command:create-spec}` for that new active work. Stop before planning if either step fails or the resulting specification is empty.
-3. If an existing active feature is resolved but its specification is missing or empty, execute `{adapter_command:create-spec}` for that active work. Stop before planning if the command fails or the resulting specification remains empty.
+1. Resolve the active work from the user's explicit path, adapter artifact paths, current branch metadata when supported, or one unambiguous result from {adapter_command:list-specs}, in that order.
+2. If no active feature directories exist (ignoring archives like `openspec/changes/archive/`), automatically derive a kebab-case name from the user's goal, execute {adapter_command:create-change}, then execute {adapter_command:create-spec} for that new active work. Stop before planning if either step fails or the resulting specification is empty.
+3. If an existing active feature is resolved but its specification is missing or empty, execute {adapter_command:create-spec} for that active work. Stop before planning if the command fails or the resulting specification remains empty.
 4. Do not guess when multiple active feature directories are plausible. Ask the user to identify the feature.
-5. Detect `flash-mem` as an MCP service. Do not look for it in `{adapter_path:extensions}`.
-6. Detect Security Review as an independent host capability. It is not an SDD tool feature or extension; detect it from host registrations and never read `{adapter_path:extensions}` for it.
-7. Read constitution files directly when present because they may be ignored by repository search:
-   - `{adapter_path:constitution}`
-   - `{adapter_path:arch-constitution}`
-    - `{adapter_path:security-constitution}`
-   Missing optional split constitutions are not errors: fall back to the governance/context sections in `{adapter_path:constitution}`. If no applicable constitution exists, continue with generic Architecture Guard rules and report the degraded state.
-8. Load `{adapter_path:governance-config}` and `{adapter_path:hygiene-rules}` when present. Apply configured exclusions and severity policy at the plan and task gates; missing optional hygiene configuration is non-blocking and must be reported.
+5. Detect `flash-mem` as an MCP service. Do not inspect an SDD extension manifest for it.
+6. Detect Security Review as an independent host capability. It is not an SDD tool feature or extension; detect it only from host registrations.
+7. Resolve the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+8. Load `.architecture-guard/config.yml` when present, then resolve the complete hygiene-rule set through `architecture-guard`. Apply configured exclusions and severity policy at the plan and task gates; missing optional hygiene configuration is non-blocking and must be reported.
+
+For OpenSpec, after a new or repaired spec is written, immediately run `openspec validate "$CHANGE_ID" --strict`. If validation fails, repair the spec using the schema-aware template before entering planning; do not continue with an invalid spec.
 
 ## Phase 2 — Mandatory Memory Preflight When Available
 
@@ -114,12 +132,18 @@ If tasks are `missing`, `stale`, or `review-required`, run `ag-governed-tasks` w
 
 The governed task phase must:
 
-1. Generate or reconcile `tasks.md` through `{adapter_command:create-tasks}` or its documented inline fallback.
+1. Generate or reconcile `tasks.md` through {adapter_command:create-tasks} or its documented inline fallback.
 2. Run the applicable security task review.
-3. Convert confirmed architecture findings into explicit work through `{adapter_command:refactor-generator}`.
-4. Run `{adapter_command:analyze}` against the complete plan and task set.
+3. Convert confirmed architecture findings into explicit work through {adapter_command:refactor-generator}.
+4. Run {adapter_command:analyze} against the complete plan and task set.
 5. Keep implementation, security, migration, and refactor work explicit.
 6. Run task-scope repository hygiene checks with the same configured severity policy.
+
+#### Claude Code Agent Teams Coordination (When Active)
+
+Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
+- **Analyst Creator** drafts the plan and role-annotated task breakdown. **Analyst Reviewer** audits it through host messaging and the shared task list. This path bypasses `delivery-team` User Story branching only when stakeholder story approval is not required.
+- **Human-in-the-Loop Gate**: Lead session presents the reconciled `tasks.md` and requires explicit human approval before concluding delivery or advancing to implementation.
 
 If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks.
 
@@ -169,8 +193,3 @@ Return a concise `Governed Delivery Summary`:
 - Do not silently pass a blocking finding.
 - Do not convert advisory preferences into release gates.
 - Never generate tasks from a blocked plan.
-
-
-## Backward Compatibility
-
-The original SpecKit-specific version remains in the repository source checkout under `commands/governed-delivery.md` for direct SpecKit use.

@@ -10,7 +10,19 @@ Before executing command, read `.specify/extensions/architecture-guard/adapters/
 
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `.architecture-guard/templates/ponytail_core.md` (or `.specify/extensions/architecture-guard/templates/ponytail_core.md` in an extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+Before continuing, you **MUST** read and apply `.architecture-guard/templates/ponytail_core.md` (or `.specify/extensions/architecture-guard/templates/ponytail_core.md` in a SpecKit extension install, or `templates/ponytail_core.md` in the source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+
+## Capability Composition
+
+Read and apply `.architecture-guard/templates/capability_composition.md` (or `.specify/extensions/architecture-guard/templates/capability_composition.md` in a SpecKit extension install, or `templates/capability_composition.md` in the source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+
+## Input & Context Loading
+
+Before making decisions or delegating work, read these inputs explicitly with file-reading tools:
+
+1. **Manifest & Configuration**: Read `openspec/config.yaml` first when the OpenSpec adapter is active (otherwise read the selected adapter project configuration), then inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
+2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. For OpenSpec, explicitly check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`. For SpecKit, use the adapter-resolved `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file.
+3. **Active Artifacts**: Read the feature, review, plan, task, or current-state artifacts required by this skill.
 
 ## Purpose
 

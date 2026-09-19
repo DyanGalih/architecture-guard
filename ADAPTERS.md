@@ -8,7 +8,7 @@ Adapters are the bridge between Architecture Guard's tool-agnostic governance co
 Orchestration command (e.g., init.md)
          │
          ▼
-  adapters/resolve.md  ─── resolves the selected SDD adapter
+  adapters/resolve.md  ─── reads the selected SDD adapter (file-based)
          │
          ▼
   adapters/{tool}.md  ─── provides path map + command map + gaps
@@ -22,7 +22,7 @@ Tool-specific output (constitution, config.yaml, etc.)
 | SDD Tool or Workflow | Adapter File | Detection Marker |
 |---|---|---|
 | SpecKit | `adapters/spec-kit.md` | `.specify/` directory |
-| OpenSpec | `adapters/openspec.md` | `openspec/config.yaml` |
+| OpenSpec | `adapters/openspec.md` | `openspec/config.yaml` or `openspec/` |
 | Generic workflow | `adapters/generic.md` | Installer selection or no detected SDD tool |
 
 ## Adapter Contract
@@ -79,4 +79,4 @@ When governance checks should run in relation to the SDD tool's lifecycle.
 
 Adapter files are self-contained markdown. No code changes needed.
 
-Installed shared resources always resolve under `.architecture-guard/{templates,presets,hygiene-rules,sonar-rules,scripts}`. SDD tool directories hold SDD artifacts only. Before a command body runs, the resolution preamble resolves every adapter token; missing keys stop with `AdapterMissingKey: <kind>:<key>` and unresolved substitutions stop with `AdapterUnresolvedToken: <token>`.
+Installed prompts resolve shared resources through the `architecture-guard` CLI in lean mode. With `--vendor`, the installer copies templates, presets, hygiene rules, and Sonar rules under `.architecture-guard/`; SDD tool directories hold SDD artifacts only. Before a command body runs, the resolution preamble resolves every adapter token; missing keys stop with `AdapterMissingKey: <kind>:<key>` and unresolved substitutions stop with `AdapterUnresolvedToken: <token>`.

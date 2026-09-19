@@ -8,6 +8,10 @@ description: Resume governed delivery from an active specification through plan 
 
 Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Capability Composition
+
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+
 ## Budgeted Context Contract
 
 Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). At each resumable phase, its active feature artifacts and applicable constitutions are mandatory and authoritative. Reuse one Flash-Mem synthesis across planning and task generation; do not load `system_context.md` when that synthesis is sufficient.
@@ -51,10 +55,7 @@ Before creating, planning, or modifying any active change:
 5. Inspect the installed list in `.specify/extensions.yml` for `security-review` or its compatibility alias `spec-kit-security-review`. Manifest presence alone is not availability.
 6. For each phase, select the SpecKit integration only after verifying its applicable command is registered and callable: `/speckit.security-review.plan` for plan review and `/speckit.security-review.tasks` for task review. If an applicable command is absent, detect an independently registered Architecture Guard-compatible Security Review host capability and use its corresponding plan or tasks operation. If neither path is callable, mark that phase's Security Review `Unavailable` and degrade without claiming a pass.
 7. Detect OpenSpec by looking for `openspec/config.yaml` or an `openspec` directory.
-8. Read constitution files directly when present because they may be ignored by repository search:
-   - `.specify/memory/constitution.md`
-   - `.specify/memory/architecture_constitution.md`
-   - `.specify/memory/security_constitution.md`
+8. Read the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for SpecKit, check `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file.
 
 ## Phase 2 — Mandatory Memory Preflight When Available
 
@@ -76,7 +77,7 @@ Before generating artifacts or modifying files, you MUST ensure work happens on 
 
 Check if a formal specification or proposal already exists for the active feature. If missing, automatically generate it using the available discovery context or prompt the user for input:
 
-1. **If OpenSpec is detected:** Run the OpenSpec proposal generation (`openspec new change`) to define what to build. Ensure all OpenSpec artifacts (`proposal.md`, `design.md`, `specs/**/*.md`, `tasks.md`) are generated and wired into the corresponding SpecKit directories for subsequent validation.
+1. **If OpenSpec is detected:** Run the adapter-defined OpenSpec change creation flow using one resolved `CHANGE_ID`. Keep `proposal.md`, `design.md`, `specs/**/*.md`, and `tasks.md` under the OpenSpec change root; do not copy or wire them into SpecKit directories. Use the selected adapter mapping for subsequent validation.
 2. **If SpecKit (without OpenSpec) is detected:** Automatically run `/ag-governed-spec` to generate `spec.md` from the discovery draft.
 
 ## Phase 5 — Inspect Resume State
@@ -118,7 +119,7 @@ The plan does not need to be perfect. It must be sufficiently stable and free of
 
 Only enter this phase after the plan is `accepted`.
 
-If tasks are `missing`, `stale`, or `review-required`, execute `/ag-governed-tasks` (or `/ag-governed-tasks`) with the accepted plan and cached context.
+If tasks are `missing`, `stale`, or `review-required`, execute `/ag-governed-tasks` with the accepted plan and cached context.
 
 The governed task phase must:
 
@@ -127,6 +128,14 @@ The governed task phase must:
 3. Convert confirmed architecture findings into explicit work through `ag-refactor-generator`.
 4. Run analysis (e.g., `/speckit.analyze`) against the complete plan and task set if available in the SDD tool.
 5. Keep implementation, security, migration, and refactor work explicit.
+
+#### Claude Code Agent Teams Coordination (When Active)
+
+Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
+- **Analyst Creator** drafts the plan and role-annotated task breakdown (`[BE]`, `[FE]`, `[TEST]`, `[ORCHESTRATION]`).
+- **Analyst Reviewer** evaluates the generated artifacts against constitutions via peer messaging and triggers HITL Gate 1 if gaps are identified.
+- **Implementor Dispatch**: Upon approval, tasks are handed off to the Implementor teammates (`BE`, `FE`, `TEST`) for concurrent execution.
+- **Fallback**: If not running in Claude Code Agent Teams mode, execute standard single-agent plan-to-task delivery.
 
 If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks.
 

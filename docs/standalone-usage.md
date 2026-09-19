@@ -15,7 +15,7 @@ npm install -g architecture-guard
 architecture-guard
 ```
 
-The installer runs interactively and asks three questions. The installer uses `@inquirer/prompts`; the installed governance commands are Markdown and have no runtime dependency.
+The installer runs interactively and asks three questions. The installer uses `@inquirer/prompts`. Installed commands are Markdown or skills, but lean installs require a callable `architecture-guard` CLI for resource resolution and CLI-backed hygiene; use `--vendor` to copy static engine resources under `.architecture-guard` and avoid bundled-resource lookup for those assets.
 
 ## 2. Choose Your AI Agent
 
@@ -37,7 +37,7 @@ Architecture Guard writes `ag-*` governance commands in each agent's native form
 | Agent | Format | Directory |
 | :--- | :--- | :--- |
 | OpenCode, Junie, Amp, CodeBuddy, Forge, Cursor, etc. | `.md` | `.opencode/commands/`, `.cursor/skills/`, ... |
-| Claude Code, Devin, Rovodev, etc. | `SKILL.md` | `.claude/skills/architecture-guard-{cmd}/SKILL.md` |
+| Claude Code, Devin, Rovodev, etc. | `SKILL.md` | `.claude/skills/ag-{cmd}/SKILL.md` |
 | Gemini CLI, Tabnine | `.toml` | `.gemini/commands/`, `.tabnine/agent/commands/` |
 | Goose | `.yaml` | `.goose/recipes/` |
 
@@ -55,16 +55,16 @@ Architecture Guard uses the adapter selected during CLI initialization:
 | SDD Tool or Workflow | Detection Marker | Works When |
 | :--- | :--- | :--- |
 | **SpecKit** | `.specify/` directory exists | Legacy SpecKit projects, `extension.yml` installs |
-| **OpenSpec** | `openspec/config.yaml` exists | OpenSpec projects |
+| **OpenSpec** | `openspec/config.yaml` or `openspec/` exists | OpenSpec projects |
 | **Generic** | No known markers, or user declines | Any project |
 
 The selected adapter is persisted in `.architecture-guard/selected-adapter` and loaded at the start of every orchestration command. Filesystem markers are inspected only when no selection exists. If both markers exist during first-time initialization, the user must choose an adapter.
 
-Override the persisted adapter for one command with `--adapter`, or change the persisted selection by rerunning the CLI installer with a new `--framework`.
+Override the persisted adapter for one installed command with its `--adapter` input (this is not an `architecture-guard init` option), or change the persisted selection by rerunning the CLI installer with a new `--framework`.
 
 ## 4. Choose Your Commands
 
-Pick from 15 governance commands:
+Pick from 18 governance commands:
 
 | Command | When |
 | :--- | :--- |
@@ -75,25 +75,28 @@ Pick from 15 governance commands:
 | `governed-plan` | Planning — technical plan against architecture rules |
 | `governed-tasks` | Task — generate tasks, analyze gaps |
 | `governed-delivery` | Delivery — full plan → tasks → analyse pipeline |
+| `governed-delivery-team` | Team delivery — approved User Story, plan, and tasks |
 | `governed-implement` | Implement — apply tasks, then review |
-| `review` | Review — boundary drift, DRY violations, hygiene |
+| `review-artifacts` | Review artifacts — boundary drift, DRY violations, and hygiene |
+| `review-implementation` | Review implementation — security and architecture findings |
 | `verify` | Final validation — tasks vs code evidence |
 | `apply` | Apply approved refactors into plans/tasks |
 | `workflow` | End-to-end review across all workflow phases |
 | `violation-detection` | Detect architecture drift invariants |
 | `refactor-generator` | Turn violations into structured refactor tasks |
 | `consolidate-specs` | Budgeted/offline spec index (optional) |
+| `governed-archive` | Archive — verify, then finalize a completed feature |
 
-You can select one, several, or `all`. The installer writes only the commands you pick.
+You can select one, several, or `all`. The `review` alias selects `review-artifacts` and `review-implementation`; the installer writes only the commands you pick.
 
 ## 5. What Gets Installed
 
-After you select agents, an SDD tool or workflow, and commands, `install.js` writes:
+After you select agents, an SDD tool or workflow, and commands, `architecture-guard init` writes:
 
 - **Command files** in your agent's directory (markdown, skill, TOML, or YAML)
 - **Adapters** — `adapters/resolve.md` plus your SDD tool's adapter (e.g., `adapters/openspec.md`, `adapters/spec-kit.md`)
-- **Runtime resources** — `templates/`, `presets/`, `hygiene-rules/`, `sonar-rules/` under `.architecture-guard/`
-- **`AGENTS.md` governance rules** (optional — the installer offers on completion)
+- **Runtime resources** — lean installs resolve bundled templates, presets, hygiene rules, and Sonar rules through the CLI; `--vendor` copies them under `.architecture-guard/`
+- **AGENTS.md managed Architecture Guard section** — created or updated by init
 
 ## 6. Using the Installed Commands
 
@@ -109,7 +112,7 @@ Or use the slash command registered by your agent:
 ag-review-artifacts
 ```
 
-The agent command detects the SDD tool from your project, loads the adapter, and runs the governance workflow in your project context. `architecture-guard` itself is the installer; it does not execute governance commands.
+The agent command detects the persisted SDD adapter, loads its path and command map, resolves engine resources through the `architecture-guard` CLI in lean mode, and runs the governance workflow in your project context. `architecture-guard` does not execute governance workflows itself; its `resolve` and `hygiene` subcommands provide runtime resources and checks requested by installed prompts.
 
 ## 7. Non-Interactive / CI Usage
 
@@ -121,17 +124,18 @@ architecture-guard init . --yes --agent opencode --framework openspec --commands
 
 With `--yes`:
 - Existing files: **replaced** by default (idempotent CI runs). Set `--overwrite keep-both` to preserve.
-- `AGENTS.md` rules: appended automatically.
+- `AGENTS.md` rules: the managed Architecture Guard section is updated in place; unrelated guidance is preserved.
 
 Flags:
 
 | Flag | Value | Description |
 | :--- | :--- | :--- |
-| `--yes` | (none) | Skip all prompts |
+| `--yes` | (none) | Skip prompts; provide `--agent` and `--framework` unless the framework is auto-detected. |
 | `--agent` | `opencode,claude` | Comma-separated agent keys |
-| `--framework` | `spec-kit | openspec | none` | Framework to target |
-| `--commands` | `init,review` | Comma-separated command names or indices |
+| `--framework` | `spec-kit \| openspec \| none` | Framework to target |
+| `--commands` | `all`, `review`, or `init,governed-plan` | Comma-separated canonical names, indices, or aliases |
 | `--overwrite` | `replace` (default) / `skip` / `keep-both` | Existing file policy with `--yes` |
+| `--claude-agent-teams` | (none) | Enable Claude Code Agent Teams (Beta / Experimental) |
 
 Positional target:
 

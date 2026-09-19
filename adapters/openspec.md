@@ -1,6 +1,6 @@
 # OpenSpec Adapter
 
-Use this adapter when `.architecture-guard/selected-adapter` is `openspec`. The `openspec/config.yaml` marker is only a fallback for uninitialized projects.
+Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/selected-adapter` is `openspec`. The `openspec/config.yaml` marker is only a fallback for uninitialized projects.
 
 ## Path Map
 
@@ -11,8 +11,8 @@ Use this adapter when `.architecture-guard/selected-adapter` is `openspec`. The 
 | constitution | `openspec/config.yaml` (context section) |
 | arch-constitution | `openspec/architecture.md` (optional — split from config) |
 | security-constitution | `openspec/security.md` (optional — split from config) |
-| governance-config | `openspec/config.yaml` (rules section) |
-| config | `openspec/config.yaml` (compatibility alias of `governance-config`) |
+| governance-config | `.architecture-guard/config.yml` |
+| config | `.architecture-guard/config.yml` (compatibility alias of `governance-config`) |
 | extensions | Unsupported; detect optional integrations from host capabilities |
 | extensions-dir | Unsupported; do not probe an SDD tool extension directory |
 | spec | `openspec/changes/{change}/specs/{capability}/spec.md` |
@@ -20,8 +20,9 @@ Use this adapter when `.architecture-guard/selected-adapter` is `openspec`. The 
 | tasks | `openspec/changes/{change}/tasks.md` |
 | proposal | `openspec/changes/{change}/proposal.md` |
 | security-constraints | `openspec/changes/{change}/security-constraints.md` |
-| draft | `openspec/constitution.draft.md` |
+| draft | `.architecture-guard/constitution.draft.md` |
 | ponytail-template | `.architecture-guard/templates/ponytail_core.md` |
+| capability-composition-template | `.architecture-guard/templates/capability_composition.md` |
 | budgeted-context-template | `.architecture-guard/templates/budgeted_context_sdd.md` |
 | hygiene-rules | `.architecture-guard/hygiene-rules/*.md` |
 | presets | `.architecture-guard/presets/{preset}.md` |
@@ -32,19 +33,32 @@ Use this adapter when `.architecture-guard/selected-adapter` is `openspec`. The 
 | fallback-spec-index | N/A — use `openspec list --specs --json` instead |
 | flash-mem-project-id | None — Flash-Mem MCP still works if configured |
 
+## Explicit Change Scope
+
+When this adapter is selected, establish one `CHANGE_ID` before running any OpenSpec command that reads or validates change artifacts.
+
+- Resolve `CHANGE_ID` from an explicit user-provided change name, a single active change discovered by `openspec list --specs --json`, or a new kebab-case name approved for creation.
+- If multiple active changes are plausible, ask the user to choose. If no change exists, create it first with `openspec new change "$CHANGE_ID"`.
+- Never run `openspec instructions`, `openspec status`, or `openspec validate` without the resolved change scope.
+- Pass `--change "$CHANGE_ID"` to every `openspec instructions` and `openspec status` invocation.
+- OpenSpec validation takes the change id as its item argument, so run `openspec validate "$CHANGE_ID" --strict` rather than an unscoped validation command.
+- Reuse the same `CHANGE_ID` for specification, design, task, analysis, verification, and archive steps. A capability name is not a change id.
+
 ## Command Map
 
 | Canonical Key | OpenSpec Invocation or Fallback |
 |---|---|
-| create-spec | Read `openspec instructions specs --change "{change}" --json`, then create the requested change-level specs inline |
-| create-change | If the named change does not exist, run `openspec new change "{change}"`; otherwise reuse it |
-| archive | Run the native `openspec archive "{change}"` command once; do not invoke Architecture Guard archive recursively |
-| verify | Run the Architecture Guard verification workflow against the active change |
+| create-spec | Read `openspec instructions specs --change "$CHANGE_ID" --json`, resolve `architecture-guard resolve template openspec_spec`, then create the requested change-level specs inline and validate with `openspec validate "$CHANGE_ID" --strict`|
+| create-change | If the named change does not exist, run `openspec new change "$CHANGE_ID"`; otherwise reuse it|
+| archive | After explicit user approval and collision preflight, run `openspec archive "$CHANGE_ID" --yes`.|
+| verify | Run the installed `ag-verify` capability; if host dispatch is unavailable, run `openspec validate "$CHANGE_ID" --strict` and perform the inline task-to-code checks defined by `ag-verify`.|
 | clarify-spec | Unsupported natively; ask and apply an inline ambiguity-resolution loop |
-| create-plan | Read `openspec instructions design --change "{change}" --json`, then create `{adapter_path:plan}` inline |
-| create-tasks | Read `openspec instructions tasks --change "{change}" --json`, then create `{adapter_path:tasks}` inline |
+| create-plan | Read `openspec instructions design --change "$CHANGE_ID" --json`, then create `{adapter_path:plan}` inline|
+| create-tasks | Read `openspec instructions tasks --change "$CHANGE_ID" --json`, then create `{adapter_path:tasks}` inline|
 | implement | Use the registered OpenSpec apply-change capability; if unavailable, execute unchecked tasks inline and update their status |
-| analyze | Run `openspec validate "{change}"`; supplement it with an inline spec/plan/tasks coverage check |
+| analyze | Run `openspec validate "$CHANGE_ID" --strict`; supplement it with an inline spec/plan/tasks coverage check|
+| security-review-implementation | Host Security Review dispatch operation `sr-verify`; accept `sr-branch` only when host registration declares implementation scope; never `sr-changes` |
+| hygiene | architecture-guard hygiene --json --target . |
 | security-review | Not part of OpenSpec; detect the optional Security Review host capability or report the skipped review |
 | security-review-plan | Not part of OpenSpec; detect the optional Security Review host capability or report the skipped review |
 | security-review-tasks | Not part of OpenSpec; detect the optional Security Review host capability or report the skipped review |
@@ -112,7 +126,7 @@ Trust boundaries, auth standards, data isolation, secrets management.
    - Fill: After creating specs, run an interactive inline clarifications loop with the user.
 
 3. **Architecture verify (task-to-code)** — OpenSpec validate checks structure, not implementation evidence.
-   - Fill: Architecture Guard's `architecture-verify` command reads tasks.md checkboxes and validates against code.
+   - Fill: The installed `ag-verify` capability reads tasks.md checkboxes and validates them against code.
 
 4. **Security review** — OpenSpec has no built-in security review hook.
    - Fill: Architecture Guard's review commands flag security-architecture conflicts during review and verify phases.
@@ -122,6 +136,6 @@ Trust boundaries, auth standards, data isolation, secrets management.
 OpenSpec has no hook system. The orchestrator's preamble tells the AI agent to run governance steps:
 - After `openspec propose` → run architecture validation on proposal
 - After creating specs → run spec boundary check
-- After `openspec instructions design` → run plan drift detection
+- After `openspec instructions design --change "$CHANGE_ID"` → run plan drift detection
 - During apply → check each task for DRY violations
 - After archive → run final architecture verify

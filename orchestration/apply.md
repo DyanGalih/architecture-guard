@@ -4,15 +4,36 @@ description: Apply approved architecture refactors by updating plan and task art
 
 # Architecture Apply Command
 
-Execute this workflow through `{adapter_command:architecture-apply}`; the token is the adapter-selected capability and must not be replaced with a package-specific executable name.
+Execute this workflow through {adapter_command:architecture-apply}; the token is the adapter-selected capability and must not be replaced with a package-specific executable name.
 
 ## SDD Adapter Resolution
 
 Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter. Resolve the concrete paths for each available artifact before classifying findings.
 
+## Standalone Resource Resolution
+
+Architecture Guard engine resources are standalone package resources. Never search an SDD-tool directory, an extension directory, or a source checkout for them. An adapter path under `.architecture-guard` is an editable local override location, not proof that the resource was copied.
+
+- Directly inspect the matching `.architecture-guard/<category>/` directory first for workspace overrides.
+- If the named local resource exists, read it. Otherwise run `architecture-guard resolve <category> <name>` and use the returned content.
+- For a resource collection, run `architecture-guard resolve <category> --list`, then resolve every returned name individually in deterministic order so local overrides replace bundled files without hiding bundled defaults.
+- If the CLI is unavailable and a mandatory resource is not vendored locally, stop and report the missing runtime dependency. For optional resources, report `Unavailable` and continue only when this command explicitly permits degradation.
+
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+Before continuing, you **MUST** resolve and apply the `ponytail_core` template with `architecture-guard resolve template ponytail_core` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+
+## Capability Composition
+
+Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
+
+## Input & Context Loading
+
+Before making decisions or delegating work, read these inputs explicitly with file-reading tools:
+
+1. **Manifest & Configuration**: Read `openspec/config.yaml` first when the OpenSpec adapter is active (otherwise read the selected adapter project configuration), then inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
+2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. For OpenSpec, explicitly check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`. For SpecKit, use the adapter-resolved `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file.
+3. **Active Artifacts**: Read the feature, review, plan, task, or current-state artifacts required by this skill.
 
 You are applying approved architecture refactors for `architecture-guard`.
 When `flash-mem` is available, use it first to gather memory context, then prefer `memory-synthesis.md` and the approved architecture review output before editing plan or task artifacts. Otherwise, use the repository artifacts directly.
@@ -124,7 +145,3 @@ Return a unified summary report covering both direct edits and delegated upstrea
 ## Next Step
 - [e.g. Continue to implementation or run verification]
 ```
-
-## Backward Compatibility
-
-The original SpecKit-specific version remains in the repository source checkout under `commands/apply.md` for direct SpecKit use.

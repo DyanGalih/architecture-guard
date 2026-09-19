@@ -9,7 +9,18 @@ It focuses on detecting implementation artifacts and repository hygiene issues c
 * **Framework Agnostic**: Works across all programming languages and frameworks.
 * **Non-destructive**: Never deletes files automatically. It provides actionable recommendations.
 * **Advisory by Default**: In `ag-review-artifacts`, it provides a report. In `ag-verify`, it can fail the build based on your `fail_on` configuration.
-* **Extensible**: Add custom rules by placing markdown files in the `hygiene-rules/` directory.
+* **Extensible**: Add custom rules under `.architecture-guard/hygiene-rules/`; same-named local files override bundled rules.
+
+
+## Command Runner
+
+Run the deterministic scanner from the project root:
+
+```bash
+architecture-guard hygiene --json --target .
+```
+
+The JSON report lists every bundled rule and same-named local override, including its source, execution mode, findings, and blocking status. Built-in rules are executed by the runner. Markdown-only rules without a registered detector are reported as manual and make the overall result degraded; they are never reported as passed. Use --rules id1,id2 to run a focused subset. The runner is read-only and applies the configured repository_hygiene.ignore exclusions before scanning.
 
 ## Configuration
 
@@ -35,10 +46,10 @@ repository_hygiene:
       - playground/**
       - coverage/**
       - tmp/**
-      
+
     files:
       - README.draft.md
-      
+
     patterns:
       - "*.generated.*"
 ```
@@ -62,7 +73,7 @@ The following hygiene categories are checked by default:
 
 ## Custom Rules
 
-You can add custom rules by placing markdown files into the `.architecture-guard/hygiene-rules/` directory (or `.specify/extensions/architecture-guard/hygiene-rules/` when using legacy Spec Kit extensions, or `hygiene-rules/` in repository checkouts). 
+Add custom rules by placing Markdown files into `.architecture-guard/hygiene-rules/` (or `ag/hygiene-rules/`). The runner loads them as local overrides; rules without a built-in detector are reported as manual.
 
 Each rule should follow this format:
 

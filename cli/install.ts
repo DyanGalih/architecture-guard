@@ -123,6 +123,11 @@ const COMMANDS = [
   'governed-archive',
 ];
 
+const COMMAND_ALIASES = {
+  all: COMMANDS,
+  review: ['review-artifacts', 'review-implementation'],
+};
+
 async function ask(promptText, choices, multi = false) {
   // Use old logic if reading from piped stdin (e.g. tests)
   if (_inputLines !== null) {
@@ -174,6 +179,116 @@ function slug(name) {
 
 function readPrompt(promptPath) {
   return fs.readFileSync(promptPath, 'utf8');
+}
+
+function parseAdapterSection(content, heading, nextHeading) {
+  const section = content.split(heading)[1]?.split(nextHeading)[0] || '';
+  const map = new Map();
+  for (const line of section.split(new RegExp('\\r?\\n'))) {
+    const cells = line.split('|').map(cell => cell.trim());
+    if (cells.length >= 4 && cells[1] && cells[2] && cells[1] !== 'Canonical Name' && cells[1] !== 'Canonical Key') {
+      const tick = String.fromCharCode(96);
+      const value = cells[2];
+      map.set(cells[1], value.split(tick).join('').trim());
+    }
+  }
+  return map;
+}
+
+function resolveAdapterBindings(adapterName) {
+  const adapterPath = path.join(ROOT_DIR, 'adapters', adapterName + '.md');
+  if (!fs.existsSync(adapterPath)) {
+    throw new Error('Unavailable: adapter file not found at adapters/' + adapterName + '.md');
+  }
+
+  const content = fs.readFileSync(adapterPath, 'utf8');
+  return {
+    path: parseAdapterSection(content, '## Path Map', '## Command Map'),
+    command: parseAdapterSection(content, '## Command Map', '## Constitution Layout'),
+  };
+}
+
+function resolveAdapterValue(bindings, kind, key, trail = []) {
+  const identifier = `${kind}:${key}`;
+  if (trail.includes(identifier)) {
+    throw new Error('AdapterTokenCycle: ' + identifier);
+  }
+
+  const value = bindings[kind].get(key);
+  if (!value) {
+    throw new Error('AdapterMissingKey: ' + identifier);
+  }
+
+  const tokenPattern = new RegExp('\\{adapter_(path|command):([^}]+)}', 'g');
+  return value.replace(tokenPattern, (token, nestedKind, nestedKey) =>
+    resolveAdapterValue(bindings, nestedKind, nestedKey, [...trail, identifier])
+  );
+}
+
+function materializeAdapterTokens(content, adapterName) {
+  const normalizedAdapter = adapterName === 'none' || adapterName === 'none (framework-agnostic)' ? 'generic' : adapterName;
+  const bindings = resolveAdapterBindings(normalizedAdapter);
+  const tokenPattern = new RegExp('\\{adapter_(path|command):([^}]+)}', 'g');
+  const resolvedCommands = new Map();
+  const materialized = content.replace(tokenPattern, (token, kind, key) => {
+    const value = resolveAdapterValue(bindings, kind, key);
+    if (kind === 'command') {
+      resolvedCommands.set(key, value);
+      return `the adapter-defined "${key}" action`;
+    }
+    return value;
+  });
+
+  if (resolvedCommands.size === 0) {
+    return materialized;
+  }
+
+  const actionLines = [...resolvedCommands.entries()]
+    .map(([key, value]) => `- **${key}**: ${value}`)
+    .join('\n');
+
+  return `${materialized.trim()}\n\n## Resolved Adapter Actions\n\nThe entries below are the selected adapter's action guidance. Treat them as declarative instructions; execute only an explicitly named host capability, slash command, or CLI invocation.\n\n${actionLines}\n`;
+}
+
+function parseCommandSelection(rawCommands) {
+  const selected = [];
+  const invalid = [];
+
+  for (const raw of String(rawCommands).split(',')) {
+    const value = raw.trim();
+    if (!value) {
+      invalid.push(value || '<empty>');
+      continue;
+    }
+
+    if (/^\d+$/.test(value)) {
+      const resolved = COMMANDS[Number(value) - 1];
+      if (!resolved) {
+        invalid.push(value);
+        continue;
+      }
+      selected.push(resolved);
+      continue;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(COMMAND_ALIASES, value)) {
+      selected.push(...COMMAND_ALIASES[value]);
+      continue;
+    }
+
+    if (COMMANDS.includes(value)) {
+      selected.push(value);
+      continue;
+    }
+
+    invalid.push(value);
+  }
+
+  if (invalid.length > 0) {
+    throw new Error(`Unknown command selection: ${invalid.join(", ")}. Use a canonical command name, index, or alias: all, review.`);
+  }
+
+  return [...new Set(selected)];
 }
 
 function installMarkdown(sk, content, cmdDir, dest) {
@@ -272,7 +387,8 @@ async function installCommand(agentType: any, commandName: any, cmdDir: any, opt
     throw new Error(`Canonical orchestration prompt not found: orchestration/${commandName}.md`);
   }
 
-  const content = readPrompt(promptPath);
+  const adapterName = opts.adapterName || opts.framework || 'generic';
+  const content = materializeAdapterTokens(readPrompt(promptPath), adapterName);
   const sk = slug(commandName);
   let dest = commandDestination(cfg, sk, cmdDir, agentType);
 
@@ -281,7 +397,11 @@ async function installCommand(agentType: any, commandName: any, cmdDir: any, opt
     if (action !== 'replace' && action !== 'keep both') {
       return;
     }
-    if (action === 'keep both') dest = availableCopy(dest, cfg, sk, cmdDir, agentType);
+    if (action === 'keep both') {
+      dest = availableCopy(dest, cfg, sk, cmdDir, agentType);
+    } else if (action === 'replace') {
+      fs.rmSync(dest, { recursive: true, force: true });
+    }
   }
 
   try {
@@ -307,7 +427,9 @@ async function installCommand(agentType: any, commandName: any, cmdDir: any, opt
 
 function appendAgentsMd(projectPath, selectedAgents) {
   const agentsPath = path.join(projectPath, 'AGENTS.md');
-  const preamble = `
+  const sectionStart = '<!-- architecture-guard:start -->';
+  const sectionEnd = '<!-- architecture-guard:end -->';
+  const section = `${sectionStart}
 
 ## Architecture Guard
 
@@ -318,29 +440,46 @@ ${selectedAgents.map(agent => `- \`${path.join(AGENT_CONFIGS[agent].dir, '*')}\`
 - **Ponytail Core Contract**: Before spec/plan/tasks/implement, read and apply the ponytail pragmatism contract.
 - **After each phase**: Run architecture review for boundary drift, DRY violations, and repository hygiene.
 - **SDD Adapter Resolution**: Project uses the adapter selected during CLI init. Read \`adapters/resolve.md\` before first command.
+- **Engine Resources**: Lean installs use the callable Architecture Guard CLI for shared templates, presets, hygiene rules, and Sonar rules; vendor/full mode copies those resources under .architecture-guard/. The hygiene check remains CLI-backed.
 - **Direct Discovery Guard**: When checking adapter-resolved hidden paths such as \`.architecture-guard/**\`, use direct directory inspection first, then read listed files. A Glob no-match result is inconclusive and MUST NOT be reported as missing. Report a path as unavailable only after direct inspection confirms it does not exist. Always include loaded rule files and counts in governance reports.
-`;
+${sectionEnd}`;
 
   if (fs.existsSync(agentsPath)) {
     const current = fs.readFileSync(agentsPath, 'utf8');
-    if (!current.includes('Architecture Guard')) {
-      fs.appendFileSync(agentsPath, preamble);
+    const start = current.indexOf(sectionStart);
+    const end = start === -1 ? -1 : current.indexOf(sectionEnd, start + sectionStart.length);
+    if (start !== -1 && end !== -1) {
+      const updated = current.slice(0, start).trimEnd() + '\n\n' + section + current.slice(end + sectionEnd.length);
+      fs.writeFileSync(agentsPath, updated.trimEnd() + '\n');
+      return;
+    }
+
+    const legacyGeneratedSection = current.trimStart().startsWith('## Architecture Guard')
+      && current.includes('Use these governance rules across all SDD workflow phases.')
+      && current.trimEnd().endsWith('Always include loaded rule files and counts in governance reports.');
+    if (legacyGeneratedSection) {
+      fs.writeFileSync(agentsPath, section + '\n');
+      return;
+    }
+
+    if (!current.includes('## Architecture Guard')) {
+      fs.appendFileSync(agentsPath, `\n\n${section}\n`);
     }
   } else {
-    fs.writeFileSync(agentsPath, preamble.trimStart());
+    fs.writeFileSync(agentsPath, section + '\n');
   }
 }
 
 async function installRuntimeResources(runtimeDir, opts: any = {}) {
   const overwrite = typeof opts === 'object' && opts !== null ? opts.overwrite : (opts ? 'replace' : null);
-  const action = overwrite === 'skip' ? 'skip' : 'replace';
-
-  if (action !== 'replace') {
-    return;
-  }
-
   for (const dir of REQUIRED_RESOURCES) {
-    fs.cpSync(path.join(ROOT_DIR, dir), path.join(runtimeDir, dir), { recursive: true, force: true });
+    const destination = path.join(runtimeDir, dir);
+    if (overwrite === 'skip') {
+      if (fs.existsSync(destination)) {
+        continue;
+      }
+    }
+    fs.cpSync(path.join(ROOT_DIR, dir), destination, { recursive: true, force: true });
   }
 }
 
@@ -354,8 +493,38 @@ function validateRuntimeResources() {
   }
 }
 
+function configureClaudeAgentTeams(targetDir: string) {
+  const claudeDir = path.join(targetDir, '.claude');
+  const settingsPath = path.join(claudeDir, 'settings.json');
+  let settings: Record<string, any> = {};
+
+  if (fs.existsSync(settingsPath)) {
+    try {
+      const raw = fs.readFileSync(settingsPath, 'utf8');
+      settings = JSON.parse(raw);
+    } catch (err) {
+      console.warn(`  ⚠ Could not parse existing ${path.relative(process.cwd(), settingsPath)}, creating fresh env config`);
+      settings = {};
+    }
+  }
+
+  if (typeof settings !== 'object' || settings === null || Array.isArray(settings)) {
+    settings = {};
+  }
+
+  if (!settings.env || typeof settings.env !== 'object' || Array.isArray(settings.env)) {
+    settings.env = {};
+  }
+
+  settings.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1';
+
+  fs.mkdirSync(claudeDir, { recursive: true });
+  fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+  console.log(`  ✓ Configured Claude Code Agent Teams (Beta) in ${path.relative(process.cwd(), settingsPath)}`);
+}
+
 function parseArgs(argv) {
-  const opts = { target: null, agents: null, framework: null, commands: null, overwrite: null, yes: false, help: false, version: false, values: [] };
+  const opts = { target: null, agents: null, framework: null, commands: null, overwrite: null, yes: false, help: false, version: false, claudeAgentTeams: false, vendor: false, values: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
@@ -365,6 +534,10 @@ function parseArgs(argv) {
         opts.version = true; break;
       case '-y': case '--yes':
         opts.yes = true; break;
+      case '--claude-agent-teams': case '--claude-teams':
+        opts.claudeAgentTeams = true; break;
+      case '--vendor': case '--full':
+        opts.vendor = true; break;
       case '--overwrite':
         opts.overwrite = argv[++i]; break;
       case '--agent': case '--agents':
@@ -380,6 +553,8 @@ function parseArgs(argv) {
         else if (a.startsWith('--framework=')) opts.framework = a.slice('--framework='.length);
         else if (a.startsWith('--commands=')) opts.commands = a.slice('--commands='.length);
         else if (a.startsWith('--overwrite=')) opts.overwrite = a.slice('--overwrite='.length);
+        else if (a === '--claude-agent-teams' || a === '--claude-teams') opts.claudeAgentTeams = true;
+        else if (a === '--vendor' || a === '--full') opts.vendor = true;
         else if (!a.startsWith('-')) { opts.values.push(a); }
         break;
     }
@@ -393,18 +568,20 @@ function printHelp() {
 Install governance commands and adapters for an AI agent in the target directory.
 
 Arguments:
-  target              Target directory (default: current directory)
+  target                Target directory (default: current directory)
 
 Options:
-  -h, --help          Show this help
-  -y, --yes           Non-interactive: use defaults or required flags
-  --agent <names>     Comma-separated agent keys (e.g. opencode,claude)
-  --framework <f>     spec-kit | openspec | none
-  --commands <list>   Comma-separated command names or indices (e.g. init,init-brownfield or 1,2)
-  --overwrite <mode>  replace | skip | keep-both (default: replace)
+  -h, --help            Show this help
+  -y, --yes             Non-interactive; --agent and --framework are required unless auto-detected
+  --agent <names>       Comma-separated agent keys (e.g. opencode,claude)
+  --framework <f>       spec-kit | openspec | none
+  --commands <list>     Comma-separated command names, indices, or aliases (all, review)
+  --overwrite <mode>    replace | skip | keep-both (default: replace)
+  --vendor, --full      Copy immutable runtime resources locally (for air-gapped setups)
+  --claude-agent-teams  Enable Claude Code Agent Teams (Beta / Experimental)
 
-When --yes is set, --agent/--framework/--commands are honored; any missing value
-falls back to its first valid option. By default, existing files are replaced;
+When --yes is set, --agent and --framework are required unless the framework is
+auto-detected from target; --commands defaults to all. By default, existing files are replaced;
 use --overwrite keep-both to preserve originals, or --overwrite skip to skip them.`);
 }
 
@@ -440,7 +617,31 @@ async function main() {
   await runInit(targetDir, opts);
 }
 
+function readPersistedAdapter(targetDir) {
+  const markerPath = path.join(targetDir, ".architecture-guard", "selected-adapter");
+  if (fs.existsSync(markerPath)) {
+    const value = fs.readFileSync(markerPath, "utf8").trim().toLowerCase();
+    if (value === "none") return "generic";
+    return value || null;
+  }
+
+  const configPath = path.join(targetDir, ".architecture-guard", "config.yml");
+  if (fs.existsSync(configPath)) {
+    const match = fs.readFileSync(configPath, "utf8").match(/^adapter:\s*(\S+)/m);
+    if (match) {
+      const value = match[1].toLowerCase();
+      return value === "none" ? "generic" : value;
+    }
+  }
+
+  return null;
+}
+
 async function runInit(targetDir, opts) {
+  if (opts.yes && !opts.agents) {
+    throw new Error('--yes requires --agent <names> unless an agent is supplied by an interactive prompt');
+  }
+
   const allAgentNames = Object.keys(AGENT_CONFIGS).sort();
   const detectedAgents = [];
   const undetectedAgents = [];
@@ -458,9 +659,17 @@ async function runInit(targetDir, opts) {
     ...undetectedAgents.map(a => ({ name: a, value: a }))
   ];
 
-  const selectedAgents = opts.agents
-    ? opts.agents.split(',').map(s => s.trim()).filter(a => AGENT_CONFIGS[a])
-    : await ask('Select AI agent(s) to install commands for:', agentChoices, true);
+  let selectedAgents;
+  if (opts.agents) {
+    const requestedAgents = opts.agents.split(',').map(s => s.trim()).filter(Boolean);
+    const invalidAgents = requestedAgents.filter(agent => !AGENT_CONFIGS[agent]);
+    if (invalidAgents.length > 0) {
+      throw new Error(`Unknown agent selection: ${invalidAgents.join(', ')}. Use --help to see supported agent keys.`);
+    }
+    selectedAgents = [...new Set(requestedAgents)];
+  } else {
+    selectedAgents = await ask('Select AI agent(s) to install commands for:', agentChoices, true);
+  }
 
   if (!selectedAgents || selectedAgents.length === 0) {
     console.log('No agents selected. Exiting.');
@@ -479,12 +688,17 @@ async function runInit(targetDir, opts) {
     } else if (hasSpeckit && !hasOpenspec) {
       selectedFramework = 'spec-kit';
       console.log(`\nAuto-detected SDD framework: spec-kit`);
+    } else if (opts.yes) {
+      throw new Error("--yes requires --framework <spec-kit|openspec|none> when the target has no detectable SDD framework");
     } else {
-      selectedFramework = await ask('\nSelect SDD framework:', frameworks, false);
+      selectedFramework = await ask("\nSelect SDD framework:", frameworks, false);
     }
   } else {
     const match = frameworks.find(f => f === selectedFramework || f.startsWith(selectedFramework));
-    selectedFramework = match || (selectedFramework === 'none' ? 'none (framework-agnostic)' : selectedFramework);
+    if (!match) {
+      throw new Error(`Unknown framework "${selectedFramework}". Use spec-kit, openspec, or none.`);
+    }
+    selectedFramework = match;
   }
 
   if (!selectedFramework) {
@@ -495,18 +709,27 @@ async function runInit(targetDir, opts) {
   const framework = selectedFramework === 'none (framework-agnostic)' ? 'none' : selectedFramework;
   console.log(`\nFramework: ${framework === 'none' ? 'framework-agnostic' : framework}`);
 
+  const requestedAdapter = framework === "none" ? "generic" : framework;
+  const existingAdapter = readPersistedAdapter(targetDir);
+  if (existingAdapter) {
+    if (existingAdapter !== requestedAdapter) {
+      if (opts.overwrite) {
+        if (opts.overwrite !== "replace") {
+          throw new Error("Cannot switch adapter from " + existingAdapter + " to " + requestedAdapter + " with --overwrite " + opts.overwrite + ". Use --overwrite replace so installed prompts are regenerated.");
+        }
+      }
+    }
+  }
+
   let selectedCommands;
   if (opts.commands) {
-    selectedCommands = opts.commands.split(',')
-      .map(s => /^\d+$/.test(s.trim()) ? COMMANDS[parseInt(s.trim(), 10) - 1] : s.trim())
-      .filter(c => COMMANDS.includes(c));
+    selectedCommands = parseCommandSelection(opts.commands);
   } else {
     selectedCommands = [...COMMANDS];
   }
 
   if (!selectedCommands || selectedCommands.length === 0) {
-    console.log('No commands selected. Exiting.');
-    process.exit(0);
+    throw new Error("No commands selected. Use a canonical command name, index, or alias: all, review.");
   }
 
   for (const agent of selectedAgents) {
@@ -523,27 +746,61 @@ async function runInit(targetDir, opts) {
     }
 
     for (const cmd of selectedCommands) {
-      await installCommand(agent, cmd, cmdDir, opts, isAgy ? workflowsDir : null);
+      await installCommand(agent, cmd, cmdDir, { ...opts, adapterName: framework === 'none' ? 'generic' : framework }, isAgy ? workflowsDir : null);
+    }
+  }
+
+  if (selectedAgents.includes('claude')) {
+    let enableTeams = opts.claudeAgentTeams;
+    if (!enableTeams && !opts.yes) {
+      const answer = await ask('\nEnable Claude Code Agent Teams / Teammates (Beta / Experimental - unstable)? (y/n): ', null);
+      if (answer && ['y', 'yes'].includes(String(answer).toLowerCase())) {
+        enableTeams = true;
+      }
+    }
+    if (enableTeams) {
+      configureClaudeAgentTeams(targetDir);
     }
   }
 
   const runtimeDir = path.join(targetDir, '.architecture-guard');
-  await installRuntimeResources(runtimeDir, opts);
+  fs.mkdirSync(runtimeDir, { recursive: true });
 
-  const adaptersDir = path.join(targetDir, 'adapters');
-  const srcAdaptersDir = path.join(ROOT_DIR, 'adapters');
-  if (fs.existsSync(srcAdaptersDir)) {
-    fs.mkdirSync(adaptersDir, { recursive: true });
-    const adapter = framework === 'none' ? 'generic' : framework;
-    for (const f of ['resolve.md', `${adapter}.md`]) {
-      const src = path.join(srcAdaptersDir, f);
-      const dest = path.join(adaptersDir, f);
-      if (!fs.existsSync(dest)) {
-        fs.copyFileSync(src, dest);
+  const isVendor = Boolean(opts.vendor || opts.full);
+  if (isVendor) {
+    await installRuntimeResources(runtimeDir, opts);
+  } else {
+    // Purge legacy static unmodifiable directories
+    for (const dir of ['templates', 'presets', 'sonar-rules']) {
+      const legacyDir = path.join(runtimeDir, dir);
+      if (fs.existsSync(legacyDir)) {
+        fs.rmSync(legacyDir, { recursive: true, force: true });
       }
     }
   }
-  fs.writeFileSync(path.join(runtimeDir, 'selected-adapter'), `${framework === 'none' ? 'generic' : framework}\n`);
+
+  const adaptersDir = path.join(targetDir, "adapters");
+  const srcAdaptersDir = path.join(ROOT_DIR, "adapters");
+  if (!fs.existsSync(srcAdaptersDir)) {
+    throw new Error("Unavailable: adapter directory not found at adapters/");
+  }
+  const adapter = framework === "none" ? "generic" : framework;
+  fs.mkdirSync(adaptersDir, { recursive: true });
+  const preserveAdapters = opts.overwrite === "skip" || opts.overwrite === "keep-both";
+  for (const f of ["resolve.md", adapter + ".md"]) {
+    const src = path.join(srcAdaptersDir, f);
+    const dest = path.join(adaptersDir, f);
+    if (!fs.existsSync(src)) {
+      throw new Error("Unavailable: adapter file not found at adapters/" + f);
+    }
+    if (!fs.existsSync(dest) || !preserveAdapters) {
+      fs.copyFileSync(src, dest);
+    }
+  }
+
+  const configYml = `adapter: ${adapter}\npresets: []\n`;
+  fs.writeFileSync(path.join(runtimeDir, 'config.yml'), configYml);
+  fs.writeFileSync(path.join(runtimeDir, 'selected-adapter'), `${adapter}\n`);
 
   appendAgentsMd(targetDir, selectedAgents);
 
@@ -565,4 +822,15 @@ export async function runInstallCommand(target: any, opts: any) {
   await runInit(targetDir, opts);
 }
 
-export { installCommand, AGENT_CONFIGS, COMMANDS, appendAgentsMd, installToml, installYaml, validateRuntimeResources };
+export {
+  installCommand,
+  AGENT_CONFIGS,
+  COMMANDS,
+  COMMAND_ALIASES,
+  appendAgentsMd,
+  installToml,
+  installYaml,
+  materializeAdapterTokens,
+  parseCommandSelection,
+  validateRuntimeResources,
+};

@@ -8,17 +8,29 @@ description: Convert architecture violations into non-blocking, structured refac
 
 Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Capability Composition
+
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+
 You are generating non-blocking refactor tasks for `architecture-guard`.
 
 Convert architecture violations into structured tasks that preserve delivery momentum while making architectural debt visible and actionable.
 
 ## Flash-Mem-First Architecture Context Retrieval
 
-When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. After analysis, propose only validated durable architecture knowledge and write it only after explicit user approval. If retrieval is unavailable or insufficient, fall back to repository artifacts and constitution files.
+When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. After analysis, propose only validated durable architecture knowledge and write it only after explicit user approval. If retrieval is unavailable or insufficient, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before using repository artifacts. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 
 This command does not write files or memory. Return proposed tasks and durable-memory candidates for approval; use a separate write-capable flow only after explicit user approval.
 
 Use the same normalized command context as the review workflow. When `mode=performance`, do not invent refactor tasks from performance guidance; that mode is advisory and belongs to `ag-review-implementation` output only.
+
+## Input & Context Loading
+
+Before generating refactor tasks, read these inputs explicitly with file-reading tools:
+
+1. **Manifest & Configuration**: Read `openspec/config.yaml` first when the OpenSpec adapter is active (otherwise read the selected adapter project configuration), then inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
+2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. For OpenSpec, explicitly check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`. For SpecKit, use the adapter-resolved `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file.
+3. **Analysis Inputs**: Read the active review, specification, plan, task, and implementation-summary artifacts required by this skill.
 
 ## Command Normalization
 

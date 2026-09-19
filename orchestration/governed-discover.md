@@ -8,9 +8,22 @@ description: Facilitate an architecture-aware discussion to flesh out ideas befo
 
 Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
+## Standalone Resource Resolution
+
+Architecture Guard engine resources are standalone package resources. Never search an SDD-tool directory, an extension directory, or a source checkout for them. An adapter path under `.architecture-guard` is an editable local override location, not proof that the resource was copied.
+
+- Directly inspect the matching `.architecture-guard/<category>/` directory first for workspace overrides.
+- If the named local resource exists, read it. Otherwise run `architecture-guard resolve <category> <name>` and use the returned content.
+- For a resource collection, run `architecture-guard resolve <category> --list`, then resolve every returned name individually in deterministic order so local overrides replace bundled files without hiding bundled defaults.
+- If the CLI is unavailable and a mandatory resource is not vendored locally, stop and report the missing runtime dependency. For optional resources, report `Unavailable` and continue only when this command explicitly permits degradation.
+
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+Before continuing, you **MUST** resolve and apply the `ponytail_core` template with `architecture-guard resolve template ponytail_core` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+
+## Capability Composition
+
+Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
 
 You are orchestrating the `ag-governed-discover` workflow for `architecture-guard`.
 
@@ -18,7 +31,7 @@ This command coordinates an architecture-aware brainstorming and discovery phase
 
 ## Flash-Mem-First Architecture Context Retrieval
 
-When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. If retrieval is unavailable or insufficient, fall back to repository artifacts and constitution files.
+When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. If retrieval is unavailable or insufficient, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before using repository artifacts. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 
 ## Goal
 
@@ -39,8 +52,8 @@ Check for the availability of:
 
 **Detection Logic**:
 1. Detect `flash-mem` as an MCP-backed memory service in the current environment.
-2. Detect Security Review as an independent host capability, never from an SDD extensions artifact. Do not read `{adapter_path:extensions}` for it. If present, note it for downstream security flagging.
-3. If either capability is missing, degrade gracefully. Without `flash-mem`, rely on the local `{adapter_path:arch-constitution}` and `{adapter_path:security-constitution}` files.
+2. Detect Security Review as an independent host capability, never from an SDD extension manifest. If present, note it for downstream security flagging.
+3. If either capability is missing, degrade gracefully. Without `flash-mem`, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 
 ### Step 2 — Architecture Context Retrieval
 
@@ -108,6 +121,9 @@ When the discussion is concluded and aligned, the command MUST return:
 ## Security-Sensitive Areas
 - [Auth, PII, secrets, trust boundaries, or data-exposure concerns; state "None identified" only after checking]
 
+## DRY & Repository Hygiene Risks
+- [Duplicate ownership, repeated logic, misplaced/generated artifacts, temporary files, or "None identified"]
+
 ## Durable Memory Proposals
 - [Proposed decision/constraint/lesson, rationale, and intended Flash-Mem type; or "None"]
 
@@ -133,18 +149,13 @@ You can now run:
 
 **Without Flash-Mem MCP**:
 - Skip Step 2 (Architecture Context Retrieval from Flash-Mem)
-- Fall back to reading `{adapter_path:arch-constitution}` and `{adapter_path:security-constitution}` directly
+- Fall back to resolving the selected configuration first (`openspec/config.yaml` for OpenSpec), then reading every declared or present governance, architecture, security, and layout Markdown file directly. Do not silently omit an existing file.
 
 **Without Security Review**:
 - Continue identifying and flagging all security-sensitive ideas
 - Note that external Security Review is unavailable in the Discovery Summary Draft
 
 **Minimal Viable Workflow** (only Architecture Guard):
-- Read constitution files directly
+- Read the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), then every declared or present governance, architecture, security, and layout Markdown file directly. Do not silently omit an existing file.
 - Enter interactive discussion
 - Generate handoff draft
-
-
-## Backward Compatibility
-
-The original SpecKit-specific version remains in the repository source checkout under `commands/governed-discover.md` for direct SpecKit use.

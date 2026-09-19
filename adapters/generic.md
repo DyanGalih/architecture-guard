@@ -1,6 +1,6 @@
-# Generic SDD Adapter
+# Generic Workflow Adapter
 
-Use this adapter when no supported SDD tool is selected. Ask the user for active artifact paths when a command needs them; never guess.
+Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/selected-adapter` is `generic`. It maps governance concepts to the current directory with user-prompt fallbacks for missing artifact paths; never guess.
 
 ## Path Map
 
@@ -11,7 +11,8 @@ Use this adapter when no supported SDD tool is selected. Ask the user for active
 | constitution | User-provided governance artifact path |
 | arch-constitution | User-provided architecture artifact path |
 | security-constitution | User-provided security artifact path, if any |
-| governance-config | User-provided configuration path, if any |
+| governance-config | `.architecture-guard/config.yml` |
+| config | `.architecture-guard/config.yml` (compatibility alias of `governance-config`) |
 | extensions | Unsupported; detect host capabilities directly |
 | extensions-dir | Unsupported; do not probe an extension directory |
 | spec | User-provided active specification path |
@@ -20,6 +21,7 @@ Use this adapter when no supported SDD tool is selected. Ask the user for active
 | security-constraints | User-provided security constraints path, if any |
 | draft | `.architecture-guard/constitution.draft.md` |
 | ponytail-template | `.architecture-guard/templates/ponytail_core.md` |
+| capability-composition-template | `.architecture-guard/templates/capability_composition.md` |
 | budgeted-context-template | `.architecture-guard/templates/budgeted_context_sdd.md` |
 | hygiene-rules | `.architecture-guard/hygiene-rules/*.md` |
 | presets | `.architecture-guard/presets/{preset}.md` |
@@ -39,6 +41,8 @@ Use this adapter when no supported SDD tool is selected. Ask the user for active
 | create-tasks | Create the user-selected task artifact inline |
 | implement | Execute unchecked tasks inline and update their status |
 | analyze | Compare active spec, plan, and tasks inline for coverage and contradictions |
+| security-review-implementation | Host Security Review dispatch operation `sr-verify`; accept `sr-branch` only when host registration declares implementation scope; never `sr-changes` |
+| hygiene | architecture-guard hygiene --json --target . |
 | security-review | Use an optional host Security Review capability or report the skipped review |
 | security-review-plan | Use an optional host Security Review capability or report the skipped review |
 | security-review-tasks | Use an optional host Security Review capability or report the skipped review |

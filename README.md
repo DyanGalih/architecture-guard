@@ -6,7 +6,7 @@
 
 > Keep AI-generated code aligned with your architecture, specs, and delivery workflow.
 
-[![Version](https://img.shields.io/badge/version-2.4.1-22c55e)](extension.yml)
+[![Version](https://img.shields.io/badge/version-2.5.2-22c55e)](extension.yml)
 [![OpenSpec](https://img.shields.io/badge/OpenSpec-compatible-8b5cf6)](https://github.com/Fission-AI/OpenSpec)
 [![Spec Kit](https://img.shields.io/badge/Spec%20Kit-compatible-2563eb)](https://spec-kit.dev)
 [![Non-blocking](https://img.shields.io/badge/style-non--blocking-10b981)](https://spec-kit.dev)
@@ -54,7 +54,7 @@ The installer launches a setup wizard that asks you to select:
 2. **SDD tool** — Spec Kit, OpenSpec, or a generic Markdown workflow.
 3.  **Governed workflows** — Pick the orchestration and governance workflows you need.
 
-It installs the necessary command files directly into your agent's command or skill directory. The installer uses `@inquirer/prompts`; the installed governance commands themselves are Markdown and require no runtime dependency.
+It installs the necessary command files directly into the agent command or skill directory. The installer uses `@inquirer/prompts`; lean prompts require a callable `architecture-guard` CLI for resource resolution and CLI-backed hygiene, while `--vendor` copies static engine resources locally and avoids bundled-resource lookup for those assets.
 
 ---
 
