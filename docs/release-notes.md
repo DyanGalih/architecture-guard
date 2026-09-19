@@ -1,3 +1,7 @@
+## 2.5.3
+
+- Removed hardcoded `.specify` paths in orchestration templates to ensure seamless `npm publish --dry-run` and clean packaging.
+
 ## 2.5.2
 
 - Synchronized standalone CLI initialization, adapter materialization, and lean versus vendored runtime resource resolution across generated governance prompts.
