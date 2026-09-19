@@ -144,7 +144,7 @@ Static analyzers are great at rules. Architecture Guard is better at helping AI 
 | Syntax and code-pattern focus | Architecture and boundary focus |
 | Build-time blocking | Non-blocking by default |
 | Generic rules | Project-specific architecture rules |
-| Runtime/tooling dependencies | Prompt-based with no runtime dependency |
+| Runtime/tooling dependencies | Prompt instructions plus the Architecture Guard CLI for resource resolution and hygiene; vendored mode can avoid CLI lookup for static engine resources |
 
 > Architecture Guard is a prompt governance layer, not a static analysis engine.
 > Its commands are structured Markdown files that instruct the AI agent on what to check and how to report findings.

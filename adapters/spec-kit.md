@@ -11,16 +11,17 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | constitution | `.specify/memory/constitution.md` |
 | arch-constitution | `.specify/memory/architecture_constitution.md` |
 | security-constitution | `.specify/memory/security_constitution.md` |
-| governance-config | `.specify/config/architecture_guard.yml` |
-| config | `.specify/config/architecture_guard.yml` (compatibility alias of `governance-config`) |
+| governance-config | `.architecture-guard/config.yml` |
+| config | `.architecture-guard/config.yml` (compatibility alias of `governance-config`) |
 | extensions | `.specify/extensions.yml` |
 | extensions-dir | `.specify/extensions/` |
 | spec | `specs/{feature}/spec.md` |
 | plan | `specs/{feature}/plan.md` |
 | tasks | `specs/{feature}/tasks.md` |
 | security-constraints | `specs/{feature}/security-constraints.md` |
-| draft | `.specify/memory/constitution.draft.md` |
+| draft | `.architecture-guard/constitution.draft.md` |
 | ponytail-template | `.architecture-guard/templates/ponytail_core.md` |
+| capability-composition-template | `.architecture-guard/templates/capability_composition.md` |
 | budgeted-context-template | `.architecture-guard/templates/budgeted_context_sdd.md` |
 | hygiene-rules | `.architecture-guard/hygiene-rules/*.md` |
 | presets | `.architecture-guard/presets/{preset}.md` |
@@ -43,6 +44,8 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | create-tasks | `/speckit.tasks`; if unavailable, create `{adapter_path:tasks}` inline from the active plan |
 | implement | `/speckit.implement`; if unavailable, execute unchecked tasks inline and update their status |
 | analyze | `/speckit.analyze`; if unavailable, compare spec, plan, and tasks inline for coverage and contradictions |
+| security-review-implementation | Host Security Review dispatch operation `sr-verify`; accept `sr-branch` only when host registration declares implementation scope; never `sr-changes` |
+| hygiene | architecture-guard hygiene --json --target . |
 | security-review | Unsupported in standalone SDD orchestration; report `Unavailable`. Current SpecKit extension integration exists only in the legacy `commands/` delivery channel |
 | security-review-plan | Unsupported in standalone SDD orchestration; report `Unavailable`. Current SpecKit extension integration exists only in the legacy `commands/` delivery channel |
 | security-review-tasks | Unsupported in standalone SDD orchestration; report `Unavailable`. Current SpecKit extension integration exists only in the legacy `commands/` delivery channel |
@@ -118,7 +121,7 @@ SpecKit uses separate files for governance, architecture, and security rules.
 ## Gap Fill Actions
 
 1. **Architecture verify** — SpecKit has no built-in task-to-code evidence mapping.
-   - Fill: Architecture Guard's `architecture-verify` command reads tasks.md checkboxes and validates against code.
+   - Fill: The installed `ag-verify` capability reads tasks.md checkboxes and validates them against code.
 
 2. **DRY duplication detection** — SpecKit has no native DRY drift checker.
    - Fill: Architecture Guard's `violation-detection` command scans for repeated business rules, validation, DTO mapping.

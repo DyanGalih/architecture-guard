@@ -8,6 +8,18 @@ description: Initialize or refine the project governance and architecture consti
 
 Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Capability Composition
+
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+
+## Input & Context Loading
+
+Before refining governance, read these inputs explicitly with file-reading tools:
+
+1. **Manifest & Configuration**: Read `openspec/config.yaml` first when the OpenSpec adapter is active (otherwise read the selected adapter project configuration), then inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
+2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. For OpenSpec, explicitly check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`. For SpecKit, use the adapter-resolved `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file.
+3. **Initialization Artifacts**: Read any constitution draft, existing governance configuration, and framework preset required by this skill.
+
 This command helps teams intentionally define:
 
 * engineering governance principles
@@ -31,7 +43,7 @@ See the README quick start for brownfield and greenfield entrypoints.
 
 After init, the usual next step is `/ag-governed-plan` or `/ag-governed-tasks`, depending on whether the team wants planning or task generation next.
 
-When Flash-Mem is available, prefer it first for retrieving prior decisions, summaries, and existing constitution context. The repository files remain the source of truth for constitution content, and the legacy `memory-hub` name is reference-only and should not be treated as the runtime backend. If Flash-Mem is unavailable or the context is incomplete, read the repository files directly and treat them as the canonical source of truth. After refining the constitutions, sync durable summaries and major decisions back into Flash-Mem.
+When Flash-Mem is available, prefer it first for retrieving prior decisions, summaries, and existing constitution context. The repository files remain the source of truth for constitution content, and the legacy `memory-hub` name is reference-only and should not be treated as the runtime backend. If Flash-Mem is unavailable or the context is incomplete, resolve the selected project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file and treat those repository files as the canonical source of truth. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. After refining the constitutions, sync durable summaries and major decisions back into Flash-Mem.
 
 The goal is NOT to generate generic best practices.
 
@@ -274,6 +286,8 @@ Should contain:
 
 ## Step 1 — Detect Existing Constitution Files
 
+Before assessing the existing state, read the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, and explicitly read every declared or present governance, constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for SpecKit, use the adapter-resolved constitution files under `.specify/memory`. Never silently omit an existing file.
+
 Check for:
 
 * `.specify/memory/constitution.md`
@@ -401,7 +415,7 @@ If the user selects Team Development:
 4. Require explicit user approval of that preview before writing governance rules or creating any team scaffolding. If approval is declined, make no team-mode writes.
 
 If the user selects Claude Code Agent Teams:
-1. Preview the proposed Architecture Guard role profile based on `.architecture-guard/templates/agents_template.yml`.
+1. Preview the proposed Architecture Guard role profile by reading `.specify/extensions/architecture-guard/templates/agents_template.yml` (or `templates/agents_template.yml` in the extension source checkout). This legacy Spec Kit command is self-contained and does not require the standalone `architecture-guard` CLI.
 2. Explain that the profile is not a native Claude Code configuration file; current Claude Code uses an implicit team and named teammate spawning.
 3. Include creation of `.architecture-guard/agents.yml` and the exact constitution changes in the write preview, then require explicit approval before either write.
 4. After approval, set `topology: claude-code-agent-teams`, record role boundaries in `.specify/memory/constitution.md`, and write the profile.

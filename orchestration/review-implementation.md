@@ -14,13 +14,26 @@ Before executing this command, read `adapters/resolve.md`. Resolve the active ad
 
 Load `adapters/{tool}.md` and resolve every adapter path and command token (for example, tokens whose keys are `spec` and `verify`) before reviewing changed files or implementation artifacts. Stop if the adapter is missing or any token remains unresolved.
 
+## Standalone Resource Resolution
+
+Architecture Guard engine resources are standalone package resources. Never search an SDD-tool directory, an extension directory, or a source checkout for them. An adapter path under `.architecture-guard` is an editable local override location, not proof that the resource was copied.
+
+- Directly inspect the matching `.architecture-guard/<category>/` directory first for workspace overrides.
+- If the named local resource exists, read it. Otherwise run `architecture-guard resolve <category> <name>` and use the returned content.
+- For a resource collection, run `architecture-guard resolve <category> --list`, then resolve every returned name individually in deterministic order so local overrides replace bundled files without hiding bundled defaults.
+- If the CLI is unavailable and a mandatory resource is not vendored locally, stop and report the missing runtime dependency. For optional resources, report `Unavailable` and continue only when this command explicitly permits degradation.
+
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+Before continuing, you **MUST** resolve and apply the `ponytail_core` template with `architecture-guard resolve template ponytail_core`. Phase instructions may narrow but not weaken its safety or verification floor.
+
+## Capability Composition
+
+Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
 
 ## Budgeted Context Contract
 
-Read and apply `{adapter_path:budgeted-context-template}` (or `templates/budgeted_context.md` in the extension source checkout). Available active specification documents (the exact filenames depend on the active SDD tool), security constraints, applicable constitutions, and relevant code evidence are authoritative. Use fallback provenance to open historical specs only for named review gaps.
+Resolve and apply the `budgeted_context_sdd` template with `architecture-guard resolve template budgeted_context_sdd`. Available active specification documents (the exact filenames depend on the active SDD tool), security constraints, applicable constitutions, and relevant code evidence are authoritative. Use fallback provenance to open historical specs only for named review gaps.
 
 You are running `architecture-guard`, a technology-agnostic architecture review extension designed for high-integrity governance.
 
@@ -51,7 +64,7 @@ When you see this marker in a step, evaluate these conditions:
    ```yaml
    Task: Analyze code quality and boundary violations.
    Target Files: [Comma-separated list of target files]
-   Rules File: {adapter_path:arch-constitution}
+   Rules Files: every adapter-resolved constitution, security, architecture, and layout Markdown file
    Context: [Brief summary of planning/implementation state]
    Expected Output: JSON list of structured violations.
    ```
@@ -96,19 +109,23 @@ This pattern ensures that lower-tier models follow strict execution paths instea
 
 Review any available artifacts from these common locations. **IMPORTANT**: You MUST read these files explicitly using your file-reading tools (absolute or relative paths). Do not rely solely on workspace search or semantic indexers, as these files are often in `.gitignore` and may be excluded from default context:
 
-1. **Governance & Security Constitution**:
-    - `{adapter_path:constitution}`
-    - `{adapter_path:security-constitution}`
-    - Missing optional constitution files do not stop review; use the available constitutions and report each fallback or omission.
+1. **Manifest & Configuration**:
+    - Resolve `{adapter_path:governance-config}` or the adapter-native project configuration first (`openspec/config.yaml` for OpenSpec). Inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
 
-2. **Architecture Constitution**:
-    - `{adapter_path:arch-constitution}`
+2. **Authoritative Constitutions**:
+    - Read every constitution, architecture, security, and layout Markdown file declared by the configuration or present in the adapter-resolved project paths. Explicitly check these standard files when present:
+        - `openspec/constitution.md` — Core governance, product identity, package model, and P0 rules.
+        - `openspec/architecture.md` — Layer boundaries, persistence, modularity, and API contracts.
+        - `openspec/security.md` — Trust boundaries, authorization, tenant isolation, and secret management.
+        - `openspec/layout.md` — UI/UX conventions, layout structure, and responsive presentation.
+    - For other adapters, read every corresponding file resolved by the adapter path map, including any layout or UI constitution path it declares.
+    - Include any additional Markdown files named by `context`. Missing optional files may be reported as absent, but an existing file must never be silently omitted.
 
 3. **Flash-Mem Context Retrieval**:
 
    Try Flash-Mem first. If the context is incomplete, read the repository constitution files with file-reading tools rather than workspace search alone.
 
-   If Flash-Mem is unavailable or the context is insufficient, continue with the repository artifacts and constitution files available in the workspace.
+   If Flash-Mem is unavailable or the context is insufficient, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before continuing with repository artifacts. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 
 4. **Implementation Context**:
     - Active specification and planning artifacts (the exact filenames depend on the active SDD tool)
@@ -116,7 +133,7 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
 
 5. **Repository Hygiene**:
     - Config: `{adapter_path:governance-config}` (or `repository_hygiene` block in constitution).
-    - Rules: Load rules in deterministic order from `{adapter_path:hygiene-rules}`, `.specify/extensions/architecture-guard/hygiene-rules/*.md`, or source checkout `hygiene-rules/*.md`.
+    - Rules: Run `architecture-guard resolve hygiene-rules --list`, then resolve and load every returned rule in deterministic order. Workspace files under `.architecture-guard/hygiene-rules/` override same-named bundled rules.
     - **Direct Discovery Guard**: When checking adapter-resolved hidden paths such as `.architecture-guard/**`, use direct directory inspection first, then read listed files. A Glob/search no-match result is inconclusive and MUST NOT be reported as missing. Report a path as unavailable only after direct inspection confirms it does not exist. The review report MUST explicitly list loaded rule files and counts. Missing optional hygiene rules are non-blocking.
 
 ## Semantic Modeling
@@ -178,7 +195,7 @@ Detect violations such as:
 7. **Ponytail Audit**: Apply both sides of the shared contract. Check for bloat and unsafe under-building; trace changed shared behavior to its callers; verify the earliest viable ladder rung was used; and confirm non-trivial logic has a runnable check.
 8. **Performance Scan (if mode=performance)**: Skip violations; focus on optimizations.
 8b. **Code Quality Scan (SonarLint)**: If `mode=architecture`, optionally scan for coupling/complexity violations.
-8c. **Repository Hygiene Scan**: Evaluate the repository against all hygiene rules loaded from `{adapter_path:hygiene-rules}`. Apply exclusions and severity overrides defined in the project's `repository_hygiene` configuration.
+8c. **Repository Hygiene Scan**: Evaluate the repository against every hygiene rule resolved through `architecture-guard`. Apply exclusions and severity overrides defined in `.architecture-guard/config.yml`.
 9. **Generate Refactors**: Produce structured tasks for each confirmed violation.
 
 ---
@@ -188,9 +205,7 @@ Detect violations such as:
 This step runs code quality checks using bundled SonarLint rules. It is **optional** and complements architecture violations.
 The rules bundle is repository-native and IDE-agnostic, so it works the same in VS Code, Cursor, JetBrains, or CLI-only workflows.
 Load the bundle in this deterministic order:
-1. Active adapter path: `{adapter_path:sonar-rules}/sonarlint-rules.json` (resolves to `.architecture-guard/sonar-rules/sonarlint-rules.json`)
-2. Legacy extension path: `.specify/extensions/architecture-guard/sonar-rules/sonarlint-rules.json`
-3. Source checkout path: `sonar-rules/sonarlint-rules.json`
+1. Resolve the rules with `architecture-guard resolve sonar-rules`. A workspace override at `.architecture-guard/sonar-rules/sonarlint-rules.json` wins over the bundled rules.
 
 ### Activation
 
@@ -216,7 +231,7 @@ When delegating, write the sub-agent invocation prompt exactly like this:
 ```yaml
 Task: Scan files against SonarLint rules.
 Target Files: [Comma-separated list of target files]
-Rules File: {adapter_path:sonar-rules}/sonarlint-rules.json
+Rules Source: [local override or bundled path reported by `architecture-guard resolve sonar-rules --json`]
 Expected Output: JSON list of CRITICAL/HIGH code quality violations mapped to architecture boundaries.
 ```
 
@@ -224,7 +239,7 @@ Expected Output: JSON list of CRITICAL/HIGH code quality violations mapped to ar
 ### Procedure
 
 **If inline**:
-1. **Load Rules**: Read the rules bundle in order: `{adapter_path:sonar-rules}/sonarlint-rules.json`, `.specify/extensions/architecture-guard/sonar-rules/sonarlint-rules.json`, or source checkout `sonar-rules/sonarlint-rules.json`.
+1. **Load Rules**: Run `architecture-guard resolve sonar-rules` and read the returned rules bundle. Do not probe SDD extension or source-checkout paths.
 2. **Scan Changed Files**: Apply the rules bundle heuristically to `changed_files`; label these findings `Heuristic Sonar Rules Analysis`. Label findings as actual `SonarLint` output only when a SonarLint tool was invoked and returned them.
 3. **Filter Results**: Keep only CRITICAL/HIGH severity findings related to complexity, coupling, structure
 4. **Map to Boundaries**: Correlate findings with architecture boundaries (Entry/App/Domain/Data/External)
@@ -291,7 +306,7 @@ Return only this structure:
 
 | ID | Category | Severity | Blocking | Location(s) | Summary | Evidence/Rationale |
 |:---|:---|:---|:---|:---|:---|:---|
-| V1 | Constitution | CRITICAL | [Yes/No, from policy] | `{adapter_path:arch-constitution}` | Violation of [Principle Name] | [Evidence from code/plan] |
+| V1 | Constitution | CRITICAL | [Yes/No, from policy] | authoritative constitution set | Violation of [Principle Name] | [Evidence from code/plan] |
 
 ### Task Synchronization
 - **Status**: [Synced / Drifted]
@@ -357,7 +372,7 @@ Findings categorized by severity based on the active hygiene rules.
 3. **Code Quality**: Address SonarLint findings that map to architectural concerns (if any).
 4. **DRY Alignment**: Centralize repeated business logic, validation, and mapping before duplicating it in another layer or module.
 5. **Durable Memory Preservation (Mandatory Check)**: Include proposed durable-memory entries in the report when warranted. Return the complete report first; then request approval in a separate interaction and write only approved entries.
-6. **Next Step**: [e.g. Dispatch the detected host Security Review capability for security-first findings, or run `/ag-apply` for architecture fixes]
+6. **Next Step**: [e.g. Dispatch the detected host Security Review capability for security-first findings, or run the registered `ag-apply` capability for architecture fixes]
 7. **Remediation**: [Concrete remediation direction for the top issues, or "None needed"]
 
 ### Claude Code Agent Teams Review Protocol (When Active)
@@ -371,4 +386,4 @@ Activate this protocol only when the Claude Code host exposes named teammate spa
 
 If framework preset guidance exists, it is **mandatory** to use it to map generic principles to framework primitives and detect stack-specific anti-patterns.
 
-Preset guidance: use only `{adapter_path:presets}` when it resolves to an existing adapter-provided preset.
+Preset guidance: resolve only the selected preset with `architecture-guard resolve preset <preset>`. Do not infer or load unrelated presets.

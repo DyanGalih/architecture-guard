@@ -39,13 +39,14 @@ Then select:
 
 - Command files in your agent's commands/skills directory
 - `adapters/resolve.md` and `adapters/openspec.md` in project root
-- AGENTS.md governance rules (optional)
+- Lean mode resolves runtime resources through the `architecture-guard` CLI; `--vendor` copies templates, presets, hygiene rules, and Sonar rules under `.architecture-guard/`.
+- AGENTS.md managed Architecture Guard section (created or updated by init)
 
 ## Key Differences From SpecKit
 
 | Feature | SpecKit + ArchGuard | OpenSpec + ArchGuard |
 |---|---|---|
-| Spec creation | `/speckit.specify` | `openspec new change` + `openspec instructions specs` |
+| Spec creation | `/speckit.specify` | `openspec new change <change>` + `openspec instructions specs --change <change>` |
 | Plan artifact | `specs/{feature}/plan.md` | `openspec/changes/{change}/design.md` |
 | Tasks artifact | `specs/{feature}/tasks.md` | `openspec/changes/{change}/tasks.md` |
 | Clarify step | `/speckit.clarify` | Inline clarification loop |
@@ -63,7 +64,7 @@ OpenSpec does not automatically:
 
 ## SDD Adapter Resolution
 
-Architecture Guard uses `openspec` when `.architecture-guard/selected-adapter` contains `openspec`. The `openspec/config.yaml` marker is only a fallback when no adapter has been persisted. Use `--adapter openspec` for a one-command override.
+Architecture Guard uses `openspec` when `.architecture-guard/selected-adapter` contains `openspec`. The `openspec/config.yaml` marker is only a fallback when no adapter has been persisted. The `--adapter` value mentioned by installed prompts is a one-command prompt input, not an `architecture-guard init` option.
 
 ## Agent Files
 

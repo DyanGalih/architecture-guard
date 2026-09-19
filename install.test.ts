@@ -31,6 +31,72 @@ test('standalone orchestration and legacy Spec Kit extension expose the same ski
   }
 });
 
+test('every command loads the shared capability composition contract', () => {
+  const root = path.join(__dirname, '..');
+  const contract = fs.readFileSync(path.join(root, 'templates', 'capability_composition.md'), 'utf8');
+  assert.match(contract, /directly read the sibling skill file/);
+  assert.match(contract, /Do not execute a Markdown or `SKILL\.md` path as a shell command/);
+  assert.match(contract, /Prevent recursion/);
+
+  for (const dirName of ['orchestration', 'commands']) {
+    const dir = path.join(root, dirName);
+    for (const file of fs.readdirSync(dir).filter(file => file.endsWith('.md'))) {
+      const prompt = fs.readFileSync(path.join(dir, file), 'utf8');
+      assert.match(prompt, /^## Capability Composition$/m, `${dirName}/${file} must load the composition contract`);
+      assert.match(prompt, /capability[_-]composition/, `${dirName}/${file} must reference the composition contract`);
+      assert.match(prompt, /installed sibling skill or command file directly/, `${dirName}/${file} must require direct prompt resolution`);
+    }
+  }
+});
+
+test('standalone orchestration resolves engine resources without SpecKit extension paths', () => {
+  const root = path.join(__dirname, '..');
+  const orchestrationDir = path.join(root, 'orchestration');
+
+  for (const file of fs.readdirSync(orchestrationDir).filter(file => file.endsWith('.md'))) {
+    const prompt = fs.readFileSync(path.join(orchestrationDir, file), 'utf8');
+    assert.match(prompt, /^## Standalone Resource Resolution$/m, `${file} must define standalone resource loading`);
+    assert.match(prompt, /architecture-guard resolve template ponytail_core/, `${file} must resolve the Ponytail contract through the CLI`);
+    assert.match(prompt, /architecture-guard resolve template capability_composition/, `${file} must resolve capability composition through the CLI`);
+    assert.doesNotMatch(prompt, /\.specify/, `${file} must not depend on a SpecKit extension path`);
+    assert.doesNotMatch(prompt, /commands\//, `${file} must not route to a legacy source command file`);
+  }
+});
+
+test('every referenced Architecture Guard skill and CLI operation is registered', () => {
+  const root = path.join(__dirname, '..');
+  const orchestrationDir = path.join(root, 'orchestration');
+  const prompts = fs.readdirSync(orchestrationDir)
+    .filter(file => file.endsWith('.md'))
+    .map(file => fs.readFileSync(path.join(orchestrationDir, file), 'utf8'))
+    .join('\n');
+
+  const registeredSkills = new Set(require('./cli/install').COMMANDS.map(name => `ag-${name}`));
+  const referencedSkills = new Set([...prompts.matchAll(/\bag-[a-z][a-z-]+\b/g)].map(match => match[0]));
+  for (const skill of referencedSkills) {
+    assert.ok(registeredSkills.has(skill), `Unregistered Architecture Guard skill reference: ${skill}`);
+  }
+
+  const cliSource = fs.readFileSync(path.join(root, 'bin', 'cli.ts'), 'utf8');
+  const registeredCliOperations = new Set([...cliSource.matchAll(/\.command\('([a-z][a-z-]*)/g)].map(match => match[1]));
+  const referencedCliOperations = new Set([...prompts.matchAll(/architecture-guard ([a-z][a-z-]*)/g)].map(match => match[1]));
+  for (const operation of referencedCliOperations) {
+    assert.ok(registeredCliOperations.has(operation), `Unregistered Architecture Guard CLI operation: ${operation}`);
+  }
+});
+
+test('resolve --list exposes the complete effective hygiene rule collection', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-resolve-list-'));
+  const localRules = path.join(cwd, '.architecture-guard', 'hygiene-rules');
+  fs.mkdirSync(localRules, { recursive: true });
+  fs.writeFileSync(path.join(localRules, 'project-only.md'), '# Project-only rule\n');
+
+  const result = spawnSync(process.execPath, [installer, 'resolve', 'hygiene-rules', '--list', '--target', cwd], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /^project-only\.md$/m);
+  assert.match(result.stdout, /^duplicate-business-logic\.md$/m);
+});
+
 test('every orchestration and governed command adapter token resolves for every supported adapter', () => {
   const root = path.join(__dirname, '..');
   const adapterNames = ['generic', 'openspec', 'spec-kit'];
@@ -297,6 +363,23 @@ test('--yes non-interactive flags install without stdin and respect target arg',
   assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-adapter'), 'utf8').trim(), 'openspec');
 });
 
+
+test('materializes the selected adapter in the installed verification skill', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-verify-install-'));
+  runArgs(['init', '--yes', '--agent', 'codex', '--framework', 'openspec', '--commands', 'verify'], cwd);
+
+  const skillPath = path.join(cwd, '.codex/skills/ag-verify/SKILL.md');
+  const skill = fs.readFileSync(skillPath, 'utf8');
+  assert.doesNotMatch(skill, /\{adapter_(path|command):/);
+  assert.match(skill, /openspec\/changes\/<change>\/tasks\.md/);
+  assert.match(skill, /architecture-guard hygiene --json --target \./);
+  assert.match(skill, /## Context Expansion/);
+
+  fs.writeFileSync(path.join(cwd, 'adapters/resolve.md'), 'stale');
+  runArgs(['init', '--yes', '--agent', 'codex', '--framework', 'openspec', '--commands', 'verify'], cwd);
+  assert.notEqual(fs.readFileSync(path.join(cwd, 'adapters/resolve.md'), 'utf8'), 'stale');
+});
+
 test('governed delivery installs the adapter-driven orchestration command', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit', '--commands', 'governed-delivery'], cwd);
@@ -304,7 +387,8 @@ test('governed delivery installs the adapter-driven orchestration command', () =
   const command = fs.readFileSync(path.join(cwd, '.opencode/commands/ag-governed-delivery.md'), 'utf8');
    assert.match(command, /adapters\/resolve\.md/);
    assert.doesNotMatch(command, /adapters\/detect\.md/);
-  assert.match(command, /adapter_command:list-specs/);
+  assert.doesNotMatch(command, /\{adapter_(path|command):/);
+  assert.match(command, /Enumerate files matching/);
   assert.doesNotMatch(command, /If OpenSpec is detected.*openspec new change/s);
 });
 
@@ -399,3 +483,133 @@ test('installs Claude Code Agent Teams templates in vendor mode and resolves dyn
   assert.match(resolved.content, /topology: claude-code-agent-teams/);
 });
 
+
+test("resolve rejects adapter category with actionable guidance", () => {
+  const result = spawnSync(process.execPath, [installer, "resolve", "adapter", "--list"], { encoding: "utf8" });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Adapter selection is file-based/);
+  assert.match(result.stderr, /selected-adapter/);
+});
+
+test("installed OpenSpec governed delivery is explicit and change-scoped", () => {
+  const root = path.join(__dirname, "..");
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "architecture-guard-openspec-delivery-"));
+  runArgs(["init", "--yes", "--agent", "codex", "--framework", "openspec", "--commands", "governed-delivery"], cwd);
+
+  const command = fs.readFileSync(path.join(cwd, ".codex/skills/ag-governed-delivery/SKILL.md"), "utf8");
+  assert.ok(command.includes(".architecture-guard/selected-adapter"));
+  assert.ok(command.includes("adapter files are not a `resolve` resource category"));
+  assert.ok(command.includes("CHANGE_ID"));
+  assert.match(command, /openspec instructions .*--change .*CHANGE_ID/);
+  assert.match(command, /openspec validate .*CHANGE_ID.*--strict/);
+  assert.equal(command.includes("architecture-guard resolve adapter"), false);
+  assert.equal(command.includes("{adapter_"), false);
+
+  const template = fs.readFileSync(path.join(root, "templates", "openspec_spec.md"), "utf8");
+  assert.ok(template.includes("## ADDED Requirements"));
+  assert.ok(template.includes("## MODIFIED Requirements"));
+  assert.ok(template.includes("## REMOVED Requirements"));
+  assert.equal(template.split("\n").includes("## Requirements"), false);
+});
+
+test("review-artifacts reports Unavailable instead of pretending to dispatch", () => {
+  const result = spawnSync(process.execPath, [installer, "review-artifacts"], { encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Status.*Unavailable/);
+  assert.doesNotMatch(result.stdout, /Delegating/);
+});
+
+test("materializes adapter actions without command-prose interpolation", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "architecture-guard-action-install-"));
+  runArgs(["init", "--yes", "--agent", "opencode", "--framework", "openspec", "--commands", "governed-implement"], cwd);
+
+  const prompt = fs.readFileSync(path.join(cwd, ".opencode/commands/ag-governed-implement.md"), "utf8");
+  assert.match(prompt, /## Resolved Adapter Actions/);
+  assert.match(prompt, /apply the adapter-defined "subagent-synthesize" action with implementation context/);
+  assert.match(prompt, /openspec validate.*CHANGE_ID.*--strict/);
+  assert.doesNotMatch(prompt, /the the adapter-defined/);
+  assert.doesNotMatch(prompt, /Run (Use|Run) the registered/);
+  assert.doesNotMatch(prompt, /Unsupported natively.*--context=implementation/);
+});
+
+test("supports command aliases and rejects invalid selections", () => {
+  const allCwd = fs.mkdtempSync(path.join(os.tmpdir(), "architecture-guard-all-"));
+  runArgs(["init", "--yes", "--agent", "opencode", "--framework", "openspec", "--commands", "all"], allCwd);
+  const installed = fs.readdirSync(path.join(allCwd, ".opencode/commands")).filter(name => /^ag-.*\.md$/.test(name));
+  assert.equal(installed.length, require("./cli/install").COMMANDS.length);
+
+  const reviewCwd = fs.mkdtempSync(path.join(os.tmpdir(), "architecture-guard-review-"));
+  runArgs(["init", "--yes", "--agent", "opencode", "--framework", "openspec", "--commands", "review"], reviewCwd);
+  assert.ok(fs.existsSync(path.join(reviewCwd, ".opencode/commands/ag-review-artifacts.md")));
+  assert.ok(fs.existsSync(path.join(reviewCwd, ".opencode/commands/ag-review-implementation.md")));
+  assert.equal(fs.existsSync(path.join(reviewCwd, ".opencode/commands/ag-init.md")), false);
+
+  const invalid = spawnSync(process.execPath, [installer, "init", "--yes", "--agent", "opencode", "--framework", "openspec", "--commands", "no-such-command"], {
+    cwd: fs.mkdtempSync(path.join(os.tmpdir(), "architecture-guard-invalid-command-")),
+    encoding: "utf8",
+  });
+  assert.notEqual(invalid.status, 0);
+  assert.match(invalid.stderr, /Unknown command selection: no-such-command/);
+});
+
+test("requires explicit agent and framework values in --yes mode", () => {
+  const noAgent = spawnSync(process.execPath, [installer, "init", "--yes"], {
+    cwd: fs.mkdtempSync(path.join(os.tmpdir(), "architecture-guard-no-agent-")),
+    encoding: "utf8",
+  });
+  assert.notEqual(noAgent.status, 0);
+  assert.match(noAgent.stderr, /requires --agent/);
+
+  const noFramework = spawnSync(process.execPath, [installer, "init", "--yes", "--agent", "opencode"], {
+    cwd: fs.mkdtempSync(path.join(os.tmpdir(), "architecture-guard-no-framework-")),
+    encoding: "utf8",
+  });
+  assert.notEqual(noFramework.status, 0);
+  assert.match(noFramework.stderr, /requires --framework/);
+});
+
+test("updates the managed AGENTS section when the selected agent changes", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "architecture-guard-agents-update-"));
+  runArgs(["init", "--yes", "--agent", "opencode", "--framework", "openspec", "--commands", "init"], cwd);
+  runArgs(["init", "--yes", "--agent", "antigravity", "--framework", "openspec", "--commands", "init"], cwd);
+
+  const agents = fs.readFileSync(path.join(cwd, "AGENTS.md"), "utf8");
+  assert.match(agents, /\.agent\/skills/);
+  assert.doesNotMatch(agents, /\.opencode\/commands/);
+  assert.equal((agents.match(/architecture-guard:start/g) || []).length, 1);
+  assert.equal((agents.match(/architecture-guard:end/g) || []).length, 1);
+});
+
+
+test("--vendor with overwrite skip still populates missing runtime resources", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "architecture-guard-vendor-skip-"));
+  const result = spawnSync(process.execPath, [installer, "init", "--vendor", "--overwrite", "skip", "--yes", "--agent", "opencode", "--framework", "spec-kit"], { cwd, encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  for (const dir of ["templates", "presets", "hygiene-rules", "sonar-rules"]) {
+    assert.ok(fs.existsSync(path.join(cwd, ".architecture-guard", dir)), "missing vendored " + dir);
+  }
+});
+
+test("CLI init treats an OpenSpec directory as a detection marker", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "architecture-guard-openspec-directory-"));
+  fs.mkdirSync(path.join(cwd, "openspec"), { recursive: true });
+  install("1\n", cwd);
+  assert.equal(fs.readFileSync(path.join(cwd, ".architecture-guard/selected-adapter"), "utf8").trim(), "openspec");
+});
+
+test("legacy Spec Kit init remains self-contained", () => {
+  const prompt = fs.readFileSync(path.join(__dirname, "..", "commands", "init.md"), "utf8");
+  assert.match(prompt, /\.specify\/extensions\/architecture-guard\/templates\/agents_template\.yml/);
+  assert.doesNotMatch(prompt, /architecture-guard resolve template agents_template/);
+});
+
+
+test("rejects a non-replacing adapter switch before changing persisted selection", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "architecture-guard-adapter-switch-"));
+  runArgs(["init", "--yes", "--agent", "opencode", "--framework", "spec-kit", "--commands", "init"], cwd);
+
+  const result = spawnSync(process.execPath, [installer, "init", "--overwrite", "skip", "--yes", "--agent", "opencode", "--framework", "openspec", "--commands", "init"], { cwd, encoding: "utf8" });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Cannot switch adapter from spec-kit to openspec/);
+  assert.equal(fs.readFileSync(path.join(cwd, ".architecture-guard/selected-adapter"), "utf8").trim(), "spec-kit");
+});

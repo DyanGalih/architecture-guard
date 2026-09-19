@@ -76,3 +76,27 @@ test('lists available resources in category', () => {
   assert(presets.length > 0);
   assert(presets.includes('laravel.md') || presets.includes('django.md'));
 });
+
+test('lists bundled resources and deduplicated workspace overrides', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-resolve-list-'));
+  try {
+    const localRulesDir = path.join(tmpDir, '.architecture-guard', 'hygiene-rules');
+    fs.mkdirSync(localRulesDir, { recursive: true });
+    fs.writeFileSync(path.join(localRulesDir, 'temporary-files.md'), '# Local override\n');
+    fs.writeFileSync(path.join(localRulesDir, 'project-only.md'), '# Project rule\n');
+
+    const resources = listCategoryResources('hygiene-rules', { target: tmpDir });
+    assert(resources.includes('temporary-files.md'));
+    assert.equal(resources.filter(name => name === 'temporary-files.md').length, 1);
+    assert(resources.includes('project-only.md'));
+    assert(resources.includes('duplicate-business-logic.md'));
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+
+test("keeps adapter selection out of engine resource resolution", () => {
+  assert.throws(() => resolveResource("adapter"), /Adapter selection is file-based/);
+  assert.throws(() => listCategoryResources("adapter"), /Adapter selection is file-based/);
+});

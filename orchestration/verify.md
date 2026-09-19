@@ -6,21 +6,68 @@ description: Verify implementation against specification, design, plan, tasks, a
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, resolve the project root as the directory containing `adapters/resolve.md` (normally the repository root). Read that file, then read the adapter selected by `.architecture-guard/config.yml` or `.architecture-guard/selected-adapter` from `adapters/openspec.md`, `adapters/spec-kit.md`, or `adapters/generic.md`. Do not run `architecture-guard resolve adapter ...`; `resolve` handles engine resources, while adapter files handle SDD paths and commands. Materialize every adapter token before executing the command body.
+
+## Adapter-Bound Artifact Contract
+
+The adapter files are installed at the project root. `.architecture-guard/selected-adapter` selects the adapter; it is not a substitute for `adapters/resolve.md` or the selected adapter file.
+
+For OpenSpec, the concrete bindings are:
+- tasks: `openspec/changes/<change>/tasks.md`
+- plan/design: `openspec/changes/<change>/design.md`
+- spec: `openspec/changes/<change>/specs/<capability>/spec.md`
+- proposal: `openspec/changes/<change>/proposal.md`
+- governance and constitution manifest: `openspec/config.yaml` (read the `context` field first)
+- standard OpenSpec constitutions: `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md` when present
+- governance config: `.architecture-guard/config.yml`
+- hygiene runner: `architecture-guard hygiene --json --target .`
+
+Use the selected adapter as the authority for SpecKit and generic paths. Do not invent an OpenSpec `memory/architecture_constitution.md` path, and do not treat a capability name as a change identifier.
+
+## Standalone Resource Resolution
+
+Architecture Guard engine resources are standalone package resources. Never search an SDD-tool directory, an extension directory, or a source checkout for them. An adapter path under `.architecture-guard` is an editable local override location, not proof that the resource was copied.
+
+- Directly inspect the matching `.architecture-guard/<category>/` directory first for workspace overrides.
+- If the named local resource exists, read it. Otherwise run `architecture-guard resolve <category> <name>` and use the returned content.
+- For a resource collection, run `architecture-guard resolve <category> --list`, then resolve every returned name individually in deterministic order so local overrides replace bundled files without hiding bundled defaults.
+- If the CLI is unavailable and a mandatory resource is not vendored locally, stop and report the missing runtime dependency. For optional resources, report `Unavailable` and continue only when this command explicitly permits degradation.
 
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+Before continuing, you **MUST** resolve and apply the `ponytail_core` template with `architecture-guard resolve template ponytail_core` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+
+## Capability Composition
+
+Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
 
 ## Budgeted Context Contract
 
-Read and apply `{adapter_path:budgeted-context-template}`. Active adapter artifacts, applicable constitutions, security constraints, and code evidence are mandatory and authoritative. Neither memory nor a fallback index is implementation evidence.
+Resolve and apply the `budgeted_context_sdd` template with `architecture-guard resolve template budgeted_context_sdd`. Active adapter artifacts, applicable constitutions, security constraints, and code evidence are mandatory and authoritative. Neither memory nor a fallback index is implementation evidence.
 
 Validate that the implementation fulfills all tasks in `tasks.md` while adhering to the defined architecture boundaries and the **Architecture Constitution**. This command acts as a post-implementation gate.
 
 ## User Input
 
 Use the host command's native argument text as optional explicit artifact paths or scope.
+
+Accepted explicit forms are `change=<id>`, `tasks=<path>`, `plan=<path>`, `spec=<path-or-glob>`, `constitution=<path>`, and `scope=diff`. Resolve relative paths from the project root. Explicit paths take precedence over discovery, but they do not permit a different SDD adapter than the persisted selection unless the user explicitly names one.
+
+
+## CLI Boundaries
+
+This skill owns verification scope selection and the report. Do not run `architecture-guard review-implementation --target .`; that CLI operation exposes no `--target` option and only delegates prompt execution. Use the selected host Security Review operation and the hygiene runner defined below.
+
+## Verification Scope Selection
+
+Use exactly one scope and report it before findings:
+
+1. **Explicit Artifact Set** — Use user-supplied paths/change identifiers after confirming every required file exists.
+2. **Active Change** — When no explicit scope is supplied, use the selected adapter's active-change discovery. For OpenSpec, first establish `CHANGE_ID` from the explicit scope or one unambiguous result from `openspec list --specs --json`, then run `openspec status --change "$CHANGE_ID" --json`. If there are multiple active changes, ask the user to choose and never select by recency.
+3. **Git Diff Only (Degraded)** — If OpenSpec reports no active changes, do not inspect the archive and do not silently select the latest archived change. Run `architecture-guard detect-changed-files --json`. If files changed, verify boundary, constitution, security-architecture, and hygiene evidence against that diff, mark task and requirement coverage `Degraded` or `Not Applicable`, and do not report a full verification pass.
+4. **Blocked** — If there is no explicit artifact set, no active change, and no changed files, stop with `Blocked: no verification scope`. Do not invent tasks, requirements, or implementation evidence.
+
+The same no-active-change rule applies to generic and SpecKit workflows when their adapter cannot identify an active artifact set. A historical or archived change is used only when the user explicitly names it.
 
 ## Goal
 
@@ -30,7 +77,7 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 
 - **REPOSITORY READ-ONLY**: This analytical gate does not modify repository files. It may write validated durable knowledge to Flash-Mem only after explicit user approval.
 - **Evidence-Based**: Every "Verified" or "Missing" status must cite specific files or code patterns.
-- **Constitution Authority**: The adapter-resolved architecture rules are the non-negotiable standard. When an adapter declares the split architecture constitution optional, use the architecture rules embedded in `{adapter_path:constitution}` and record that provenance; if neither exists, mark architecture coverage `Degraded` and do not claim compliance.
+- **Constitution Authority**: Treat every constitution and governance Markdown file declared by the selected adapter's configuration or present in its adapter-resolved project paths as authoritative. A partial list must never be treated as complete.
 
 ## Execution Steps
 
@@ -38,9 +85,10 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 
 1. Resolve explicit artifact paths from native user input first; otherwise discover existing artifacts by matching `{adapter_path:tasks}`, `{adapter_path:plan}`, and `{adapter_path:spec}`. If multiple active sets are plausible, ask the user instead of guessing. If an optional artifact is absent, use an adapter-documented fallback only for the checks it can support, record its provenance, and mark unsupported checks `Degraded` rather than inventing evidence.
 2. Resolve the selected artifact set to absolute paths without invoking SDD-tool-specific prerequisite scripts.
-3. Load `{adapter_path:arch-constitution}` when present; otherwise use adapter-documented architecture rules embedded in `{adapter_path:constitution}` and record the fallback.
-4. Load the Repository Hygiene Config: `{adapter_path:governance-config}` (fallback to `repository_hygiene` block in constitution).
-5. Load the Repository Hygiene Rules in deterministic order from `{adapter_path:hygiene-rules}`, `.specify/extensions/architecture-guard/hygiene-rules/*.md`, or source checkout `hygiene-rules/*.md`.
+3. Resolve the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec) and inspect its `context` block for every referenced governance and constitution Markdown file.
+4. Read every declared or present constitution, architecture, security, and layout Markdown file explicitly. Check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md` when present, plus every corresponding file resolved by the adapter path map. Never silently omit an existing file.
+5. Load the adapter-resolved Repository Hygiene Config: `{adapter_path:governance-config}` (falling back to its documented constitution block).
+6. Run `architecture-guard resolve hygiene-rules --list`, then resolve and load every returned hygiene rule in deterministic order. Workspace overrides replace same-named bundled rules.
    - **Direct Discovery Guard**: When checking adapter-resolved hidden paths such as `.architecture-guard/**`, use direct directory inspection first, then read listed files. A Glob/search no-match result is inconclusive and MUST NOT be reported as missing. Report a path as unavailable only after direct inspection confirms it does not exist. The verification report MUST explicitly list loaded rule files and counts. Missing optional hygiene rules are non-blocking.
 
 ### 2. Semantic Modeling (Internal)
@@ -73,18 +121,21 @@ Build internal representations:
 - **DRY Drift**: The same rule is implemented in multiple places instead of a shared source of truth.
 
 #### C. Constitution Compliance
-- **Rule Check**: Does the implementation violate any "MUST" rules in the `architecture_constitution.md`?
+- **Rule Check**: Does the implementation violate any "MUST" rules in the authoritative constitution set?
 - **Pattern Match**: Does the code follow the mandated architectural patterns (e.g., DTOs, Repositories, Events)?
 
 #### D. Security Review on Implementation
-- Detect Security Review independently from host registrations, never from the selected SDD tool or extension files.
-- If available, dispatch the detected host Security Review capability's implementation operation directly and include a separate Security Review section in the output. Do not execute adapter fallback prose as a command.
-- If unavailable, perform only architecture-visible security checks required by loaded constitutions, mark the independent security review `Unavailable`, and report degraded coverage without claiming a pass.
-- If security findings are architecture-relevant, classify them as `Security-Architecture Conflict`.
+- Apply {adapter_command:security-review-implementation} as the adapter policy for this phase.
+- A callable host registration MUST identify a Security Review capability, advertise an implementation-scoped operation, and expose a dispatch API or an exact registered skill body. The canonical operation is `sr-verify`. Accept `sr-branch` only when its registration explicitly declares implementation/branch scope. `sr-changes` is reserved for multi-change review and MUST NOT be selected here.
+- Pass the selected change or explicit artifact paths, changed files, adapter, constitutions, security constraints, and prior findings to the operation. Do not invoke a slash-command name or Markdown path as if it were executable.
+- The independent operation MUST be read-only with respect to the repository. If it writes a report inside the repository or cannot declare its write behavior, mark Security Review `Unavailable` rather than silently allowing the write.
+- If no callable operation is registered, perform only architecture-visible security checks required by loaded constitutions, mark the independent security review `Unavailable`, and report degraded coverage without claiming a pass.
+- If security findings are architecture-relevant, classify them as `Security-Architecture Conflict` and preserve the Security Review operation's own severity and blocking decision.
 
 #### E. Repository Hygiene Validation
-- Run all loaded hygiene rules against the repository, respecting configured exclusions from `repository_hygiene` config.
-- Determine effective severity and blocking status from the applicable policy: architecture P0 rules, security policy, and hygiene `fail_on`/`warn_on` configuration remain independent. A finding blocks only when its governing policy says it blocks; category alone never changes severity.
+- Execute {adapter_command:hygiene} from the project root and parse its JSON report. The runner loads the effective bundled-plus-local rule collection, applies configured exclusions, and returns each rule's source, execution mode, findings, severity, and blocking status.
+- Treat `execution: builtin` findings as executed checks. Treat `execution: manual` rules as `Degraded` coverage; do not claim those rules passed. If the runner is unavailable, report Hygiene `Unavailable` and do not claim a clean repository.
+- Determine effective severity and blocking status from the runner policy: architecture P0 rules, security policy, and hygiene `fail_on`/`warn_on` configuration remain independent. A finding blocks only when its governing policy says it blocks; category alone never changes severity.
 
 ### 4. Severity Assignment
 
@@ -100,6 +151,16 @@ Build internal representations:
 |:---|:---|:---|:---|:---|:---|:---|:---|
 | V1 | Task Integrity | CRITICAL | Yes | `tasks.md:T01` | `tasks.md` | Task marked complete but logic missing in `auth.ts` | Implement logic or uncheck task |
 | V2 | Boundary | HIGH | No | `ctrl/user.ts` | `{adapter_path:plan}` | Database query found in Controller layer | Move query to Repository/Data layer |
+
+## Verification Scope
+- **Mode**: [Explicit Artifact Set / Active Change / Git Diff Only (Degraded) / Blocked]
+- **Change**: [change identifier or None]
+- **Artifacts**: [resolved absolute paths or None]
+- **Scope Evidence**: [status/diff command output or explicit user paths]
+
+## Context Expansion
+- **Fallback Loaded**: [Yes / No]
+- **Historical Sources Opened**: [None or `path — named gap` entries]
 
 ### Requirement Evidence
 
@@ -119,12 +180,16 @@ For each task in `tasks.md`:
 - **Gap Analysis**: If "No" or "Partial", explain why the task is incomplete and suggest the remediation.
 
 ### Repository Hygiene Status
+- **Loaded Rule Files**: [Path, source, and execution mode for every rule]
+- **Executed Rule Count**: [Built-in rules executed / total loaded rules]
+- **Manual or Unavailable Rules**: [Rule identifiers and degraded reason, or None]
 - **Critical Issues**: [List any hygiene issues that fail verification]
 - **Warnings**: [List non-blocking hygiene warnings]
 - **Info**: [List minor hygiene notes]
 
 ### Security Review Status
 - **Capability**: [Available / Unavailable]
+- **Operation**: [sr-verify / sr-branch compatibility alias / None]
 - **Coverage**: [Independent / Degraded]
 - **Blocking Findings**: [Policy-derived findings or None]
 
@@ -145,8 +210,4 @@ Activate this protocol only when the Claude Code host exposes named teammate spa
 - If verification passes without blocking violations, the lead offers the separate governed archive workflow after reporting verification evidence; archival still requires its own approvals.
 - If verification exposes boundary drift or unfulfilled tasks, **HITL Gate 2** prompts the user to route back to **Analyst Creator** for task updates and re-assignment.
 
-**Next Step**: [e.g. "Run `{adapter_command:architecture-apply}` to fix V2"]
-
-## Backward Compatibility
-
-The original SpecKit-specific version remains in the repository source checkout under `commands/verify.md` for direct SpecKit use.
+**Next Step**: [e.g. "Run {adapter_command:architecture-apply} to fix V2"]

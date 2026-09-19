@@ -17,10 +17,10 @@ The installer adds:
 
 - Agent-native governance commands such as `ag-governed-spec`, `ag-review-artifacts`, and `ag-verify`.
 - `adapters/resolve.md` and `adapters/spec-kit.md`.
-- Runtime resources under `.architecture-guard/`.
-- Optional governance guidance in `AGENTS.md`.
+- Lean mode resolves runtime resources through the `architecture-guard` CLI; `--vendor` copies them under `.architecture-guard/`.
+- A managed Architecture Guard section in `AGENTS.md`.
 
-The adapter selected by `architecture-guard init --framework` is persisted in `.architecture-guard/selected-adapter` and is authoritative at command time. If the project switches SDD tools, rerun init with the new framework or use an explicit `--adapter` override for a single command.
+The adapter selected by `architecture-guard init --framework` is persisted in `.architecture-guard/selected-adapter` and is authoritative at command time. The `--adapter` value shown in installed prompts is a one-command prompt input, not an installer flag. If the project switches SDD tools, rerun init with the new framework.
 
 ## Spec Kit Artifact Mapping
 
@@ -62,7 +62,7 @@ The extension hooks are optional. In standalone mode, the agent-native command p
 
 ## Detection and Overrides
 
-Spec Kit is detected from `.specify/`. If both `.specify/` and `openspec/config.yaml` exist, Architecture Guard asks which adapter to use. Use an explicit adapter override when the project intentionally contains both workflows:
+Use an explicit adapter override in the installed command when the project intentionally contains both workflows:
 
 ```text
 --adapter spec-kit

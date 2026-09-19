@@ -8,6 +8,10 @@ description: Verify implementation against specification, design, plan, tasks, a
 
 Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Capability Composition
+
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+
 ## Budgeted Context Contract
 
 Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). The active specification, design, and task artifacts (the exact filenames depend on the active SDD tool), applicable constitutions, security constraints, and code evidence are mandatory and authoritative. Neither Flash-Mem nor `system_context.md` is evidence that a task was implemented.
@@ -28,7 +32,7 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 
 - **STRICTLY READ-ONLY**: This is an analytical gate. Do not modify files.
 - **Evidence-Based**: Every "Verified" or "Missing" status must cite specific files or code patterns.
-- **Constitution Authority**: The `architecture_constitution.md` is the non-negotiable standard for this check.
+- **Constitution Authority**: Treat every constitution and governance Markdown file declared by the selected adapter's configuration or present in its adapter-resolved project paths as authoritative. A partial list must never be treated as complete.
 
 ## Execution Steps
 
@@ -36,9 +40,10 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 
 1. Run `architecture-guard check-architecture` from repo root to identify the active `FEATURE_DIR`.
 2. Derive absolute paths for active specification, design, and task artifacts.
-3. Load the Architecture Constitution: `.specify/memory/architecture_constitution.md`.
-4. Load the Repository Hygiene Config: `.specify/config/repository_hygiene.yml` (fallback to `repository_hygiene` block in constitution).
-5. Load the Repository Hygiene Rules in deterministic order from `.specify/extensions/architecture-guard/hygiene-rules/*.md`, `.architecture-guard/hygiene-rules/*.md`, or source checkout `hygiene-rules/*.md`.
+3. Read the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec) and inspect its `context` block for every referenced governance and constitution Markdown file.
+4. Read every declared or present constitution, architecture, security, and layout Markdown file explicitly. Check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md` when present, plus `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file.
+5. Load the adapter-resolved Repository Hygiene Config (falling back to its documented constitution block).
+6. Run `architecture-guard resolve hygiene-rules --list`, then resolve and load every returned hygiene rule in deterministic order. Workspace overrides replace same-named bundled rules.
    - **Direct Discovery Guard**: When checking adapter-resolved hidden paths such as `.architecture-guard/**`, use direct directory inspection first, then read listed files. A Glob/search no-match result is inconclusive and MUST NOT be reported as missing. Report a path as unavailable only after direct inspection confirms it does not exist. The verification report MUST explicitly list loaded rule files and counts. Missing optional hygiene rules are non-blocking.
 
 ### 2. Semantic Modeling (Internal)
@@ -69,7 +74,7 @@ Build internal representations:
 - **DRY Drift**: The same rule is implemented in multiple places instead of a shared source of truth.
 
 #### C. Constitution Compliance
-- **Rule Check**: Does the implementation violate any "MUST" rules in the `architecture_constitution.md`?
+- **Rule Check**: Does the implementation violate any "MUST" rules in the authoritative constitution set?
 - **Pattern Match**: Does the code follow the mandated architectural patterns (e.g., DTOs, Repositories, Events)?
 
 #### D. Requirement and Artifact Integrity

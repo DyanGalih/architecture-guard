@@ -8,6 +8,10 @@ description: Run the governed SpecKit lifecycle from discovery or an active feat
 
 Before continuing, read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Capability Composition
+
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+
 Use this command as the end-to-end Architecture Guard entry point for SpecKit. Delegate each phase to its registered Architecture Guard capability instead of reproducing that phase's internal prompt.
 
 ## Agent Teams Activation
@@ -24,7 +28,7 @@ When the environment flag is present, explain that `.architecture-guard/agents.y
 
 ### Step 1 - Resolve the Starting Point
 
-1. Read Flash-Mem context when its tools are available; otherwise use `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, and `.specify/memory/security_constitution.md`.
+1. Read Flash-Mem context when its tools are available; otherwise Read the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for SpecKit, check `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file.
 2. Resolve any user-supplied change name and artifact paths before filesystem discovery.
 3. If the request is still exploratory or materially ambiguous, run `/ag-governed-discover` and use its Discovery Summary Draft as the specification seed.
 4. If no active specification exists, run `/ag-governed-spec`. Do not enter planning until specification creation and clarification succeed.

@@ -18,6 +18,10 @@ Load `.specify/extensions/architecture-guard/adapters/{tool}.md` (or `adapters/{
 
 Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Capability Composition
+
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+
 ## Budgeted Context Contract
 
 Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). Available active specification documents (the exact filenames depend on the active SDD tool), security constraints, applicable constitutions, and relevant code evidence are authoritative. Use fallback provenance to open historical specs only for named review gaps.
@@ -52,7 +56,7 @@ When you see this marker in a step, evaluate these conditions:
    ```yaml
    Task: Analyze code quality and boundary violations.
    Target Files: [Comma-separated list of target files]
-   Rules File: .specify/memory/architecture_constitution.md
+   Rules Files: every adapter-resolved constitution, security, architecture, and layout Markdown file
    Context: [Brief summary of planning/implementation state]
    Expected Output: JSON list of structured violations.
    ```
@@ -97,18 +101,23 @@ This pattern ensures that lower-tier models follow strict execution paths instea
 
 Review any available artifacts from these common locations. **IMPORTANT**: You MUST read these files explicitly using your file-reading tools (absolute or relative paths). Do not rely solely on workspace search or semantic indexers, as these files are often in `.gitignore` and may be excluded from default context:
 
-1. **Governance & Security Constitution**:
-    - `.specify/memory/constitution.md`
-    - `.specify/memory/security_constitution.md`
+1. **Manifest & Configuration**:
+    - Read the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec). Inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
 
-2. **Architecture Constitution**:
-    - `.specify/memory/architecture_constitution.md`
+2. **Authoritative Constitutions**:
+    - Read every constitution, architecture, security, and layout Markdown file declared by the configuration or present in the adapter-resolved project paths. Explicitly check these standard files when present:
+        - `openspec/constitution.md` — Core governance, product identity, package model, and P0 rules.
+        - `openspec/architecture.md` — Layer boundaries, persistence, modularity, and API contracts.
+        - `openspec/security.md` — Trust boundaries, authorization, tenant isolation, and secret management.
+        - `openspec/layout.md` — UI/UX conventions, layout structure, and responsive presentation.
+        - `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution when present.
+    - Include any additional Markdown files named by `context`. Missing optional files may be reported as absent, but an existing file must never be silently omitted.
 
 3. **Flash-Mem Context Retrieval**:
 
    Try Flash-Mem first. If the context is incomplete, read the repository constitution files with file-reading tools rather than workspace search alone.
 
-   If Flash-Mem is unavailable or the context is insufficient, continue with the repository artifacts and constitution files available in the workspace.
+   If Flash-Mem is unavailable or the context is insufficient, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before continuing with repository artifacts. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 
 4. **Implementation Context**:
     - Active specification and planning artifacts (the exact filenames depend on the active SDD tool)
@@ -293,7 +302,7 @@ Return only this structure:
 
 | ID | Category | Severity | Blocking | Location(s) | Summary | Evidence/Rationale |
 |:---|:---|:---|:---|:---|:---|:---|
-| V1 | Constitution | CRITICAL | [Yes/No, from policy] | `.specify/memory/architecture_constitution.md` | Violation of [Principle Name] | [Evidence from code/plan] |
+| V1 | Constitution | CRITICAL | [Yes/No, from policy] | authoritative constitution set | Violation of [Principle Name] | [Evidence from code/plan] |
 
 ### Task Synchronization
 - **Status**: [Synced / Drifted]

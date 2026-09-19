@@ -8,13 +8,28 @@ description: Facilitate an architecture-aware discussion to flesh out ideas befo
 
 Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Capability Composition
+
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+
 You are orchestrating the `ag-governed-discover` workflow for `architecture-guard`.
 
 This command coordinates an architecture-aware brainstorming and discovery phase before a formal specification is written. It helps ideas align with existing historical and architectural constraints, reducing drift early in the lifecycle while still leaving final validation to `ag-governed-spec`.
 
 ## Flash-Mem-First Architecture Context Retrieval
 
-When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. If retrieval is unavailable or insufficient, fall back to repository artifacts and constitution files.
+When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. If retrieval is unavailable or insufficient, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before using repository artifacts. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+
+## Input & Context Loading
+
+When this SpecKit command layer is active, read the selected SpecKit configuration first (normally `.specify/config/architecture_guard.yml` when present), inspect its `context` block, and explicitly read every declared or present governance and constitution Markdown file. The SpecKit constitution inputs are:
+
+- `.specify/memory/constitution.md` — Core governance and product rules.
+- `.specify/memory/architecture_constitution.md` — Architecture boundaries and contracts.
+- `.specify/memory/security_constitution.md` — Trust boundaries, authorization, isolation, and secrets.
+- Any adapter-defined layout or UI constitution.
+
+Never substitute OpenSpec paths for these SpecKit inputs or silently omit an existing file. OpenSpec paths are used only when the selected adapter is OpenSpec.
 
 ## Goal
 
@@ -39,7 +54,7 @@ Check for the availability of:
 3. Manifest presence is not availability. Treat the SpecKit integration as available only if at least one phase command needed downstream (`/speckit.security-review.plan`, `/speckit.security-review.tasks`, or `/speckit.security-review.branch`) is registered and callable.
 4. If no applicable SpecKit command is registered, detect an independently registered Architecture Guard-compatible Security Review host capability with a corresponding plan, tasks, or branch operation.
 5. Record the available operations for downstream security flagging; discovery need not invoke them. If neither path is callable, record Security Review as `Unavailable` and degrade without claiming a pass.
-6. If either optional integration is missing, degrade gracefully. Without `flash-mem`, rely on the local `.specify/memory/architecture_constitution.md` and `.specify/memory/security_constitution.md` files.
+6. If either optional integration is missing, degrade gracefully. Without `flash-mem`, resolve the selected configuration first (`openspec/config.yaml` for OpenSpec), then read every declared or present governance, architecture, security, and layout Markdown file directly. Do not silently omit an existing file.
 
 ### Step 2 — Architecture Context Retrieval
 
@@ -130,13 +145,13 @@ You can now run:
 
 **Without Flash-Mem MCP**:
 - Skip Step 2 (Architecture Context Retrieval from Flash-Mem)
-- Fall back to reading `.specify/memory/architecture_constitution.md` and `.specify/memory/security_constitution.md` directly
+- Fall back to reading the selected configuration first (`openspec/config.yaml` for OpenSpec), then every declared or present governance, architecture, security, and layout Markdown file directly. Do not silently omit an existing file.
 
 **Without Security Review**:
 - Still flag security-sensitive ideas for downstream review, but mark Security Review `Unavailable`
 - Note missing security review capability in the Discovery Summary Draft; do not claim a pass
 
 **Minimal Viable Workflow** (only Architecture Guard):
-- Read constitution files directly
+- Read the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), then every declared or present governance, architecture, security, and layout Markdown file directly. Do not silently omit an existing file.
 - Enter interactive discussion
 - Generate handoff draft

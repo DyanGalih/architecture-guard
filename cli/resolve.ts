@@ -4,6 +4,7 @@ import path from 'node:path';
 export interface ResolveOptions {
   path?: boolean;
   json?: boolean;
+  list?: boolean;
   target?: string;
 }
 
@@ -29,6 +30,14 @@ const CATEGORY_MAP: Record<string, string> = {
   manifest: 'manifest',
   config: 'manifest',
 };
+
+function unsupportedCategoryError(rawCategory: string): Error {
+  const category = rawCategory.toLowerCase().trim();
+  if (category === "adapter" || category === "adapters") {
+    return new Error("Adapter selection is file-based, not a resource category. Read .architecture-guard/selected-adapter and adapters/{name}.md; resolve supports engine resources only.");
+  }
+  return new Error("Unknown category \"" + rawCategory + "\". Supported categories: " + Object.keys(CATEGORY_MAP).join(", "));
+}
 
 function sanitizeIdentifier(input: string): string {
   if (input.includes('..') || path.isAbsolute(input)) {
@@ -56,6 +65,10 @@ export function resolveResource(
 ): ResolvedResource {
   const targetDir = options.target ? path.resolve(options.target) : process.cwd();
   const categoryKey = rawCategory.toLowerCase().trim();
+  if (categoryKey === "adapter" || categoryKey === "adapters") {
+    throw unsupportedCategoryError(rawCategory);
+  }
+
   const normalizedCategory = CATEGORY_MAP[categoryKey];
 
   if (!normalizedCategory) {
@@ -149,6 +162,10 @@ export function listCategoryResources(
 ): string[] {
   const targetDir = options.target ? path.resolve(options.target) : process.cwd();
   const categoryKey = rawCategory.toLowerCase().trim();
+  if (categoryKey === "adapter" || categoryKey === "adapters") {
+    throw unsupportedCategoryError(rawCategory);
+  }
+
   const normalizedCategory = CATEGORY_MAP[categoryKey];
 
   if (!normalizedCategory || normalizedCategory === 'manifest') {
@@ -168,11 +185,16 @@ export function listCategoryResources(
   }
 
   // Local overrides
-  const localDir = path.join(targetDir, '.architecture-guard', normalizedCategory);
-  if (fs.existsSync(localDir)) {
-    for (const file of fs.readdirSync(localDir)) {
-      if (fs.statSync(path.join(localDir, file)).isFile()) {
-        items.add(file);
+  const localDirs = [
+    path.join(targetDir, '.architecture-guard', normalizedCategory),
+    path.join(targetDir, 'ag', normalizedCategory),
+  ];
+  for (const localDir of localDirs) {
+    if (fs.existsSync(localDir)) {
+      for (const file of fs.readdirSync(localDir)) {
+        if (fs.statSync(path.join(localDir, file)).isFile()) {
+          items.add(file);
+        }
       }
     }
   }
@@ -186,6 +208,22 @@ export async function runResolveCommand(
   options: ResolveOptions = {}
 ): Promise<void> {
   try {
+    if (options.list) {
+      if (rawName) {
+        throw new Error('A resource name cannot be combined with --list');
+      }
+      if (options.path) {
+        throw new Error('--path cannot be combined with --list');
+      }
+      const resources = listCategoryResources(rawCategory, options);
+      if (options.json) {
+        console.log(JSON.stringify(resources, null, 2));
+      } else {
+        process.stdout.write(resources.join('\n'));
+        if (resources.length > 0) process.stdout.write('\n');
+      }
+      return;
+    }
     const result = resolveResource(rawCategory, rawName, options);
 
     if (options.json) {

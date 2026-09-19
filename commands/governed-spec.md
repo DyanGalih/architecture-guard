@@ -8,6 +8,10 @@ description: Orchestrate governed specification with memory, framework-native sp
 
 Before continuing, you **MUST** read and apply `.specify/extensions/architecture-guard/templates/ponytail_core.md` (or `templates/ponytail_core.md` in the extension source checkout) as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Capability Composition
+
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+
 ## Budgeted Context Contract
 
 Read and apply `.specify/extensions/architecture-guard/templates/budgeted_context.md` (or `templates/budgeted_context.md` in the extension source checkout). Applicable constitutions and the newly generated active `spec.md` are authoritative. Flash-Mem and `system_context.md` may supplement but never replace them.
@@ -52,7 +56,7 @@ When Flash-Mem is available, use it first to gather the most relevant architectu
 
 ### Step 2.5 — Required Governance Inputs
 
-Require `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, and `.specify/memory/security_constitution.md` as active inputs. If governance or architecture rules are missing, stop and direct the user to `/ag-init`. If security rules are missing, report the gap and require explicit confirmation before continuing with baseline security checks and the available Security Review handoff.
+Require the complete set of applicable constitution inputs as active inputs. Read the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for SpecKit, check `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file. If governance or architecture rules are missing, stop and direct the user to `/ag-init`. If security rules are missing, report the gap and require explicit confirmation before continuing with baseline security checks and the available Security Review handoff.
 
 ### Step 3 — Branch Management
 
@@ -75,14 +79,14 @@ You must orchestrate the `/speckit.specify` workflow directly.
 You must orchestrate the `/speckit.clarify` workflow directly.
 
 1. **Execute Clarify**: Run `/speckit.clarify` to resolve ambiguities in the newly generated `spec.md`.
-2. Ensure the clarification process considers architectural boundaries defined in the `.specify/memory/architecture_constitution.md` and `security_constitution.md`.
+2. Ensure clarification reads the complete constitution set resolved from the selected configuration, including every declared or present governance, architecture, security, and layout Markdown file.
 
 ### Step 6 — Architecture Validation
 
 Run an inline architecture validation against the clarified specification.
 Inputs to consider:
 - The generated `spec.md`.
-- `.specify/memory/architecture_constitution.md`.
+- Every declared or present governance, architecture, security, and layout Markdown file resolved from the selected configuration.
 - Flash-Mem context (if available).
 
 Detect any `Security-Architecture Conflict` or architectural drift present in the specification's assumptions or boundaries. Explicitly validate one canonical owner for repeated business rules, approvals, validation, DTO mapping, transformations, and orchestration (DRY), plus artifact placement, temporary/generated files, and repository hygiene.

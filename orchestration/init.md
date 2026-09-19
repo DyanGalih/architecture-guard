@@ -8,9 +8,30 @@ Read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{
 
 # Purpose
 
+## Standalone Resource Resolution
+
+Architecture Guard engine resources are standalone package resources. Never search an SDD-tool directory, an extension directory, or a source checkout for them. An adapter path under `.architecture-guard` is an editable local override location, not proof that the resource was copied.
+
+- Directly inspect the matching `.architecture-guard/<category>/` directory first for workspace overrides.
+- If the named local resource exists, read it. Otherwise run `architecture-guard resolve <category> <name>` and use the returned content.
+- For a resource collection, run `architecture-guard resolve <category> --list`, then resolve every returned name individually in deterministic order so local overrides replace bundled files without hiding bundled defaults.
+- If the CLI is unavailable and a mandatory resource is not vendored locally, stop and report the missing runtime dependency. For optional resources, report `Unavailable` and continue only when this command explicitly permits degradation.
+
 ## Ponytail Core Contract
 
-Before continuing, you **MUST** read and apply `{adapter_path:ponytail-template}` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+Before continuing, you **MUST** resolve and apply the `ponytail_core` template with `architecture-guard resolve template ponytail_core` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
+
+## Capability Composition
+
+Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
+
+## Input & Context Loading
+
+Before refining governance, read these inputs explicitly with file-reading tools:
+
+1. **Manifest & Configuration**: Read `openspec/config.yaml` first when the OpenSpec adapter is active (otherwise read the selected adapter project configuration), then inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
+2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. For OpenSpec, explicitly check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`. For SpecKit, use the adapter-resolved `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file.
+3. **Initialization Artifacts**: Read any constitution draft, existing governance configuration, and framework preset required by this skill.
 
 This command helps teams intentionally define:
 
@@ -35,7 +56,7 @@ See the README quick start for brownfield and greenfield entrypoints.
 
 After init, the usual next step is to run the applicable governance command for the active SDD tool (planning or task generation) via the orchestration flow.
 
-When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. The repository files remain the source of truth for constitution content, and the legacy `memory-hub` name is reference-only and should not be treated as the runtime backend. If Flash-Mem is unavailable or the context is incomplete, read the repository files directly and treat them as canonical. After refinement, use `capture_artifact_memory` for changed constitution artifacts and propose validated `add_memory` or `update_memory` entries for explicit approval. Ask permission before `update_project_summary` when a summary already exists.
+When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. The repository files remain the source of truth for constitution content, and the legacy `memory-hub` name is reference-only and should not be treated as the runtime backend. If Flash-Mem is unavailable or the context is incomplete, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file and treat those repository files as canonical. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. After refinement, use `capture_artifact_memory` for changed constitution artifacts and propose validated `add_memory` or `update_memory` entries for explicit approval. Ask permission before `update_project_summary` when a summary already exists.
 
 The goal is NOT to generate generic best practices.
 
@@ -279,6 +300,8 @@ Should contain:
 
 ## Step 1 — Detect Existing Constitution Files
 
+Before assessing the existing state, read the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, and explicitly read every declared or present governance, constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for SpecKit, use the adapter-resolved constitution files under `.specify/memory`. Never silently omit an existing file.
+
 Check for:
 
 * `{adapter_path:constitution}`
@@ -289,7 +312,7 @@ Check for:
 
 ## Existing-State Rules
 
-Treat OpenSpec's `{adapter_path:constitution}` as complete when architecture and security rules are embedded there; `{adapter_path:arch-constitution}` and `{adapter_path:security-constitution}` are optional split files. If either split exists, reconcile ownership with `{adapter_path:constitution}` and remove duplication only after approval.
+Treat the OpenSpec governance artifact as complete only after reading the selected configuration context and every declared or present governance, constitution, architecture, security, and layout Markdown file. Explicitly check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md` when present. The architecture and security split files remain optional when their rules are embedded in the governance artifact; if either split exists, reconcile ownership and remove duplication only after approval.
 
 | Existing state | Behavior |
 |---|---|
@@ -455,7 +478,7 @@ If the user selects Team Development:
 4. If an issue tracker is selected (not "none"), ask for the required provider configuration (e.g., `repo` string for GitHub or `project` string for Jira). Propose `.architecture-guard/sync.yml` with the chosen provider, project/repo string, and `enabled: true`; obtain explicit approval before creating it.
 
 If the user selects Claude Code Agent Teams:
-1. Preview the proposed Architecture Guard role profile from `.architecture-guard/templates/agents_template.yml`.
+1. Preview the proposed Architecture Guard role profile by resolving `agents_template` with `architecture-guard resolve template agents_template`. A local `.architecture-guard/templates/agents_template.yml` override is used automatically when present; do not assume vendor files exist.
 2. Explain that the profile is not a native Claude Code configuration file; current Claude Code uses an implicit team and named teammate spawning.
 3. Include creation of `.architecture-guard/agents.yml` and the exact `{adapter_path:constitution}` changes in the write preview, then require explicit approval before either write.
 4. After approval, set `topology: claude-code-agent-teams`, record role boundaries in `{adapter_path:constitution}`, and write the profile.
@@ -530,7 +553,7 @@ Framework-specific questions belong to the selected preset, not this command.
 
 When the user selects a built-in framework preset:
 
-1. Resolve its preset file from `{adapter_path:presets}`.
+1. Resolve its preset with `architecture-guard resolve preset <preset>` so a workspace override under `.architecture-guard/presets/` takes precedence over the bundled preset.
 2. Locate `## Init Interview` and read that section through the next level-two heading. Do not load unrelated review guidance solely to run the interview when the host can read a section selectively.
 3. Merge the preset questions into the matching generic interview phases. Ask them sequentially and only when relevant to the selected application type or an earlier answer; do not ask a generic and preset question twice when they seek the same decision.
    - Preset `### API Conventions & Tooling` questions belong to Phase 3.
@@ -1051,7 +1074,3 @@ The init interview produces framework-specific constitution files:
 - **OpenSpec adapter**: Updates `{adapter_path:constitution}` (config context and rules). The `rules:` mapping MUST strictly use schema artifact IDs (`proposal`, `specs`, `design`, `tasks`). Verification-only and testing requirements belong in the shared `context:` block (e.g. under `## Testing Standards`) rather than under `rules.verify`. `{adapter_path:arch-constitution}` and `{adapter_path:security-constitution}` remain optional splits and, when present, are reconciled with config so each rule has one canonical owner
 
 ---
-
-## Backward Compatibility
-
-The original SpecKit-specific version remains in the repository source checkout under `commands/init.md` for direct SpecKit use.
