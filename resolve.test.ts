@@ -100,3 +100,48 @@ test("keeps adapter selection out of engine resource resolution", () => {
   assert.throws(() => resolveResource("adapter"), /Adapter selection is file-based/);
   assert.throws(() => listCategoryResources("adapter"), /Adapter selection is file-based/);
 });
+
+test('resolves bundled flow template default', () => {
+  const result = resolveResource('flow', 'default');
+  assert.strictEqual(result.source, 'bundled');
+  assert.strictEqual(result.category, 'flow');
+  assert(result.content.includes('# SDD Flow Template'));
+  assert(fs.existsSync(result.path));
+});
+
+test('prioritizes local flow override when present', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-resolve-flow-test-'));
+  try {
+    const localFlowDir = path.join(tmpDir, '.architecture-guard', 'flow');
+    fs.mkdirSync(localFlowDir, { recursive: true });
+    const customContent = '# Custom Flow Override\nCustom single-file layout';
+    fs.writeFileSync(path.join(localFlowDir, 'default.md'), customContent);
+
+    const result = resolveResource('flow', 'default', { target: tmpDir });
+    assert.strictEqual(result.source, 'local');
+    assert.strictEqual(result.content, customContent);
+    assert.strictEqual(result.path, path.join(localFlowDir, 'default.md'));
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('lists available flow templates', () => {
+  const flows = listCategoryResources('flow');
+  assert(flows.length > 0);
+  assert(flows.includes('default.md'));
+});
+
+test('rejects path traversal attempts for flow category', () => {
+  assert.throws(() => {
+    resolveResource('flow', '../../etc/passwd');
+  }, /path traversal detected/);
+});
+
+test('resolves bundled generic artifact templates', () => {
+  for (const name of ['generic_spec', 'generic_plan', 'generic_tasks']) {
+    const res = resolveResource('template', name);
+    assert.strictEqual(res.source, 'bundled');
+    assert(res.content.length > 0);
+  }
+});

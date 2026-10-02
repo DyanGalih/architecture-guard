@@ -27,6 +27,8 @@ const CATEGORY_MAP: Record<string, string> = {
   'hygiene-rules': 'hygiene-rules',
   'sonar-rule': 'sonar-rules',
   'sonar-rules': 'sonar-rules',
+  flow: 'flow',
+  flows: 'flow',
   manifest: 'manifest',
   config: 'manifest',
 };
