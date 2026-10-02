@@ -802,6 +802,19 @@ async function runInit(targetDir, opts) {
   fs.writeFileSync(path.join(runtimeDir, 'config.yml'), configYml);
   fs.writeFileSync(path.join(runtimeDir, 'selected-adapter'), `${adapter}\n`);
 
+  if (adapter === 'generic') {
+    const flowDir = path.join(runtimeDir, 'flow');
+    fs.mkdirSync(flowDir, { recursive: true });
+    const defaultFlowSrc = path.join(ROOT_DIR, 'flow', 'default.md');
+    const defaultFlowDest = path.join(flowDir, 'default.md');
+    if (fs.existsSync(defaultFlowSrc)) {
+      const preserveFlow = opts.overwrite === 'skip';
+      if (!fs.existsSync(defaultFlowDest) || !preserveFlow) {
+        fs.copyFileSync(defaultFlowSrc, defaultFlowDest);
+      }
+    }
+  }
+
   appendAgentsMd(targetDir, selectedAgents);
 
   console.log('\nInstallation complete!');

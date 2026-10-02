@@ -1,24 +1,27 @@
 # Generic Workflow Adapter
 
-Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/selected-adapter` is `generic`. It maps governance concepts to the current directory with user-prompt fallbacks for missing artifact paths; never guess.
+Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/selected-adapter` is `generic`. It maps governance concepts to the current directory with flow-template-guided conventions; falls back to user prompt when paths are ambiguous.
 
 ## Path Map
 
 | Canonical Name | Generic Path |
 |---|---|
 | project-root | `.` |
-| sdd-tool-dir | Unsupported |
-| constitution | User-provided governance artifact path |
-| arch-constitution | User-provided architecture artifact path |
-| security-constitution | User-provided security artifact path, if any |
+| sdd-tool-dir | `.architecture-guard/flow/` |
+| constitution | `.architecture-guard/constitution.md` (or user-provided governance artifact path) |
+| arch-constitution | `.architecture-guard/architecture.md` (or user-provided architecture artifact path) |
+| security-constitution | `.architecture-guard/security.md` (or user-provided security artifact path, if any) |
 | governance-config | `.architecture-guard/config.yml` |
 | config | `.architecture-guard/config.yml` (compatibility alias of `governance-config`) |
 | extensions | Unsupported; detect host capabilities directly |
 | extensions-dir | Unsupported; do not probe an extension directory |
-| spec | User-provided active specification path |
-| plan | User-provided active planning artifact path |
-| tasks | User-provided active task artifact path |
-| security-constraints | User-provided security constraints path, if any |
+| spec | `changes/{change}/spec.md` (or user-provided active specification path) |
+| plan | `changes/{change}/plan.md` (or user-provided active planning artifact path) |
+| tasks | `changes/{change}/tasks.md` (or user-provided active task artifact path) |
+| proposal | `changes/{change}/proposal.md` (or user-provided proposal path) |
+| security-constraints | `changes/{change}/security-constraints.md` (or user-provided security constraints path, if any) |
+| change-root | `changes/{change}/` |
+| flow-template | `.architecture-guard/flow/default.md` |
 | draft | `.architecture-guard/constitution.draft.md` |
 | ponytail-template | `.architecture-guard/templates/ponytail_core.md` |
 | capability-composition-template | `.architecture-guard/templates/capability_composition.md` |
@@ -26,19 +29,21 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | hygiene-rules | `.architecture-guard/hygiene-rules/*.md` |
 | presets | `.architecture-guard/presets/{preset}.md` |
 | sonar-rules | `.architecture-guard/sonar-rules` |
+| scripts | `.architecture-guard/scripts` |
+| templates | `.architecture-guard/templates` (compatibility alias; prefer `ponytail-template`) |
 | fallback-spec-index | Unsupported; inspect only user-named historical specs |
 
 ## Command Map
 
 | Canonical Key | Generic Invocation or Fallback |
 |---|---|
-| create-spec | Create the user-selected specification artifact inline |
-| create-change | No container step; use the user-selected artifact paths |
-| archive | Unsupported natively; preserve artifacts and report that archival must be performed manually after user confirmation |
-| verify | Run the Architecture Guard verification workflow against the user-selected artifacts |
+| create-spec | Resolve `architecture-guard resolve flow default` and `architecture-guard resolve template generic_spec`, then create `{adapter_path:spec}` inline following the flow-template guidance |
+| create-change | Ensure `{adapter_path:change-root}` directory exists; use the flow-defined or user-selected artifact paths |
+| archive | Run `architecture-guard archive <changeName> --framework generic` or move `{adapter_path:change-root}` to `changes/archive/{YYYY-MM-DD}-{change}/` after user confirmation |
+| verify | Run the Architecture Guard verification workflow against the active artifacts |
 | clarify-spec | Ask and apply an inline ambiguity-resolution loop |
-| create-plan | Create the user-selected planning artifact inline |
-| create-tasks | Create the user-selected task artifact inline |
+| create-plan | Resolve `architecture-guard resolve flow default` and `architecture-guard resolve template generic_plan`, then create `{adapter_path:plan}` inline following the flow-template guidance |
+| create-tasks | Resolve `architecture-guard resolve flow default` and `architecture-guard resolve template generic_tasks`, then create `{adapter_path:tasks}` inline following the flow-template guidance |
 | implement | Execute unchecked tasks inline and update their status |
 | analyze | Compare active spec, plan, and tasks inline for coverage and contradictions |
 | security-review-implementation | Host Security Review dispatch operation `sr-verify`; accept `sr-branch` only when host registration declares implementation scope; never `sr-changes` |
@@ -48,7 +53,7 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | security-review-tasks | Use an optional host Security Review capability or report the skipped review |
 | security-review-branch | Use an optional host Security Review capability or report the skipped review |
 | subagent-synthesize | Use host delegation when available; otherwise synthesize inline |
-| list-specs | Ask the user which historical specifications are relevant |
+| list-specs | Inspect `changes/*/spec.md` or ask the user which historical specifications are relevant |
 | consolidate-specs | Unsupported; do not write a fallback index |
 | architecture-apply | Apply plan/tasks findings directly inline; run inline AG-native artifact-fix for upstream findings after user confirmation |
 | architecture-review | Use the registered architecture-review capability or review selected artifacts inline |
@@ -57,12 +62,13 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 
 ## Constitution Layout
 
-Preserve the user's existing artifact format. If no governance artifacts exist, ask where to create markdown files before writing them.
+Preserve the user's existing artifact format. If `.architecture-guard/constitution.md` exists, treat it as authoritative. If no governance artifacts exist, ask where to create markdown files before writing them.
 
 ## Gap Fill Actions
 
-1. **No SDD tool lifecycle** — All creation, validation, and implementation steps run inline with explicit user-selected paths.
-2. **No automatic artifact discovery** — Ask when active paths are ambiguous.
+1. **Flow template guidance** — When available, read `.architecture-guard/flow/default.md` (or resolve via `architecture-guard resolve flow default`) to determine artifact paths, layout (single-file vs multi-file), and lifecycle requirements.
+2. **Dynamic artifact resolution** — If paths differ from the default `changes/{change}/` layout, honor the configuration declared in the active flow template.
+3. **No automatic artifact discovery** — Ask when active paths are ambiguous.
 
 ## Hook Events
 

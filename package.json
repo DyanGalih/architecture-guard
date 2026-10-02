@@ -38,6 +38,7 @@
     "adapters/",
     "orchestration/",
     "templates/",
+    "flow/",
     "presets/",
     "hygiene-rules/",
     "sonar-rules/",

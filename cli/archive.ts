@@ -3,7 +3,7 @@ import path from 'node:path';
 import { z } from 'zod';
 
 const featureStateSchema = z.object({ feature_directory: z.string().min(1) });
-const frameworkSchema = z.enum(['speckit', 'openspec']);
+const frameworkSchema = z.enum(['speckit', 'openspec', 'generic']);
 type ArchiveOptions = { json?: boolean; framework?: string };
 
 async function exists(target: string) {
@@ -30,6 +30,7 @@ export async function runArchive(changeName: string, options: ArchiveOptions = {
     const root = process.cwd();
     const framework = await resolveFramework(root, options.framework);
     if (framework === 'speckit') return finalizeSpecKitFeature(changeName, root, options.json === true);
+    if (framework === 'generic') return archiveGenericChange(changeName, root, options.json === true);
     return archiveOpenSpecChange(changeName, root, options.json === true);
 }
 
@@ -38,7 +39,37 @@ async function resolveFramework(root: string, override?: string) {
     const hasSpecKit = await exists(path.join(root, '.specify'));
     const hasOpenSpec = await exists(path.join(root, 'openspec', 'config.yaml'));
     if (hasSpecKit && hasOpenSpec) reportError('both SpecKit and OpenSpec markers are present; select an adapter explicitly');
-    return hasSpecKit ? 'speckit' : 'openspec';
+    if (hasSpecKit) return 'speckit';
+    if (hasOpenSpec) return 'openspec';
+
+    const selectedAdapterPath = path.join(root, '.architecture-guard', 'selected-adapter');
+    if (await exists(selectedAdapterPath)) {
+        const selected = (await readFile(selectedAdapterPath, 'utf8')).trim();
+        if (selected === 'generic') return 'generic';
+        if (selected === 'openspec') return 'openspec';
+        if (selected === 'spec-kit') return 'speckit';
+    }
+
+    return 'openspec';
+}
+
+async function archiveGenericChange(changeName: string, root: string, json: boolean) {
+    const changesDir = path.join(root, 'changes');
+    const sourceDir = path.join(changesDir, changeName);
+    if (!await exists(sourceDir)) reportError(`source change directory not found: ${sourceDir}`);
+
+    const date = new Date().toISOString().split('T')[0];
+    const targetName = /^\d{4}-\d{2}-\d{2}-/.test(changeName) ? changeName : `${date}-${changeName}`;
+    const archiveDir = path.join(changesDir, 'archive');
+    const targetDir = path.join(archiveDir, targetName);
+    if (await exists(targetDir)) reportError(`destination already exists: ${targetDir}`);
+
+    await mkdir(archiveDir, { recursive: true });
+    await cp(sourceDir, targetDir, { recursive: true });
+    await rm(sourceDir, { recursive: true, force: true });
+    const result = { status: 'success', framework: 'generic', changeName, targetDir } as const;
+    process.stdout.write(json ? `${JSON.stringify(result)}\n` : `Successfully archived ${changeName} to ${targetDir}\n`);
+    return result;
 }
 
 async function archiveOpenSpecChange(changeName: string, root: string, json: boolean) {

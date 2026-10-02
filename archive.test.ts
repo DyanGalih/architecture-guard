@@ -135,3 +135,46 @@ test('archive command supports JSON success output', async () => {
         fs.rmSync(tmpdir, { recursive: true, force: true });
     }
 });
+
+test('generic archive moves changes/{change} to changes/archive/{date}-{change}', async () => {
+    const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-archive-generic-test-'));
+    const originalCwd = process.cwd;
+    process.cwd = () => tmpdir;
+
+    try {
+        const changeName = 'generic-feature';
+        const sourceDir = path.join(tmpdir, 'changes', changeName);
+        fs.mkdirSync(sourceDir, { recursive: true });
+        fs.writeFileSync(path.join(sourceDir, 'spec.md'), '# Generic Spec\n');
+
+        const result = await runArchive(changeName, { framework: 'generic' });
+        const date = new Date().toISOString().split('T')[0];
+        const targetDir = path.join(tmpdir, 'changes', 'archive', `${date}-${changeName}`);
+
+        assert.strictEqual(result.status, 'success');
+        assert.strictEqual(result.framework, 'generic');
+        assert.ok(fs.existsSync(targetDir), 'Archive target should exist');
+        assert.ok(fs.existsSync(path.join(targetDir, 'spec.md')));
+        assert.strictEqual(fs.existsSync(sourceDir), false, 'Source change dir should be removed');
+    } finally {
+        process.cwd = originalCwd;
+        fs.rmSync(tmpdir, { recursive: true, force: true });
+    }
+});
+
+test('generic archive rejects nonexistent change directory', async () => {
+    const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-archive-generic-err-'));
+    const originalCwd = process.cwd;
+    process.cwd = () => tmpdir;
+
+    try {
+        await assert.rejects(
+            () => runArchive('missing-change', { framework: 'generic' }),
+            /source change directory not found/
+        );
+    } finally {
+        process.cwd = originalCwd;
+        fs.rmSync(tmpdir, { recursive: true, force: true });
+    }
+});
+

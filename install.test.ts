@@ -613,3 +613,21 @@ test("rejects a non-replacing adapter switch before changing persisted selection
   assert.match(result.stderr, /Cannot switch adapter from spec-kit to openspec/);
   assert.equal(fs.readFileSync(path.join(cwd, ".architecture-guard/selected-adapter"), "utf8").trim(), "spec-kit");
 });
+
+test("generic init installs default flow template into .architecture-guard/flow/default.md", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "architecture-guard-generic-flow-"));
+  runArgs(["init", "--yes", "--agent", "opencode", "--framework", "none", "--commands", "init"], cwd);
+
+  const flowPath = path.join(cwd, ".architecture-guard", "flow", "default.md");
+  assert.ok(fs.existsSync(flowPath), "default flow template should exist");
+  const content = fs.readFileSync(flowPath, "utf8");
+  assert.match(content, /# SDD Flow Template/);
+});
+
+test("openspec init does not create .architecture-guard/flow/", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "architecture-guard-openspec-no-flow-"));
+  runArgs(["init", "--yes", "--agent", "opencode", "--framework", "openspec", "--commands", "init"], cwd);
+
+  const flowDir = path.join(cwd, ".architecture-guard", "flow");
+  assert.strictEqual(fs.existsSync(flowDir), false, ".architecture-guard/flow/ should not exist for OpenSpec");
+});
