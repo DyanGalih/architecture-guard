@@ -1,12 +1,69 @@
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
+import fs from 'node:fs';
+
+function git(args: string[]) {
+  return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+}
+
+function tryGit(args: string[]) {
+  try {
+    return git(args).trim();
+  } catch {
+    return null;
+  }
+}
+
+// The review base is the merge-base with the default branch, so committed work on a feature branch is included.
+function resolveBase(explicitBase?: string) {
+  const candidates = explicitBase
+    ? [explicitBase]
+    : [tryGit(['symbolic-ref', '--quiet', '--short', 'refs/remotes/origin/HEAD']), 'origin/main', 'origin/master', 'main', 'master'];
+  for (const candidate of candidates) {
+    if (!candidate || tryGit(['rev-parse', '--verify', '--quiet', `${candidate}^{commit}`]) === null) continue;
+    const mergeBase = tryGit(['merge-base', candidate, 'HEAD']);
+    if (mergeBase) return mergeBase;
+  }
+  if (explicitBase) throw new Error(`base ref not found or unrelated to HEAD: ${explicitBase}`);
+  return null;
+}
+
+function committedFiles(base: string | null) {
+  if (!base) return [];
+  return git(['diff', '--name-only', '-z', base, 'HEAD']).split('\0').filter(Boolean);
+}
+
+// Porcelain v1 with -z prints renames/copies as "XY new\0old\0"; only the new path is reviewable.
+function workingTreeFiles() {
+  const fields = git(['status', '--porcelain=v1', '-z', '--untracked-files=all']).split('\0');
+  const files: string[] = [];
+  for (let i = 0; i < fields.length; i++) {
+    const entry = fields[i];
+    if (!entry) continue;
+    files.push(entry.slice(3));
+    if (entry[0] === 'R' || entry[0] === 'C') i++;
+  }
+  return files;
+}
+
+export function detectChangedFiles(base?: string) {
+  const root = git(['rev-parse', '--show-toplevel']).trim();
+  const previousCwd = process.cwd();
+  process.chdir(root);
+  try {
+    const all = new Set([...committedFiles(resolveBase(base)), ...workingTreeFiles()]);
+    // Deleted files cannot be reviewed; keep only paths that still exist.
+    return [...all].filter(file => fs.existsSync(file)).sort();
+  } finally {
+    process.chdir(previousCwd);
+  }
+}
 
 export function runDetectChangedFiles(opts: any) {
   if (!opts.json) {
     console.log("Detecting changed files...");
   }
   try {
-    const output = execSync("git status --porcelain=v1 --untracked-files=all", { encoding: "utf8" });
-    const files = output.split("\n").filter(Boolean).map((line) => line.slice(3));
+    const files = detectChangedFiles(opts.base);
     if (opts.json) {
       console.log(JSON.stringify(files));
     } else {

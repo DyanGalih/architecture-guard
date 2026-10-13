@@ -23,21 +23,17 @@ export function validateSyncConfig(configPath: string): SyncConfig {
   try {
     parsed = parse(content);
   } catch (e) {
-    throw new Error(`Invalid YAML format in : `, { cause: e });
+    throw new Error(`Invalid YAML format in ${fullPath}`, { cause: e });
   }
   
   return syncSchema.parse(parsed);
 }
 
-// If run directly
-if (require.main === module) {
+export function runValidateSyncConfig(configPath = '.architecture-guard/sync.yml') {
   try {
-    const configPath = process.argv[2] || '.architecture-guard/sync.yml';
-    const config = validateSyncConfig(configPath);
-    console.log(JSON.stringify(config));
-    process.exit(0);
+    console.log(JSON.stringify(validateSyncConfig(configPath)));
   } catch (e) {
     console.error(e instanceof Error ? e.message : e);
-    process.exit(1);
+    process.exitCode = 1;
   }
 }
