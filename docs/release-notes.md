@@ -1,3 +1,12 @@
+## Unreleased
+
+- **Custom SDD adapters**: any SDD tool is supported by writing `.architecture-guard/adapters/<name>.md` and running `architecture-guard init --framework <name>`. The installer validates the adapter against the Required Keys in `ADAPTERS.md` before writing anything, and resolves its tokens into the installed prompts.
+- **Adapter location moved**: all adapters now install to `.architecture-guard/adapters/` instead of a project-root `adapters/` directory. Rerun `architecture-guard init` to upgrade; the installer flags the old `adapters/` directory but never deletes it.
+- `AGENTS.md`: an older unmarked Architecture Guard section is replaced in place even when other content surrounds it.
+- OpenSpec adapter branch creation now requires explicit user approval.
+- `architecture-guard archive` follows `.architecture-guard/selected-adapter` before filesystem markers, accepts `spec-kit`/`none`, and refuses custom adapters instead of silently archiving as OpenSpec.
+- Delivery policy: the legacy Spec Kit extension (`commands/`) receives safety and breakage fixes only; new features ship in the standalone tool.
+
 ## 2.5.3
 
 - Removed hardcoded `.specify` paths in orchestration templates to ensure seamless `npm publish --dry-run` and clean packaging.

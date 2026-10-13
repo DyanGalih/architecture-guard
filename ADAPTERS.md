@@ -21,13 +21,22 @@ Tool-specific output (constitution, config.yaml, etc.)
 
 | SDD Tool or Workflow | Adapter File | Detection Marker |
 |---|---|---|
-| SpecKit | `adapters/spec-kit.md` | `.specify/` directory |
-| OpenSpec | `adapters/openspec.md` | `openspec/config.yaml` or `openspec/` |
-| Generic workflow | `adapters/generic.md` | Installer selection or no detected SDD tool |
+| SpecKit | `spec-kit.md` | `.specify/` directory |
+| OpenSpec | `openspec.md` | `openspec/config.yaml` or `openspec/` |
+| Generic workflow | `generic.md` | Installer selection or no detected SDD tool |
+
+`architecture-guard init` installs every adapter into `.architecture-guard/adapters/` and records the selection in `.architecture-guard/selected-adapter`. Built-in adapters are refreshed on every init, so do not edit them in place — copy one to a new name instead.
 
 ## Adapter Contract
 
-Each adapter file must define these sections and every canonical key referenced by orchestration. Both built-in adapters expose the same keys; unsupported operations state concrete inline or skip behavior rather than omitting a key.
+Each adapter file must define a `## Path Map` and a `## Command Map` table whose first column holds the canonical keys below. Unsupported operations state concrete inline or skip behavior rather than omitting a key. Adapters may define extra keys. The installer resolves these tokens into the installed prompts, so a missing key fails installation.
+
+### Required Keys
+
+- Path Map: `arch-constitution`, `constitution`, `draft`, `fallback-spec-index`, `governance-config`, `plan`, `security-constitution`, `security-constraints`, `spec`, `tasks`
+- Command Map: `analyze`, `architecture-apply`, `architecture-review`, `archive`, `clarify-spec`, `consolidate-specs`, `create-change`, `create-plan`, `create-spec`, `create-tasks`, `hygiene`, `implement`, `list-specs`, `refactor-generator`, `security-review-implementation`, `subagent-synthesize`, `verify`, `violation-detection`
+
+This list is exactly the set of adapter tokens used by `orchestration/`, `templates/`, and `flow/`; the test suite fails if they drift apart. Adding a token is a contract change: define it in every built-in adapter, add it here, and call it out in the release notes because custom adapters must add it too.
 
 ### Path Map
 A table mapping canonical names to concrete file paths:
@@ -68,15 +77,22 @@ List features the SDD tool lacks and how to fill them:
 ### Hook Events
 When governance checks should run in relation to the SDD tool's lifecycle.
 
-## Creating a New Adapter
+## Custom Adapters
 
-1. Copy `adapters/generic.md` as a starting template.
+Any SDD tool — including an in-house one — is supported by writing an adapter; no code changes are needed.
+
+1. Copy a built-in adapter as a starting point — `generic.md` for a minimal tool, or the built-in closest to your tool:
+   ```bash
+   cp .architecture-guard/adapters/generic.md .architecture-guard/adapters/my-sdd.md
+   ```
 2. Replace the Path Map with your tool's artifact conventions.
-3. Replace the Command Map with your tool's CLI commands or agent commands.
-4. Declare any gaps your tool has.
-5. Place the file at `adapters/{tool-name}.md`.
-6. Update `adapters/resolve.md` fallback markers to recognize your tool.
+3. Replace the Command Map with your tool's CLI or agent commands. When the tool lacks an operation, keep the key and state the inline fallback or skip behavior.
+4. Describe gaps, constitution layout, and hook events for your tool. Any git, file, or memory write in a gap fill must require explicit user approval.
+5. Select it:
+   ```bash
+   npx architecture-guard init . --framework my-sdd
+   ```
 
-Adapter files are self-contained markdown. No code changes needed.
+The adapter name must use lowercase letters, digits, and hyphens, and must not collide with a built-in name. The installer validates the adapter against the Required Keys before writing anything and lists every missing key. Custom adapters are never overwritten by later installs, and the interactive installer offers every custom adapter it finds. Filesystem markers only detect built-in adapters, so custom adapters are always selected explicitly.
 
 Installed prompts resolve shared resources through the `architecture-guard` CLI in lean mode. With `--vendor`, the installer copies templates, presets, hygiene rules, and Sonar rules under `.architecture-guard/`; SDD tool directories hold SDD artifacts only. Before a command body runs, the resolution preamble resolves every adapter token; missing keys stop with `AdapterMissingKey: <kind>:<key>` and unresolved substitutions stop with `AdapterUnresolvedToken: <token>`.

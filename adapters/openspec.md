@@ -120,7 +120,7 @@ Trust boundaries, auth standards, data isolation, secrets management.
 ## Gap Fill Actions
 
 1. **Branch creation** — OpenSpec `new change` does not create a git branch.
-   - Fill: Before creating a change, check `git branch --show-current`. If on `main`/`master`/`dev`/`staging`, MUST run `git checkout -b "feature/{change-name}"`; stop if branch creation fails.
+   - Fill: Before creating a change, check `git branch --show-current`. If on `main`/`master`/`dev`/`staging`, propose `git checkout -b "feature/{change-name}"` and run it only after explicit user approval; if the user declines or branch creation fails, stop before writing change artifacts.
 
 2. **Specification clarification** — OpenSpec has no `/speckit.clarify` equivalent.
    - Fill: After creating specs, run an interactive inline clarifications loop with the user.

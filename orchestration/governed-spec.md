@@ -6,7 +6,7 @@ description: Orchestrate governed specification with memory, framework-native sp
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. When the selected adapter is `openspec`, read `.architecture-guard/selected-adapter` directly and load `adapters/openspec.md`. Do not use the Architecture Guard resource resolver for adapter selection. Establish `CHANGE_ID` before any `openspec instructions`, `openspec status`, or `openspec validate` command; pass `--change "$CHANGE_ID"` to instructions/status and use `openspec validate "$CHANGE_ID" --strict` for validation.
+Before executing command, read `.architecture-guard/adapters/resolve.md` to resolve the selected SDD adapter. When the selected adapter is `openspec`, read `.architecture-guard/selected-adapter` directly and load `.architecture-guard/adapters/openspec.md`. Do not use the Architecture Guard resource resolver for adapter selection. Establish `CHANGE_ID` before any `openspec instructions`, `openspec status`, or `openspec validate` command; pass `--change "$CHANGE_ID"` to instructions/status and use `openspec validate "$CHANGE_ID" --strict` for validation.
 
 ## Standalone Resource Resolution
 

@@ -8,7 +8,7 @@ Execute this workflow through {adapter_command:architecture-apply}; the token is
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter. Resolve the concrete paths for each available artifact before classifying findings.
+Before executing command, read `.architecture-guard/adapters/resolve.md` to resolve the selected SDD adapter. Load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter. Resolve the concrete paths for each available artifact before classifying findings.
 
 ## Standalone Resource Resolution
 

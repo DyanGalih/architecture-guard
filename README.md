@@ -51,7 +51,7 @@ To update a globally installed CLI explicitly, run `architecture-guard update` (
 
 The installer launches a setup wizard that asks you to select:
 1. **AI agent(s)** — OpenCode, Claude Code, Gemini CLI, etc.
-2. **SDD tool** — Spec Kit, OpenSpec, or a generic Markdown workflow.
+2. **SDD tool** — Spec Kit, OpenSpec, a generic Markdown workflow, or any other SDD tool through a [custom adapter](ADAPTERS.md#custom-adapters).
 3.  **Governed workflows** — Pick the orchestration and governance workflows you need.
 
 It installs the necessary command files directly into the agent command or skill directory. The installer uses `@inquirer/prompts`; lean prompts require a callable `architecture-guard` CLI for resource resolution and CLI-backed hygiene, while `--vendor` copies static engine resources locally and avoids bundled-resource lookup for those assets.
@@ -128,6 +128,6 @@ architecture-guard/
 
 ## 🔄 Spec Kit Compatibility
 
-The standalone orchestrator is the primary experience. Existing SpecKit users (v1.15.1 and earlier) remain fully supported through `extension.yml` installation. 
+The standalone orchestrator is the primary experience, and all new features ship there. The legacy Spec Kit extension (`extension.yml` installation) remains available for existing Spec Kit users with limited support: it receives safety and breakage fixes only, not new features. New Spec Kit projects should use the standalone installer with `--framework spec-kit`.
 
 If your project is already centered on Spec Kit, you can continue installing Architecture Guard as a native Spec Kit extension. See the [Spec Kit Integration Guide](SPECKIT-INTEGRATION.md).

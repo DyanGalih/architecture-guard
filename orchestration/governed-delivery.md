@@ -6,7 +6,7 @@ description: Resume governed delivery from an active specification through plan 
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Read `.architecture-guard/selected-adapter` directly when it exists, then load the matching `adapters/{tool}.md`. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. If either adapter file is missing or the persisted value is unsupported, report `Unavailable` with the exact path/value and stop before running an SDD command.
+Before executing command, read `.architecture-guard/adapters/resolve.md` to resolve the selected SDD adapter. Read `.architecture-guard/selected-adapter` directly when it exists, then load the matching `.architecture-guard/adapters/{tool}.md`. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. If either adapter file is missing or the persisted value is unsupported, report `Unavailable` with the exact path/value and stop before running an SDD command.
 
 ## Standalone Resource Resolution
 

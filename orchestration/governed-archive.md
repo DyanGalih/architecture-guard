@@ -6,7 +6,7 @@ description: Verify, then archive a completed feature with explicit approval for
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md`. Resolve the active adapter in this order: explicit `--adapter` override, `.architecture-guard/selected-adapter` as the authoritative persisted selection, then filesystem markers only when no persisted selection exists. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. Resolve every adapter token before continuing.
+Before executing command, read `.architecture-guard/adapters/resolve.md`. Resolve the active adapter in this order: explicit `--adapter` override, `.architecture-guard/selected-adapter` as the authoritative persisted selection, then filesystem markers only when no persisted selection exists. Load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Resolve every adapter token before continuing.
 
 ## OpenSpec Change Scope
 
@@ -44,7 +44,7 @@ Verifies, then finalizes a completed feature. Changelog, memory, Git, and worksp
 ## Orchestration Flow
 
 ### Step 1 — Verification and SDD Framework Archival Execution
-- Determine the active framework via `adapters/resolve.md`.
+- Determine the active framework via `.architecture-guard/adapters/resolve.md`.
 - **All frameworks**: Trigger {adapter_command:verify} first and stop if verification fails or has unresolved blocking findings.
 - **If OpenSpec**: After verification and explicit approval, trigger {adapter_command:archive}; ask for the change name and archive destination if either is ambiguous.
 - **If SpecKit**: After verification and explicit approval, execute the adapter's retain-in-place archive behavior: keep the active feature artifacts in `{adapter_path:spec}`'s feature directory and incrementally update `{adapter_path:fallback-spec-index}`. Report index update failures as non-blocking warnings; do not move the feature artifacts.
