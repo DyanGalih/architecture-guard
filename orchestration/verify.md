@@ -6,11 +6,11 @@ description: Verify implementation against specification, design, plan, tasks, a
 
 ## SDD Adapter Resolution
 
-Before executing command, resolve the project root as the directory containing `adapters/resolve.md` (normally the repository root). Read that file, then read the adapter selected by `.architecture-guard/config.yml` or `.architecture-guard/selected-adapter` from `adapters/openspec.md`, `adapters/spec-kit.md`, or `adapters/generic.md`. Do not run `architecture-guard resolve adapter ...`; `resolve` handles engine resources, while adapter files handle SDD paths and commands. Materialize every adapter token before executing the command body.
+Before executing command, resolve the project root as the directory containing `.architecture-guard/` (normally the repository root). Read `.architecture-guard/adapters/resolve.md`, then read the adapter selected by `.architecture-guard/selected-adapter` (or `.architecture-guard/config.yml`) from `.architecture-guard/adapters/<name>.md`, built-in or custom. Do not run `architecture-guard resolve adapter ...`; `resolve` handles engine resources, while adapter files handle SDD paths and commands. Materialize every adapter token before executing the command body.
 
 ## Adapter-Bound Artifact Contract
 
-The adapter files are installed at the project root. `.architecture-guard/selected-adapter` selects the adapter; it is not a substitute for `adapters/resolve.md` or the selected adapter file.
+The adapter files are installed under `.architecture-guard/adapters/`. `.architecture-guard/selected-adapter` selects the adapter; it is not a substitute for `.architecture-guard/adapters/resolve.md` or the selected adapter file.
 
 For OpenSpec, the concrete bindings are:
 - tasks: `openspec/changes/<change>/tasks.md`

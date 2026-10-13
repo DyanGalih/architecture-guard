@@ -31,7 +31,7 @@ program
   .description('Install governance commands')
   .option('-y, --yes', 'Non-interactive; --agent and --framework are required unless auto-detected')
   .option('--agent <names>', 'Comma-separated agent keys')
-  .option('--framework <f>', 'spec-kit | openspec | none')
+  .option('--framework <f>', 'spec-kit | openspec | none | <custom adapter name>')
   .option('--commands <list>', 'Comma-separated command names, indices, or aliases (all, review)')
   .option('--overwrite <mode>', 'replace | skip | keep-both')
   .option('--vendor', 'Copy immutable runtime resources locally (for air-gapped setups)')
@@ -87,7 +87,7 @@ program
   .command('archive <changeName>')
   .description('Finalize or archive a completed SDD feature')
   .option('--json', 'Output a machine-readable result')
-  .option('--framework <framework>', 'Override detection: speckit | openspec')
+  .option('--framework <framework>', 'Override the selected adapter: spec-kit | openspec | generic')
   .action(async (changeName, options) => { await runArchive(changeName, options); });
 
 import { runHygiene } from '../cli/hygiene';

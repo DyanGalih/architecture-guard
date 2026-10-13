@@ -6,7 +6,7 @@ description: Run the governed SDD lifecycle from discovery or an active change t
 
 ## SDD Adapter Resolution
 
-Before executing this command, read `adapters/resolve.md`, load the selected `adapters/{tool}.md`, and resolve all adapter path and command tokens used by each delegated phase.
+Before executing this command, read `.architecture-guard/adapters/resolve.md`, load the selected `.architecture-guard/adapters/{tool}.md`, and resolve all adapter path and command tokens used by each delegated phase.
 
 ## Standalone Resource Resolution
 

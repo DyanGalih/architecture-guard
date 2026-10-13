@@ -7,7 +7,7 @@ const { spawnSync } = require('node:child_process');
 
 const installer = path.join(__dirname, 'bin', 'cli.js');
 
-test('standalone orchestration and legacy Spec Kit extension expose the same skills', () => {
+test('installer exposes every orchestration skill and legacy Spec Kit commands are a subset', () => {
   const root = path.join(__dirname, '..');
   const manifest = require('yaml').parse(fs.readFileSync(path.join(root, 'extension.yml'), 'utf8'));
   const legacyFiles = manifest.provides.commands.map(command => command.file);
@@ -19,7 +19,8 @@ test('standalone orchestration and legacy Spec Kit extension expose the same ski
     .map(command => `${command}.md`)
     .sort();
 
-  assert.deepEqual(legacyNames, orchestrationNames);
+  // The legacy extension has limited support: it may lag the standalone tool but never invent its own skills.
+  assert.deepEqual(legacyNames.filter(name => !orchestrationNames.includes(name)), []);
   assert.deepEqual(installerNames, orchestrationNames);
   for (const command of manifest.provides.commands) {
     const promptPath = path.join(root, command.file);
@@ -183,9 +184,8 @@ test('installs every agent format at the project root with selected resources on
   assert.equal(Object.keys(require('./cli/install').AGENT_CONFIGS).length, 35);
   assert.ok(fs.existsSync(path.join(cwd, '.opencode/commands/ag-init.md')));
   assert.ok(!fs.existsSync(path.join(cwd, cwd.slice(1), '.opencode/commands/ag-init.md')));
-  assert.ok(fs.existsSync(path.join(cwd, 'adapters/resolve.md')));
-  assert.ok(fs.existsSync(path.join(cwd, 'adapters/spec-kit.md')));
-  assert.ok(!fs.existsSync(path.join(cwd, 'adapters/openspec.md')));
+  assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard/adapters/resolve.md')));
+  assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard/adapters/spec-kit.md')));
   assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-adapter'), 'utf8').trim(), 'spec-kit');
   assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard/config.yml')));
   assert.match(fs.readFileSync(path.join(cwd, '.architecture-guard/config.yml'), 'utf8'), /adapter:\s*spec-kit/);
@@ -214,10 +214,8 @@ test('existing commands auto-replace by default, and support --overwrite skip or
   spawnSync(process.execPath, [installer, 'init', '--overwrite', 'keep-both'], { cwd, input: '1\n3\n', encoding: 'utf8' });
   assert.equal(fs.readFileSync(dest, 'utf8'), 'original');
   assert.ok(fs.existsSync(path.join(cwd, '.opencode/commands/ag-init.architecture-guard.md')));
-  assert.ok(fs.existsSync(path.join(cwd, 'adapters/resolve.md')));
-  assert.ok(fs.existsSync(path.join(cwd, 'adapters/generic.md')));
-  assert.ok(!fs.existsSync(path.join(cwd, 'adapters/spec-kit.md')));
-  assert.ok(!fs.existsSync(path.join(cwd, 'adapters/openspec.md')));
+  assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard/adapters/resolve.md')));
+  assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard/adapters/generic.md')));
 });
 
 test('keep both creates a discoverable sibling skill', () => {
@@ -258,7 +256,7 @@ test('framework auto-detects when single SDD tool marker exists', () => {
   // Only agent choice needed (1 prompt)
   install('1\n', cwdOpenspec);
   assert.equal(fs.readFileSync(path.join(cwdOpenspec, '.architecture-guard/selected-adapter'), 'utf8').trim(), 'openspec');
-  assert.ok(fs.existsSync(path.join(cwdOpenspec, 'adapters/openspec.md')));
+  assert.ok(fs.existsSync(path.join(cwdOpenspec, '.architecture-guard/adapters/openspec.md')));
 
   // Test speckit auto-detection
   const cwdSpeckit = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-speckit-'));
@@ -266,7 +264,7 @@ test('framework auto-detects when single SDD tool marker exists', () => {
   // Only agent choice needed (1 prompt)
   install('1\n', cwdSpeckit);
   assert.equal(fs.readFileSync(path.join(cwdSpeckit, '.architecture-guard/selected-adapter'), 'utf8').trim(), 'spec-kit');
-  assert.ok(fs.existsSync(path.join(cwdSpeckit, 'adapters/spec-kit.md')));
+  assert.ok(fs.existsSync(path.join(cwdSpeckit, '.architecture-guard/adapters/spec-kit.md')));
 });
 
 test('rejects missing runtime resources with actionable error', () => {
@@ -358,8 +356,7 @@ test('--yes non-interactive flags install without stdin and respect target arg',
   runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'openspec', '--commands', 'init-brownfield'], cwd);
   assert.ok(fs.existsSync(path.join(cwd, '.opencode/commands/ag-init-brownfield.md')));
   assert.ok(!fs.existsSync(path.join(cwd, '.opencode/commands/ag-init.md')));
-  assert.ok(fs.existsSync(path.join(cwd, 'adapters/openspec.md')));
-  assert.ok(!fs.existsSync(path.join(cwd, 'adapters/spec-kit.md')));
+  assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard/adapters/openspec.md')));
   assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-adapter'), 'utf8').trim(), 'openspec');
 });
 
@@ -375,9 +372,9 @@ test('materializes the selected adapter in the installed verification skill', ()
   assert.match(skill, /architecture-guard hygiene --json --target \./);
   assert.match(skill, /## Context Expansion/);
 
-  fs.writeFileSync(path.join(cwd, 'adapters/resolve.md'), 'stale');
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/adapters/resolve.md'), 'stale');
   runArgs(['init', '--yes', '--agent', 'codex', '--framework', 'openspec', '--commands', 'verify'], cwd);
-  assert.notEqual(fs.readFileSync(path.join(cwd, 'adapters/resolve.md'), 'utf8'), 'stale');
+  assert.notEqual(fs.readFileSync(path.join(cwd, '.architecture-guard/adapters/resolve.md'), 'utf8'), 'stale');
 });
 
 test('governed delivery installs the adapter-driven orchestration command', () => {
@@ -630,4 +627,112 @@ test("openspec init does not create .architecture-guard/flow/", () => {
 
   const flowDir = path.join(cwd, ".architecture-guard", "flow");
   assert.strictEqual(fs.existsSync(flowDir), false, ".architecture-guard/flow/ should not exist for OpenSpec");
+});
+
+const repoRoot = path.join(__dirname, '..');
+const installerModule = () => require('./cli/install');
+
+test('every built-in adapter defines every key the orchestration prompts use', () => {
+  const { BUILTIN_ADAPTERS, missingAdapterKeys, requiredAdapterKeys } = installerModule();
+  assert.ok(requiredAdapterKeys().path.length > 0 && requiredAdapterKeys().command.length > 0);
+  for (const name of BUILTIN_ADAPTERS) {
+    const content = fs.readFileSync(path.join(repoRoot, 'adapters', `${name}.md`), 'utf8');
+    assert.deepEqual(missingAdapterKeys(content), [], `adapters/${name}.md`);
+  }
+});
+
+test('ADAPTERS.md documents exactly the required adapter keys', () => {
+  const doc = fs.readFileSync(path.join(repoRoot, 'ADAPTERS.md'), 'utf8');
+  const listed = (label) => [...doc.match(new RegExp(`^- ${label}: (.*)$`, 'm'))[1].matchAll(/`([a-z0-9-]+)`/g)].map(match => match[1]).sort();
+  const required = installerModule().requiredAdapterKeys();
+  assert.deepEqual(listed('Path Map'), required.path);
+  assert.deepEqual(listed('Command Map'), required.command);
+});
+
+test('orchestration prompts load adapters from .architecture-guard/adapters', () => {
+  for (const file of fs.readdirSync(path.join(repoRoot, 'orchestration')).filter(name => name.endsWith('.md'))) {
+    const prompt = fs.readFileSync(path.join(repoRoot, 'orchestration', file), 'utf8');
+    assert.doesNotMatch(prompt, /(^|[\s`("'])adapters\/(resolve|\{tool\}|spec-kit|openspec|generic)/m, `${file} reads project-root adapters/`);
+    assert.doesNotMatch(prompt, /\.specify\/extensions\//, `${file} falls back to the legacy extension`);
+  }
+});
+
+function writeCustomAdapter(cwd, name, transform = (text) => text) {
+  const dir = path.join(cwd, '.architecture-guard/adapters');
+  fs.mkdirSync(dir, { recursive: true });
+  const content = transform(fs.readFileSync(path.join(repoRoot, 'adapters/generic.md'), 'utf8').replace('# Generic SDD Adapter', '# My SDD Adapter'));
+  fs.writeFileSync(path.join(dir, `${name}.md`), content);
+  return content;
+}
+
+test('installs with a valid custom adapter, materializes it, and never overwrites it', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  const content = writeCustomAdapter(cwd, 'my-sdd', (text) => text.replace(/^\| spec \|.*$/m, '| spec | `docs/specs/{feature}/spec.md` |'));
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'my-sdd', '--commands', 'verify'], cwd);
+
+  assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-adapter'), 'utf8').trim(), 'my-sdd');
+  assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/adapters/my-sdd.md'), 'utf8'), content);
+  for (const file of ['resolve.md', 'spec-kit.md', 'openspec.md', 'generic.md']) {
+    assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard/adapters', file)), file);
+  }
+  const skill = fs.readFileSync(path.join(cwd, '.opencode/commands/ag-verify.md'), 'utf8');
+  assert.doesNotMatch(skill, /\{adapter_(path|command):/);
+  assert.match(skill, /docs\/specs\/\{feature\}\/spec\.md/);
+});
+
+test('interactive installer offers custom adapters after the built-in choices', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  writeCustomAdapter(cwd, 'my-sdd');
+  install('1\n4\n', cwd);
+  assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-adapter'), 'utf8').trim(), 'my-sdd');
+});
+
+test('rejects custom adapters with missing keys or unknown names before writing commands', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  writeCustomAdapter(cwd, 'broken', (text) => text.replace(/^\| create-plan \|.*\n/m, '').replace(/^\| tasks \|.*\n/m, ''));
+  const args = ['--yes', '--agent', 'opencode', '--commands', 'init'];
+
+  const broken = spawnSync(process.execPath, [installer, 'init', ...args, '--framework', 'broken'], { cwd, encoding: 'utf8' });
+  assert.notEqual(broken.status, 0);
+  assert.match(broken.stderr, /missing required keys/);
+  assert.match(broken.stderr, /path:tasks/);
+  assert.match(broken.stderr, /command:create-plan/);
+  assert.ok(!fs.existsSync(path.join(cwd, '.opencode')));
+
+  const unknown = spawnSync(process.execPath, [installer, 'init', ...args, '--framework', 'nope'], { cwd, encoding: 'utf8' });
+  assert.notEqual(unknown.status, 0);
+  assert.match(unknown.stderr, /no custom adapter at/);
+});
+
+test('reinstall refreshes built-in adapters and flags the old root adapters directory', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  fs.mkdirSync(path.join(cwd, '.architecture-guard/adapters'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/adapters/spec-kit.md'), 'stale');
+  fs.mkdirSync(path.join(cwd, 'adapters'));
+  fs.writeFileSync(path.join(cwd, 'adapters/resolve.md'), '# SDD Adapter Resolution\nold');
+
+  const stdout = runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit', '--commands', 'init'], cwd);
+  assert.equal(
+    fs.readFileSync(path.join(cwd, '.architecture-guard/adapters/spec-kit.md'), 'utf8'),
+    fs.readFileSync(path.join(repoRoot, 'adapters/spec-kit.md'), 'utf8'),
+  );
+  assert.match(stdout, /older Architecture Guard install/);
+  assert.ok(fs.existsSync(path.join(cwd, 'adapters/resolve.md')), 'old directory is reported, never deleted');
+});
+
+test('AGENTS.md migrates an older unmarked section even when other content surrounds it', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  const agentsPath = path.join(cwd, 'AGENTS.md');
+  fs.writeFileSync(agentsPath, '# Project\n\n## Architecture Guard\n\nUse these governance rules across all SDD workflow phases.\n- Read `adapters/resolve.md`\n- Always include loaded rule files and counts in governance reports.\n\n## Other\n\nkeep me\n');
+
+  installerModule().appendAgentsMd(cwd, ['opencode']);
+  const once = fs.readFileSync(agentsPath, 'utf8');
+  assert.match(once, /\.architecture-guard\/adapters\/resolve\.md/);
+  assert.doesNotMatch(once, /Read `adapters\/resolve\.md`/);
+  assert.match(once, /## Other\n\nkeep me/);
+  assert.match(once, /^# Project/);
+  assert.equal(once.match(/## Architecture Guard/g).length, 1);
+
+  installerModule().appendAgentsMd(cwd, ['opencode']);
+  assert.equal(fs.readFileSync(agentsPath, 'utf8'), once);
 });

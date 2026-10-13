@@ -6,13 +6,13 @@ description: Review specification and planning artifacts against architectural r
 
 ## SDD Adapter Resolution
 
-Before executing this command, read `adapters/resolve.md`. Resolve the active adapter in this order:
+Before executing this command, read `.architecture-guard/adapters/resolve.md`. Resolve the active adapter in this order:
 
 1. An explicit `--adapter` override, when provided.
 2. `.architecture-guard/selected-adapter`, which is authoritative after CLI installation.
 3. Filesystem markers only when no persisted selection exists.
 
-Load `adapters/{tool}.md` and resolve every adapter path token (for example, a token whose key is `spec`) before reading review artifacts. Stop if the adapter is missing or any token remains unresolved.
+Load `.architecture-guard/adapters/{tool}.md` and resolve every adapter path token (for example, a token whose key is `spec`) before reading review artifacts. Stop if the adapter is missing or any token remains unresolved.
 
 ## Standalone Resource Resolution
 

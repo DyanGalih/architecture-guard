@@ -181,8 +181,11 @@ function readPrompt(promptPath) {
   return fs.readFileSync(promptPath, 'utf8');
 }
 
-function parseAdapterSection(content, heading, nextHeading) {
-  const section = content.split(heading)[1]?.split(nextHeading)[0] || '';
+function parseAdapterSection(content, heading, nextHeading = null) {
+  const afterHeading = content.split(heading)[1] || '';
+  const section = (nextHeading && afterHeading.includes(nextHeading))
+    ? afterHeading.split(nextHeading)[0]
+    : afterHeading.split(/\r?\n## /)[0];
   const map = new Map();
   for (const line of section.split(new RegExp('\\r?\\n'))) {
     const cells = line.split('|').map(cell => cell.trim());
@@ -195,17 +198,105 @@ function parseAdapterSection(content, heading, nextHeading) {
   return map;
 }
 
-function resolveAdapterBindings(adapterName) {
-  const adapterPath = path.join(ROOT_DIR, 'adapters', adapterName + '.md');
-  if (!fs.existsSync(adapterPath)) {
-    throw new Error('Unavailable: adapter file not found at adapters/' + adapterName + '.md');
-  }
+const BUILTIN_ADAPTERS = ['spec-kit', 'openspec', 'generic'];
+const ADAPTER_NAME = /^[a-z0-9][a-z0-9-]*$/;
+const ADAPTER_TOKEN = /\{adapter_(path|command):([a-z0-9-]+)\}/g;
 
-  const content = fs.readFileSync(adapterPath, 'utf8');
+// Built-in adapters ship with the package; custom adapters live in the target project.
+function adapterFilePath(adapterName, targetDir = null) {
+  if (BUILTIN_ADAPTERS.includes(adapterName) || !targetDir) {
+    return path.join(ROOT_DIR, 'adapters', adapterName + '.md');
+  }
+  return path.join(targetDir, '.architecture-guard', 'adapters', adapterName + '.md');
+}
+
+function adapterKeys(content) {
   return {
     path: parseAdapterSection(content, '## Path Map', '## Command Map'),
     command: parseAdapterSection(content, '## Command Map', '## Constitution Layout'),
   };
+}
+
+function resolveAdapterBindings(adapterName, targetDir = null) {
+  const adapterPath = adapterFilePath(adapterName, targetDir);
+  if (!fs.existsSync(adapterPath)) {
+    throw new Error('Unavailable: adapter file not found at ' + adapterPath);
+  }
+  return adapterKeys(fs.readFileSync(adapterPath, 'utf8'));
+}
+
+// Every adapter must define each key the installed prompts and runtime templates reference.
+function requiredAdapterKeys() {
+  const keys = { path: new Set(), command: new Set() };
+  for (const dir of ['orchestration', 'templates', 'flow']) {
+    const root = path.join(ROOT_DIR, dir);
+    if (!fs.existsSync(root)) continue;
+    for (const file of fs.readdirSync(root).filter(name => name.endsWith('.md'))) {
+      for (const [, kind, key] of fs.readFileSync(path.join(root, file), 'utf8').matchAll(ADAPTER_TOKEN)) {
+        keys[kind].add(key);
+      }
+    }
+  }
+  return { path: [...keys.path].sort(), command: [...keys.command].sort() };
+}
+
+function missingAdapterKeys(content) {
+  const required = requiredAdapterKeys();
+  const defined = adapterKeys(content);
+  return ['path', 'command'].flatMap(kind =>
+    required[kind].filter(key => !defined[kind].has(key)).map(key => `${kind}:${key}`));
+}
+
+function customAdapters(targetDir) {
+  const dir = path.join(targetDir, '.architecture-guard', 'adapters');
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir)
+    .filter(file => file.endsWith('.md'))
+    .map(file => file.slice(0, -3))
+    .filter(name => name !== 'resolve' && !BUILTIN_ADAPTERS.includes(name) && ADAPTER_NAME.test(name))
+    .sort();
+}
+
+// Validates a custom adapter before anything is written to the target project.
+function resolveCustomAdapter(name, targetDir) {
+  if (!ADAPTER_NAME.test(name) || name === 'resolve') {
+    throw new Error(`Invalid adapter name "${name}". Use lowercase letters, digits, and hyphens.`);
+  }
+  const adapterPath = adapterFilePath(name, targetDir);
+  if (!fs.existsSync(adapterPath)) {
+    throw new Error([
+      `Unknown framework "${name}" and no custom adapter at ${adapterPath}.`,
+      `Built-in adapters: ${BUILTIN_ADAPTERS.join(', ')} (or none).`,
+      'To use another SDD tool, copy a built-in adapter to .architecture-guard/adapters/<name>.md, edit it, then rerun init with --framework <name>. See ADAPTERS.md.',
+    ].join('\n'));
+  }
+  const missing = missingAdapterKeys(fs.readFileSync(adapterPath, 'utf8'));
+  if (missing.length) {
+    throw new Error(`Custom adapter ${adapterPath} is missing required keys:\n${missing.map(key => `  - ${key}`).join('\n')}\nDefine each key in the Path Map or Command Map; state an inline fallback when the tool does not support it.`);
+  }
+  return name;
+}
+
+function installAdapters(targetDir, preserve) {
+  const adaptersDir = path.join(targetDir, '.architecture-guard', 'adapters');
+  fs.mkdirSync(adaptersDir, { recursive: true });
+  // Built-in adapters ship with the prompts and are refreshed on install; custom adapters are never touched.
+  for (const file of ['resolve.md', ...BUILTIN_ADAPTERS.map(name => `${name}.md`)]) {
+    const src = path.join(ROOT_DIR, 'adapters', file);
+    if (!fs.existsSync(src)) {
+      throw new Error('Unavailable: adapter file not found at adapters/' + file);
+    }
+    const dest = path.join(adaptersDir, file);
+    if (!fs.existsSync(dest) || !preserve) {
+      fs.copyFileSync(src, dest);
+    }
+  }
+
+  const legacyResolve = path.join(targetDir, 'adapters', 'resolve.md');
+  if (fs.existsSync(legacyResolve) && fs.readFileSync(legacyResolve, 'utf8').startsWith('# SDD Adapter Resolution')) {
+    console.log('  ! Found adapters/ from an older Architecture Guard install. It is no longer read;');
+    console.log('    move any custom adapter to .architecture-guard/adapters/ and remove adapters/ when ready.');
+  }
 }
 
 function resolveAdapterValue(bindings, kind, key, trail = []) {
@@ -225,9 +316,9 @@ function resolveAdapterValue(bindings, kind, key, trail = []) {
   );
 }
 
-function materializeAdapterTokens(content, adapterName) {
+function materializeAdapterTokens(content, adapterName, targetDir = null) {
   const normalizedAdapter = adapterName === 'none' || adapterName === 'none (framework-agnostic)' ? 'generic' : adapterName;
-  const bindings = resolveAdapterBindings(normalizedAdapter);
+  const bindings = resolveAdapterBindings(normalizedAdapter, targetDir);
   const tokenPattern = new RegExp('\\{adapter_(path|command):([^}]+)}', 'g');
   const resolvedCommands = new Map();
   const materialized = content.replace(tokenPattern, (token, kind, key) => {
@@ -388,7 +479,7 @@ async function installCommand(agentType: any, commandName: any, cmdDir: any, opt
   }
 
   const adapterName = opts.adapterName || opts.framework || 'generic';
-  const content = materializeAdapterTokens(readPrompt(promptPath), adapterName);
+  const content = materializeAdapterTokens(readPrompt(promptPath), adapterName, opts.targetDir || null);
   const sk = slug(commandName);
   let dest = commandDestination(cfg, sk, cmdDir, agentType);
 
@@ -439,7 +530,7 @@ ${selectedAgents.map(agent => `- \`${path.join(AGENT_CONFIGS[agent].dir, '*')}\`
 
 - **Ponytail Core Contract**: Before spec/plan/tasks/implement, read and apply the ponytail pragmatism contract.
 - **After each phase**: Run architecture review for boundary drift, DRY violations, and repository hygiene.
-- **SDD Adapter Resolution**: Project uses the adapter selected during CLI init. Read \`adapters/resolve.md\` before first command.
+- **SDD Adapter Resolution**: Project uses the adapter selected during CLI init. Read \`.architecture-guard/adapters/resolve.md\` before first command.
 - **Engine Resources**: Lean installs use the callable Architecture Guard CLI for shared templates, presets, hygiene rules, and Sonar rules; vendor/full mode copies those resources under .architecture-guard/. The hygiene check remains CLI-backed.
 - **Direct Discovery Guard**: When checking adapter-resolved hidden paths such as \`.architecture-guard/**\`, use direct directory inspection first, then read listed files. A Glob no-match result is inconclusive and MUST NOT be reported as missing. Report a path as unavailable only after direct inspection confirms it does not exist. Always include loaded rule files and counts in governance reports.
 ${sectionEnd}`;
@@ -459,6 +550,14 @@ ${sectionEnd}`;
       && current.trimEnd().endsWith('Always include loaded rule files and counts in governance reports.');
     if (legacyGeneratedSection) {
       fs.writeFileSync(agentsPath, section + '\n');
+      return;
+    }
+
+    // Older installers wrote an unmarked section; replace it in place even when other content surrounds it.
+    const legacySection = /(^|\n)## Architecture Guard\n\nUse these governance rules across all SDD workflow phases\.\n[\s\S]*?Always include loaded rule files and counts in governance reports\.\n?/;
+    if (legacySection.test(current)) {
+      const updated = current.replace(legacySection, (match, lead) => `${lead}${section}\n`);
+      fs.writeFileSync(agentsPath, updated.trimEnd() + '\n');
       return;
     }
 
@@ -574,7 +673,7 @@ Options:
   -h, --help            Show this help
   -y, --yes             Non-interactive; --agent and --framework are required unless auto-detected
   --agent <names>       Comma-separated agent keys (e.g. opencode,claude)
-  --framework <f>       spec-kit | openspec | none
+  --framework <f>       spec-kit | openspec | none | <custom adapter name>
   --commands <list>     Comma-separated command names, indices, or aliases (all, review)
   --overwrite <mode>    replace | skip | keep-both (default: replace)
   --vendor, --full      Copy immutable runtime resources locally (for air-gapped setups)
@@ -676,7 +775,8 @@ async function runInit(targetDir, opts) {
     process.exit(0);
   }
 
-  const frameworks = ['spec-kit', 'openspec', 'none (framework-agnostic)'];
+  const custom = customAdapters(targetDir);
+  const frameworks = ['spec-kit', 'openspec', 'none (framework-agnostic)', ...custom.map(name => `${name} (custom adapter)`)];
   let selectedFramework = opts.framework;
   if (!selectedFramework) {
     const hasOpenspec = fs.existsSync(path.join(targetDir, 'openspec', 'config.yaml')) || fs.existsSync(path.join(targetDir, 'openspec'));
@@ -689,16 +789,18 @@ async function runInit(targetDir, opts) {
       selectedFramework = 'spec-kit';
       console.log(`\nAuto-detected SDD framework: spec-kit`);
     } else if (opts.yes) {
-      throw new Error("--yes requires --framework <spec-kit|openspec|none> when the target has no detectable SDD framework");
+      throw new Error("--yes requires --framework <spec-kit|openspec|none|custom-name> when the target has no detectable SDD framework");
     } else {
       selectedFramework = await ask("\nSelect SDD framework:", frameworks, false);
     }
   } else {
-    const match = frameworks.find(f => f === selectedFramework || f.startsWith(selectedFramework));
-    if (!match) {
-      throw new Error(`Unknown framework "${selectedFramework}". Use spec-kit, openspec, or none.`);
-    }
-    selectedFramework = match;
+    const requested = selectedFramework === 'speckit' ? 'spec-kit' : selectedFramework === 'generic' ? 'none' : selectedFramework;
+    const builtin = frameworks.slice(0, 3).find(f => f === requested || f.startsWith(requested));
+    // Anything that is not a built-in is a custom adapter, validated before any file is written.
+    selectedFramework = builtin || resolveCustomAdapter(requested, targetDir);
+  }
+  if (selectedFramework && selectedFramework.endsWith(' (custom adapter)')) {
+    selectedFramework = resolveCustomAdapter(selectedFramework.replace(' (custom adapter)', ''), targetDir);
   }
 
   if (!selectedFramework) {
@@ -746,7 +848,7 @@ async function runInit(targetDir, opts) {
     }
 
     for (const cmd of selectedCommands) {
-      await installCommand(agent, cmd, cmdDir, { ...opts, adapterName: framework === 'none' ? 'generic' : framework }, isAgy ? workflowsDir : null);
+      await installCommand(agent, cmd, cmdDir, { ...opts, targetDir, adapterName: framework === 'none' ? 'generic' : framework }, isAgy ? workflowsDir : null);
     }
   }
 
@@ -779,24 +881,8 @@ async function runInit(targetDir, opts) {
     }
   }
 
-  const adaptersDir = path.join(targetDir, "adapters");
-  const srcAdaptersDir = path.join(ROOT_DIR, "adapters");
-  if (!fs.existsSync(srcAdaptersDir)) {
-    throw new Error("Unavailable: adapter directory not found at adapters/");
-  }
   const adapter = framework === "none" ? "generic" : framework;
-  fs.mkdirSync(adaptersDir, { recursive: true });
-  const preserveAdapters = opts.overwrite === "skip" || opts.overwrite === "keep-both";
-  for (const f of ["resolve.md", adapter + ".md"]) {
-    const src = path.join(srcAdaptersDir, f);
-    const dest = path.join(adaptersDir, f);
-    if (!fs.existsSync(src)) {
-      throw new Error("Unavailable: adapter file not found at adapters/" + f);
-    }
-    if (!fs.existsSync(dest) || !preserveAdapters) {
-      fs.copyFileSync(src, dest);
-    }
-  }
+  installAdapters(targetDir, opts.overwrite === "skip" || opts.overwrite === "keep-both");
 
   const configYml = `adapter: ${adapter}\npresets: []\n`;
   fs.writeFileSync(path.join(runtimeDir, 'config.yml'), configYml);
@@ -821,8 +907,8 @@ async function runInit(targetDir, opts) {
   console.log(`Target: ${targetDir}`);
   console.log(`Commands installed: ${selectedCommands.length}`);
   console.log(`Agents: ${selectedAgents.join(', ')}`);
-  console.log(`Adapter: adapters/${framework === 'none' ? 'generic' : framework}.md`);
-  console.log(`Resolution: adapters/resolve.md`);
+  console.log(`Adapter: .architecture-guard/adapters/${adapter}.md`);
+  console.log('Resolution: .architecture-guard/adapters/resolve.md');
 }
 
 export async function runInstallCommand(target: any, opts: any) {
@@ -837,6 +923,10 @@ export async function runInstallCommand(target: any, opts: any) {
 
 export {
   installCommand,
+  requiredAdapterKeys,
+  missingAdapterKeys,
+  adapterKeys,
+  BUILTIN_ADAPTERS,
   AGENT_CONFIGS,
   COMMANDS,
   COMMAND_ALIASES,
