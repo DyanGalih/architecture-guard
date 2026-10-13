@@ -723,7 +723,8 @@ async function main() {
   }
 
   console.log('Architecture Guard Installer\n');
-  await readAllStdin();
+  // --yes never prompts, so never wait on stdin (it may stay open in shells and CI runners).
+  if (!opts.yes) await readAllStdin();
   validateRuntimeResources();
   requireInteractiveOrYes(opts);
 
@@ -933,7 +934,8 @@ export async function runInstallCommand(target: any, opts: any) {
   opts.target = target;
   opts.agents = opts.agent;
   const targetDir = target ? path.resolve(target) : process.cwd();
-  await readAllStdin();
+  // --yes never prompts, so never wait on stdin (it may stay open in shells and CI runners).
+  if (!opts.yes) await readAllStdin();
   validateRuntimeResources();
   requireInteractiveOrYes(opts);
   await runInit(targetDir, opts);

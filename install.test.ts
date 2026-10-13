@@ -739,6 +739,71 @@ test('AGENTS.md migrates an older unmarked section even when other content surro
   assert.equal(fs.readFileSync(agentsPath, 'utf8'), once);
 });
 
+test('validate-setup checks the selected adapter and its constitutions', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  const validate = () => spawnSync(process.execPath, [installer, 'validate-setup', cwd], { encoding: 'utf8' });
+
+  const empty = validate();
+  assert.notEqual(empty.status, 0);
+  assert.match(empty.stdout, /No selected adapter/);
+
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit', '--commands', 'init'], cwd);
+  const noConstitution = validate();
+  assert.notEqual(noConstitution.status, 0);
+  assert.match(noConstitution.stdout, /Governance constitution missing \(\.specify\/memory\/constitution\.md\)/);
+  assert.match(noConstitution.stdout, /defines all required keys/);
+
+  fs.mkdirSync(path.join(cwd, '.specify/memory'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, '.specify/memory/constitution.md'), '# Constitution');
+  const ready = validate();
+  assert.equal(ready.status, 0, ready.stdout);
+  assert.match(ready.stdout, /0 error\(s\)/);
+
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/adapters/spec-kit.md'), '# broken');
+  assert.match(validate().stdout, /missing required keys/);
+});
+
+test('create-fixtures generates benchmark profiles and refuses non-empty targets', () => {
+  const target = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-')), 'fixtures');
+  const ok = spawnSync(process.execPath, [installer, 'create-fixtures', target], { encoding: 'utf8' });
+  assert.equal(ok.status, 0, ok.stderr);
+  for (const [profile, count] of [['small', 3], ['medium', 12], ['large', 31]]) {
+    assert.equal(fs.readdirSync(path.join(target, profile, 'specs')).length, count, profile);
+  }
+  assert.match(fs.readFileSync(path.join(target, 'medium/specs/002-feature/spec.md'), 'utf8'), /Conflicts with FR-001/);
+  assert.doesNotMatch(fs.readFileSync(path.join(target, 'small/specs/002-feature/spec.md'), 'utf8'), /Conflicts/);
+
+  const again = spawnSync(process.execPath, [installer, 'create-fixtures', target], { encoding: 'utf8' });
+  assert.notEqual(again.status, 0);
+  assert.match(again.stderr, /Target must be empty/);
+});
+
+test('CLI exposes no placeholder commands', () => {
+  const help = spawnSync(process.execPath, [installer, '--help'], { encoding: 'utf8' }).stdout;
+  for (const removed of ['test-install']) {
+    assert.doesNotMatch(help, new RegExp(`^\\s+${removed}\\b`, 'm'), removed);
+  }
+  for (const file of ['validate-setup.ts', 'create-context-budget-fixtures.ts', 'review-implementation.ts']) {
+    assert.doesNotMatch(fs.readFileSync(path.join(__dirname, '..', 'cli', file), 'utf8'), /Ported logic from|Delegating to/, file);
+  }
+});
+
+test('--yes does not wait for stdin to close', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  const { spawn } = require('node:child_process');
+  return new Promise<void>((resolve, reject) => {
+    // stdin stays open (never ended), as in an interactive shell or some CI runners.
+    const child = spawn(process.execPath, [installer, 'init', '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'], { cwd, stdio: ['pipe', 'pipe', 'pipe'] });
+    const timer = setTimeout(() => { child.kill(); reject(new Error('installer waited on stdin with --yes')); }, 20000);
+    child.on('exit', (code) => {
+      clearTimeout(timer);
+      child.stdin.destroy();
+      if (code === 0) resolve();
+      else reject(new Error(`exit ${code}`));
+    });
+  });
+});
+
 test('governance config never shares a file with a constitution', () => {
   for (const name of installerModule().BUILTIN_ADAPTERS) {
     const content = fs.readFileSync(path.join(repoRoot, 'adapters', `${name}.md`), 'utf8');

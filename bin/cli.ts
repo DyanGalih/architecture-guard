@@ -21,7 +21,6 @@ import { runDetectChangedFiles } from '../cli/detect-changed-files';
 import { runCheckArchitecture } from '../cli/check-architecture';
 import { runValidateSetup } from '../cli/validate-setup';
 import { runCreateContextBudgetFixtures } from '../cli/create-context-budget-fixtures';
-import { runTestInstall } from '../cli/test-install';
 import { runReviewArtifacts } from '../cli/review-artifacts';
 import { runReviewImplementation } from '../cli/review-implementation';
 import { runArchive } from '../cli/archive';
@@ -62,16 +61,14 @@ program
   .action(runCheckArchitecture);
 
 program
-  .command('validate-setup')
+  .command('validate-setup [target]')
+  .description('Check the selected adapter, resolvable resources, constitutions, and governance config (exits non-zero on errors)')
   .action(runValidateSetup);
 
 program
-  .command('create-fixtures')
+  .command('create-fixtures <target>')
+  .description('Generate context-budget benchmark fixtures into an empty directory')
   .action(runCreateContextBudgetFixtures);
-
-program
-  .command('test-install')
-  .action(runTestInstall);
 
 program
   .command('review-artifacts')
