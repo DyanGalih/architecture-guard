@@ -39,9 +39,9 @@ Before the first mutation, resolve and preview the exact branch, change containe
 Before creating, planning, or modifying any active change:
 
 1. Run `git branch --show-current`.
-2. If the branch is `main`, `master`, `dev`, `staging`, or another protected branch:
-   - MUST create and switch to `feature/<change-name>`.
-   - MUST NOT continue on the protected branch.
+2. If the branch is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch:
+   - Include `feature/<change-name>` in the Write Approval Gate preview, and create and switch to it only after explicit user approval.
+   - If the user declines or branch creation fails, stop. MUST NOT continue on the protected branch.
 3. If already on a feature branch, reuse it.
 4. Preserve existing uncommitted changes; never reset or discard them.
 5. Report the selected branch before creating artifacts.
@@ -54,8 +54,7 @@ Before creating, planning, or modifying any active change:
 4. Detect `flash-mem` as an MCP service. Do not look for it in `.specify/extensions.yml`.
 5. Inspect the installed list in `.specify/extensions.yml` for `security-review` or its compatibility alias `spec-kit-security-review`. Manifest presence alone is not availability.
 6. For each phase, select the SpecKit integration only after verifying its applicable command is registered and callable: `/speckit.security-review.plan` for plan review and `/speckit.security-review.tasks` for task review. If an applicable command is absent, detect an independently registered Architecture Guard-compatible Security Review host capability and use its corresponding plan or tasks operation. If neither path is callable, mark that phase's Security Review `Unavailable` and degrade without claiming a pass.
-7. Detect OpenSpec by looking for `openspec/config.yaml` or an `openspec` directory.
-8. Read the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for SpecKit, check `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file.
+7. Read the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for SpecKit, check `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file.
 
 ## Phase 2 — Mandatory Memory Preflight When Available
 
@@ -68,17 +67,13 @@ Prefer summaries, metadata, tags, confidence, and related files. Load full entri
 
 ## Phase 3 — Branch Management
 
-Before generating artifacts or modifying files, you MUST ensure work happens on a feature branch.
-1. Check the current git branch.
-2. If on `main`, `master`, `dev*` (e.g., `dev`, `develop`, `development`), or `staging`, ask the user if they want to create a new branch for this feature.
-3. If they approve, create the branch using available tools before proceeding.
+Branch handling is defined once in the Mandatory Branch Preflight above. Do not ask again or create a second branch here.
 
 ## Phase 4 — Spec & Proposal Gate
 
 Check if a formal specification or proposal already exists for the active feature. If missing, automatically generate it using the available discovery context or prompt the user for input:
 
-1. **If OpenSpec is detected:** Run the adapter-defined OpenSpec change creation flow using one resolved `CHANGE_ID`. Keep `proposal.md`, `design.md`, `specs/**/*.md`, and `tasks.md` under the OpenSpec change root; do not copy or wire them into SpecKit directories. Use the selected adapter mapping for subsequent validation.
-2. **If SpecKit (without OpenSpec) is detected:** Automatically run `/ag-governed-spec` to generate `spec.md` from the discovery draft.
+1. Run `/speckit.architecture-guard.ag-governed-spec` to generate `spec.md` from the discovery draft. This legacy extension supports Spec Kit only; for OpenSpec or other SDD tools, use the standalone `architecture-guard` installer.
 
 ## Phase 5 — Inspect Resume State
 
@@ -103,9 +98,9 @@ Do not use timestamps as the only evidence of material staleness. Compare artifa
 
 ## Phase 6 — Plan Gate
 
-If the plan is `missing` or `stale`, execute the full `/ag-governed-plan` (or `/ag-governed-plan`) workflow.
+If the plan is `missing` or `stale`, execute the full `/speckit.architecture-guard.ag-governed-plan` workflow.
 
-If the plan is `review-required`, reuse it and run the selected security plan operation plus `/ag-review-artifacts`. Recheck command or host-operation registration immediately before dispatch. Do not regenerate a plan merely because review is needed.
+If the plan is `review-required`, reuse it and run the selected security plan operation plus `/speckit.architecture-guard.ag-review-artifacts`. Recheck command or host-operation registration immediately before dispatch. Do not regenerate a plan merely because review is needed.
 
 - Continue automatically when there are no blocking findings.
 - Record advisory architecture drift without stopping.
@@ -119,7 +114,7 @@ The plan does not need to be perfect. It must be sufficiently stable and free of
 
 Only enter this phase after the plan is `accepted`.
 
-If tasks are `missing`, `stale`, or `review-required`, execute `/ag-governed-tasks` with the accepted plan and cached context.
+If tasks are `missing`, `stale`, or `review-required`, execute `/speckit.architecture-guard.ag-governed-tasks` with the accepted plan and cached context.
 
 The governed task phase must:
 

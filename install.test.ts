@@ -980,3 +980,38 @@ test('orchestration prompts and runtime templates stay SDD-tool-agnostic', () =>
     });
   }
 });
+
+const legacyPrompts = () => {
+  const dir = path.join(__dirname, '..', 'commands');
+  return fs.readdirSync(dir).filter(file => file.endsWith('.md')).map(file => [file, fs.readFileSync(path.join(dir, file), 'utf8')]);
+};
+
+test('legacy Spec Kit prompts only reference registered extension commands', () => {
+  const manifest = require('yaml').parse(fs.readFileSync(path.join(__dirname, '..', 'extension.yml'), 'utf8'));
+  const registered = new Set(manifest.provides.commands.map(command => command.name));
+  for (const [file, prompt] of legacyPrompts()) {
+    assert.doesNotMatch(prompt, /(^|[^\w.-])\/ag-[a-z]/m, `${file} uses an unregistered /ag-* name`);
+    for (const [, name] of prompt.matchAll(/\/(speckit\.architecture-guard\.ag-[a-z-]+)/g)) {
+      assert.ok(registered.has(name), `${file} references unregistered ${name}`);
+    }
+  }
+});
+
+test('legacy Spec Kit prompts are self-contained and keep write approvals', () => {
+  for (const [file, prompt] of legacyPrompts()) {
+    assert.doesNotMatch(prompt, /\{adapter_(path|command):/, `${file} contains adapter tokens`);
+    assert.doesNotMatch(prompt, /adapters\/resolve\.md/, `${file} loads SDD adapters`);
+    assert.doesNotMatch(prompt, /\[Y\/n\]/, `${file} defaults a write prompt to yes`);
+    assert.doesNotMatch(prompt, /check-architecture/, `${file} depends on a removed CLI stub`);
+  }
+  for (const file of ['governed-delivery.md', 'governed-delivery-team.md']) {
+    const prompt = fs.readFileSync(path.join(__dirname, '..', 'commands', file), 'utf8');
+    assert.doesNotMatch(prompt, /MUST create and switch/);
+    assert.match(prompt, /create and switch to it only after explicit user approval/);
+    assert.doesNotMatch(prompt, /openspec new change/);
+  }
+  const team = fs.readFileSync(path.join(__dirname, '..', 'commands', 'governed-delivery-team.md'), 'utf8');
+  assert.doesNotMatch(team, /\.\.\/\.\.\/\.\.\/user-stories/);
+  const init = fs.readFileSync(path.join(__dirname, '..', 'commands', 'init.md'), 'utf8');
+  assert.doesNotMatch(init, /sync durable summaries and major decisions back into Flash-Mem\./);
+});

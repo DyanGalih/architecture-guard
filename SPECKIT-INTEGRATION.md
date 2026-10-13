@@ -56,7 +56,7 @@ Architecture Guard fills gaps around Spec Kit rather than replacing its native c
 
 ## Native Extension Compatibility
 
-Existing Spec Kit projects can continue using the `extension.yml` installation and `/speckit.ag-*` commands. This path is maintained for compatibility with the legacy extension workflow; standalone installation is preferred for new projects.
+Existing Spec Kit projects can continue using the `extension.yml` installation and `/speckit.architecture-guard.ag-*` commands (for example `/speckit.architecture-guard.ag-governed-plan`). This path is maintained for compatibility with the legacy extension workflow; standalone installation is preferred for new projects.
 
 The extension hooks are optional. In standalone mode, the agent-native command preambles explicitly instruct the agent when to run the equivalent governance checks.
 

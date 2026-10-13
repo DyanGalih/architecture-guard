@@ -19,7 +19,6 @@ program
 import { runInstallCommand } from '../cli/install';
 import { runDetectChangedFiles } from '../cli/detect-changed-files';
 import { runValidateSyncConfig } from '../cli/validate-sync-config';
-import { runCheckArchitecture } from '../cli/check-architecture';
 import { runValidateSetup } from '../cli/validate-setup';
 import { runCreateContextBudgetFixtures } from '../cli/create-context-budget-fixtures';
 import { runReviewArtifacts } from '../cli/review-artifacts';
@@ -62,10 +61,6 @@ program
   .command('validate-sync-config [path]')
   .description('Strictly validate the external sync configuration (default: .architecture-guard/sync.yml)')
   .action(runValidateSyncConfig);
-
-program
-  .command('check-architecture')
-  .action(runCheckArchitecture);
 
 program
   .command('validate-setup [target]')

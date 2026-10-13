@@ -38,7 +38,7 @@ Provide a single command that ensures:
 2. The user can discuss, refine, and brainstorm their feature idea interactively.
 3. The AI actively warns the user if a proposed idea conflicts with established architecture.
 4. Non-blocking architecture concerns are recorded as risks and alternatives; only explicitly blocking or P0 rules should stop the discovery path.
-5. The final, agreed-upon idea is drafted into a clean format ready to be passed to `/ag-governed-spec`.
+5. The final, agreed-upon idea is drafted into a clean format ready to be passed to `/speckit.architecture-guard.ag-governed-spec`.
 
 ## Orchestration Flow
 
@@ -129,8 +129,8 @@ To proceed to implementation and avoid a "Feature: Not selected" error, you must
 You can now run:
 1. The adapter-registered command to create a new change/feature (Suggested name: `<suggested-feature-name>`).
 2. Then choose a delivery workflow with this Discovery Summary Draft as input:
-   - For solo developers: run `/ag-governed-delivery` or `/ag-governed-spec`.
-   - For teams: run `/ag-governed-delivery-team` to generate a User Story for business review first.
+   - For solo developers: run `/speckit.architecture-guard.ag-governed-delivery` or `/speckit.architecture-guard.ag-governed-spec`.
+   - For teams: run `/speckit.architecture-guard.ag-governed-delivery-team` to generate a User Story for business review first.
 ```
 
 ## Guardrails
