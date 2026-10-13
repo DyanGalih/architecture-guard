@@ -151,7 +151,7 @@ If the planning process or architecture validation identified new architectural 
 1. **Capability Gate**: Use a Flash-Mem write tool only when it is exposed by the host.
 2. **Approval Required**: Propose validated entries and write them only after explicit user approval.
 3. **Bounded Degradation**: Do not probe for Flash-Mem, `speckit_memory_share_lesson`, another MCP wrapper, or global/shared promotion when such a capability is not already exposed. Complete any available local capture or synthesis, report global promotion as unavailable, and finish the governed workflow.
-4. **Standard**: Do not silently write memory outside an available formal capture flow; let that flow propose entries and handle user approval when its interface requires approval.
+4. **Standard**: Never write memory silently. When a formal capture flow is available, use it to propose entries, but write only after the explicit user approval in item 2, even if the flow's own interface would not ask.
 
 ### Step 7 — Generate Governance Summary
 
@@ -191,7 +191,7 @@ The command MUST return:
 - **Key Constraints**: [Bullet points of architectural context used]
 
 ## Security Review
-- **Status**: [Reviewed / Skipped]
+- **Status**: [Reviewed / Advisory / Blocked / Unavailable] — `Unavailable` means no independent Security Review ran; never report it as a pass.
 - **Constraints Found**: [Key security-architecture boundaries]
 - **Warnings**: [Any high-risk authorization or isolation issues]
 

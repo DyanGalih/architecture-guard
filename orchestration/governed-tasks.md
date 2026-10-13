@@ -202,6 +202,7 @@ The command MUST return:
 - **Relevant Decisions**: [List of historical constraints affecting these tasks]
 
 ## Security Task Review
+- **Status**: [Reviewed / Advisory / Blocked / Unavailable] — `Unavailable` means no independent Security Review ran; never report it as a pass.
 - **Missing Security Tasks**: [List of missing auth/val/audit tasks]
 - **Constraints**: [Key security boundaries to respect]
 

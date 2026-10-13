@@ -668,3 +668,25 @@ test('spec validation repair loops are bounded', () => {
   assert.match(orchestrationPrompt('governed-delivery.md'), /at most 2 repair attempts/);
   assert.match(orchestrationPrompt('governed-spec.md'), /at most 2 repair attempts/);
 });
+
+test('orchestration follow-up gates: implement preconditions, branch approval, honest security status, approved memory writes', () => {
+  const implement = orchestrationPrompt('governed-implement.md');
+  const step0 = implement.indexOf('### Step 0 — Preconditions');
+  assert.ok(step0 !== -1 && step0 < implement.indexOf('### Step 1 —'));
+  assert.match(implement, /MUST NOT implement on a protected branch/);
+  assert.match(implement, /\*\*Not blocked\*\*/);
+
+  for (const file of ['governed-delivery.md', 'governed-delivery-team.md']) {
+    const prompt = orchestrationPrompt(file);
+    assert.doesNotMatch(prompt, /MUST create and switch/, file);
+    assert.match(prompt, /create and switch to it only after explicit user approval/, file);
+    assert.match(prompt, /show the derived name and change container in the Write Approval Gate preview/, file);
+  }
+
+  for (const file of ['governed-plan.md', 'governed-tasks.md', 'governed-implement.md']) {
+    assert.match(orchestrationPrompt(file), /\[Reviewed \/ Advisory \/ Blocked \/ Unavailable\]/, file);
+  }
+
+  assert.doesNotMatch(orchestrationPrompt('governed-plan.md'), /handle user approval when its interface requires approval/);
+  assert.match(orchestrationPrompt('verify.md'), /If no blocking findings remain/);
+});

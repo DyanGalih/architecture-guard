@@ -59,9 +59,9 @@ Before the first mutation, resolve and preview the exact branch, change containe
 Before creating, planning, or modifying any active change:
 
 1. Run `git branch --show-current`.
-2. If the branch is `main`, `master`, `dev`, `staging`, or another protected branch:
-   - MUST create and switch to `feature/<change-name>`.
-   - MUST NOT continue on the protected branch.
+2. If the branch is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch:
+   - Include `feature/<change-name>` in the Write Approval Gate preview, and create and switch to it only after explicit user approval.
+   - If the user declines or branch creation fails, stop. MUST NOT continue on the protected branch.
 3. If already on a feature branch, reuse it.
 4. Preserve existing uncommitted changes; never reset or discard them.
 5. Report the selected branch before creating artifacts.
@@ -69,7 +69,7 @@ Before creating, planning, or modifying any active change:
 ## Phase 1 — Detect the Active Feature and Integrations
 
 1. Resolve the active work from the user's explicit path, adapter artifact paths, current branch metadata when supported, or one unambiguous result from {adapter_command:list-specs}, in that order.
-2. If no active feature directories exist (ignoring archives like `openspec/changes/archive/`), automatically derive a kebab-case name from the user's goal, execute {adapter_command:create-change}, then execute {adapter_command:create-spec} for that new active work. Stop before planning if either step fails or the resulting specification is empty.
+2. If no active feature directories exist (ignoring archives like `openspec/changes/archive/`), derive a kebab-case name from the user's goal, show the derived name and change container in the Write Approval Gate preview, and after approval execute {adapter_command:create-change}, then execute {adapter_command:create-spec} for that new active work. Stop before planning if either step fails or the resulting specification is empty.
 3. If an existing active feature is resolved but its specification is missing or empty, execute {adapter_command:create-spec} for that active work. Stop before planning if the command fails or the resulting specification remains empty.
 4. Do not guess when multiple active feature directories are plausible. Ask the user to identify the feature.
 5. Detect `flash-mem` as an MCP service. Do not inspect an SDD extension manifest for it.

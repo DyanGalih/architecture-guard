@@ -49,7 +49,16 @@ Provide a single command that ensures:
 
 ### Write Approval Gate
 
-Before the first mutation, resolve and preview the exact code, test, and task artifacts together with all planned implementation, test, and task-checkbox operations. Obtain explicit user approval, then allow routine writes already previewed within this implementation phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+Before the first mutation, resolve and preview the working branch and the exact code, test, and task artifacts together with all planned implementation, test, and task-checkbox operations. Obtain explicit user approval, then allow routine writes already previewed within this implementation phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+
+### Step 0 — Preconditions
+
+Check these before the Write Approval Gate preview; stop and report if any fails.
+
+1. **Branch**: Run `git branch --show-current`. If it is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch, include `feature/<change-name>` in the Write Approval Gate preview and create and switch to it only after explicit user approval. If the user declines or creation fails, stop; MUST NOT implement on a protected branch. Preserve existing uncommitted changes; never reset or discard them.
+2. **Tasks exist**: `{adapter_path:tasks}` exists and contains unchecked tasks. Otherwise stop and recommend {adapter_command:create-tasks} or the governed tasks workflow.
+3. **Not blocked**: Stop if the latest available governed plan, tasks, or delivery summary for this feature reports a `Blocked` plan, tasks, or Gate Status, or if `{adapter_path:tasks}` contains unresolved blocking (P0 or policy-designated) remediation tasks that are not part of this run. A simple proceed prompt cannot override this.
+4. **Not stale**: If `{adapter_path:spec}` or `{adapter_path:plan}` changed materially after `{adapter_path:tasks}` was produced, stop and recommend rerunning the governed tasks workflow. If no governed tasks or delivery summary exists to show the tasks were analyzed, say so and ask the user whether to analyze first or proceed.
 
 ### Step 1 — Detect Optional Integrations
 
@@ -223,6 +232,7 @@ The command MUST return:
 - **Relevant Decisions**: [Durable lessons applied during implementation]
 
 ## Security Review
+- **Status**: [Reviewed / Advisory / Blocked / Unavailable] — `Unavailable` means no independent Security Review ran; never report it as a pass.
 - **Findings**: [List of security vulnerabilities found]
 - **Constraints**: [Trust boundaries validated]
 - **Blocking Concerns**: [Policy-designated blocking security findings]
