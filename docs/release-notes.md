@@ -4,9 +4,11 @@
 - **Adapter location moved**: all adapters now install to `.architecture-guard/adapters/` instead of a project-root `adapters/` directory. Rerun `architecture-guard init` to upgrade; the installer flags the old `adapters/` directory but never deletes it.
 - `AGENTS.md`: an older unmarked Architecture Guard section is replaced in place even when other content surrounds it.
 - OpenSpec adapter branch creation now requires explicit user approval.
+- Rerunning `architecture-guard init` no longer overwrites `.architecture-guard/config.yml`: it updates `adapter` (and adds `presets` if missing) while keeping `context`, `repository_hygiene`, and comments. `init` also refuses to write budgeted-context settings into a constitution file.
 - `architecture-guard archive` follows `.architecture-guard/selected-adapter` before filesystem markers, accepts `spec-kit`/`none`, and refuses custom adapters instead of silently archiving as OpenSpec.
 - `validate-setup [target]` is implemented and adapter-aware (built-in or custom), checking resources through the CLI resolver so lean and vendored installs both pass; `create-fixtures <target>` generates the context-budget benchmark fixtures. The placeholder `test-install` command is removed, and `review-implementation` now reports `Unavailable` like `review-artifacts`.
 - `init --yes` no longer waits for stdin to close.
+- **Orchestration is SDD-tool-agnostic**: OpenSpec-specific text in the orchestration skills (change-id scope, `openspec validate`, `openspec/config.yaml`, standard constitution file names, spec template) moved into five new adapter keys — `project-config`, `constitution-set`, `change-scope`, `validate-spec`, `spec-template` — defined by every built-in adapter. **Custom adapters must add these keys**; `init` lists any that are missing. A test keeps tool names out of the orchestration skills and shared templates.
 - Delivery policy: the legacy Spec Kit extension (`commands/`) receives safety and breakage fixes only; new features ship in the standalone tool.
 
 ## 2.5.3

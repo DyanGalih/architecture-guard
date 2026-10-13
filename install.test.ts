@@ -368,7 +368,9 @@ test('materializes the selected adapter in the installed verification skill', ()
   const skillPath = path.join(cwd, '.codex/skills/ag-verify/SKILL.md');
   const skill = fs.readFileSync(skillPath, 'utf8');
   assert.doesNotMatch(skill, /\{adapter_(path|command):/);
-  assert.match(skill, /openspec\/changes\/<change>\/tasks\.md/);
+  assert.match(skill, /openspec\/changes\/\{change\}\/tasks\.md/);
+  assert.match(skill, /openspec\/constitution\.md, openspec\/architecture\.md/);
+  assert.match(skill, /openspec status --change "\$CHANGE_ID" --json/);
   assert.match(skill, /architecture-guard hygiene --json --target \./);
   assert.match(skill, /## Context Expansion/);
 
@@ -800,4 +802,48 @@ test('--yes does not wait for stdin to close', () => {
       else reject(new Error(`exit ${code}`));
     });
   });
+});
+
+test('governance config never shares a file with a constitution', () => {
+  for (const name of installerModule().BUILTIN_ADAPTERS) {
+    const content = fs.readFileSync(path.join(repoRoot, 'adapters', `${name}.md`), 'utf8');
+    const pathOf = (key) => (content.match(new RegExp(`^\\| ${key} \\| \`([^\`]+)\``, 'm')) || [])[1];
+    const config = pathOf('governance-config');
+    if (!config) continue;
+    for (const key of ['constitution', 'arch-constitution', 'security-constitution']) {
+      assert.notEqual(pathOf(key), config, `adapters/${name}.md maps governance-config onto ${key}`);
+    }
+  }
+  assert.match(fs.readFileSync(path.join(repoRoot, 'orchestration/init.md'), 'utf8'), /operational settings must not be written into a constitution/);
+});
+
+test('rerunning init keeps user settings in .architecture-guard/config.yml', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'], cwd);
+  const configPath = path.join(cwd, '.architecture-guard/config.yml');
+  fs.appendFileSync(configPath, '# team settings\ncontext:\n  mode: budgeted\nrepository_hygiene:\n  fail_on:\n    - warning\n');
+
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'openspec', '--overwrite', 'replace', '--commands', 'init'], cwd);
+  const config = require('yaml').parse(fs.readFileSync(configPath, 'utf8'));
+  assert.equal(config.adapter, 'openspec');
+  assert.equal(config.context.mode, 'budgeted');
+  assert.deepEqual(config.repository_hygiene.fail_on, ['warning']);
+  assert.match(fs.readFileSync(configPath, 'utf8'), /# team settings/);
+});
+
+test('orchestration prompts and runtime templates stay SDD-tool-agnostic', () => {
+  const files = [
+    ...fs.readdirSync(path.join(repoRoot, 'orchestration')).filter(file => file.endsWith('.md')).map(file => path.join('orchestration', file)),
+    'templates/ponytail_core.md',
+    'templates/budgeted_context_sdd.md',
+    'templates/capability_composition.md',
+    'templates/agent_communication.md',
+    'flow/default.md',
+  ];
+  const sddSpecific = /\.specify|openspec|speckit|spec-kit|spec kit|CHANGE_ID/i;
+  for (const file of files) {
+    fs.readFileSync(path.join(repoRoot, file), 'utf8').split('\n').forEach((line, index) => {
+      assert.doesNotMatch(line, sddSpecific, `${file}:${index + 1} hard-codes SDD-tool details; use an adapter token instead`);
+    });
+  }
 });

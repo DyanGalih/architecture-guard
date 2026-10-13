@@ -277,6 +277,25 @@ function resolveCustomAdapter(name, targetDir) {
   return name;
 }
 
+// config.yml is also the adapters' governance-config, so keep the user's settings
+// (context budget, repository_hygiene, presets) and only update the installer-owned keys.
+function writeInstallerConfig(configPath, adapter) {
+  const YAML = require('yaml');
+  if (!fs.existsSync(configPath)) {
+    fs.writeFileSync(configPath, `adapter: ${adapter}\npresets: []\n`);
+    return;
+  }
+  const doc = YAML.parseDocument(fs.readFileSync(configPath, 'utf8'));
+  if (doc.errors.length || (doc.contents && !YAML.isMap(doc.contents))) {
+    console.log(`  ! ${configPath} is not a valid YAML mapping; left unchanged. Fix it, then rerun init to record adapter: ${adapter}.`);
+    return;
+  }
+  if (!doc.contents) doc.contents = doc.createNode({});
+  doc.set('adapter', adapter);
+  if (!doc.has('presets')) doc.set('presets', []);
+  fs.writeFileSync(configPath, String(doc));
+}
+
 function installAdapters(targetDir, preserve) {
   const adaptersDir = path.join(targetDir, '.architecture-guard', 'adapters');
   fs.mkdirSync(adaptersDir, { recursive: true });
@@ -885,8 +904,7 @@ async function runInit(targetDir, opts) {
   const adapter = framework === "none" ? "generic" : framework;
   installAdapters(targetDir, opts.overwrite === "skip" || opts.overwrite === "keep-both");
 
-  const configYml = `adapter: ${adapter}\npresets: []\n`;
-  fs.writeFileSync(path.join(runtimeDir, 'config.yml'), configYml);
+  writeInstallerConfig(path.join(runtimeDir, 'config.yml'), adapter);
   fs.writeFileSync(path.join(runtimeDir, 'selected-adapter'), `${adapter}\n`);
 
   if (adapter === 'generic') {
