@@ -6,11 +6,11 @@ description: Run team delivery with stakeholder approval of the User Story befor
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, read `.architecture-guard/adapters/resolve.md` to resolve the selected SDD adapter. Load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
-## OpenSpec Change Scope
+## Change Scope
 
-When the selected adapter is `openspec`, establish one `CHANGE_ID` before any OpenSpec artifact lookup or command. Resolve it from an explicit user-provided change, one unambiguous result from `openspec list --specs --json`, or a new kebab-case name approved for creation; create or reuse that change before continuing. Pass `--change "$CHANGE_ID"` to every `openspec instructions` and `openspec status` command, validate with `openspec validate "$CHANGE_ID" --strict`, and reuse the same id for every artifact and archive step. A capability name is not a change id. If no unambiguous change can be resolved, stop and ask the user rather than invoking an action with an empty `CHANGE_ID`.
+Before any SDD artifact lookup or command, establish the active change scope with {adapter_command:change-scope}. If no unambiguous scope can be resolved, stop and ask the user rather than continuing without one.
 
 ## Standalone Resource Resolution
 
@@ -67,11 +67,11 @@ Before creating, planning, or modifying any active change:
 ## Phase 1 — Detect the Active Feature and Integrations
 
 1. Resolve the active work from the user's explicit path, adapter artifact paths, current branch metadata when supported, or one unambiguous result from {adapter_command:list-specs}, in that order.
-2. If no active feature directories exist (ignoring archives like `openspec/changes/archive/`), automatically derive a kebab-case name from the user's goal and execute {adapter_command:create-change} before creating specification artifacts.
+2. If no active feature directories exist (ignoring archived or completed work), automatically derive a kebab-case name from the user's goal and execute {adapter_command:create-change} before creating specification artifacts.
 3. Do not guess when multiple active feature directories are plausible. Ask the user to identify the feature.
 4. Detect `flash-mem` as an MCP service. Do not inspect an SDD extension manifest for it.
 5. Detect Security Review as an independent host capability. It is not an SDD tool feature or extension; detect it only from host registrations.
-6. Resolve the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+6. Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 7. Load `.architecture-guard/config.yml` when present, then resolve the complete hygiene-rule set through `architecture-guard` and apply configured exclusions and effective severity at plan and task gates.
 
 ## Phase 2 — Mandatory Memory Preflight When Available

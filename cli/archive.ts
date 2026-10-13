@@ -34,22 +34,27 @@ export async function runArchive(changeName: string, options: ArchiveOptions = {
     return archiveOpenSpecChange(changeName, root, options.json === true);
 }
 
+// Accepts the installer's adapter names (spec-kit, none) as well as the historical CLI spelling (speckit).
+function normalizeFramework(name: string) {
+    const normalized = name === 'spec-kit' ? 'speckit' : name === 'none' ? 'generic' : name;
+    return frameworkSchema.parse(normalized);
+}
+
 async function resolveFramework(root: string, override?: string) {
-    if (override) return frameworkSchema.parse(override);
+    if (override) return normalizeFramework(override);
+
+    // The installer-selected adapter is authoritative; filesystem markers are only a fallback.
+    const selectedAdapterPath = path.join(root, '.architecture-guard', 'selected-adapter');
+    if (await exists(selectedAdapterPath)) {
+        const selected = (await readFile(selectedAdapterPath, 'utf8')).trim();
+        if (['generic', 'none', 'openspec', 'spec-kit'].includes(selected)) return normalizeFramework(selected);
+        reportError(`the archive CLI supports only the spec-kit, openspec, and generic adapters; selected adapter "${selected}" must archive through its own archive command`);
+    }
+
     const hasSpecKit = await exists(path.join(root, '.specify'));
     const hasOpenSpec = await exists(path.join(root, 'openspec', 'config.yaml'));
     if (hasSpecKit && hasOpenSpec) reportError('both SpecKit and OpenSpec markers are present; select an adapter explicitly');
     if (hasSpecKit) return 'speckit';
-    if (hasOpenSpec) return 'openspec';
-
-    const selectedAdapterPath = path.join(root, '.architecture-guard', 'selected-adapter');
-    if (await exists(selectedAdapterPath)) {
-        const selected = (await readFile(selectedAdapterPath, 'utf8')).trim();
-        if (selected === 'generic') return 'generic';
-        if (selected === 'openspec') return 'openspec';
-        if (selected === 'spec-kit') return 'speckit';
-    }
-
     return 'openspec';
 }
 
