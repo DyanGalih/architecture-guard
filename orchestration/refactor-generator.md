@@ -6,7 +6,7 @@ description: Convert architecture violations into non-blocking, structured refac
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, read `.architecture-guard/adapters/resolve.md` to resolve the selected SDD adapter. Load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
 ## Standalone Resource Resolution
 
@@ -35,7 +35,7 @@ Convert architecture violations into structured tasks that preserve delivery mom
 
 ## Flash-Mem-First Architecture Context Retrieval
 
-When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. After analysis, propose validated durable knowledge and write it only after explicit user approval. If retrieval is unavailable or insufficient, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before using repository artifacts. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. After analysis, propose validated durable knowledge and write it only after explicit user approval. If retrieval is unavailable or insufficient, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before using repository artifacts. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 
 Use the same normalized command context as the review workflow. When `mode=performance`, do not invent refactor tasks from performance guidance; that mode is advisory and belongs to `ag-review-implementation` output only.
 
@@ -43,8 +43,8 @@ Use the same normalized command context as the review workflow. When `mode=perfo
 
 Before generating refactor tasks, read these inputs explicitly with file-reading tools:
 
-1. **Manifest & Configuration**: Read `openspec/config.yaml` first when the OpenSpec adapter is active (otherwise read the selected adapter project configuration), then inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
-2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. For OpenSpec, explicitly check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+1. **Manifest & Configuration**: Read the selected adapter's project configuration (`{adapter_path:project-config}`) first, then inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
+2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. Explicitly check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 3. **Analysis Inputs**: Read the active review, specification, plan, task, and implementation-summary artifacts required by this skill.
 
 ## Command Normalization

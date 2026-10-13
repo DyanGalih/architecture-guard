@@ -94,8 +94,8 @@ For multi-artifact findings, resolution is performed in authoritative order (`sp
 ### Step 2: Additional Confirmation for Upstream Group
 If the **Upstream Group** contains findings:
 1. Present a grouped summary table of upstream findings organized by target artifact (`proposal.md`, `spec.md`).
-2. Prompt the user for confirmation: `"Proceed with upstream artifact fixes? [Y/n]"`
-3. If the user declines/rejects, mark all upstream findings as `skipped` in the final report and exit early.
+2. Prompt the user for confirmation: `"Proceed with upstream artifact fixes? [y/N]"`
+3. Proceed only on an explicit yes. If the user declines, gives no answer, or answers ambiguously, mark all upstream findings as `skipped` in the final report and exit early.
 
 ### Step 3: Upstream Delegation / Fallback Execution
 Upon user confirmation for the **Upstream Group**:

@@ -6,23 +6,22 @@ description: Verify implementation against specification, design, plan, tasks, a
 
 ## SDD Adapter Resolution
 
-Before executing command, resolve the project root as the directory containing `adapters/resolve.md` (normally the repository root). Read that file, then read the adapter selected by `.architecture-guard/config.yml` or `.architecture-guard/selected-adapter` from `adapters/openspec.md`, `adapters/spec-kit.md`, or `adapters/generic.md`. Do not run `architecture-guard resolve adapter ...`; `resolve` handles engine resources, while adapter files handle SDD paths and commands. Materialize every adapter token before executing the command body.
+Before executing command, resolve the project root as the directory containing `.architecture-guard/` (normally the repository root). Read `.architecture-guard/adapters/resolve.md`, then read the adapter selected by `.architecture-guard/selected-adapter` (or `.architecture-guard/config.yml`) from `.architecture-guard/adapters/<name>.md`, built-in or custom. Do not run `architecture-guard resolve adapter ...`; `resolve` handles engine resources, while adapter files handle SDD paths and commands. Materialize every adapter token before executing the command body.
 
 ## Adapter-Bound Artifact Contract
 
-The adapter files are installed at the project root. `.architecture-guard/selected-adapter` selects the adapter; it is not a substitute for `adapters/resolve.md` or the selected adapter file.
+The adapter files are installed under `.architecture-guard/adapters/`. `.architecture-guard/selected-adapter` selects the adapter; it is not a substitute for `.architecture-guard/adapters/resolve.md` or the selected adapter file.
 
-For OpenSpec, the concrete bindings are:
-- tasks: `openspec/changes/<change>/tasks.md`
-- plan/design: `openspec/changes/<change>/design.md`
-- spec: `openspec/changes/<change>/specs/<capability>/spec.md`
-- proposal: `openspec/changes/<change>/proposal.md`
-- governance and constitution manifest: `openspec/config.yaml` (read the `context` field first)
-- standard OpenSpec constitutions: `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md` when present
-- governance config: `.architecture-guard/config.yml`
+The selected adapter's bindings for this command are:
+- tasks: `{adapter_path:tasks}`
+- plan/design: `{adapter_path:plan}`
+- spec: `{adapter_path:spec}`
+- project configuration: `{adapter_path:project-config}` (read its `context` field first when it has one)
+- standard constitutions: {adapter_path:constitution-set}, when present
+- governance config: `{adapter_path:governance-config}`
 - hygiene runner: `architecture-guard hygiene --json --target .`
 
-Use the selected adapter as the authority for SpecKit and generic paths. Do not invent an OpenSpec `memory/architecture_constitution.md` path, and do not treat a capability name as a change identifier.
+Use the selected adapter as the authority for every path. Do not invent constitution paths the adapter does not map, and do not treat a capability name as a change identifier.
 
 ## Standalone Resource Resolution
 
@@ -67,11 +66,11 @@ This skill owns verification scope selection and the report. Do not run `archite
 Use exactly one scope and report it before findings:
 
 1. **Explicit Artifact Set** — Use user-supplied paths/change identifiers after confirming every required file exists.
-2. **Active Change** — When no explicit scope is supplied, use the selected adapter's active-change discovery. For OpenSpec, first establish `CHANGE_ID` from the explicit scope or one unambiguous result from `openspec list --specs --json`, then run `openspec status --change "$CHANGE_ID" --json`. If there are multiple active changes, ask the user to choose and never select by recency.
-3. **Git Diff Only (Degraded)** — If OpenSpec reports no active changes, do not inspect the archive and do not silently select the latest archived change. Run `architecture-guard detect-changed-files --json`. If files changed, verify boundary, constitution, security-architecture, and hygiene evidence against that diff, mark task and requirement coverage `Degraded` or `Not Applicable`, and do not report a full verification pass.
+2. **Active Change** — When no explicit scope is supplied, use the selected adapter's active-change discovery. Establish it with {adapter_command:change-scope}. If there are multiple active changes, ask the user to choose and never select by recency.
+3. **Git Diff Only (Degraded)** — If the adapter reports no active change, do not inspect the archive and do not silently select the latest archived change. Run `architecture-guard detect-changed-files --json`. If files changed, verify boundary, constitution, security-architecture, and hygiene evidence against that diff, mark task and requirement coverage `Degraded` or `Not Applicable`, and do not report a full verification pass.
 4. **Blocked** — If there is no explicit artifact set, no active change, and no changed files, stop with `Blocked: no verification scope`. Do not invent tasks, requirements, or implementation evidence.
 
-The same no-active-change rule applies to generic and SpecKit workflows when their adapter cannot identify an active artifact set. A historical or archived change is used only when the user explicitly names it.
+The same no-active-change rule applies whenever the adapter cannot identify an active artifact set. A historical or archived change is used only when the user explicitly names it.
 
 ## Goal
 
@@ -89,8 +88,8 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 
 1. Resolve explicit artifact paths from native user input first; otherwise discover existing artifacts by matching `{adapter_path:tasks}`, `{adapter_path:plan}`, and `{adapter_path:spec}`. If multiple active sets are plausible, ask the user instead of guessing. If an optional artifact is absent, use an adapter-documented fallback only for the checks it can support, record its provenance, and mark unsupported checks `Degraded` rather than inventing evidence.
 2. Resolve the selected artifact set to absolute paths without invoking SDD-tool-specific prerequisite scripts.
-3. Resolve the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec) and inspect its `context` block for every referenced governance and constitution Markdown file.
-4. Read every declared or present constitution, architecture, security, and layout Markdown file explicitly. Check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md` when present, plus every corresponding file resolved by the adapter path map. Never silently omit an existing file.
+3. Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`) and inspect its `context` block for every referenced governance and constitution Markdown file.
+4. Read every declared or present constitution, architecture, security, and layout Markdown file explicitly. Check {adapter_path:constitution-set} when present, plus every corresponding file resolved by the adapter path map. Never silently omit an existing file.
 5. Load the adapter-resolved Repository Hygiene Config: `{adapter_path:governance-config}` (falling back to its documented constitution block).
 6. Run `architecture-guard resolve hygiene-rules --list`, then resolve and load every returned hygiene rule in deterministic order. Workspace overrides replace same-named bundled rules.
    - **Direct Discovery Guard**: When checking adapter-resolved hidden paths such as `.architecture-guard/**`, use direct directory inspection first, then read listed files. A Glob/search no-match result is inconclusive and MUST NOT be reported as missing. Report a path as unavailable only after direct inspection confirms it does not exist. The verification report MUST explicitly list loaded rule files and counts. Missing optional hygiene rules are non-blocking.
@@ -206,7 +205,7 @@ For each task in `tasks.md`:
 ### Action Plan
 1. **Critical Gaps**: Address missing implementation for tasks [IDs] immediately.
 2. **Architecture Alignment**: Resolve boundary violations in [Files] using suggested refactor tasks.
-3. **Completion**: If all CRITICAL/HIGH findings are resolved, propose any validated Flash-Mem lessons and write them only after explicit user approval.
+3. **Completion**: If no blocking findings remain (Constitution P0, policy-blocking security, or blocking hygiene) and all CRITICAL/HIGH findings are resolved, propose any validated Flash-Mem lessons and write them only after explicit user approval.
 
 ### Claude Code Agent Teams Verification Protocol (When Active)
 Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:

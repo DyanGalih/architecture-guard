@@ -19,6 +19,8 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | plan | `specs/{feature}/plan.md` |
 | tasks | `specs/{feature}/tasks.md` |
 | security-constraints | `specs/{feature}/security-constraints.md` |
+| project-config | `.specify/memory/constitution.md` |
+| constitution-set | `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any layout constitution under `.specify/memory/` |
 | draft | `.architecture-guard/constitution.draft.md` |
 | ponytail-template | `.architecture-guard/templates/ponytail_core.md` |
 | capability-composition-template | `.architecture-guard/templates/capability_composition.md` |
@@ -36,6 +38,9 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | Canonical Key | SpecKit Invocation or Fallback |
 |---|---|
 | create-spec | `/speckit.specify`; if unavailable, create `{adapter_path:spec}` inline from user intent and governing context, enforcing SpecKit numbering rules (`NNN-<short-name>`) and updating `.specify/feature.json` |
+| change-scope | Resolve the active feature directory from the user's explicit path, then `feature_directory` in `.specify/feature.json`, then a single unambiguous `specs/NNN-*` directory. If several are plausible, ask; never pick by recency. Reuse the same feature directory for every phase. |
+| validate-spec | No native spec validator; check `{adapter_path:spec}` inline for the Spec Kit template sections, unique requirement IDs, and testable acceptance criteria |
+| spec-template | Use Spec Kit's own specification template through `/speckit.specify`, or `.specify/templates/spec-template.md` when creating the spec inline |
 | create-change | Require or create the feature workspace following `.specify/init-options.json` numbering conventions before specification creation, and maintain `.specify/feature.json` |
 | archive | SpecKit has no native archive command; retain verified feature artifacts in place and incrementally update `{adapter_path:fallback-spec-index}` with explicit user approval |
 | verify | Use the registered Architecture Guard verification capability, or run the verification workflow inline |

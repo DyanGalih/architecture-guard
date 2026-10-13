@@ -16,7 +16,7 @@ npx architecture-guard init . --agent opencode --framework spec-kit --commands a
 The installer adds:
 
 - Agent-native governance commands such as `ag-governed-spec`, `ag-review-artifacts`, and `ag-verify`.
-- `adapters/resolve.md` and `adapters/spec-kit.md`.
+- All adapters under `.architecture-guard/adapters/` (resolution preamble, built-in adapters, and any custom adapters you add).
 - Lean mode resolves runtime resources through the `architecture-guard` CLI; `--vendor` copies them under `.architecture-guard/`.
 - A managed Architecture Guard section in `AGENTS.md`.
 
@@ -56,7 +56,7 @@ Architecture Guard fills gaps around Spec Kit rather than replacing its native c
 
 ## Native Extension Compatibility
 
-Existing Spec Kit projects can continue using the `extension.yml` installation and `/speckit.ag-*` commands. This path is maintained for compatibility with the legacy extension workflow; standalone installation is preferred for new projects.
+Existing Spec Kit projects can continue using the `extension.yml` installation and `/speckit.architecture-guard.ag-*` commands (for example `/speckit.architecture-guard.ag-governed-plan`). This path is maintained for compatibility with the legacy extension workflow; standalone installation is preferred for new projects.
 
 The extension hooks are optional. In standalone mode, the agent-native command preambles explicitly instruct the agent when to run the equivalent governance checks.
 

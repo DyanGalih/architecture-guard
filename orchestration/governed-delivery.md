@@ -6,7 +6,7 @@ description: Resume governed delivery from an active specification through plan 
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Read `.architecture-guard/selected-adapter` directly when it exists, then load the matching `adapters/{tool}.md`. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. If either adapter file is missing or the persisted value is unsupported, report `Unavailable` with the exact path/value and stop before running an SDD command.
+Before executing command, read `.architecture-guard/adapters/resolve.md` to resolve the selected SDD adapter. Read `.architecture-guard/selected-adapter` directly when it exists, then load the matching `.architecture-guard/adapters/{tool}.md`. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. If either adapter file is missing or the persisted value is unsupported, report `Unavailable` with the exact path/value and stop before running an SDD command.
 
 ## Standalone Resource Resolution
 
@@ -26,11 +26,9 @@ Before continuing, you **MUST** resolve and apply the `ponytail_core` template w
 
 Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
 
-## OpenSpec Change Scope
+## Change Scope
 
-When the selected adapter is `openspec`, establish `CHANGE_ID` before any OpenSpec artifact lookup. Resolve it from an explicit user-provided change, one unambiguous active change from `openspec list --specs --json`, or a new kebab-case name approved for creation. Create or reuse that change first.
-
-Do not run `openspec instructions`, `openspec status`, or `openspec validate` before `CHANGE_ID` is set. Pass `--change "$CHANGE_ID"` to every `openspec instructions` and `openspec status` command. OpenSpec validation uses the change id as its item argument, so run `openspec validate "$CHANGE_ID" --strict` rather than an unscoped validate command. Reuse the same id for spec, design, task, analysis, verification, and archive operations. A capability name is not a change id.
+Before any SDD artifact lookup or command, establish the active change scope with {adapter_command:change-scope}. If no unambiguous scope can be resolved, stop and ask the user rather than continuing without one.
 
 ## Budgeted Context Contract
 
@@ -59,9 +57,9 @@ Before the first mutation, resolve and preview the exact branch, change containe
 Before creating, planning, or modifying any active change:
 
 1. Run `git branch --show-current`.
-2. If the branch is `main`, `master`, `dev`, `staging`, or another protected branch:
-   - MUST create and switch to `feature/<change-name>`.
-   - MUST NOT continue on the protected branch.
+2. If the branch is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch:
+   - Include `feature/<change-name>` in the Write Approval Gate preview, and create and switch to it only after explicit user approval.
+   - If the user declines or branch creation fails, stop. MUST NOT continue on the protected branch.
 3. If already on a feature branch, reuse it.
 4. Preserve existing uncommitted changes; never reset or discard them.
 5. Report the selected branch before creating artifacts.
@@ -69,15 +67,15 @@ Before creating, planning, or modifying any active change:
 ## Phase 1 — Detect the Active Feature and Integrations
 
 1. Resolve the active work from the user's explicit path, adapter artifact paths, current branch metadata when supported, or one unambiguous result from {adapter_command:list-specs}, in that order.
-2. If no active feature directories exist (ignoring archives like `openspec/changes/archive/`), automatically derive a kebab-case name from the user's goal, execute {adapter_command:create-change}, then execute {adapter_command:create-spec} for that new active work. Stop before planning if either step fails or the resulting specification is empty.
+2. If no active feature directories exist (ignoring archived or completed work), derive a kebab-case name from the user's goal, show the derived name and change container in the Write Approval Gate preview, and after approval execute {adapter_command:create-change}, then execute {adapter_command:create-spec} for that new active work. Stop before planning if either step fails or the resulting specification is empty.
 3. If an existing active feature is resolved but its specification is missing or empty, execute {adapter_command:create-spec} for that active work. Stop before planning if the command fails or the resulting specification remains empty.
 4. Do not guess when multiple active feature directories are plausible. Ask the user to identify the feature.
 5. Detect `flash-mem` as an MCP service. Do not inspect an SDD extension manifest for it.
 6. Detect Security Review as an independent host capability. It is not an SDD tool feature or extension; detect it only from host registrations.
-7. Resolve the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+7. Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 8. Load `.architecture-guard/config.yml` when present, then resolve the complete hygiene-rule set through `architecture-guard`. Apply configured exclusions and severity policy at the plan and task gates; missing optional hygiene configuration is non-blocking and must be reported.
 
-For OpenSpec, after a new or repaired spec is written, immediately run `openspec validate "$CHANGE_ID" --strict`. If validation fails, repair the spec using the schema-aware template before entering planning; do not continue with an invalid spec.
+After a new or repaired spec is written, immediately run {adapter_command:validate-spec}. If validation fails, repair the spec against {adapter_command:spec-template} and validate again, at most 2 repair attempts; if it still fails, stop before planning and report the remaining validation errors. Do not continue with an invalid spec.
 
 ## Phase 2 — Mandatory Memory Preflight When Available
 
@@ -119,7 +117,7 @@ If the plan is `review-required`, reuse it and run the applicable security plan 
 - Record advisory architecture drift without stopping.
 - Stop before task generation for unresolved P0 findings or security findings that governing policy marks blocking. P0 cannot be overridden by a simple proceed prompt.
 - Stop when resolution requires a material product or architecture choice.
-- When a safe correction is already authorized, repair the plan, rerun affected reviews, and continue.
+- When a safe correction is already authorized, repair the plan, rerun affected reviews, and continue, within the repair limit below.
 - Run plan-scope repository hygiene checks. Block only findings whose effective severity is configured to fail; report all others as advisory.
 
 The plan does not need to be perfect. It must be sufficiently stable and free of unresolved blocking findings.
@@ -146,6 +144,8 @@ Activate this protocol only when the Claude Code host exposes named teammate spa
 - **Human-in-the-Loop Gate**: Lead session presents the reconciled `tasks.md` and requires explicit human approval before concluding delivery or advancing to implementation.
 
 If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks.
+
+**Repair limit**: Allow at most 2 plan-repair cycles per run, counting both in-gate plan repairs and returns from analysis. If a plan defect remains after the second cycle, stop: set **Plan** to `Blocked`, report the unresolved defect and what each cycle changed, and ask the user how to proceed. Never generate tasks from a plan that is still defective.
 
 ## Phase 6 — Durable Memory Preservation
 

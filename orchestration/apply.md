@@ -8,7 +8,7 @@ Execute this workflow through {adapter_command:architecture-apply}; the token is
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter. Resolve the concrete paths for each available artifact before classifying findings.
+Before executing command, read `.architecture-guard/adapters/resolve.md` to resolve the selected SDD adapter. Load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter. Resolve the concrete paths for each available artifact before classifying findings.
 
 ## Standalone Resource Resolution
 
@@ -35,13 +35,13 @@ Resolve and apply the `capability_composition` template with `architecture-guard
 
 Before making decisions or delegating work, read these inputs explicitly with file-reading tools:
 
-1. **Manifest & Configuration**: Read `openspec/config.yaml` first when the OpenSpec adapter is active (otherwise read the selected adapter project configuration), then inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
-2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. For OpenSpec, explicitly check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+1. **Manifest & Configuration**: Read the selected adapter's project configuration (`{adapter_path:project-config}`) first, then inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
+2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. Explicitly check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 3. **Active Artifacts**: Read the feature, review, plan, task, or current-state artifacts required by this skill.
 
 You are applying approved architecture refactors for `architecture-guard`.
 When `flash-mem` is available, use it first to gather memory context, then prefer `memory-synthesis.md` and the approved architecture review output before editing plan or task artifacts. Otherwise, use the repository artifacts directly.
-If `flash-mem` is available, use the MCP-backed context preparation flow exposed by `flash-mem`; otherwise treat the legacy prepare-context alias as a compatibility path. Compatibility tool names such as `speckit_memory_*` are provided by `flash-mem` when the host still expects them. After applying changes, sync durable lessons or architecture decisions back into Flash-Mem when available.
+If `flash-mem` is available, use the MCP-backed context preparation flow exposed by `flash-mem`; otherwise treat the legacy prepare-context alias as a compatibility path. Compatibility tool names exposed by `flash-mem` may be used when the host still expects them. After applying changes, sync durable lessons or architecture decisions back into Flash-Mem when available.
 
 This is the write-capable companion to the review workflow. Use it when the team wants the architecture feedback reflected directly in planning artifacts instead of only receiving suggestions.
 
@@ -111,7 +111,7 @@ If the **Upstream Group** contains findings:
 
 ### Step 3: Upstream Delegation / Fallback Execution
 Upon user confirmation for the **Upstream Group**:
-1. **Native Delegation**: If the active SDD tool exposes a native update capability (e.g. `openspec-update-change` in OpenSpec), delegate the upstream findings to that capability with finding details as input context.
+1. **Native Delegation**: If the adapter's {adapter_command:architecture-apply} entry names a native update capability, delegate the upstream findings to that capability with finding details as input context.
 2. **AG-Native Fallback**: If the active SDD tool lacks a native update capability (e.g. generic mode), execute an inline AG-native artifact-fix following the exact same confirmation and authoritative-first ordering.
 3. **Propagation**: Ensure fixes are applied in authoritative order (`spec.md` first, then the adapter-resolved planning artifact, then `tasks.md` for coherence).
 

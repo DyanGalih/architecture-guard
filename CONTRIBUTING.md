@@ -19,20 +19,20 @@ examples/              ← Example architecture reports
 
 ### Prompt Changes
 
-Architecture Guard has two supported delivery channels:
+Architecture Guard has one primary product and one legacy channel:
 
-- `orchestration/` is authoritative for standalone installation and all cross-SDD behavior. It must use adapter tokens rather than hard-coded Spec Kit or OpenSpec commands.
-- `commands/` is the self-contained compatibility surface registered by `extension.yml` for the legacy Spec Kit extension. It may use Spec Kit-native paths and commands, but must preserve the same safety, approval, severity, memory, and governance rules as its orchestration counterpart.
+- **Standalone orchestration (primary)** — `orchestration/`, `adapters/`, and the CLI installer. It must work for every SDD tool: the built-in Spec Kit, OpenSpec, and generic adapters, and any custom adapter (see `ADAPTERS.md`). All new features are developed and delivered here.
+- **Legacy Spec Kit extension (limited support)** — `commands/` registered by `extension.yml`. It only needs to work with Spec Kit. It receives safety and breakage fixes only; do not backport new features, and feature parity with `orchestration/` is not expected.
 
-The files intentionally are not generated from one another: standalone prompts load adapters at runtime, while legacy extension prompts must remain self-contained.
+The files intentionally are not generated from one another: standalone prompts get adapter tokens resolved at install time, while legacy extension prompts must remain self-contained.
 
 When modifying a prompt:
 
-1. Make cross-SDD behavior changes in `orchestration/` first.
-2. Apply shared rule or safety changes to the same-name file in `commands/` without copying adapter placeholders into the legacy prompt.
-3. Keep SDD-specific invocation details in `adapters/`; only the legacy command may encode Spec Kit-native details directly.
-4. Run `npm test` to verify both delivery channels remain complete.
-5. If you add a command, add both prompt files and register the legacy file in `extension.yml` under `provides.commands`.
+1. Make behavior changes in `orchestration/`. Refer to SDD artifacts and commands through adapter tokens (`{adapter_path:<key>}`, `{adapter_command:<key>}`) rather than hard-coded Spec Kit or OpenSpec paths and commands.
+2. Put SDD-specific paths and invocations in the built-in adapters. A new adapter token is a contract change: define it in every built-in adapter, add it to the Required Keys list in `ADAPTERS.md` (the tests check both), and call it out in release notes because custom adapters must add it too.
+3. Change `commands/` only to fix a safety issue (for example, a write without approval) or something broken for Spec Kit users. Legacy prompts stay self-contained and must not use adapter tokens.
+4. Run `npm test`.
+5. If you add a command, add it to `orchestration/` and the installer's `COMMANDS` list. Add a legacy `commands/` file only if Spec Kit extension users need it.
 
 ### Adding Framework Presets
 
