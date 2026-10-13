@@ -174,7 +174,7 @@ Violations:
 
 ## Next Step
 
-Feed detected violations to `/ag-refactor-generator` so they can be converted into actionable refactor tasks.
+Feed detected violations to `/speckit.architecture-guard.ag-refactor-generator` so they can be converted into actionable refactor tasks.
 
 ## Framework Preset Guidance
 

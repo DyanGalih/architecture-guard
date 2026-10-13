@@ -18,7 +18,6 @@ program
 
 import { runInstallCommand } from '../cli/install';
 import { runDetectChangedFiles } from '../cli/detect-changed-files';
-import { runCheckArchitecture } from '../cli/check-architecture';
 import { runValidateSetup } from '../cli/validate-setup';
 import { runCreateContextBudgetFixtures } from '../cli/create-context-budget-fixtures';
 import { runTestInstall } from '../cli/test-install';
@@ -56,10 +55,6 @@ program
   .description('Detect staged, unstaged, and untracked files')
   .option('--json', 'Output results in JSON format')
   .action(runDetectChangedFiles);
-
-program
-  .command('check-architecture')
-  .action(runCheckArchitecture);
 
 program
   .command('validate-setup')

@@ -6,13 +6,7 @@ description: Review implementation code or pre-implementation planning artifacts
 
 ## SDD Adapter Resolution
 
-Before executing this command, read `.specify/extensions/architecture-guard/adapters/resolve.md` (or `adapters/resolve.md` in a standalone install or source checkout). Resolve the active adapter in this order:
-
-1. An explicit `--adapter` override, when provided.
-2. `.architecture-guard/selected-adapter`, which is authoritative after CLI installation.
-3. Filesystem markers only when no persisted selection exists.
-
-Load `.specify/extensions/architecture-guard/adapters/{tool}.md` (or `adapters/{tool}.md` in a standalone install or source checkout) and resolve every adapter path and command token (for example, tokens whose keys are `spec` and `verify`) before reviewing changed files or implementation artifacts. Stop if the adapter is missing or any token remains unresolved.
+This legacy Spec Kit extension command is self-contained: it uses Spec Kit paths directly and does not load SDD adapters or `.architecture-guard/selected-adapter`. For other SDD tools, use the standalone `architecture-guard` installer.
 
 ## Ponytail Core Contract
 
@@ -368,7 +362,7 @@ Findings categorized by severity based on the active hygiene rules.
 3. **Code Quality**: Address SonarLint findings that map to architectural concerns (if any).
 4. **DRY Alignment**: Centralize repeated business logic, validation, and mapping before duplicating it in another layer or module.
 5. **Durable Memory Preservation (Mandatory Check)**: Keep memory read-only during review. If new architectural patterns, decisions, or repeatable lessons were identified, include proposed entries in the report. After returning the report, request explicit approval in a separate interaction and write only approved entries.
-6. **Next Step**: [e.g. Dispatch the selected Security Review branch operation for security-first findings, or run `/ag-apply` for architecture fixes]
+6. **Next Step**: [e.g. Dispatch the selected Security Review branch operation for security-first findings, or run `/speckit.architecture-guard.ag-apply` for architecture fixes]
 7. **Remediation**: [Concrete remediation direction for the top issues, or "None needed"]
 
 ### Claude Code Agent Teams Review Protocol (When Active)
