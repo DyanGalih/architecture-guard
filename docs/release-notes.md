@@ -5,6 +5,8 @@
 - `AGENTS.md`: an older unmarked Architecture Guard section is replaced in place even when other content surrounds it.
 - OpenSpec adapter branch creation now requires explicit user approval.
 - `architecture-guard archive` follows `.architecture-guard/selected-adapter` before filesystem markers, accepts `spec-kit`/`none`, and refuses custom adapters instead of silently archiving as OpenSpec.
+- `validate-setup [target]` is implemented and adapter-aware (built-in or custom), checking resources through the CLI resolver so lean and vendored installs both pass; `create-fixtures <target>` generates the context-budget benchmark fixtures. The placeholder `test-install` command is removed, and `review-implementation` now reports `Unavailable` like `review-artifacts`.
+- `init --yes` no longer waits for stdin to close.
 - Delivery policy: the legacy Spec Kit extension (`commands/`) receives safety and breakage fixes only; new features ship in the standalone tool.
 
 ## 2.5.3
