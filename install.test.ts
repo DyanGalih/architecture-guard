@@ -631,3 +631,77 @@ test("openspec init does not create .architecture-guard/flow/", () => {
   const flowDir = path.join(cwd, ".architecture-guard", "flow");
   assert.strictEqual(fs.existsSync(flowDir), false, ".architecture-guard/flow/ should not exist for OpenSpec");
 });
+
+test('detect-changed-files includes committed branch work, renames, and untracked files', () => {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-git-'));
+  const git = (...args) => {
+    const result = spawnSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args], { cwd: repo, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+  };
+  git('init', '-q', '-b', 'main');
+  fs.writeFileSync(path.join(repo, 'a.txt'), 'a');
+  fs.writeFileSync(path.join(repo, 'b.txt'), 'b');
+  fs.writeFileSync(path.join(repo, 'gone.txt'), 'gone');
+  git('add', '.');
+  git('commit', '-q', '-m', 'base');
+  git('checkout', '-q', '-b', 'feature');
+  fs.mkdirSync(path.join(repo, 'src'));
+  fs.writeFileSync(path.join(repo, 'src', 'committed.txt'), 'c');
+  git('add', '.');
+  git('commit', '-q', '-m', 'feature work');
+  git('mv', 'b.txt', 'renamed.txt');
+  git('rm', '-q', 'gone.txt');
+  fs.writeFileSync(path.join(repo, 'a.txt'), 'changed');
+  fs.writeFileSync(path.join(repo, 'untracked.txt'), 'u');
+
+  const result = spawnSync(process.execPath, [installer, 'detect-changed-files', '--json'], { cwd: path.join(repo, 'src'), encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout), ['a.txt', 'renamed.txt', 'src/committed.txt', 'untracked.txt']);
+});
+
+test('validate-sync-config is a registered CLI command', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  fs.mkdirSync(path.join(cwd, '.architecture-guard'));
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/sync.yml'), 'provider: github\nrepo: org/repo\n');
+  const ok = spawnSync(process.execPath, [installer, 'validate-sync-config'], { cwd, encoding: 'utf8' });
+  assert.equal(ok.status, 0, ok.stderr);
+  assert.deepEqual(JSON.parse(ok.stdout), { provider: 'github', repo: 'org/repo', enabled: true });
+
+  fs.writeFileSync(path.join(cwd, 'bad.yml'), 'provider: gitlab\n');
+  const bad = spawnSync(process.execPath, [installer, 'validate-sync-config', 'bad.yml'], { cwd, encoding: 'utf8' });
+  assert.notEqual(bad.status, 0);
+
+  for (const dir of ['orchestration', 'commands']) {
+    const prompt = fs.readFileSync(path.join(__dirname, '..', dir, 'governed-delivery-team.md'), 'utf8');
+    assert.match(prompt, /npx architecture-guard validate-sync-config/);
+    assert.doesNotMatch(prompt, /src\/cli\//);
+  }
+});
+
+test('Sonar severities map onto the shared scale and the filter keeps MAJOR findings', () => {
+  const root = path.join(__dirname, '..');
+  const core = fs.readFileSync(path.join(root, 'templates/ponytail_core.md'), 'utf8');
+  const sonarRow = core.split('\n').find(line => line.startsWith('| Sonar rules bundle'));
+  assert.ok(sonarRow, 'Ponytail Core must define the Sonar severity mapping');
+  const bundle = JSON.parse(fs.readFileSync(path.join(root, 'sonar-rules/sonarlint-rules.json'), 'utf8'));
+  for (const severity of new Set(bundle.map(rule => rule.severity))) {
+    assert.match(sonarRow, new RegExp(`\\b${severity}\\b`), `unmapped Sonar severity ${severity}`);
+  }
+  for (const dir of ['orchestration', 'commands']) {
+    const prompt = fs.readFileSync(path.join(root, dir, 'review-implementation.md'), 'utf8');
+    assert.match(prompt, /MAJOR → MEDIUM/);
+    assert.doesNotMatch(prompt, /Keep only CRITICAL\/HIGH/);
+  }
+});
+
+test('hygiene severity and blocking follow the hygiene runner', () => {
+  const root = path.join(__dirname, '..');
+  const core = fs.readFileSync(path.join(root, 'templates/ponytail_core.md'), 'utf8');
+  assert.match(core.split('\n').find(line => line.startsWith('| Repository hygiene runner')) || '', /runner's `blocking` flag/);
+  for (const dir of ['orchestration', 'commands']) {
+    for (const name of ['review-implementation', 'review-artifacts']) {
+      const prompt = fs.readFileSync(path.join(root, dir, `${name}.md`), 'utf8');
+      assert.match(prompt, /\| Category \| Severity \| Blocking \|/, `${dir}/${name}.md`);
+    }
+  }
+});

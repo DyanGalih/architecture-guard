@@ -228,9 +228,9 @@ Return only this structure:
 (Always included if hygiene rules are evaluated)
 Findings categorized by severity based on the active hygiene rules.
 
-| Category | Severity | Location(s) | Summary | Recommendation |
-|:---|:---|:---|:---|:---|
-| [Rule Identifier] | [CRITICAL/HIGH/WARNING/INFO] | [File path] | [Finding explanation] | [Suggested action] |
+| Category | Severity | Blocking | Location(s) | Summary | Recommendation |
+|:---|:---|:---|:---|:---|:---|
+| [Rule Identifier] | [CRITICAL/WARNING/INFO, as the hygiene runner reports it] | [Yes/No, from the runner's `blocking` flag] | [File path] | [Finding explanation] | [Suggested action] |
 
 ---
 

@@ -101,7 +101,7 @@ Before engineering planning begins, generate a business-oriented User Story repr
 4. Persist the generated User Story as `<feature-name>.md` in the `<root>/user-stories/` directory with status `draft`.
 5. Present it for stakeholder review and stop before engineering planning until the user explicitly accepts it. Record the result as `approved` in the file.
 6. Once the User Story is approved, check for `.architecture-guard/sync.yml`. External synchronization is a separate side effect and requires explicit approval of the resolved provider, repository/project, and target before the first push:
-   - Run `npx tsx src/cli/validate-sync-config.ts` to strictly validate the configuration.
+   - Run `npx architecture-guard validate-sync-config .architecture-guard/sync.yml` to strictly validate the configuration; a non-zero exit means invalid.
    - If valid, enabled, and approved, use the recorded external ID/URL for this story when present and update that item instead of creating a duplicate. Otherwise create one item and persist its provider, target, ID/URL, story path, and content fingerprint in `.architecture-guard/sync_status.json`.
    - Skip a push when the same target and content fingerprint already succeeded.
    - On validation, approval, or provider failure, do not create/update an external item. Record `disabled`, `approval-required`, or `failed` with the target and error; warn without blocking local delivery. Never report success without a confirmed external ID/URL.

@@ -92,7 +92,7 @@ Before engineering planning begins, generate a business-oriented User Story repr
 4. Persist the generated User Story as `<feature-name>.md` in the `<root>/user-stories/` directory with status `draft`.
 5. Present it for stakeholder review and stop before engineering planning until the user explicitly accepts it. Record the result as `approved` in the file.
 6. Once the User Story is approved, check for the presence of `.architecture-guard/sync.yml`. If it exists:
-   - Run `npx tsx src/cli/validate-sync-config.ts` to strictly validate the configuration.
+   - Run `npx architecture-guard validate-sync-config .architecture-guard/sync.yml` to strictly validate the configuration; a non-zero exit means invalid.
    - If the configuration is valid and `enabled: true`, preview the configured provider and project/repository target and require explicit user approval of that target before any remote write.
    - Before creating anything, inspect `.architecture-guard/sync_status.json` and query the approved target for an existing item linked to this User Story. Reuse a confirmed match; never create a duplicate. Reruns with unchanged content and a confirmed remote ID are a no-op, while changed content updates that same remote item when supported.
    - After approval and duplicate checks, read the User Story content and create or update it through the configured provider (e.g., via `github-mcp-server`).
