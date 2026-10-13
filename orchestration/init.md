@@ -501,8 +501,8 @@ Budgeted mode is mainly useful when a repository has many historical feature spe
 
 If the user selects Budgeted:
 
-1. Create `{adapter_path:governance-config}` using the adapter's configuration format.
-2. Set `context.mode: budgeted`.
+1. If `{adapter_path:governance-config}` resolves to the same file as `{adapter_path:constitution}`, `{adapter_path:arch-constitution}`, or `{adapter_path:security-constitution}`, stop and report an adapter configuration error: operational settings must not be written into a constitution.
+2. Add a `context` block with `mode: budgeted` to `{adapter_path:governance-config}`, based on the bundled `architecture_guard_config.yml` template (`architecture-guard resolve template architecture_guard_config`). Merge into the existing file; keep its other keys (such as `adapter`, `presets`, and `repository_hygiene`). Omit `context.fallback_file`; the adapter's `fallback-spec-index` mapping governs the fallback location.
 3. Preserve the default retrieval limits unless the user explicitly requests different limits.
 4. If feature specs already exist, run the consolidation command for the active SDD tool after constitution generation is complete.
 
