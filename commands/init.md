@@ -41,9 +41,9 @@ Run this command once per project or whenever the constitution files need refine
 
 See the README quick start for brownfield and greenfield entrypoints.
 
-After init, the usual next step is `/ag-governed-plan` or `/ag-governed-tasks`, depending on whether the team wants planning or task generation next.
+After init, the usual next step is `/speckit.architecture-guard.ag-governed-plan` or `/speckit.architecture-guard.ag-governed-tasks`, depending on whether the team wants planning or task generation next.
 
-When Flash-Mem is available, prefer it first for retrieving prior decisions, summaries, and existing constitution context. The repository files remain the source of truth for constitution content, and the legacy `memory-hub` name is reference-only and should not be treated as the runtime backend. If Flash-Mem is unavailable or the context is incomplete, resolve the selected project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file and treat those repository files as the canonical source of truth. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. After refining the constitutions, sync durable summaries and major decisions back into Flash-Mem.
+When Flash-Mem is available, prefer it first for retrieving prior decisions, summaries, and existing constitution context. The repository files remain the source of truth for constitution content, and the legacy `memory-hub` name is reference-only and should not be treated as the runtime backend. If Flash-Mem is unavailable or the context is incomplete, resolve the selected project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file and treat those repository files as the canonical source of truth. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. After refining the constitutions, propose durable summaries and major decisions for Flash-Mem, show the exact entries, and write them only after explicit user approval.
 
 The goal is NOT to generate generic best practices.
 
@@ -441,7 +441,7 @@ If the user selects Budgeted:
 1. Create `.specify/config/architecture_guard.yml` from `.specify/extensions/architecture-guard/templates/architecture_guard_config.yml` (or `templates/architecture_guard_config.yml` in the extension source checkout).
 2. Set `context.mode: budgeted`.
 3. Preserve the default retrieval limits unless the user explicitly requests different limits.
-4. If feature specs already exist, run `/ag-consolidate-specs` after constitution generation is complete.
+4. If feature specs already exist, run `/speckit.architecture-guard.ag-consolidate-specs` after constitution generation is complete.
 
 If the user selects Targeted or gives no answer, preserve existing behavior. Do not add operational context settings to any constitution.
 

@@ -38,7 +38,7 @@ Then select:
 ### What Gets Installed
 
 - Command files in your agent's commands/skills directory
-- `adapters/resolve.md` and `adapters/openspec.md` in project root
+- All adapters under `.architecture-guard/adapters/` (resolution preamble, built-in adapters, and any custom adapters you add)
 - Lean mode resolves runtime resources through the `architecture-guard` CLI; `--vendor` copies templates, presets, hygiene rules, and Sonar rules under `.architecture-guard/`.
 - AGENTS.md managed Architecture Guard section (created or updated by init)
 

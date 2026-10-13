@@ -6,11 +6,11 @@ description: Generate and validate a technical plan with optional Flash-Mem cont
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing command, read `.architecture-guard/adapters/resolve.md` to resolve the selected SDD adapter. Load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
 
-## OpenSpec Change Scope
+## Change Scope
 
-When the selected adapter is `openspec`, establish one `CHANGE_ID` before any OpenSpec artifact lookup or command. Resolve it from an explicit user-provided change, one unambiguous result from `openspec list --specs --json`, or a new kebab-case name approved for creation; create or reuse that change before continuing. Pass `--change "$CHANGE_ID"` to every `openspec instructions` and `openspec status` command, validate with `openspec validate "$CHANGE_ID" --strict`, and reuse the same id for every artifact and archive step. A capability name is not a change id. If no unambiguous change can be resolved, stop and ask the user rather than invoking an action with an empty `CHANGE_ID`.
+Before any SDD artifact lookup or command, establish the active change scope with {adapter_command:change-scope}. If no unambiguous scope can be resolved, stop and ask the user rather than continuing without one.
 
 ## Standalone Resource Resolution
 
@@ -53,7 +53,7 @@ Before the first mutation, resolve and preview the exact target plan and constra
 
 ### Required Active Inputs
 
-Require an active `{adapter_path:spec}` and the complete set of applicable constitution inputs. Resolve the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. For optional split layouts, embedded rules in `{adapter_path:constitution}` satisfy the corresponding input. Ask for Generic paths when unresolved. If the active specification, governance rules, or architecture rules are missing, stop and direct the user to governed-spec or init as appropriate; if security rules are missing, report the gap and obtain explicit confirmation before continuing with baseline security validation.
+Require an active `{adapter_path:spec}` and the complete set of applicable constitution inputs. Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. For optional split layouts, embedded rules in `{adapter_path:constitution}` satisfy the corresponding input. Ask for Generic paths when unresolved. If the active specification, governance rules, or architecture rules are missing, stop and direct the user to governed-spec or init as appropriate; if security rules are missing, report the gap and obtain explicit confirmation before continuing with baseline security validation.
 
 ### Step 1 — Detect Optional Integrations
 
@@ -72,7 +72,7 @@ Check for the availability of:
 
 When Flash-Mem is available, use it first to gather the most relevant architectural context before plan generation. Prefer summary-first context and only expand into repository files when needed.
 
-If Flash-Mem is unavailable or the context is insufficient, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before continuing with repository artifacts. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+If Flash-Mem is unavailable or the context is insufficient, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before continuing with repository artifacts. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 
 When Flash-Mem MCP is unavailable but the Memory MD CLI detected in Step 1 is present, use that CLI for supported local context preparation, search, or synthesis before falling back to repository artifacts. Inspect its help once when command syntax is needed; do not search for an MCP wrapper or a global/shared publication tool.
 
@@ -109,7 +109,7 @@ You must orchestrate {adapter_command:create-plan} workflow directly.
 
    **If {adapter_command:create-plan} is not available as a registered command** (i.e., the AI agent does not recognize it as a slash command), fall back to inline planning:
    - Read the active spec at `{adapter_path:spec}` (or the path provided by the user).
-   - Resolve the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+   - Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
    - Use Flash-Mem context if available.
    - Generate `{adapter_path:plan}` directly, incorporating all context above and enforcing Ponytail minimalism.
    - Note in the Governance Summary that {adapter_command:create-plan} was unavailable and planning was performed inline.
@@ -121,7 +121,7 @@ Activate this protocol only when the Claude Code host exposes named teammate spa
 - **Analyst Reviewer** audits the artifacts against the constitutions, Ponytail pragmatism, DRY boundaries, and security constraints through host messaging.
 - **Lead Session** resolves review findings, synthesizes the final plan, and pauses for explicit human approval before task generation.
 
-3. The planning process must incorporate the Project Constitution documents and memory synthesis. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, read the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block, and explicitly read every declared or present governance, constitution, architecture, security, and layout Markdown file with file-reading tools. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, use every corresponding adapter-resolved path. Never silently omit an existing file or rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
+3. The planning process must incorporate the Project Constitution documents and memory synthesis. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, read the selected adapter project configuration first (`{adapter_path:project-config}`), inspect its `context` block, and explicitly read every declared or present governance, constitution, architecture, security, and layout Markdown file with file-reading tools. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file or rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
 4. Prefer the cached synthesis and selected index entries over reopening the full durable memory set.
 
 ### Step 4 — Security Review (Optional)
@@ -150,8 +150,8 @@ Detect any `Security-Architecture Conflict` or architectural drift. Explicitly v
 If the planning process or architecture validation identified new architectural patterns, critical decisions, or repeatable lessons:
 1. **Capability Gate**: Use a Flash-Mem write tool only when it is exposed by the host.
 2. **Approval Required**: Propose validated entries and write them only after explicit user approval.
-3. **Bounded Degradation**: Do not probe for Flash-Mem, `speckit_memory_share_lesson`, another MCP wrapper, or global/shared promotion when such a capability is not already exposed. Complete any available local capture or synthesis, report global promotion as unavailable, and finish the governed workflow.
-4. **Standard**: Do not silently write memory outside an available formal capture flow; let that flow propose entries and handle user approval when its interface requires approval.
+3. **Bounded Degradation**: Do not probe for Flash-Mem, SDD-tool memory wrappers, another MCP wrapper, or global/shared promotion when such a capability is not already exposed. Complete any available local capture or synthesis, report global promotion as unavailable, and finish the governed workflow.
+4. **Standard**: Never write memory silently. When a formal capture flow is available, use it to propose entries, but write only after the explicit user approval in item 2, even if the flow's own interface would not ask.
 
 ### Step 7 — Generate Governance Summary
 
@@ -191,7 +191,7 @@ The command MUST return:
 - **Key Constraints**: [Bullet points of architectural context used]
 
 ## Security Review
-- **Status**: [Reviewed / Skipped]
+- **Status**: [Reviewed / Advisory / Blocked / Unavailable] — `Unavailable` means no independent Security Review ran; never report it as a pass.
 - **Constraints Found**: [Key security-architecture boundaries]
 - **Warnings**: [Any high-risk authorization or isolation issues]
 

@@ -56,7 +56,7 @@ When Flash-Mem is available, use it first to gather the most relevant architectu
 
 ### Step 2.5 — Required Governance Inputs
 
-Require the complete set of applicable constitution inputs as active inputs. Read the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for SpecKit, check `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file. If governance or architecture rules are missing, stop and direct the user to `/ag-init`. If security rules are missing, report the gap and require explicit confirmation before continuing with baseline security checks and the available Security Review handoff.
+Require the complete set of applicable constitution inputs as active inputs. Read the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for SpecKit, check `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file. If governance or architecture rules are missing, stop and direct the user to `/speckit.architecture-guard.ag-init`. If security rules are missing, report the gap and require explicit confirmation before continuing with baseline security checks and the available Security Review handoff.
 
 ### Step 3 — Branch Management
 
@@ -69,7 +69,7 @@ Before generating the specification, you MUST ensure work happens on a feature b
 
 You must orchestrate the `/speckit.specify` workflow directly.
 
-1. **Seed from Discovery (if available)**: If a Discovery Summary Draft from `/ag-governed-discover` is available, use it as the seed input for specification generation instead of starting from scratch. Carry forward its architecture alignment, rejected options, assumptions, and open questions.
+1. **Seed from Discovery (if available)**: If a Discovery Summary Draft from `/speckit.architecture-guard.ag-governed-discover` is available, use it as the seed input for specification generation instead of starting from scratch. Carry forward its architecture alignment, rejected options, assumptions, and open questions.
 2. **Execute Specify**: Run `/speckit.specify` to generate and save `specs/<feature>/spec.md`.
 3. **Apply Ponytail Pragmatism**: Instruct the agent to prevent over-specified, "future-proofed" requirements. Keep the specification minimal and focused purely on the immediate needs (YAGNI).
 4. The specification process must incorporate the Project Constitution documents and memory synthesis. Use Flash-Mem first when available.
@@ -102,7 +102,7 @@ If the specification process or architecture validation identified new architect
 
 Produce a final `Governed Specification Summary` outlining memory context, architectural review status, and any violations found.
 
-If `context.mode` is `budgeted` and `stale_policy` is `regenerate`, run `/ag-consolidate-specs` after the specification and clarification changes are complete. If the policy is `targeted`, report that the existing fallback is stale and do not load it until refreshed.
+If `context.mode` is `budgeted` and `stale_policy` is `regenerate`, run `/speckit.architecture-guard.ag-consolidate-specs` after the specification and clarification changes are complete. If the policy is `targeted`, report that the existing fallback is stale and do not load it until refreshed.
 
 ### Step 9 — Interactive Auto-Fix Loop
 
@@ -134,7 +134,7 @@ The command MUST return:
 ## Recommended Actions
 - **Durable Memory Preservation**: (Proactively triggered) Review the proposed memory entries below.
 - *(If violations are present)* Ask the user if they want to trigger the auto-fix loop.
-- *(If no violations are present)* Suggest continuing to `/ag-governed-plan`.
+- *(If no violations are present)* Suggest continuing to `/speckit.architecture-guard.ag-governed-plan`.
 ```
 
 ## Guardrails

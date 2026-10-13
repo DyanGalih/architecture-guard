@@ -24,7 +24,9 @@ The JSON report lists every bundled rule and same-named local override, includin
 
 ## Configuration
 
-You can configure Repository Hygiene in your project by creating a `.specify/config/repository_hygiene.yml` file, or by embedding a `repository_hygiene:` block in your `.specify/memory/architecture_constitution.md` file.
+Put the `repository_hygiene:` block in `.architecture-guard/config.yml`, the governance config every built-in adapter maps (custom adapters may map another path). `architecture-guard init` keeps your settings in that file when it is rerun.
+
+For older setups the runner also reads, in order: `.specify/config/repository_hygiene.yml`, a `repository_hygiene` block in `openspec/config.yaml`, then one embedded in the Spec Kit constitutions. Prefer `.architecture-guard/config.yml`; `openspec/config.yaml` belongs to OpenSpec.
 
 Example configuration:
 
