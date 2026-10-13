@@ -736,3 +736,30 @@ test('AGENTS.md migrates an older unmarked section even when other content surro
   installerModule().appendAgentsMd(cwd, ['opencode']);
   assert.equal(fs.readFileSync(agentsPath, 'utf8'), once);
 });
+
+test('governance config never shares a file with a constitution', () => {
+  for (const name of installerModule().BUILTIN_ADAPTERS) {
+    const content = fs.readFileSync(path.join(repoRoot, 'adapters', `${name}.md`), 'utf8');
+    const pathOf = (key) => (content.match(new RegExp(`^\\| ${key} \\| \`([^\`]+)\``, 'm')) || [])[1];
+    const config = pathOf('governance-config');
+    if (!config) continue;
+    for (const key of ['constitution', 'arch-constitution', 'security-constitution']) {
+      assert.notEqual(pathOf(key), config, `adapters/${name}.md maps governance-config onto ${key}`);
+    }
+  }
+  assert.match(fs.readFileSync(path.join(repoRoot, 'orchestration/init.md'), 'utf8'), /operational settings must not be written into a constitution/);
+});
+
+test('rerunning init keeps user settings in .architecture-guard/config.yml', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'], cwd);
+  const configPath = path.join(cwd, '.architecture-guard/config.yml');
+  fs.appendFileSync(configPath, '# team settings\ncontext:\n  mode: budgeted\nrepository_hygiene:\n  fail_on:\n    - warning\n');
+
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'openspec', '--overwrite', 'replace', '--commands', 'init'], cwd);
+  const config = require('yaml').parse(fs.readFileSync(configPath, 'utf8'));
+  assert.equal(config.adapter, 'openspec');
+  assert.equal(config.context.mode, 'budgeted');
+  assert.deepEqual(config.repository_hygiene.fail_on, ['warning']);
+  assert.match(fs.readFileSync(configPath, 'utf8'), /# team settings/);
+});
