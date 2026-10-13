@@ -631,6 +631,43 @@ test("openspec init does not create .architecture-guard/flow/", () => {
   assert.strictEqual(fs.existsSync(flowDir), false, ".architecture-guard/flow/ should not exist for OpenSpec");
 });
 
+const orchestrationPrompt = (file) => fs.readFileSync(path.join(__dirname, '..', 'orchestration', file), 'utf8');
+
+test('governed-implement stops on Constitution P0 regardless of review severity', () => {
+  const tree = orchestrationPrompt('governed-implement.md').match(/### Step 5\.5[\s\S]*?```\n([\s\S]*?)```/)[1];
+  const firstCondition = tree.split('\n').find(line => line.startsWith('IF'));
+  assert.match(firstCondition, /P0/);
+  assert.match(firstCondition, /ANY review severity/);
+  assert.ok(tree.indexOf('P0') < tree.indexOf('CRITICAL or HIGH'), 'P0 must be checked before review severity');
+});
+
+test('governed-tasks evaluates the blocking gate before offering the advisory loop', () => {
+  const prompt = orchestrationPrompt('governed-tasks.md');
+  const gate = prompt.indexOf('**Blocking Gate (always evaluated first)**');
+  assert.ok(gate !== -1, 'missing blocking gate');
+  assert.ok(gate < prompt.indexOf('**Pause and Ask for Advisory Findings**'));
+  assert.match(prompt, /do not allow a simple proceed prompt to override it/);
+  assert.match(prompt, /\*\*Status\*\*: \[Ready \/ Advisory Findings \/ Blocked\]/);
+});
+
+test('governed delivery caps plan-repair cycles', () => {
+  for (const file of ['governed-delivery.md', 'governed-delivery-team.md']) {
+    assert.match(orchestrationPrompt(file), /at most 2 plan-repair cycles per run/, file);
+  }
+});
+
+test('consolidate-specs confirms before writing the fallback', () => {
+  const prompt = orchestrationPrompt('consolidate-specs.md');
+  const confirm = prompt.indexOf('**Confirm before writing**');
+  const write = prompt.indexOf('write the complete generated artifact');
+  assert.ok(confirm !== -1 && write !== -1 && confirm < write);
+});
+
+test('spec validation repair loops are bounded', () => {
+  assert.match(orchestrationPrompt('governed-delivery.md'), /at most 2 repair attempts/);
+  assert.match(orchestrationPrompt('governed-spec.md'), /at most 2 repair attempts/);
+});
+
 const repoRoot = path.join(__dirname, '..');
 const installerModule = () => require('./cli/install');
 

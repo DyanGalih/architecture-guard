@@ -86,7 +86,7 @@ You must orchestrate {adapter_command:create-spec} workflow directly.
 
 1. **Seed from Discovery (if available)**: If a Discovery Summary Draft from the governed-discover capability is available, use it as the seed input for specification generation instead of starting from scratch. Carry forward its architecture alignment, rejected options, assumptions, and open questions.
 2. **Execute Specify**: Run {adapter_command:create-spec} to generate and save the selected change-level capability spec at `{adapter_path:spec}`. First apply {adapter_command:spec-template}.
-3. **Validate Immediately**: Run {adapter_command:validate-spec} immediately after writing the spec. If it fails, stop the phase and repair the spec against the resolved template before clarification or planning.
+3. **Validate Immediately**: Run {adapter_command:validate-spec} immediately after writing the spec. If it fails, repair the spec against the resolved template and validate again, at most 2 repair attempts; if it still fails, stop the phase and report the remaining validation errors before clarification or planning.
 4. **Apply Ponytail Pragmatism**: Instruct the agent to prevent over-specified, "future-proofed" requirements. Keep the specification minimal and focused purely on the immediate needs (YAGNI).
 5. The specification process must incorporate the Project Constitution documents and memory synthesis. Use Flash-Mem first when available.
 
