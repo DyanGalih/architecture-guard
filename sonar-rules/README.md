@@ -1,90 +1,42 @@
 # SonarLint Rules Bundle
 
-This directory contains the bundled SonarLint rules used by the `ag-review-implementation` command during code quality scanning phase (Step 7b).
-The bundle is repository-native, not VS Code-specific, so any IDE or CLI that can read the repository can participate in the same scan.
-When this extension is installed into a project, the same bundle is available at `.specify/extensions/architecture-guard/.github/sonar-rules/`.
+The bundled rule set used by the `ag-review-implementation` skill during its optional code quality scan. It is repository-native and IDE-agnostic: any agent that can read the project can use it, with or without SonarLint installed.
 
-## Purpose
+## Where It Is Installed
 
-- **Offline access**: Rules are committed to git; no network required during review
-- **Deterministic results**: All team members use identical rule set
-- **Version control**: Rule changes are visible in git history
-- **Fallback**: If SonarQube server unavailable, use these rules
+| Install | Path |
+|---|---|
+| Standalone (`architecture-guard init`) | `.architecture-guard/sonar-rules/` (the adapter's `sonar-rules` path) |
+| Legacy Spec Kit extension | `.specify/extensions/architecture-guard/sonar-rules/` |
 
 ## Files
 
-- `sonarlint-rules.json` — Architecture-relevant rule set (template rules provided; regenerate with CLI)
-- `rules-manifest.json` — Metadata (version, date, language support, architecture rule count)
-- `README.md` — This file
+- `sonarlint-rules.json` — the rule set.
+- `rules-manifest.json` — version, verification source, language support, and rule count.
+- `README.md` — this file.
 
-## Initial Bundle
+## What Is Bundled
 
-The initial `sonarlint-rules.json` contains **18 representative architecture-relevant rules** covering:
-- Brain overload (high complexity, oversized functions/classes)
-- Coupling/dependencies (circular deps, tight coupling, public fields)
-- Structure (encapsulation, boundaries, naming consistency)
-- Performance anti-patterns (common architectural misuse)
+24 rules for Java, JavaScript, TypeScript, and Python that signal architecture problems rather than style:
 
-**These are template/example rules**, formatted as they would appear from SonarLint CLI output. They serve as working examples for the MVP. You can customize or replace them by:
-1. Running the extraction script to use real SonarLint CLI rules
-2. Manually editing to match your project's needs
+- **Brain overload / complexity** — cognitive and cyclomatic complexity, long functions, oversized files and classes.
+- **Dependency** — long parameter lists and, for Java, class coupling.
+- **Structure** — duplicated literals that often encode a rule or contract value with no single owner.
 
-## Updating Rules with Real SonarLint CLI
+Every `key`, `name`, and `severity` matches SonarSource's own rule metadata (sonar-java, SonarJS, sonar-python), verified on 2026-10-13. `severity` is SonarSource's default severity; the review maps it onto Architecture Guard's shared severity scale. `tags` are Architecture Guard categories used to group findings, not SonarSource tags. `description` explains the architecture signal and is Architecture Guard's own text.
 
-When ready, regenerate rules from actual SonarLint CLI (quarterly recommended):
+Style rules (formatting, naming) and TODO tracking are deliberately excluded; TODO markers are covered by the `todo-comments` hygiene rule.
 
-```bash
-# From repository root
-npx architecture-guard extract-sonar-rules --commit
-```
+## How It Is Used
 
-This will:
-1. Check for `sonarlint` CLI (`npm install -g sonarlint` if needed)
-2. Extract all available rules with `sonarlint --list-all-rules --format=json`
-3. Filter for architecture-relevant tags (coupling, complexity, structure, dependency, performance)
-4. Replace `sonarlint-rules.json` with actual extracted rules
-5. Update `rules-manifest.json` with version info
-6. Auto-commit if changes detected
+`ag-review-implementation` loads the bundle, applies it heuristically to the changed files (or runs SonarLint when a SonarLint tool is available), keeps findings related to complexity, coupling, or structure, suppresses duplicates of architecture violations, and reports them as a separate code quality section. Heuristic findings are labelled `Heuristic Sonar Rules Analysis`, never as SonarLint output.
 
-Commit the diff to track what changed in SonarLint:
+## Changing the Rules
 
-```bash
-git add .github/sonar-rules/
-git commit -m "chore: update SonarLint rules bundle"
-```
+Edit `sonarlint-rules.json` directly — for example, remove languages you do not use or add rules your team relies on. When adding a rule:
 
-## Customizing Rules Locally
+1. Use a real SonarSource key (`<language>:S<number>`), and copy its title and default severity from [rules.sonarsource.com](https://rules.sonarsource.com).
+2. Keep it architecture-relevant: complexity, size, coupling, or ownership. Do not add style or naming rules.
+3. Update `total_rules`, `architecture_rules_count`, and `language_support` in `rules-manifest.json`.
 
-You can also manually edit `sonarlint-rules.json` to:
-- Remove rules not relevant to your project
-- Reorder by severity or frequency
-- Add custom rule mappings
-- Document why each rule matters for your architecture
-
-## Architecture-Relevant Rule Tags
-
-The extraction script filters for these tags:
-
-- `brain-overload` — Function/class complexity (indicates untested/hidden boundaries)
-- `complexity` — Cyclomatic complexity (signals module coupling or oversized scope)
-- `dependency` — Dependency structure (detects cross-layer coupling)
-- `structure` — Code organization (indicators of boundary erosion)
-- `performance` — Performance anti-patterns (may signal architectural misuse)
-
-Pure style rules (formatting, naming conventions) are excluded.
-
-## Usage in ag-review-implementation
-
-The `ag-review-implementation` command Step 7b loads rules from this bundle and:
-
-1. Scans changed files with loaded rules
-2. Generates violations report
-3. Cross-correlates with architecture violations (suppresses duplicates)
-4. Produces combined output: "Architecture Violations" + "SonarLint Findings"
-
-## SonarQube Server Integration (Future)
-
-When SonarQube server integration is added (Phase 3b):
-- Init process will ask for SonarQube URL + token
-- At review time: Try server API first → fall back to CLI rules if unavailable
-- This bundle remains as permanent fallback
+Edits to an installed copy are replaced on the next `architecture-guard init`; keep project-specific changes under version control so they can be reapplied.
