@@ -178,3 +178,22 @@ test('generic archive rejects nonexistent change directory', async () => {
     }
 });
 
+
+test('archive follows the installer-selected adapter and accepts the spec-kit spelling', async () => {
+    const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-archive-adapter-test-'));
+    const originalCwd = process.cwd;
+    process.cwd = () => tmpdir;
+
+    try {
+        fs.mkdirSync(path.join(tmpdir, '.architecture-guard'), { recursive: true });
+        fs.writeFileSync(path.join(tmpdir, '.architecture-guard', 'selected-adapter'), 'my-sdd\n');
+        await assert.rejects(() => runArchive('feature'), /must archive through its own archive command/);
+
+        fs.mkdirSync(path.join(tmpdir, '.specify'), { recursive: true });
+        fs.writeFileSync(path.join(tmpdir, '.specify', 'feature.json'), JSON.stringify({ feature_directory: '../outside' }));
+        await assert.rejects(() => runArchive('feature', { framework: 'spec-kit' }), /must resolve under the project root/);
+    } finally {
+        process.cwd = originalCwd;
+        fs.rmSync(tmpdir, { recursive: true, force: true });
+    }
+});

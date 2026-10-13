@@ -6,7 +6,7 @@ description: Orchestrate governed specification with memory, framework-native sp
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. When the selected adapter is `openspec`, read `.architecture-guard/selected-adapter` directly and load `adapters/openspec.md`. Do not use the Architecture Guard resource resolver for adapter selection. Establish `CHANGE_ID` before any `openspec instructions`, `openspec status`, or `openspec validate` command; pass `--change "$CHANGE_ID"` to instructions/status and use `openspec validate "$CHANGE_ID" --strict` for validation.
+Before executing command, read `.architecture-guard/adapters/resolve.md` to resolve the selected SDD adapter. Read `.architecture-guard/selected-adapter` directly and load the selected adapter file. Do not use the Architecture Guard resource resolver for adapter selection. Establish the change scope with {adapter_command:change-scope} before any SDD command.
 
 ## Standalone Resource Resolution
 
@@ -65,7 +65,7 @@ When Flash-Mem is available, use it first to gather the most relevant architectu
 
 ### Step 2.5 — Required Governance Inputs
 
-Resolve the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. For Generic mode, ask the user for every unresolved required path and the destination specification path before continuing; resolve that destination as `{adapter_path:spec}` and never guess or write until it is supplied. For adapters with optional split files, rules embedded in `{adapter_path:constitution}` satisfy the corresponding input. If governance or architecture rules are missing entirely, stop and direct the user to the adapter-registered init capability. If security rules are missing, report the gap and require explicit user confirmation before continuing with baseline security checks and optional host Security Review.
+Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. For Generic mode, ask the user for every unresolved required path and the destination specification path before continuing; resolve that destination as `{adapter_path:spec}` and never guess or write until it is supplied. For adapters with optional split files, rules embedded in `{adapter_path:constitution}` satisfy the corresponding input. If governance or architecture rules are missing entirely, stop and direct the user to the adapter-registered init capability. If security rules are missing, report the gap and require explicit user confirmation before continuing with baseline security checks and optional host Security Review.
 
 ### Step 3 — Branch Management
 
@@ -85,8 +85,8 @@ Before generating the specification, you MUST ensure work happens on a feature b
 You must orchestrate {adapter_command:create-spec} workflow directly.
 
 1. **Seed from Discovery (if available)**: If a Discovery Summary Draft from the governed-discover capability is available, use it as the seed input for specification generation instead of starting from scratch. Carry forward its architecture alignment, rejected options, assumptions, and open questions.
-2. **Execute Specify**: Run {adapter_command:create-spec} to generate and save the selected change-level capability spec at `{adapter_path:spec}`. For OpenSpec, first resolve `architecture-guard resolve template openspec_spec` and use its schema-aware delta headings (`## ADDED Requirements`, `## MODIFIED Requirements`, and `## REMOVED Requirements`); never generate a top-level `## Requirements` section.
-3. **Validate Immediately**: For OpenSpec, run `openspec validate "$CHANGE_ID" --strict` immediately after writing the spec. If it fails, repair the spec against the resolved template and validate again, at most 2 repair attempts; if it still fails, stop the phase and report the remaining validation errors before clarification or planning.
+2. **Execute Specify**: Run {adapter_command:create-spec} to generate and save the selected change-level capability spec at `{adapter_path:spec}`. First apply {adapter_command:spec-template}.
+3. **Validate Immediately**: Run {adapter_command:validate-spec} immediately after writing the spec. If it fails, repair the spec against the resolved template and validate again, at most 2 repair attempts; if it still fails, stop the phase and report the remaining validation errors before clarification or planning.
 4. **Apply Ponytail Pragmatism**: Instruct the agent to prevent over-specified, "future-proofed" requirements. Keep the specification minimal and focused purely on the immediate needs (YAGNI).
 5. The specification process must incorporate the Project Constitution documents and memory synthesis. Use Flash-Mem first when available.
 
