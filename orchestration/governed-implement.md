@@ -143,16 +143,15 @@ Review implementation against:
 **Critical Decision Point**: Evaluate architecture and security findings independently for blocking issues.
 
 ```
-IF Architecture Review finds CRITICAL or HIGH violations:
-  IF Constitution marks violation as P0 (blocking):
-    STOP implementation
-    Surface violations in report
-    Return early with architecture remediation tasks; a simple proceed prompt cannot override P0
-  ELSE (violation is HIGH but not Constitution P0):
-    Continue with warning
-    Create non-blocking refactor tasks
-    Flag for post-merge remediation
-ELSE (no critical violations):
+IF the Constitution marks any architecture violation as P0 (blocking), at ANY review severity:
+  STOP implementation
+  Surface violations in report
+  Return early with architecture remediation tasks; a simple proceed prompt cannot override P0
+ELSE IF Architecture Review finds CRITICAL or HIGH violations:
+  Continue with warning
+  Create non-blocking refactor tasks
+  Flag for post-merge remediation
+ELSE:
   Continue to Step 6
 
 IF Security Review finds a policy-designated blocking violation:
@@ -195,12 +194,12 @@ Produce a final `Governed Implementation Summary`.
 - Continue to architecture review directly
 - Flag missing security implementation review in summary
 
-**Critical Architecture Violations Found**:
-- If Constitution marks as P0 (blocking):
+**Architecture Violations Found**:
+- If the Constitution marks any violation as P0 (blocking), regardless of its review severity:
   - STOP implementation workflow
   - Surface violations immediately
   - Return early with remediation guidance
-- If HIGH but not P0:
+- If CRITICAL or HIGH but not P0:
   - Continue with warning
   - Create non-blocking refactor tasks
   - Flag for post-merge remediation
@@ -260,5 +259,5 @@ If implementation repeatedly violates a standard because the standard is outdate
 
 - **Modular**: Do not mix security findings into a generic architecture list.
 - **Framework-Agnostic**: Maintain boundary concepts (Entry, Domain, Data).
-- **Non-Blocking**: Adhere to the non-blocking philosophy for architecture findings.
+- **Non-Blocking by Default**: Architecture findings are advisory unless the Constitution marks them P0 or policy designates them blocking; those always stop the workflow (Step 5.5).
 - **Memory-First**: Prefer cached synthesis and selected index entries before broad file reads.

@@ -44,11 +44,12 @@ Provide the adapter's compact offline fallback for Budgeted Architecture Context
 3. If no source specs exist, report that no fallback was generated and leave any existing fallback untouched unless the user explicitly authorizes replacing it.
 4. Read each source only far enough to extract its title or one-line purpose, requirement and acceptance-criteria identifiers, shared invariants, cross-feature dependencies, and explicit conflicts. Acceptance-criteria bodies remain in the source spec.
 5. Deduplicate only statements that are clearly identical. Keep similar statements separate. Never resolve conflicts or ambiguity silently.
-6. Write the complete generated artifact in one operation with the structure below. Keep feature entries to one line plus identifiers and provenance so the fallback does not become another full specification.
+6. **Confirm before writing**: Show the resolved output path, whether it creates or replaces an existing fallback, and a summary of the generated entries. Request explicit confirmation. If the user declines or does not confirm, return the generated content and source manifest without writing, and stop.
+7. Only after explicit confirmation, write the complete generated artifact in one operation with the structure below. Keep feature entries to one line plus identifiers and provenance so the fallback does not become another full specification.
 
 ## User Interaction and Result
 
-In Generic workflow mode, ask the user for source specification paths and the desired fallback output path when the adapter cannot resolve them. Before writing or replacing a fallback, show the resolved output path and request explicit confirmation. A decline or unsupported consolidation returns the available adapter-native index or source manifest without writing.
+In Generic workflow mode, ask the user for source specification paths and the desired fallback output path when the adapter cannot resolve them. Writing or replacing a fallback always requires the confirmation in step 6. A decline or unsupported consolidation returns the available adapter-native index or source manifest without writing.
 
 ## Required Output
 

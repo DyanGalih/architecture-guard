@@ -146,7 +146,7 @@ If the plan is `review-required`, reuse it and run the applicable security plan 
 - Record advisory architecture drift without stopping.
 - Stop before task generation for unresolved P0 findings or security findings that governing policy marks blocking. P0 cannot be overridden by a simple proceed prompt.
 - Stop when resolution requires a material product or architecture choice.
-- When a safe correction is already authorized, repair the plan, rerun affected reviews, and continue.
+- When a safe correction is already authorized, repair the plan, rerun affected reviews, and continue, within the repair limit below.
 - Run plan-scope hygiene checks and block only findings whose effective configured severity is failing.
 
 The plan does not need to be perfect. It must be sufficiently stable and free of unresolved blocking findings.
@@ -167,6 +167,8 @@ The governed task phase must:
 6. Run task-scope hygiene checks with the same exclusions and effective severity policy.
 
 If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks.
+
+**Repair limit**: Allow at most 2 plan-repair cycles per run, counting both in-gate plan repairs and returns from analysis. If a plan defect remains after the second cycle, stop: set **Plan** to `Blocked`, report the unresolved defect and what each cycle changed, and ask the user how to proceed. Never generate tasks from a plan that is still defective.
 
 ## Phase 7 — Durable Memory Preservation
 

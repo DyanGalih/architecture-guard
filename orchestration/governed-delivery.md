@@ -77,7 +77,7 @@ Before creating, planning, or modifying any active change:
 7. Resolve the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 8. Load `.architecture-guard/config.yml` when present, then resolve the complete hygiene-rule set through `architecture-guard`. Apply configured exclusions and severity policy at the plan and task gates; missing optional hygiene configuration is non-blocking and must be reported.
 
-For OpenSpec, after a new or repaired spec is written, immediately run `openspec validate "$CHANGE_ID" --strict`. If validation fails, repair the spec using the schema-aware template before entering planning; do not continue with an invalid spec.
+For OpenSpec, after a new or repaired spec is written, immediately run `openspec validate "$CHANGE_ID" --strict`. If validation fails, repair the spec using the schema-aware template and validate again, at most 2 repair attempts; if it still fails, stop before planning and report the remaining validation errors. Do not continue with an invalid spec.
 
 ## Phase 2 — Mandatory Memory Preflight When Available
 
@@ -119,7 +119,7 @@ If the plan is `review-required`, reuse it and run the applicable security plan 
 - Record advisory architecture drift without stopping.
 - Stop before task generation for unresolved P0 findings or security findings that governing policy marks blocking. P0 cannot be overridden by a simple proceed prompt.
 - Stop when resolution requires a material product or architecture choice.
-- When a safe correction is already authorized, repair the plan, rerun affected reviews, and continue.
+- When a safe correction is already authorized, repair the plan, rerun affected reviews, and continue, within the repair limit below.
 - Run plan-scope repository hygiene checks. Block only findings whose effective severity is configured to fail; report all others as advisory.
 
 The plan does not need to be perfect. It must be sufficiently stable and free of unresolved blocking findings.
@@ -146,6 +146,8 @@ Activate this protocol only when the Claude Code host exposes named teammate spa
 - **Human-in-the-Loop Gate**: Lead session presents the reconciled `tasks.md` and requires explicit human approval before concluding delivery or advancing to implementation.
 
 If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks.
+
+**Repair limit**: Allow at most 2 plan-repair cycles per run, counting both in-gate plan repairs and returns from analysis. If a plan defect remains after the second cycle, stop: set **Plan** to `Blocked`, report the unresolved defect and what each cycle changed, and ask the user how to proceed. Never generate tasks from a plan that is still defective.
 
 ## Phase 6 — Durable Memory Preservation
 

@@ -153,12 +153,14 @@ If the task generation or security review identified new architectural lessons o
 
 Produce a final `Governed Tasks Summary` for the user.
 
-### Step 9 — Automatic Analyst Loop
+### Step 9 — Blocking Gate and Automatic Analyst Loop
 
-If the analyst ({adapter_command:analyze}) finds any gaps, missing steps, or high severity issues in Step 6:
-1. **Pause and Ask**: Conclude your response by asking the user:
+1. **Blocking Gate (always evaluated first)**: If any finding from Steps 4–6 is a Constitution P0 architecture violation or an independently policy-designated blocking security finding, stop progression to implementation, set the summary's **Gate Status** to `Blocked`, surface the remediation tasks, and do not allow a simple proceed prompt to override it. Only resolving the finding, or an explicit Constitution change approved by the user, lifts the block.
+
+If the analyst ({adapter_command:analyze}) finds any remaining non-blocking gaps, missing steps, or high severity issues in Step 6:
+2. **Pause and Ask for Advisory Findings**: Conclude your response by asking the user:
    > *"The analyst found [number] gaps/severities in the tasks. Would you like me to automatically clarify and revise the tasks to address these findings?"*
-2. **Execute if Approved**: If the user answers "yes" (or equivalent) in their next message, you must:
+3. **Execute if Approved**: If the user answers "yes" (or equivalent) in their next message, you must:
    - Automatically rewrite `{adapter_path:tasks}` to resolve the detected gaps.
    - Present the clean result.
 
@@ -190,6 +192,10 @@ The command MUST return:
 
 ```markdown
 # Governed Tasks Summary
+
+## Gate Status
+- **Status**: [Ready / Advisory Findings / Blocked]
+- **Blocking Findings**: [Constitution P0 or policy-designated blocking findings, or None]
 
 ## Memory Context
 - **Status**: [Synthesized / Skipped / Missing]
