@@ -368,7 +368,9 @@ test('materializes the selected adapter in the installed verification skill', ()
   const skillPath = path.join(cwd, '.codex/skills/ag-verify/SKILL.md');
   const skill = fs.readFileSync(skillPath, 'utf8');
   assert.doesNotMatch(skill, /\{adapter_(path|command):/);
-  assert.match(skill, /openspec\/changes\/<change>\/tasks\.md/);
+  assert.match(skill, /openspec\/changes\/\{change\}\/tasks\.md/);
+  assert.match(skill, /openspec\/constitution\.md, openspec\/architecture\.md/);
+  assert.match(skill, /openspec status --change "\$CHANGE_ID" --json/);
   assert.match(skill, /architecture-guard hygiene --json --target \./);
   assert.match(skill, /## Context Expansion/);
 
@@ -735,4 +737,21 @@ test('AGENTS.md migrates an older unmarked section even when other content surro
 
   installerModule().appendAgentsMd(cwd, ['opencode']);
   assert.equal(fs.readFileSync(agentsPath, 'utf8'), once);
+});
+
+test('orchestration prompts and runtime templates stay SDD-tool-agnostic', () => {
+  const files = [
+    ...fs.readdirSync(path.join(repoRoot, 'orchestration')).filter(file => file.endsWith('.md')).map(file => path.join('orchestration', file)),
+    'templates/ponytail_core.md',
+    'templates/budgeted_context_sdd.md',
+    'templates/capability_composition.md',
+    'templates/agent_communication.md',
+    'flow/default.md',
+  ];
+  const sddSpecific = /\.specify|openspec|speckit|spec-kit|spec kit|CHANGE_ID/i;
+  for (const file of files) {
+    fs.readFileSync(path.join(repoRoot, file), 'utf8').split('\n').forEach((line, index) => {
+      assert.doesNotMatch(line, sddSpecific, `${file}:${index + 1} hard-codes SDD-tool details; use an adapter token instead`);
+    });
+  }
 });

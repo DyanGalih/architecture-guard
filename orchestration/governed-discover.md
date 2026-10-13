@@ -31,7 +31,7 @@ This command coordinates an architecture-aware brainstorming and discovery phase
 
 ## Flash-Mem-First Architecture Context Retrieval
 
-When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. If retrieval is unavailable or insufficient, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before using repository artifacts. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. If retrieval is unavailable or insufficient, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before using repository artifacts. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 
 ## Goal
 
@@ -53,7 +53,7 @@ Check for the availability of:
 **Detection Logic**:
 1. Detect `flash-mem` as an MCP-backed memory service in the current environment.
 2. Detect Security Review as an independent host capability, never from an SDD extension manifest. If present, note it for downstream security flagging.
-3. If either capability is missing, degrade gracefully. Without `flash-mem`, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+3. If either capability is missing, degrade gracefully. Without `flash-mem`, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 
 ### Step 2 — Architecture Context Retrieval
 
@@ -128,7 +128,7 @@ When the discussion is concluded and aligned, the command MUST return:
 - [Proposed decision/constraint/lesson, rationale, and intended Flash-Mem type; or "None"]
 
 ## Recommended Next Step
-To proceed to implementation and avoid a "Feature: Not selected" error, you must initialize the feature using the active SDD tool's workflow (e.g., creating a new OpenSpec change) before running a delivery phase.
+To proceed to implementation and avoid a "Feature: Not selected" error, you must initialize the feature using {adapter_command:create-change} before running a delivery phase.
 
 You can now run:
 1. The adapter-registered command to create a new change/feature (Suggested name: `<suggested-feature-name>`).
@@ -149,13 +149,13 @@ You can now run:
 
 **Without Flash-Mem MCP**:
 - Skip Step 2 (Architecture Context Retrieval from Flash-Mem)
-- Fall back to resolving the selected configuration first (`openspec/config.yaml` for OpenSpec), then reading every declared or present governance, architecture, security, and layout Markdown file directly. Do not silently omit an existing file.
+- Fall back to resolving the selected configuration first (`{adapter_path:project-config}`), then reading every declared or present governance, architecture, security, and layout Markdown file directly. Do not silently omit an existing file.
 
 **Without Security Review**:
 - Continue identifying and flagging all security-sensitive ideas
 - Note that external Security Review is unavailable in the Discovery Summary Draft
 
 **Minimal Viable Workflow** (only Architecture Guard):
-- Read the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), then every declared or present governance, architecture, security, and layout Markdown file directly. Do not silently omit an existing file.
+- Read the selected adapter's project configuration first (`{adapter_path:project-config}`), then every declared or present governance, architecture, security, and layout Markdown file directly. Do not silently omit an existing file.
 - Enter interactive discussion
 - Generate handoff draft
