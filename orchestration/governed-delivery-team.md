@@ -57,9 +57,9 @@ Before the first mutation, resolve and preview the exact branch, change containe
 Before creating, planning, or modifying any active change:
 
 1. Run `git branch --show-current`.
-2. If the branch is `main`, `master`, `dev`, `staging`, or another protected branch:
-   - MUST create and switch to `feature/<change-name>`.
-   - MUST NOT continue on the protected branch.
+2. If the branch is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch:
+   - Include `feature/<change-name>` in the Write Approval Gate preview, and create and switch to it only after explicit user approval.
+   - If the user declines or branch creation fails, stop. MUST NOT continue on the protected branch.
 3. If already on a feature branch, reuse it.
 4. Preserve existing uncommitted changes; never reset or discard them.
 5. Report the selected branch before creating artifacts.
@@ -67,7 +67,7 @@ Before creating, planning, or modifying any active change:
 ## Phase 1 — Detect the Active Feature and Integrations
 
 1. Resolve the active work from the user's explicit path, adapter artifact paths, current branch metadata when supported, or one unambiguous result from {adapter_command:list-specs}, in that order.
-2. If no active feature directories exist (ignoring archived or completed work), automatically derive a kebab-case name from the user's goal and execute {adapter_command:create-change} before creating specification artifacts.
+2. If no active feature directories exist (ignoring archived or completed work), derive a kebab-case name from the user's goal, show the derived name and change container in the Write Approval Gate preview, and after approval execute {adapter_command:create-change} before creating specification artifacts.
 3. Do not guess when multiple active feature directories are plausible. Ask the user to identify the feature.
 4. Detect `flash-mem` as an MCP service. Do not inspect an SDD extension manifest for it.
 5. Detect Security Review as an independent host capability. It is not an SDD tool feature or extension; detect it only from host registrations.
