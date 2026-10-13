@@ -20,7 +20,7 @@ npx architecture-guard validate-setup
 pnpx architecture-guard validate-setup
 ```
 
-The validator checks constitution files, Spec Kit structure, optional extensions, optimizer status, and source directories. It exits non-zero when blocking errors are present, which makes it safe to use in CI.
+Run it after `architecture-guard init`. The validator reads the selected adapter (built-in or custom) and checks that it defines every required key, that shared resources (Ponytail Core template, hygiene rules, Sonar rules) resolve from the CLI bundle or a local override, that the constitution files the adapter maps exist, that the governance config parses, and that `AGENTS.md` points at the adapter resolver. Pass a path to validate another project (`validate-setup ./path`). It exits non-zero when errors are present, which makes it safe to use in CI. Flash-Mem and Security Review are host capabilities, so the skills detect them at run time rather than the validator.
 
 ## Initialize Your Constitutions
 

@@ -168,7 +168,7 @@ repo: my-org/my-repo
 enabled: true
 ```
 
-The configuration is strictly validated during the workflow using the `validate-sync-config.ts` CLI tool to ensure security constraints on untrusted input are met.
+The configuration is strictly validated during the workflow using `architecture-guard validate-sync-config` to ensure security constraints on untrusted input are met.
 
 ### How it Works
 1. Run `/ag-governed-delivery-team`.

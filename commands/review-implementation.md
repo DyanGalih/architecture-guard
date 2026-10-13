@@ -221,7 +221,7 @@ When delegating, write the sub-agent invocation prompt exactly like this:
 Task: Scan files against SonarLint rules.
 Target Files: [Comma-separated list of target files]
 Rules File: .specify/extensions/architecture-guard/sonar-rules/sonarlint-rules.json
-Expected Output: JSON list of CRITICAL/HIGH code quality violations mapped to architecture boundaries.
+Expected Output: JSON list of code quality violations whose Sonar severity is MAJOR or higher, with native and mapped severity (Ponytail Core Severity Scale), mapped to architecture boundaries.
 ```
 
 
@@ -230,7 +230,7 @@ Expected Output: JSON list of CRITICAL/HIGH code quality violations mapped to ar
 **If inline**:
 1. **Load Rules**: Read the rules bundle in order: `.specify/extensions/architecture-guard/sonar-rules/sonarlint-rules.json`, `.architecture-guard/sonar-rules/sonarlint-rules.json`, or source checkout `sonar-rules/sonarlint-rules.json`.
 2. **Scan Changed Files**: Apply the rules bundle heuristically to `changed_files`; label these findings `Heuristic Sonar Rules Analysis`. Label findings as actual `SonarLint` output only when a SonarLint tool was invoked and returned them.
-3. **Filter Results**: Keep only CRITICAL/HIGH severity findings related to complexity, coupling, structure
+3. **Filter Results**: Map each finding's Sonar severity with the Ponytail Core Severity Scale (BLOCKER/CRITICAL → HIGH, MAJOR → MEDIUM, MINOR/INFO → LOW). Keep findings mapped to HIGH or MEDIUM that relate to complexity, coupling, or structure
 4. **Map to Boundaries**: Correlate findings with architecture boundaries (Entry/App/Domain/Data/External)
 5. **Deduplicate**: If a violation is already in architecture violations list, suppress from SonarLint output
 6. **Categorize**: Group findings by rule category (Brain Overload, Dependency Coupling, Structure Drift, Performance Anti-patterns)
@@ -260,7 +260,7 @@ Findings that correlate with architecture concerns:
 
 | Rule | Severity | File | Issue |
 |---|---|---|---|
-| [Rule Key] | [HIGH/CRITICAL] | [File:Line] | [Issue summary + recommended boundary fix] |
+| [Rule Key] | [HIGH/MEDIUM (Sonar native)] | [File:Line] | [Issue summary + recommended boundary fix] |
 ```
 
 **Note**: Pure style violations (formatting, naming conventions) are filtered out.
@@ -342,9 +342,9 @@ Findings that correlate with architecture concerns:
 (Always included if hygiene rules are evaluated)
 Findings categorized by severity based on the active hygiene rules.
 
-| Category | Severity | Location(s) | Summary | Recommendation |
-|:---|:---|:---|:---|:---|
-| [Rule Identifier] | [CRITICAL/HIGH/WARNING/INFO] | [File path] | [Finding explanation] | [Suggested action] |
+| Category | Severity | Blocking | Location(s) | Summary | Recommendation |
+|:---|:---|:---|:---|:---|:---|
+| [Rule Identifier] | [CRITICAL/WARNING/INFO, as the hygiene runner reports it] | [Yes/No, from the runner's `blocking` flag] | [File path] | [Finding explanation] | [Suggested action] |
 
 ---
 

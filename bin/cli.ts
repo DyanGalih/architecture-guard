@@ -18,9 +18,9 @@ program
 
 import { runInstallCommand } from '../cli/install';
 import { runDetectChangedFiles } from '../cli/detect-changed-files';
+import { runValidateSyncConfig } from '../cli/validate-sync-config';
 import { runValidateSetup } from '../cli/validate-setup';
 import { runCreateContextBudgetFixtures } from '../cli/create-context-budget-fixtures';
-import { runTestInstall } from '../cli/test-install';
 import { runReviewArtifacts } from '../cli/review-artifacts';
 import { runReviewImplementation } from '../cli/review-implementation';
 import { runArchive } from '../cli/archive';
@@ -30,7 +30,7 @@ program
   .description('Install governance commands')
   .option('-y, --yes', 'Non-interactive; --agent and --framework are required unless auto-detected')
   .option('--agent <names>', 'Comma-separated agent keys')
-  .option('--framework <f>', 'spec-kit | openspec | none')
+  .option('--framework <f>', 'spec-kit | openspec | none | <custom adapter name>')
   .option('--commands <list>', 'Comma-separated command names, indices, or aliases (all, review)')
   .option('--overwrite <mode>', 'replace | skip | keep-both')
   .option('--vendor', 'Copy immutable runtime resources locally (for air-gapped setups)')
@@ -52,21 +52,25 @@ program
 
 program
   .command('detect-changed-files')
-  .description('Detect staged, unstaged, and untracked files')
+  .description('Detect files changed since the merge-base with the default branch, plus staged, unstaged, and untracked files')
   .option('--json', 'Output results in JSON format')
+  .option('--base <ref>', 'Compare against this ref instead of the default branch')
   .action(runDetectChangedFiles);
 
 program
-  .command('validate-setup')
+  .command('validate-sync-config [path]')
+  .description('Strictly validate the external sync configuration (default: .architecture-guard/sync.yml)')
+  .action(runValidateSyncConfig);
+
+program
+  .command('validate-setup [target]')
+  .description('Check the selected adapter, resolvable resources, constitutions, and governance config (exits non-zero on errors)')
   .action(runValidateSetup);
 
 program
-  .command('create-fixtures')
+  .command('create-fixtures <target>')
+  .description('Generate context-budget benchmark fixtures into an empty directory')
   .action(runCreateContextBudgetFixtures);
-
-program
-  .command('test-install')
-  .action(runTestInstall);
 
 program
   .command('review-artifacts')
@@ -82,7 +86,7 @@ program
   .command('archive <changeName>')
   .description('Finalize or archive a completed SDD feature')
   .option('--json', 'Output a machine-readable result')
-  .option('--framework <framework>', 'Override detection: speckit | openspec')
+  .option('--framework <framework>', 'Override the selected adapter: spec-kit | openspec | generic')
   .action(async (changeName, options) => { await runArchive(changeName, options); });
 
 import { runHygiene } from '../cli/hygiene';

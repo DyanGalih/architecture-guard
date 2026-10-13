@@ -6,13 +6,13 @@ description: Review implementation code or pre-implementation planning artifacts
 
 ## SDD Adapter Resolution
 
-Before executing this command, read `adapters/resolve.md`. Resolve the active adapter in this order:
+Before executing this command, read `.architecture-guard/adapters/resolve.md`. Resolve the active adapter in this order:
 
 1. An explicit `--adapter` override, when provided.
 2. `.architecture-guard/selected-adapter`, which is authoritative after CLI installation.
 3. Filesystem markers only when no persisted selection exists.
 
-Load `adapters/{tool}.md` and resolve every adapter path and command token (for example, tokens whose keys are `spec` and `verify`) before reviewing changed files or implementation artifacts. Stop if the adapter is missing or any token remains unresolved.
+Load `.architecture-guard/adapters/{tool}.md` and resolve every adapter path and command token (for example, tokens whose keys are `spec` and `verify`) before reviewing changed files or implementation artifacts. Stop if the adapter is missing or any token remains unresolved.
 
 ## Standalone Resource Resolution
 
@@ -110,14 +110,11 @@ This pattern ensures that lower-tier models follow strict execution paths instea
 Review any available artifacts from these common locations. **IMPORTANT**: You MUST read these files explicitly using your file-reading tools (absolute or relative paths). Do not rely solely on workspace search or semantic indexers, as these files are often in `.gitignore` and may be excluded from default context:
 
 1. **Manifest & Configuration**:
-    - Resolve `{adapter_path:governance-config}` or the adapter-native project configuration first (`openspec/config.yaml` for OpenSpec). Inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
+    - Resolve `{adapter_path:governance-config}` or the adapter-native project configuration first (`{adapter_path:project-config}`). Inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
 
 2. **Authoritative Constitutions**:
     - Read every constitution, architecture, security, and layout Markdown file declared by the configuration or present in the adapter-resolved project paths. Explicitly check these standard files when present:
-        - `openspec/constitution.md` — Core governance, product identity, package model, and P0 rules.
-        - `openspec/architecture.md` — Layer boundaries, persistence, modularity, and API contracts.
-        - `openspec/security.md` — Trust boundaries, authorization, tenant isolation, and secret management.
-        - `openspec/layout.md` — UI/UX conventions, layout structure, and responsive presentation.
+        - {adapter_path:constitution-set} — core governance and P0 rules, layer boundaries and contracts, trust boundaries and secrets, and UI/layout conventions.
     - For other adapters, read every corresponding file resolved by the adapter path map, including any layout or UI constitution path it declares.
     - Include any additional Markdown files named by `context`. Missing optional files may be reported as absent, but an existing file must never be silently omitted.
 
@@ -125,7 +122,7 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
 
    Try Flash-Mem first. If the context is incomplete, read the repository constitution files with file-reading tools rather than workspace search alone.
 
-   If Flash-Mem is unavailable or the context is insufficient, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before continuing with repository artifacts. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+   If Flash-Mem is unavailable or the context is insufficient, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before continuing with repository artifacts. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 
 4. **Implementation Context**:
     - Active specification and planning artifacts (the exact filenames depend on the active SDD tool)
@@ -232,7 +229,7 @@ When delegating, write the sub-agent invocation prompt exactly like this:
 Task: Scan files against SonarLint rules.
 Target Files: [Comma-separated list of target files]
 Rules Source: [local override or bundled path reported by `architecture-guard resolve sonar-rules --json`]
-Expected Output: JSON list of CRITICAL/HIGH code quality violations mapped to architecture boundaries.
+Expected Output: JSON list of code quality violations whose Sonar severity is MAJOR or higher, with native and mapped severity (Ponytail Core Severity Scale), mapped to architecture boundaries.
 ```
 
 
@@ -241,7 +238,7 @@ Expected Output: JSON list of CRITICAL/HIGH code quality violations mapped to ar
 **If inline**:
 1. **Load Rules**: Run `architecture-guard resolve sonar-rules` and read the returned rules bundle. Do not probe SDD extension or source-checkout paths.
 2. **Scan Changed Files**: Apply the rules bundle heuristically to `changed_files`; label these findings `Heuristic Sonar Rules Analysis`. Label findings as actual `SonarLint` output only when a SonarLint tool was invoked and returned them.
-3. **Filter Results**: Keep only CRITICAL/HIGH severity findings related to complexity, coupling, structure
+3. **Filter Results**: Map each finding's Sonar severity with the Ponytail Core Severity Scale (BLOCKER/CRITICAL → HIGH, MAJOR → MEDIUM, MINOR/INFO → LOW). Keep findings mapped to HIGH or MEDIUM that relate to complexity, coupling, or structure
 4. **Map to Boundaries**: Correlate findings with architecture boundaries (Entry/App/Domain/Data/External)
 5. **Deduplicate**: If a violation is already in architecture violations list, suppress from SonarLint output
 6. **Categorize**: Group findings by rule category (Brain Overload, Dependency Coupling, Structure Drift, Performance Anti-patterns)
@@ -271,7 +268,7 @@ Findings that correlate with architecture concerns:
 
 | Rule | Severity | File | Issue |
 |---|---|---|---|
-| [Rule Key] | [HIGH/CRITICAL] | [File:Line] | [Issue summary + recommended boundary fix] |
+| [Rule Key] | [HIGH/MEDIUM (Sonar native)] | [File:Line] | [Issue summary + recommended boundary fix] |
 ```
 
 **Note**: Pure style violations (formatting, naming conventions) are filtered out.
@@ -352,9 +349,9 @@ Findings that correlate with architecture concerns:
 (Always included if hygiene rules are evaluated)
 Findings categorized by severity based on the active hygiene rules.
 
-| Category | Severity | Location(s) | Summary | Recommendation |
-|:---|:---|:---|:---|:---|
-| [Rule Identifier] | [CRITICAL/HIGH/WARNING/INFO] | [File path] | [Finding explanation] | [Suggested action] |
+| Category | Severity | Blocking | Location(s) | Summary | Recommendation |
+|:---|:---|:---|:---|:---|:---|
+| [Rule Identifier] | [CRITICAL/WARNING/INFO, as the hygiene runner reports it] | [Yes/No, from the runner's `blocking` flag] | [File path] | [Finding explanation] | [Suggested action] |
 
 ---
 
