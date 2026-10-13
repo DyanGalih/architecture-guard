@@ -6,7 +6,7 @@ description: Run the governed SDD lifecycle from discovery or an active change t
 
 ## SDD Adapter Resolution
 
-Before executing this command, read `adapters/resolve.md`, load the selected `adapters/{tool}.md`, and resolve all adapter path and command tokens used by each delegated phase.
+Before executing this command, read `.architecture-guard/adapters/resolve.md`, load the selected `.architecture-guard/adapters/{tool}.md`, and resolve all adapter path and command tokens used by each delegated phase.
 
 ## Standalone Resource Resolution
 
@@ -41,7 +41,7 @@ When the environment flag is present, explain that `.architecture-guard/agents.y
 
 ### Step 1 - Resolve the Starting Point
 
-1. Read Flash-Mem context when its tools are available; otherwise Resolve the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+1. Read Flash-Mem context when its tools are available; otherwise Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 2. Resolve any user-supplied change name and artifact paths before filesystem discovery.
 3. If the request is still exploratory or materially ambiguous, run the registered `ag-governed-discover` capability and use its Discovery Summary Draft as the specification seed.
 4. If no active specification exists, run the registered `ag-governed-spec` capability. Do not enter planning until specification creation and clarification succeed.
