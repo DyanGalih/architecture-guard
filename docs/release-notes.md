@@ -6,6 +6,7 @@
 - OpenSpec adapter branch creation now requires explicit user approval.
 - Rerunning `architecture-guard init` no longer overwrites `.architecture-guard/config.yml`: it updates `adapter` (and adds `presets` if missing) while keeping `context`, `repository_hygiene`, and comments. `init` also refuses to write budgeted-context settings into a constitution file.
 - `architecture-guard archive` follows `.architecture-guard/selected-adapter` before filesystem markers, accepts `spec-kit`/`none`, and refuses custom adapters instead of silently archiving as OpenSpec.
+- **Orchestration is SDD-tool-agnostic**: OpenSpec-specific text in the orchestration skills (change-id scope, `openspec validate`, `openspec/config.yaml`, standard constitution file names, spec template) moved into five new adapter keys — `project-config`, `constitution-set`, `change-scope`, `validate-spec`, `spec-template` — defined by every built-in adapter. **Custom adapters must add these keys**; `init` lists any that are missing. A test keeps tool names out of the orchestration skills and shared templates.
 - Delivery policy: the legacy Spec Kit extension (`commands/`) receives safety and breakage fixes only; new features ship in the standalone tool.
 
 ## 2.5.3

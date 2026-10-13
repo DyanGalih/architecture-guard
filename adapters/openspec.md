@@ -20,6 +20,8 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | tasks | `openspec/changes/{change}/tasks.md` |
 | proposal | `openspec/changes/{change}/proposal.md` |
 | security-constraints | `openspec/changes/{change}/security-constraints.md` |
+| project-config | `openspec/config.yaml` |
+| constitution-set | `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md` |
 | draft | `.architecture-guard/constitution.draft.md` |
 | ponytail-template | `.architecture-guard/templates/ponytail_core.md` |
 | capability-composition-template | `.architecture-guard/templates/capability_composition.md` |
@@ -49,6 +51,9 @@ When this adapter is selected, establish one `CHANGE_ID` before running any Open
 | Canonical Key | OpenSpec Invocation or Fallback |
 |---|---|
 | create-spec | Read `openspec instructions specs --change "$CHANGE_ID" --json`, resolve `architecture-guard resolve template openspec_spec`, then create the requested change-level specs inline and validate with `openspec validate "$CHANGE_ID" --strict`|
+| change-scope | Establish one `CHANGE_ID` before any OpenSpec artifact lookup or command: from an explicit user-provided change, one unambiguous active change from `openspec list --specs --json`, or a new kebab-case name approved for creation (create it with `openspec new change "$CHANGE_ID"` only after approval). If several are plausible, ask; never pick by recency or treat a capability name as a change id. Pass `--change "$CHANGE_ID"` to every `openspec instructions` and `openspec status` call, inspect progress with `openspec status --change "$CHANGE_ID" --json`, and reuse the same id for spec, design, task, analysis, verification, and archive steps. Stop and ask rather than run with an empty `CHANGE_ID`. |
+| validate-spec | Run `openspec validate "$CHANGE_ID" --strict` |
+| spec-template | Resolve `architecture-guard resolve template openspec_spec` and use its schema-aware delta headings (`## ADDED Requirements`, `## MODIFIED Requirements`, `## REMOVED Requirements`); never generate a top-level `## Requirements` section |
 | create-change | If the named change does not exist, run `openspec new change "$CHANGE_ID"`; otherwise reuse it|
 | archive | After explicit user approval and collision preflight, run `openspec archive "$CHANGE_ID" --yes`.|
 | verify | Run the installed `ag-verify` capability; if host dispatch is unavailable, run `openspec validate "$CHANGE_ID" --strict` and perform the inline task-to-code checks defined by `ag-verify`.|

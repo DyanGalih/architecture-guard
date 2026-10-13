@@ -20,6 +20,8 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | tasks | `changes/{change}/tasks.md` (or user-provided active task artifact path) |
 | proposal | `changes/{change}/proposal.md` (or user-provided proposal path) |
 | security-constraints | `changes/{change}/security-constraints.md` (or user-provided security constraints path, if any) |
+| project-config | `.architecture-guard/flow/default.md` |
+| constitution-set | `.architecture-guard/constitution.md`, `.architecture-guard/architecture.md`, `.architecture-guard/security.md`, plus any user-provided governance paths |
 | change-root | `changes/{change}/` |
 | flow-template | `.architecture-guard/flow/default.md` |
 | draft | `.architecture-guard/constitution.draft.md` |
@@ -38,6 +40,9 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | Canonical Key | Generic Invocation or Fallback |
 |---|---|
 | create-spec | Resolve `architecture-guard resolve flow default` and `architecture-guard resolve template generic_spec`, then create `{adapter_path:spec}` inline following the flow-template guidance |
+| change-scope | Use the user-selected active artifact set (default `changes/{change}/` from the flow template). If several are plausible, ask; never pick by recency. Reuse the same change for every phase. |
+| validate-spec | No native spec validator; check `{adapter_path:spec}` inline against the resolved spec template for required sections, unique requirement IDs, and testable acceptance criteria |
+| spec-template | Resolve `architecture-guard resolve template generic_spec` |
 | create-change | Ensure `{adapter_path:change-root}` directory exists; use the flow-defined or user-selected artifact paths |
 | archive | Run `architecture-guard archive <changeName> --framework generic` or move `{adapter_path:change-root}` to `changes/archive/{YYYY-MM-DD}-{change}/` after user confirmation |
 | verify | Run the Architecture Guard verification workflow against the active artifacts |
