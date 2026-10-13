@@ -1,164 +1,287 @@
 [
   {
-    "key": "java:S3972",
+    "key": "java:S3776",
+    "name": "Cognitive Complexity of methods should not be too high",
+    "type": "CODE_SMELL",
+    "severity": "CRITICAL",
+    "lang": "java",
+    "tags": [
+      "brain-overload",
+      "complexity"
+    ],
+    "description": "High cognitive complexity usually means one unit is coordinating several concerns; look for a hidden boundary to extract."
+  },
+  {
+    "key": "java:S1541",
+    "name": "Methods should not be too complex",
+    "type": "CODE_SMELL",
+    "severity": "CRITICAL",
+    "lang": "java",
+    "tags": [
+      "brain-overload",
+      "complexity"
+    ],
+    "description": "High cyclomatic complexity signals branching logic that may belong in separate policies or a domain service."
+  },
+  {
+    "key": "java:S138",
+    "name": "Methods should not have too many lines",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "java",
+    "tags": [
+      "brain-overload",
+      "structure"
+    ],
+    "description": "Long functions tend to mix orchestration with business rules; split along the boundary they cross."
+  },
+  {
+    "key": "java:S1448",
     "name": "Classes should not have too many methods",
     "type": "CODE_SMELL",
     "severity": "MAJOR",
     "lang": "java",
-    "tags": ["brain-overload", "structure"],
-    "description": "A class with too many methods is difficult to understand and maintain. Consider splitting responsibilities."
+    "tags": [
+      "brain-overload",
+      "structure"
+    ],
+    "description": "Classes with many methods usually own more than one responsibility; split along the boundary."
   },
   {
-    "key": "java:S1448",
-    "name": "Methods should not be too complex",
+    "key": "java:S1820",
+    "name": "Classes should not have too many fields",
     "type": "CODE_SMELL",
     "severity": "MAJOR",
     "lang": "java",
-    "tags": ["brain-overload", "complexity"],
-    "description": "The cyclomatic complexity of methods should not exceed a threshold. High complexity indicates hidden boundaries or mixed concerns."
+    "tags": [
+      "brain-overload",
+      "structure"
+    ],
+    "description": "Many fields indicate a class aggregating state that belongs to several components."
   },
   {
-    "key": "java:S1104",
-    "name": "Public fields should not be used",
+    "key": "java:S107",
+    "name": "Methods should not have too many parameters",
     "type": "CODE_SMELL",
     "severity": "MAJOR",
     "lang": "java",
-    "tags": ["structure", "dependency"],
-    "description": "Public fields violate encapsulation. Use accessors instead to maintain boundary contracts."
+    "tags": [
+      "brain-overload",
+      "dependency"
+    ],
+    "description": "Long parameter lists suggest a missing contract or value object at the boundary."
+  },
+  {
+    "key": "java:S1200",
+    "name": "Classes should not be coupled to too many other classes",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "java",
+    "tags": [
+      "dependency",
+      "structure"
+    ],
+    "description": "High efferent coupling signals cross-module leakage or a missing abstraction at a boundary."
   },
   {
     "key": "javascript:S3776",
     "name": "Cognitive Complexity of functions should not be too high",
     "type": "CODE_SMELL",
-    "severity": "MAJOR",
+    "severity": "CRITICAL",
     "lang": "javascript",
-    "tags": ["brain-overload", "complexity"],
-    "description": "High cognitive complexity indicates functions that do too much. Consider splitting into smaller, well-defined functions."
+    "tags": [
+      "brain-overload",
+      "complexity"
+    ],
+    "description": "High cognitive complexity usually means one unit is coordinating several concerns; look for a hidden boundary to extract."
   },
   {
-    "key": "javascript:S1116",
-    "name": "A callback function should not throw exceptions",
+    "key": "javascript:S1541",
+    "name": "Cyclomatic Complexity of functions should not be too high",
+    "type": "CODE_SMELL",
+    "severity": "CRITICAL",
+    "lang": "javascript",
+    "tags": [
+      "brain-overload",
+      "complexity"
+    ],
+    "description": "High cyclomatic complexity signals branching logic that may belong in separate policies or a domain service."
+  },
+  {
+    "key": "javascript:S138",
+    "name": "Functions should not have too many lines of code",
     "type": "CODE_SMELL",
     "severity": "MAJOR",
     "lang": "javascript",
-    "tags": ["structure"],
-    "description": "Unhandled exceptions in callbacks can indicate missing error boundary or poor isolation."
+    "tags": [
+      "brain-overload",
+      "structure"
+    ],
+    "description": "Long functions tend to mix orchestration with business rules; split along the boundary they cross."
+  },
+  {
+    "key": "javascript:S104",
+    "name": "Files should not have too many lines of code",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "javascript",
+    "tags": [
+      "brain-overload",
+      "structure"
+    ],
+    "description": "Oversized files often hold several modules' responsibilities; split by ownership boundary."
+  },
+  {
+    "key": "javascript:S107",
+    "name": "Functions should not have too many parameters",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "javascript",
+    "tags": [
+      "brain-overload",
+      "dependency"
+    ],
+    "description": "Long parameter lists suggest a missing contract or value object at the boundary."
   },
   {
     "key": "javascript:S1192",
     "name": "String literals should not be duplicated",
     "type": "CODE_SMELL",
-    "severity": "MINOR",
-    "lang": "javascript",
-    "tags": ["structure"],
-    "description": "Duplicated strings may indicate missing constants or enums at contract boundaries."
-  },
-  {
-    "key": "javascript:S6428",
-    "name": "Calling 'setState' directly in render",
-    "type": "CODE_SMELL",
     "severity": "CRITICAL",
     "lang": "javascript",
-    "tags": ["structure", "brain-overload"],
-    "description": "Setting state in render() indicates boundary violation between presentational and state management logic."
-  },
-  {
-    "key": "python:S1186",
-    "name": "Functions should not be empty",
-    "type": "CODE_SMELL",
-    "severity": "MINOR",
-    "lang": "python",
-    "tags": ["structure"],
-    "description": "Empty functions may indicate incomplete implementation or missing abstraction."
-  },
-  {
-    "key": "python:S3776",
-    "name": "Cognitive Complexity of functions should not be too high",
-    "type": "CODE_SMELL",
-    "severity": "MAJOR",
-    "lang": "python",
-    "tags": ["brain-overload", "complexity"],
-    "description": "High cognitive complexity indicates functions that do too much. Refactor into smaller, focused functions."
-  },
-  {
-    "key": "python:S100",
-    "name": "Function names should comply with a naming convention",
-    "type": "CODE_SMELL",
-    "severity": "MINOR",
-    "lang": "python",
-    "tags": ["structure"],
-    "description": "Inconsistent naming may indicate mixed concerns or missing module-level organization."
+    "tags": [
+      "structure"
+    ],
+    "description": "Repeated literals often encode a business rule or contract value that should have one owner."
   },
   {
     "key": "typescript:S3776",
     "name": "Cognitive Complexity of functions should not be too high",
     "type": "CODE_SMELL",
-    "severity": "MAJOR",
+    "severity": "CRITICAL",
     "lang": "typescript",
-    "tags": ["brain-overload", "complexity"],
-    "description": "Functions with high cognitive complexity often violate single responsibility principle."
+    "tags": [
+      "brain-overload",
+      "complexity"
+    ],
+    "description": "High cognitive complexity usually means one unit is coordinating several concerns; look for a hidden boundary to extract."
   },
   {
-    "key": "typescript:S6745",
-    "name": "Depending on component implementation details",
+    "key": "typescript:S1541",
+    "name": "Cyclomatic Complexity of functions should not be too high",
+    "type": "CODE_SMELL",
+    "severity": "CRITICAL",
+    "lang": "typescript",
+    "tags": [
+      "brain-overload",
+      "complexity"
+    ],
+    "description": "High cyclomatic complexity signals branching logic that may belong in separate policies or a domain service."
+  },
+  {
+    "key": "typescript:S138",
+    "name": "Functions should not have too many lines of code",
     "type": "CODE_SMELL",
     "severity": "MAJOR",
     "lang": "typescript",
-    "tags": ["dependency", "structure"],
-    "description": "Tests or code depending on component internals indicate tight coupling. Use public interfaces instead."
+    "tags": [
+      "brain-overload",
+      "structure"
+    ],
+    "description": "Long functions tend to mix orchestration with business rules; split along the boundary they cross."
+  },
+  {
+    "key": "typescript:S104",
+    "name": "Files should not have too many lines of code",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "typescript",
+    "tags": [
+      "brain-overload",
+      "structure"
+    ],
+    "description": "Oversized files often hold several modules' responsibilities; split by ownership boundary."
+  },
+  {
+    "key": "typescript:S107",
+    "name": "Functions should not have too many parameters",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "typescript",
+    "tags": [
+      "brain-overload",
+      "dependency"
+    ],
+    "description": "Long parameter lists suggest a missing contract or value object at the boundary."
   },
   {
     "key": "typescript:S1192",
     "name": "String literals should not be duplicated",
     "type": "CODE_SMELL",
-    "severity": "MINOR",
+    "severity": "CRITICAL",
     "lang": "typescript",
-    "tags": ["structure"],
-    "description": "Duplicated strings may indicate missing constants or enums at contract boundaries."
+    "tags": [
+      "structure"
+    ],
+    "description": "Repeated literals often encode a business rule or contract value that should have one owner."
   },
   {
-    "key": "typescript:S3973",
-    "name": "Cyclic module dependencies should be avoided",
+    "key": "python:S3776",
+    "name": "Cognitive Complexity of functions should not be too high",
+    "type": "CODE_SMELL",
+    "severity": "CRITICAL",
+    "lang": "python",
+    "tags": [
+      "brain-overload",
+      "complexity"
+    ],
+    "description": "High cognitive complexity usually means one unit is coordinating several concerns; look for a hidden boundary to extract."
+  },
+  {
+    "key": "python:S138",
+    "name": "Functions should not have too many lines of code",
     "type": "CODE_SMELL",
     "severity": "MAJOR",
-    "lang": "typescript",
-    "tags": ["dependency", "brain-overload"],
-    "description": "Circular dependencies create tight coupling and hidden boundaries. Refactor to eliminate cycles."
+    "lang": "python",
+    "tags": [
+      "brain-overload",
+      "structure"
+    ],
+    "description": "Long functions tend to mix orchestration with business rules; split along the boundary they cross."
   },
   {
-    "key": "common:S1219",
-    "name": "Catch exceptions instead of the generic Exception",
+    "key": "python:S104",
+    "name": "Files should not have too many lines of code",
     "type": "CODE_SMELL",
     "severity": "MAJOR",
-    "lang": "java,javascript,python,typescript",
-    "tags": ["structure"],
-    "description": "Catching generic exceptions indicates missing error boundary definition."
+    "lang": "python",
+    "tags": [
+      "brain-overload",
+      "structure"
+    ],
+    "description": "Oversized files often hold several modules' responsibilities; split by ownership boundary."
   },
   {
-    "key": "common:S6069",
-    "name": "Large files should be split",
+    "key": "python:S107",
+    "name": "Functions, methods and lambdas should not have too many parameters",
     "type": "CODE_SMELL",
     "severity": "MAJOR",
-    "lang": "java,javascript,python,typescript",
-    "tags": ["brain-overload", "structure"],
-    "description": "Large files often contain multiple responsibilities. Refactor into smaller, focused modules."
+    "lang": "python",
+    "tags": [
+      "brain-overload",
+      "dependency"
+    ],
+    "description": "Long parameter lists suggest a missing contract or value object at the boundary."
   },
   {
-    "key": "common:S1200",
-    "name": "Classes should not be too complex",
+    "key": "python:S1192",
+    "name": "String literals should not be duplicated",
     "type": "CODE_SMELL",
-    "severity": "MAJOR",
-    "lang": "java,javascript,python,typescript",
-    "tags": ["brain-overload", "complexity"],
-    "description": "Classes with high complexity often violate separation of concerns. Consider splitting into multiple classes."
-  },
-  {
-    "key": "common:S1135",
-    "name": "TODO/FIXME comments indicate incomplete boundary definition",
-    "type": "CODE_SMELL",
-    "severity": "MINOR",
-    "lang": "java,javascript,python,typescript",
-    "tags": ["structure"],
-    "description": "TODOs may indicate uncertain architectural boundaries. Clarify or document the decision."
+    "severity": "CRITICAL",
+    "lang": "python",
+    "tags": [
+      "structure"
+    ],
+    "description": "Repeated literals often encode a business rule or contract value that should have one owner."
   }
 ]

@@ -1031,3 +1031,24 @@ test('review skills treat analyzed content as untrusted data', () => {
     }
   }
 });
+
+test('Sonar rules bundle is consistent with its manifest and README', () => {
+  const dir = path.join(__dirname, '..', 'sonar-rules');
+  const rules = JSON.parse(fs.readFileSync(path.join(dir, 'sonarlint-rules.json'), 'utf8'));
+  const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'rules-manifest.json'), 'utf8'));
+  const readme = fs.readFileSync(path.join(dir, 'README.md'), 'utf8');
+  const repos = ['java', 'javascript', 'typescript', 'python'];
+
+  assert.equal(new Set(rules.map(rule => rule.key)).size, rules.length, 'duplicate rule keys');
+  for (const rule of rules) {
+    const [repo, id] = rule.key.split(':');
+    assert.ok(repos.includes(repo) && /^S\d+$/.test(id), `not a SonarSource key: ${rule.key}`);
+    assert.equal(rule.lang, repo, rule.key);
+    assert.ok(['BLOCKER', 'CRITICAL', 'MAJOR', 'MINOR', 'INFO'].includes(rule.severity), rule.key);
+    for (const tag of rule.tags) assert.ok(manifest.architecture_relevant_tags.includes(tag), `${rule.key}: unknown tag ${tag}`);
+  }
+  assert.equal(manifest.total_rules, rules.length);
+  assert.deepEqual(manifest.language_support, [...new Set(rules.map(rule => rule.lang))].sort());
+  assert.match(readme, new RegExp(`^${rules.length} rules`, 'm'));
+  assert.doesNotMatch(readme + JSON.stringify(manifest), /extract-sonar-rules|\.github\/sonar-rules/);
+});

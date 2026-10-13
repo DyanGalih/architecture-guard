@@ -1,24 +1,19 @@
 {
-  "version": "1.0.0",
-  "generated_at": "2026-05-07T00:00:00Z",
-  "sonarlint_cli_version": "bundled snapshot (user can update via architecture-guard extract-sonar-rules)",
+  "version": "2.0.0",
+  "generated_at": "2026-10-13T00:00:00Z",
+  "source": "Rule keys, titles, and default severities verified against SonarSource analyzer metadata (sonar-java, SonarJS, sonar-python) on 2026-10-13. Descriptions explain the architecture signal and are Architecture Guard's own.",
   "language_support": [
-    "javascript",
-    "typescript",
-    "python",
     "java",
-    "go",
-    "rust"
+    "javascript",
+    "python",
+    "typescript"
   ],
   "architecture_relevant_tags": [
     "brain-overload",
     "complexity",
     "dependency",
-    "structure",
-    "performance"
+    "structure"
   ],
-  "total_rules": 18,
-  "architecture_rules_count": 18,
-  "last_updated_by": "initial-bundle-template",
-  "note": "This is the initial bundled set of representative architecture-relevant rules (template format). Run architecture-guard extract-sonar-rules to replace with actual SonarLint CLI rules. These template rules are functional and ready to use for the MVP."
+  "total_rules": 24,
+  "architecture_rules_count": 24
 }
