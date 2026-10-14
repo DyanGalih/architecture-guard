@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Capability Composition
 
-Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation. On Spec Kit extension installs, resolve a capability `<capability>` to the registered `speckit.architecture-guard.ag-<capability>` command file in the agent's command directory, or to `.specify/extensions/architecture-guard/commands/<capability>.md`.
 
 ## Input & Context Loading
 
@@ -22,7 +22,7 @@ Before mapping the current system, read these inputs explicitly with file-readin
 
 Brownfield-first project initialization for existing codebases.
 
-Use this command when the repository already contains application code and you want to understand the current system before proposing structure, governance, or refactor work. After the current state is mapped, move to `/ag-init` if you need to define or refine constitutions before continuing into planning or implementation.
+Use this command when the repository already contains application code and you want to understand the current system before proposing structure, governance, or refactor work. After the current state is mapped, move to `/speckit.architecture-guard.ag-init` if you need to define or refine constitutions before continuing into planning or implementation.
 
 ## Goal
 
@@ -55,7 +55,7 @@ Create a reliable current-state baseline before any architectural or delivery gu
 - Establish a read-only baseline of current boundary drift, security-sensitive areas and trust boundaries, duplicated business rules or orchestration (DRY risk), and repository hygiene issues such as misplaced, generated, or temporary artifacts.
 - Ask for confirmation before suggesting broad refactors.
 - Recommend targeted mode for small spec sets. For larger histories, explain that budgeted mode queries Flash-Mem first, loads `specs/system_context.md` only as an offline fallback, and never replaces active feature artifacts.
-- If the user wants budgeted mode, record the recommendation in the brownfield output and hand it to `/ag-init`. Do not create configuration or generate `system_context.md` during this non-destructive mapping pass.
+- If the user wants budgeted mode, record the recommendation in the brownfield output and hand it to `/speckit.architecture-guard.ag-init`. Do not create configuration or generate `system_context.md` during this non-destructive mapping pass.
 - Do not promise token savings before representative measurement and do not write operational settings into constitution files.
 
 ## When to use

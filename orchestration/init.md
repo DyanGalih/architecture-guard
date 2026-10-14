@@ -4,7 +4,7 @@ description: Initialize or refine the project governance and architecture consti
 
 ## SDD Adapter Resolution
 
-Read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing this command, read `.architecture-guard/adapters/resolve.md` and resolve the adapter with its chain (explicit `--adapter` override, `.architecture-guard/selected-adapter`, `.architecture-guard/config.yml`, then filesystem markers), then load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Stop with `Unavailable` and the exact path if the adapter file is missing. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. Resolve every adapter path and command token before continuing; all paths and commands below use the loaded adapter.
 
 # Purpose
 
@@ -29,8 +29,8 @@ Resolve and apply the `capability_composition` template with `architecture-guard
 
 Before refining governance, read these inputs explicitly with file-reading tools:
 
-1. **Manifest & Configuration**: Read `openspec/config.yaml` first when the OpenSpec adapter is active (otherwise read the selected adapter project configuration), then inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
-2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. For OpenSpec, explicitly check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+1. **Manifest & Configuration**: Read the selected adapter's project configuration (`{adapter_path:project-config}`) first, then inspect it for references to further governance and constitution Markdown files (for example a `context` block). Never rely on a hardcoded partial list.
+2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. Explicitly check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 3. **Initialization Artifacts**: Read any constitution draft, existing governance configuration, and framework preset required by this skill.
 
 This command helps teams intentionally define:
@@ -56,7 +56,7 @@ See the README quick start for brownfield and greenfield entrypoints.
 
 After init, the usual next step is to run the applicable governance command for the active SDD tool (planning or task generation) via the orchestration flow.
 
-When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. The repository files remain the source of truth for constitution content, and the legacy `memory-hub` name is reference-only and should not be treated as the runtime backend. If Flash-Mem is unavailable or the context is incomplete, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file and treat those repository files as canonical. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. After refinement, use `capture_artifact_memory` for changed constitution artifacts and propose validated `add_memory` or `update_memory` entries for explicit approval. Ask permission before `update_project_summary` when a summary already exists.
+When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. The repository files remain the source of truth for constitution content, and the legacy `memory-hub` name is reference-only and should not be treated as the runtime backend. If Flash-Mem is unavailable or the context is incomplete, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file and treat those repository files as canonical. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. After refinement, propose `capture_artifact_memory` calls for changed constitution artifacts and validated `add_memory` or `update_memory` entries, and execute only those the user explicitly approves. Ask permission before any `update_project_summary` call.
 
 The goal is NOT to generate generic best practices.
 
@@ -204,10 +204,9 @@ Avoid duplication between both files.
 Users may need to pause the init workflow and resume later. Support this gracefully:
 
 **Pausing Mid-Interview**:
-1. Save current answers to `{adapter_path:draft}` with timestamp and completion percentage
-2. Ask user: "Do you want to resume these answers later?"
-3. If YES: Save draft and exit cleanly with resume instructions
-4. If NO: Confirm deletion or suggest next steps
+1. Ask user: "Do you want to save these answers to resume later?"
+2. If YES: Preview the target `{adapter_path:draft}` and the captured answers (with timestamp and completion percentage), then write the draft only after explicit approval and exit cleanly with resume instructions
+3. If NO: Write nothing; suggest next steps (and delete an existing draft only after explicit confirmation)
 
 **Resuming Saved Draft**:
 1. Detect `{adapter_path:draft}` on next init run
@@ -300,7 +299,7 @@ Should contain:
 
 ## Step 1 — Detect Existing Constitution Files
 
-Before assessing the existing state, read the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, and explicitly read every declared or present governance, constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, use the adapter-resolved constitution files. Never silently omit an existing file.
+Before assessing the existing state, read the selected adapter project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), and explicitly read every declared or present governance, constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 
 Check for:
 
@@ -312,7 +311,7 @@ Check for:
 
 ## Existing-State Rules
 
-Treat the OpenSpec governance artifact as complete only after reading the selected configuration context and every declared or present governance, constitution, architecture, security, and layout Markdown file. Explicitly check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md` when present. The architecture and security split files remain optional when their rules are embedded in the governance artifact; if either split exists, reconcile ownership and remove duplication only after approval.
+Treat the governance artifact as complete only after reading the selected configuration context and every declared or present governance, constitution, architecture, security, and layout Markdown file. Explicitly check {adapter_path:constitution-set} when present. The architecture and security split files remain optional when their rules are embedded in the governance artifact; if either split exists, reconcile ownership and remove duplication only after approval.
 
 | Existing state | Behavior |
 |---|---|
@@ -388,7 +387,7 @@ Determine:
 * runtime boundaries
 * application type
 * deployment shape
-* Generic adapter paths for `{adapter_path:constitution}`, `{adapter_path:arch-constitution}`, `{adapter_path:security-constitution}`, and any requested `{adapter_path:governance-config}` before generation
+* Unresolved user-provided paths (generic adapter only) for the constitution, architecture constitution, security constitution, and any requested governance configuration before generation; other adapters use their mapped paths
 
 ---
 
@@ -501,10 +500,10 @@ Budgeted mode is mainly useful when a repository has many historical feature spe
 
 If the user selects Budgeted:
 
-1. Create `{adapter_path:governance-config}` using the adapter's configuration format.
-2. Set `context.mode: budgeted`.
+1. If `{adapter_path:governance-config}` resolves to the same file as `{adapter_path:constitution}`, `{adapter_path:arch-constitution}`, or `{adapter_path:security-constitution}`, stop and report an adapter configuration error: operational settings must not be written into a constitution.
+2. Add a `context` block with `mode: budgeted` to `{adapter_path:governance-config}`, based on the bundled `architecture_guard_config.yml` template (`architecture-guard resolve template architecture_guard_config`). Merge into the existing file; keep its other keys (such as `adapter`, `presets`, and `repository_hygiene`). Omit `context.fallback_file`; the adapter's `fallback-spec-index` mapping governs the fallback location.
 3. Preserve the default retrieval limits unless the user explicitly requests different limits.
-4. If feature specs already exist, run the consolidation command for the active SDD tool after constitution generation is complete.
+4. If feature specs already exist, offer to run `ag-consolidate-specs` after constitution generation is complete; it follows {adapter_command:consolidate-specs} and writes only after its own confirmation.
 
 If the user selects Targeted or gives no answer, preserve existing behavior. Do not add operational context settings to any constitution.
 
@@ -793,8 +792,8 @@ Examples:
 Ask:
 
 ```text
-If the active adapter supports per-artifact rules (for example, OpenSpec rules), do you want lightweight checklists for proposal, specs, design, or tasks?
-(Note: OpenSpec rules must strictly map to schema artifact IDs: proposal, specs, design, tasks. Verification/testing rules belong in the shared context block.)
+If the active adapter's Constitution Layout supports per-artifact rules, do you want lightweight checklists for its artifacts?
+(Use only the rule keys the adapter's Constitution Layout allows. Verification/testing rules belong in the shared governance context.)
 (Skip if the active adapter lacks a per-artifact rule mechanism)
 ```
 
@@ -953,7 +952,7 @@ DO NOT generate final documents until:
 * enough information has been collected
 * OR the user explicitly requests a draft
 
-Before creating, modifying, deleting, moving, or scaffolding any file or directory, show the exact target paths and proposed operations and obtain explicit user approval. Interviewing, detection, analysis, and previews remain read-only. This applies to `{adapter_path:draft}`, team scaffolds, Generic user-provided paths, optional OpenSpec split files, and `{adapter_path:governance-config}`.
+Before creating, modifying, deleting, moving, or scaffolding any file or directory, show the exact target paths and proposed operations and obtain explicit user approval. Interviewing, detection, analysis, and previews remain read-only. This applies to `{adapter_path:draft}`, team scaffolds, Generic user-provided paths, optional split constitution files, and `{adapter_path:governance-config}`.
 
 ---
 
@@ -967,9 +966,13 @@ Generate or refine:
 
 When Budgeted Architecture Context Retrieval is selected, also generate `{adapter_path:governance-config}`. Missing configuration means targeted mode, preserving backward compatibility.
 
-If the `flash-mem` MCP server is available, propose changed-artifact captures and durable `add_memory` or `update_memory` entries, then execute only those the user explicitly approves. For major changes in architecture, boundaries, or governance rules, propose `update_project_summary`, asking permission before any update when a summary already exists. If Flash-Mem is unavailable, rely on repository files and continue without sync.
+If the `flash-mem` MCP server is available, propose changed-artifact captures and durable `add_memory` or `update_memory` entries, then execute only those the user explicitly approves. For major changes in architecture, boundaries, or governance rules, propose `update_project_summary` and call it only after explicit permission. If Flash-Mem is unavailable, rely on repository files and continue without sync.
 
 ---
+
+## Constitution Structures
+
+When the selected adapter's Constitution Layout section defines the section list for a file, the adapter's layout wins. The structures below are the default for files the adapter does not lay out, and a reference for optional sections (such as Useful File References) an adapter layout may add.
 
 ## `{adapter_path:constitution}` Structure
 
@@ -983,7 +986,7 @@ If the `flash-mem` MCP server is available, propose changed-artifact captures an
 7. High-Level Architecture Intent
 8. Governance and Evolution Policy
 9. Useful File References (optional)
-10. Per-Artifact Rules (e.g., OpenSpec rules block)
+10. Per-Artifact Rules (only when the adapter's Constitution Layout supports them)
 ```
 
 ---
@@ -1004,7 +1007,7 @@ If the `flash-mem` MCP server is available, propose changed-artifact captures an
 11. Architecture Evolution Policy
 12. Refactor & Drift Handling
 13. Useful File References (optional)
-14. Per-Artifact Rules (e.g., OpenSpec rules block)
+14. Per-Artifact Rules (only when the adapter's Constitution Layout supports them)
 ```
 
 ---
@@ -1070,7 +1073,6 @@ The generated constitutions must reflect intentional engineering decisions.
 
 The init interview produces framework-specific constitution files:
 
-- **SpecKit adapter**: Writes `{adapter_path:constitution}`, `{adapter_path:arch-constitution}`, `{adapter_path:security-constitution}`
-- **OpenSpec adapter**: Updates `{adapter_path:constitution}` (config context and rules). The `rules:` mapping MUST strictly use schema artifact IDs (`proposal`, `specs`, `design`, `tasks`). Verification-only and testing requirements belong in the shared `context:` block (e.g. under `## Testing Standards`) rather than under `rules.verify`. `{adapter_path:arch-constitution}` and `{adapter_path:security-constitution}` remain optional splits and, when present, are reconciled with config so each rule has one canonical owner
+The init interview writes the constitution files the active adapter maps: `{adapter_path:constitution}`, `{adapter_path:arch-constitution}`, and `{adapter_path:security-constitution}`. Follow the adapter's Constitution Layout section for format and for any per-artifact rule constraints. When the adapter marks the architecture or security file as an optional split, reconcile it with `{adapter_path:constitution}` so each rule has one canonical owner.
 
 ---

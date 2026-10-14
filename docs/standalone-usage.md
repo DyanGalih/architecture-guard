@@ -64,7 +64,7 @@ Override the persisted adapter for one installed command with its `--adapter` in
 
 ## 4. Choose Your Commands
 
-Pick from 18 governance commands:
+Pick from 20 governance commands:
 
 | Command | When |
 | :--- | :--- |
@@ -79,6 +79,8 @@ Pick from 18 governance commands:
 | `governed-implement` | Implement — apply tasks, then review |
 | `review-artifacts` | Review artifacts — boundary drift, DRY violations, and hygiene |
 | `review-implementation` | Review implementation — security and architecture findings |
+| `review-pr` | Review someone else's pull request on any code host — drafts the review, posts only when you choose |
+| `pr-feedback` | Work through review feedback on your own pull request — triage, fix, reply, and optionally resolve, with approval at each step |
 | `verify` | Final validation — tasks vs code evidence |
 | `apply` | Apply approved refactors into plans/tasks |
 | `workflow` | End-to-end review across all workflow phases |
@@ -87,14 +89,14 @@ Pick from 18 governance commands:
 | `consolidate-specs` | Budgeted/offline spec index (optional) |
 | `governed-archive` | Archive — verify, then finalize a completed feature |
 
-You can select one, several, or `all`. The `review` alias selects `review-artifacts` and `review-implementation`; the installer writes only the commands you pick.
+You can select one, several, or `all`. The `review` alias selects `review-artifacts` and `review-implementation`, and the `pr` alias selects the pull-request skills; the installer writes only the commands you pick.
 
 ## 5. What Gets Installed
 
 After you select agents, an SDD tool or workflow, and commands, `architecture-guard init` writes:
 
 - **Command files** in your agent's directory (markdown, skill, TOML, or YAML)
-- **Adapters** — `adapters/resolve.md` plus your SDD tool's adapter (e.g., `adapters/openspec.md`, `adapters/spec-kit.md`)
+- **Adapters** — `.architecture-guard/adapters/`: `resolve.md`, the built-in `spec-kit.md`, `openspec.md`, and `generic.md` (refreshed on every install), plus any custom adapters you add (never overwritten)
 - **Runtime resources** — lean installs resolve bundled templates, presets, hygiene rules, and Sonar rules through the CLI; `--vendor` copies them under `.architecture-guard/`
 - **AGENTS.md managed Architecture Guard section** — created or updated by init
 
@@ -149,8 +151,8 @@ The target argument specifies which directory to install into (default: current 
 
 When an orchestration command runs, it:
 
-1. Reads `adapters/resolve.md` and loads the persisted adapter selection
-2. Loads `adapters/{tool}.md` — the adapter for that SDD tool
+1. Reads `.architecture-guard/adapters/resolve.md` and loads the persisted adapter selection
+2. Loads `.architecture-guard/adapters/{name}.md` — the built-in or custom adapter for that SDD tool (see [ADAPTERS.md](../ADAPTERS.md#custom-adapters) for writing your own)
 3. Resolves every `{adapter_path:key}` and `{adapter_command:key}` from the adapter
 4. Executes the command body using adapter-resolved paths and commands
 

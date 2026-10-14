@@ -4,38 +4,43 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 
 ## Path Map
 
-| Canonical Name | SpecKit Path |
-|---|---|
-| project-root | `.` |
-| sdd-tool-dir | `.specify/` |
-| constitution | `.specify/memory/constitution.md` |
-| arch-constitution | `.specify/memory/architecture_constitution.md` |
-| security-constitution | `.specify/memory/security_constitution.md` |
-| governance-config | `.architecture-guard/config.yml` |
-| config | `.architecture-guard/config.yml` (compatibility alias of `governance-config`) |
-| extensions | `.specify/extensions.yml` |
-| extensions-dir | `.specify/extensions/` |
-| spec | `specs/{feature}/spec.md` |
-| plan | `specs/{feature}/plan.md` |
-| tasks | `specs/{feature}/tasks.md` |
-| security-constraints | `specs/{feature}/security-constraints.md` |
-| draft | `.architecture-guard/constitution.draft.md` |
-| ponytail-template | `.architecture-guard/templates/ponytail_core.md` |
-| capability-composition-template | `.architecture-guard/templates/capability_composition.md` |
-| budgeted-context-template | `.architecture-guard/templates/budgeted_context_sdd.md` |
-| hygiene-rules | `.architecture-guard/hygiene-rules/*.md` |
-| presets | `.architecture-guard/presets/{preset}.md` |
-| sonar-rules | `.architecture-guard/sonar-rules` |
-| scripts | `.architecture-guard/scripts` |
-| templates | `.architecture-guard/templates` (compatibility alias; prefer `ponytail-template`) |
-| fallback-spec-index | `specs/system_context.md` |
-| flash-mem-project-id | Read from `.specify/memory/` or Flash-Mem MCP |
+| Canonical Name | SpecKit Path | Notes |
+|---|---|---|
+| project-root | `.` | |
+| sdd-tool-dir | `.specify/` | |
+| constitution | `.specify/memory/constitution.md` | |
+| arch-constitution | `.specify/memory/architecture_constitution.md` | |
+| security-constitution | `.specify/memory/security_constitution.md` | |
+| governance-config | `.architecture-guard/config.yml` | |
+| config | `.architecture-guard/config.yml` | Compatibility alias of `governance-config` |
+| extensions | `.specify/extensions.yml` | |
+| extensions-dir | `.specify/extensions/` | |
+| spec | `specs/{feature}/spec.md` | |
+| plan | `specs/{feature}/plan.md` | |
+| tasks | `specs/{feature}/tasks.md` | |
+| security-constraints | `specs/{feature}/security-constraints.md` | |
+| project-config | `.specify/memory/constitution.md` | |
+| constitution-set | `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any layout constitution under `.specify/memory/` | |
+| draft | `.architecture-guard/constitution.draft.md` | |
+| ponytail-template | `.architecture-guard/templates/ponytail_core.md` | |
+| capability-composition-template | `.architecture-guard/templates/capability_composition.md` | |
+| budgeted-context-template | `.architecture-guard/templates/budgeted_context_sdd.md` | |
+| hygiene-rules | `.architecture-guard/hygiene-rules/*.md` | |
+| presets | `.architecture-guard/presets/{preset}.md` | |
+| sonar-rules | `.architecture-guard/sonar-rules` | |
+| scripts | `.architecture-guard/scripts` | |
+| templates | `.architecture-guard/templates` | Compatibility alias; prefer `ponytail-template` |
+| fallback-spec-index | `specs/system_context.md` | |
+| flash-mem-project-id | Read from `.specify/memory/` or Flash-Mem MCP | |
 
 ## Command Map
 
 | Canonical Key | SpecKit Invocation or Fallback |
 |---|---|
 | create-spec | `/speckit.specify`; if unavailable, create `{adapter_path:spec}` inline from user intent and governing context, enforcing SpecKit numbering rules (`NNN-<short-name>`) and updating `.specify/feature.json` |
+| change-scope | Resolve the active feature directory from the user's explicit path, then `feature_directory` in `.specify/feature.json`, then a single unambiguous `specs/NNN-*` directory. If several are plausible, ask; never pick by recency. Reuse the same feature directory for every phase. |
+| validate-spec | No native spec validator; check `{adapter_path:spec}` inline for the Spec Kit template sections, unique requirement IDs, and testable acceptance criteria |
+| spec-template | Use Spec Kit's own specification template through `/speckit.specify`, or `.specify/templates/spec-template.md` when creating the spec inline |
 | create-change | Require or create the feature workspace following `.specify/init-options.json` numbering conventions before specification creation, and maintain `.specify/feature.json` |
 | archive | SpecKit has no native archive command; retain verified feature artifacts in place and incrementally update `{adapter_path:fallback-spec-index}` with explicit user approval |
 | verify | Use the registered Architecture Guard verification capability, or run the verification workflow inline |

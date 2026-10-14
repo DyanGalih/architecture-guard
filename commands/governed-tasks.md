@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Capability Composition
 
-Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation. On Spec Kit extension installs, resolve a capability `<capability>` to the registered `speckit.architecture-guard.ag-<capability>` command file in the agent's command directory, or to `.specify/extensions/architecture-guard/commands/<capability>.md`.
 
 ## Budgeted Context Contract
 
@@ -38,7 +38,7 @@ Before the first mutation, resolve and preview the exact target task and constra
 
 ### Required Active Inputs
 
-Require the active feature artifacts and the complete set of applicable constitution inputs. Read the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for SpecKit, check `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file. If the specification, design, governance rules, or architecture rules are missing, stop and direct the user to the corresponding governed phase or `/ag-init`; if security rules are missing, report the gap and obtain explicit confirmation before baseline security task validation.
+Require the active feature artifacts and the complete set of applicable constitution inputs. Read the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for SpecKit, check `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file. If the specification, design, governance rules, or architecture rules are missing, stop and direct the user to the corresponding governed phase or `/speckit.architecture-guard.ag-init`; if security rules are missing, report the gap and obtain explicit confirmation before baseline security task validation.
 
 ### Step 1 — Detect Optional Integrations
 
@@ -116,7 +116,7 @@ IF Security Review is available:
 
 Run:
 ```text
-/ag-refactor-generator
+/speckit.architecture-guard.ag-refactor-generator
 ```
 
 It MUST convert architecture findings into:
@@ -197,7 +197,7 @@ The command MUST return:
 - **Architecture Risks**: [Drift or conflicts detected in the task list]
 
 ## Recommended Next Step
-- [e.g., Continue to /ag-governed-implement]
+- [e.g., Continue to /speckit.architecture-guard.ag-governed-implement]
 - [e.g., Revise tasks to address missing security items]
 - [e.g., Update architecture constitution if standard is outdated]
 - **Durable Memory Preservation**: (Proactively triggered) Review the proposed memory entries below.

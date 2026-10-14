@@ -6,11 +6,11 @@ description: Generate or reconcile implementation tasks, then analyze security, 
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing this command, read `.architecture-guard/adapters/resolve.md` and resolve the adapter with its chain (explicit `--adapter` override, `.architecture-guard/selected-adapter`, `.architecture-guard/config.yml`, then filesystem markers), then load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Stop with `Unavailable` and the exact path if the adapter file is missing. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. Resolve every adapter path and command token before continuing; all paths and commands below use the loaded adapter.
 
-## OpenSpec Change Scope
+## Change Scope
 
-When the selected adapter is `openspec`, establish one `CHANGE_ID` before any OpenSpec artifact lookup or command. Resolve it from an explicit user-provided change, one unambiguous result from `openspec list --specs --json`, or a new kebab-case name approved for creation; create or reuse that change before continuing. Pass `--change "$CHANGE_ID"` to every `openspec instructions` and `openspec status` command, validate with `openspec validate "$CHANGE_ID" --strict`, and reuse the same id for every artifact and archive step. A capability name is not a change id. If no unambiguous change can be resolved, stop and ask the user rather than invoking an action with an empty `CHANGE_ID`.
+Before any SDD artifact lookup or command, establish the active change scope with {adapter_command:change-scope}. If no unambiguous scope can be resolved, stop and ask the user rather than continuing without one.
 
 ## Standalone Resource Resolution
 
@@ -53,9 +53,13 @@ Provide a single command that ensures:
 
 Before the first mutation, resolve and preview the exact target task and constraint artifacts together with all planned task-generation, reconciliation, refactor, analysis-fix, and constraint-write operations. Obtain explicit user approval, then allow routine writes already previewed within this task phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 
+### Constitution Inputs
+
+Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file with file-reading tools. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file, and do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`. For optional split layouts, embedded rules in `{adapter_path:constitution}` satisfy the corresponding input. Later steps refer to this set as the **Constitution Inputs**; load it once and reuse it.
+
 ### Required Active Inputs
 
-Require active `{adapter_path:spec}` and `{adapter_path:plan}` artifacts plus the complete set of applicable constitution inputs. Resolve the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. For optional split layouts, embedded rules in `{adapter_path:constitution}` satisfy the corresponding input. In Generic mode, ask for every unresolved input path and the destination tasks path, resolve the latter as `{adapter_path:tasks}`, and do not write until it is supplied. If the spec, plan, governance rules, or architecture rules are missing, stop and direct the user to the corresponding governed phase or init; if security rules are missing, report the gap and obtain explicit confirmation before continuing with baseline security task validation.
+Require active `{adapter_path:spec}` and `{adapter_path:plan}` artifacts plus the complete Constitution Inputs. In Generic mode, ask for every unresolved input path and the destination tasks path, resolve the latter as `{adapter_path:tasks}`, and do not write until it is supplied. If the spec, plan, governance rules, or architecture rules are missing, stop and direct the user to the corresponding governed phase or init; if security rules are missing, report the gap and obtain explicit confirmation before continuing with baseline security task validation.
 
 ### Step 1 — Detect Optional Integrations
 
@@ -72,7 +76,7 @@ Check for the availability of:
 
 When Flash-Mem is available, use it first to gather the most relevant architectural context before task generation. Prefer summary-first context and only expand into repository files when needed.
 
-If Flash-Mem is unavailable or the context is insufficient, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before continuing with repository artifacts. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+If Flash-Mem is unavailable or the context is insufficient, rely on the Constitution Inputs loaded above before continuing with repository artifacts.
 
 **[OPTIONAL SUB-AGENT DELEGATION]**
 * **Capability Gate:** Detect a host synthesis/delegation capability independently of the adapter command map. If unavailable, execute inline regardless of size and report the degraded path.
@@ -103,17 +107,16 @@ You must orchestrate {adapter_command:create-tasks} workflow directly.
      - Localized verification: runnable unit/integration tests and lint/typecheck command execution.
      - Hygiene confirmation: clean workspace with no leftover `.tmp`, `.new`, or commented-out code.
    - If the same logic appears in multiple modules, create a single extraction task instead of parallel copy-paste tasks.
-   - **Claude Code Agent Teams Role Tagging**: When Agent Teams mode is active for the current run or configured in `.architecture-guard/agents.yml`, the **Analyst Creator** MUST tag every task with its assigned teammate role: `[BE]` (Backend), `[FE]` (Frontend), `[TEST]` (Unit/Integration Test), or `[ORCHESTRATION]`. `[ORCHESTRATION]` tasks are lead-session tasks and MUST NOT be assigned concurrently to an implementor.
+   - **Claude Code Agent Teams Role Tagging** (only when Agent Teams mode is active): When Agent Teams mode is active for the current run or configured in `.architecture-guard/agents.yml`, the **Analyst Creator** MUST tag every task with its assigned teammate role: `[BE]` (Backend), `[FE]` (Frontend), `[TEST]` (Unit/Integration Test), or `[ORCHESTRATION]`. `[ORCHESTRATION]` tasks are lead-session tasks and MUST NOT be assigned concurrently to an implementor.
 2. **Execute Tasks**: Run {adapter_command:create-tasks} to generate and save `{adapter_path:tasks}`.
 
-   **If {adapter_command:create-tasks} is not available as a registered command** (i.e., the AI agent does not recognize it as a slash command), fall back to inline task generation:
-   - Read `{adapter_path:plan}` and `{adapter_path:spec}`.
-   - Resolve the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+   Follow the adapter-defined action; if it names a command that is not available, use the adapter's own inline fallback. When generating inline:
+   - Read `{adapter_path:plan}`, `{adapter_path:spec}`, and the Constitution Inputs.
    - Use Flash-Mem context and `{adapter_path:security-constraints}` if available.
-   - Generate `{adapter_path:tasks}` directly, breaking down the plan into implementation-ready tasks with checkbox format. Enforce Ponytail minimalism and role tags.
-   - Note in the Governance Summary that {adapter_command:create-tasks} was unavailable and task generation was performed inline.
+   - Generate `{adapter_path:tasks}` directly, breaking down the plan into implementation-ready tasks with checkbox format. Enforce Ponytail minimalism, plus role tags when Agent Teams mode is active.
+   - Note in the Governance Summary that task generation was performed inline.
 
-3. The generated tasks MUST use the Project Constitution documents and feature context. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file and the feature security constraints with file-reading tools. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. Do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
+3. The generated tasks MUST use the Constitution Inputs, the feature security constraints, and feature context. Use Flash-Mem first when available.
 4. Prefer compact, feature-scoped task generation over broad restatements of the full memory set.
 
 ### Step 4 — Security Review on Tasks
@@ -145,22 +148,28 @@ You must orchestrate {adapter_command:analyze} workflow directly to serve as the
 ### Step 7 — Proactive Durable Memory Preservation
 
 If the task generation or security review identified new architectural lessons or reusable patterns:
-1. **Proactive Proposal**: You **MUST automatically launch** the durable-memory capture flow in proposal-only mode as the final part of this turn.
+1. **Proactive Proposal**: When Flash-Mem is available, draft proposed entries for `capture_artifact_memory` (for the written tasks) or `add_memory` (for a new durable lesson) in proposal-only mode as the final part of this turn.
 2. **Approval Required**: Show the proposed entries and obtain explicit user approval before invoking any memory write tool.
-3. **Standard**: Do not silently write memory inside or outside the capture flow.
+3. **Standard**: Never write memory without that approval. If Flash-Mem is unavailable, report the proposals as `Unavailable` and skip the write.
 
-### Step 8 — Task Governance Summary
+### Step 8 — Blocking Gate and Automatic Analyst Loop
 
-Produce a final `Governed Tasks Summary` for the user.
+Evaluate the gate before producing the summary so the summary's **Gate Status** reflects it.
 
-### Step 9 — Automatic Analyst Loop
+1. **Blocking Gate (always evaluated first)**: If any finding from Steps 4–6 is a Constitution P0 architecture violation or an independently policy-designated blocking security finding, stop progression to implementation, set the summary's **Gate Status** to `Blocked`, surface the remediation tasks, and do not allow a simple proceed prompt to override it. Only resolving the finding, or an explicit Constitution change approved by the user, lifts the block.
 
-If the analyst ({adapter_command:analyze}) finds any gaps, missing steps, or high severity issues in Step 6:
-1. **Pause and Ask**: Conclude your response by asking the user:
+If the analyst ({adapter_command:analyze}) finds any remaining non-blocking gaps, missing steps, or high severity issues in Step 6:
+2. **Pause and Ask for Advisory Findings**: After the Step 9 summary, conclude your response by asking the user:
    > *"The analyst found [number] gaps/severities in the tasks. Would you like me to automatically clarify and revise the tasks to address these findings?"*
-2. **Execute if Approved**: If the user answers "yes" (or equivalent) in their next message, you must:
-   - Automatically rewrite `{adapter_path:tasks}` to resolve the detected gaps.
+3. **Execute if Approved**: If the user answers "yes" (or equivalent) in their next message, you must:
+   - Rewrite `{adapter_path:tasks}` to resolve the detected gaps, within the approved Write Approval Gate scope.
+   - Re-run {adapter_command:analyze} after each rewrite, at most 2 repair attempts; if gaps remain after the second attempt, stop and report them.
+   - Re-evaluate the Blocking Gate on the new results and update **Gate Status** before presenting the result.
    - Present the clean result.
+
+### Step 9 — Task Governance Summary
+
+Produce a final `Governed Tasks Summary` for the user, using the Gate Status from Step 8.
 
 ## Graceful Degradation
 
@@ -191,11 +200,16 @@ The command MUST return:
 ```markdown
 # Governed Tasks Summary
 
+## Gate Status
+- **Status**: [Ready / Advisory Findings / Blocked]
+- **Blocking Findings**: [Constitution P0 or policy-designated blocking findings, or None]
+
 ## Memory Context
 - **Status**: [Synthesized / Skipped / Missing]
 - **Relevant Decisions**: [List of historical constraints affecting these tasks]
 
 ## Security Task Review
+- **Status**: [Reviewed / Advisory / Blocked / Unavailable] — `Unavailable` means no independent Security Review ran; never report it as a pass.
 - **Missing Security Tasks**: [List of missing auth/val/audit tasks]
 - **Constraints**: [Key security boundaries to respect]
 

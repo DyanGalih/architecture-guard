@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Capability Composition
 
-Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation. On Spec Kit extension installs, resolve a capability `<capability>` to the registered `speckit.architecture-guard.ag-<capability>` command file in the agent's command directory, or to `.specify/extensions/architecture-guard/commands/<capability>.md`.
 
 ## Input & Context Loading
 
@@ -41,9 +41,9 @@ Run this command once per project or whenever the constitution files need refine
 
 See the README quick start for brownfield and greenfield entrypoints.
 
-After init, the usual next step is `/ag-governed-plan` or `/ag-governed-tasks`, depending on whether the team wants planning or task generation next.
+After init, the usual next step is `/speckit.architecture-guard.ag-governed-plan` or `/speckit.architecture-guard.ag-governed-tasks`, depending on whether the team wants planning or task generation next.
 
-When Flash-Mem is available, prefer it first for retrieving prior decisions, summaries, and existing constitution context. The repository files remain the source of truth for constitution content, and the legacy `memory-hub` name is reference-only and should not be treated as the runtime backend. If Flash-Mem is unavailable or the context is incomplete, resolve the selected project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file and treat those repository files as the canonical source of truth. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. After refining the constitutions, sync durable summaries and major decisions back into Flash-Mem.
+When Flash-Mem is available, prefer it first for retrieving prior decisions, summaries, and existing constitution context. The repository files remain the source of truth for constitution content, and the legacy `memory-hub` name is reference-only and should not be treated as the runtime backend. If Flash-Mem is unavailable or the context is incomplete, resolve the selected project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file and treat those repository files as the canonical source of truth. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. After refining the constitutions, propose durable summaries and major decisions for Flash-Mem, show the exact entries, and write them only after explicit user approval.
 
 The goal is NOT to generate generic best practices.
 
@@ -190,16 +190,15 @@ Avoid duplication between both files.
 Users may need to pause the init workflow and resume later. Support this gracefully:
 
 **Pausing Mid-Interview**:
-1. Save current answers to `.specify/memory/constitution-draft.md` with timestamp and completion percentage
-2. Ask user: "Do you want to resume these answers later?"
-3. If YES: Save draft and exit cleanly with resume instructions
-4. If NO: Confirm deletion or suggest next steps
+1. Ask user: "Do you want to save these answers to `.specify/memory/constitution-draft.md` and resume later? [y/N]" and preview the draft path and contents (answers, timestamp, completion percentage). Do not write anything before the answer.
+2. If YES: write the draft only then, and exit cleanly with resume instructions
+3. If NO or no answer: write nothing, discard the in-session answers, and suggest next steps
 
 **Resuming Saved Draft**:
 1. Detect `.specify/memory/constitution-draft.md` on next init run
 2. Ask: "I found a draft from [timestamp]. Resume from where you left off?"
 3. If YES: Load saved answers, continue from last question
-4. If NO: Start fresh (optionally archive old draft)
+4. If NO: Start fresh without modifying the old draft. Archive, move, or delete the old draft only if the user explicitly approves that exact operation (show the source and target paths, `[y/N]`); otherwise leave it in place
 
 **Draft Contents**:
 ```yaml
@@ -441,9 +440,11 @@ If the user selects Budgeted:
 1. Create `.specify/config/architecture_guard.yml` from `.specify/extensions/architecture-guard/templates/architecture_guard_config.yml` (or `templates/architecture_guard_config.yml` in the extension source checkout).
 2. Set `context.mode: budgeted`.
 3. Preserve the default retrieval limits unless the user explicitly requests different limits.
-4. If feature specs already exist, run `/ag-consolidate-specs` after constitution generation is complete.
+4. If feature specs already exist, run `/speckit.architecture-guard.ag-consolidate-specs` after constitution generation is complete.
 
 If the user selects Targeted or gives no answer, preserve existing behavior. Do not add operational context settings to any constitution.
+
+Repository hygiene policy is separate from context settings. `architecture-guard hygiene` does not read `.specify/config/architecture_guard.yml`; when the user wants a hygiene policy (`enabled`, `fail_on`, `warn_on`, `ignore`), write it as a top-level `repository_hygiene:` block in `.specify/config/repository_hygiene.yml`, using the commented example in the config template. Preview it in the write approval like every other generated file.
 
 ---
 
@@ -811,6 +812,8 @@ Generate or refine:
 * `.specify/memory/security_constitution.md`
 
 When Budgeted Architecture Context Retrieval is selected, also generate `.specify/config/architecture_guard.yml`. Missing configuration means targeted mode, preserving backward compatibility.
+
+When the user requests a repository hygiene policy, also generate `.specify/config/repository_hygiene.yml` with a top-level `repository_hygiene:` block.
 
 If the `flash-mem` MCP server is available, propose `update_project_summary` for major changes in architecture, boundaries, or governance rules and execute it only after explicit user approval. If it is unavailable, rely on the repository files directly and continue without the sync step.
 

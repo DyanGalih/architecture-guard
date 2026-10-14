@@ -6,7 +6,7 @@
 
 > Keep AI-generated code aligned with your architecture, specs, and delivery workflow.
 
-[![Version](https://img.shields.io/badge/version-2.5.3-22c55e)](extension.yml)
+[![Version](https://img.shields.io/badge/version-3.0.0-22c55e)](extension.yml)
 [![OpenSpec](https://img.shields.io/badge/OpenSpec-compatible-8b5cf6)](https://github.com/Fission-AI/OpenSpec)
 [![Spec Kit](https://img.shields.io/badge/Spec%20Kit-compatible-2563eb)](https://spec-kit.dev)
 [![Non-blocking](https://img.shields.io/badge/style-non--blocking-10b981)](https://spec-kit.dev)
@@ -51,7 +51,8 @@ To update a globally installed CLI explicitly, run `architecture-guard update` (
 
 The installer launches a setup wizard that asks you to select:
 1. **AI agent(s)** — OpenCode, Claude Code, Gemini CLI, etc.
-2. **SDD tool** — Spec Kit, OpenSpec, or a generic Markdown workflow.
+2. **SDD tool** — Spec Kit, OpenSpec, a generic Markdown workflow, or any other SDD tool through a [custom adapter](ADAPTERS.md#custom-adapters).
+   The **code host** (GitHub, GitLab, Bitbucket, Azure DevOps, or plain git) is auto-detected from the `origin` remote for pull-request work; override it with `--forge`. See [FORGES.md](FORGES.md).
 3.  **Governed workflows** — Pick the orchestration and governance workflows you need.
 
 It installs the necessary command files directly into the agent command or skill directory. The installer uses `@inquirer/prompts`; lean prompts require a callable `architecture-guard` CLI for resource resolution and CLI-backed hygiene, while `--vendor` copies static engine resources locally and avoids bundled-resource lookup for those assets.
@@ -64,11 +65,13 @@ Instead of letting AI agents run wild, Architecture Guard provides structured en
 
 | Workflow Command | When To Use | What It Does |
 | :--- | :--- | :--- |
-| **`ag-governed-discover`**<br>*(or `/speckit.ag-governed-discover`)* | Idea-stage | Shapes a rough request into a spec-ready direction *before* formal specification. |
-| **`ag-governed-delivery`**<br>*(or `/speckit.ag-governed-delivery`)* | Delivery stage | Resumes governed delivery from an active specification through plan and task generation, with optional memory context, security and architecture gates, task reconciliation, and analysis. |
-| **`ag-governed-delivery-team`**<br>*(or `/speckit.ag-governed-delivery-team`)* | Team delivery | Creates a stakeholder-approved User Story before the governed plan-to-tasks workflow. |
-| **`ag-governed-archive`**<br>*(or `/speckit.ag-governed-archive`)* | Finalization | Archives a completed feature after verification, with explicit approval for changelog, memory, Git, and cleanup actions. |
-| **`ag-governed-implement`**<br>*(or `/speckit.ag-governed-implement`)* | Implementation | Executes the generated tasks while strictly following the plan and architecture rules. |
+| **`ag-governed-discover`**<br>*(or `/speckit.architecture-guard.ag-governed-discover`)* | Idea-stage | Shapes a rough request into a spec-ready direction *before* formal specification. |
+| **`ag-governed-delivery`**<br>*(or `/speckit.architecture-guard.ag-governed-delivery`)* | Delivery stage | Resumes governed delivery from an active specification through plan and task generation, with optional memory context, security and architecture gates, task reconciliation, and analysis. |
+| **`ag-governed-delivery-team`**<br>*(or `/speckit.architecture-guard.ag-governed-delivery-team`)* | Team delivery | Creates a stakeholder-approved User Story before the governed plan-to-tasks workflow. |
+| **`ag-governed-archive`**<br>*(or `/speckit.architecture-guard.ag-governed-archive`)* | Finalization | Archives a completed feature after verification, with explicit approval for changelog, memory, Git, and cleanup actions. |
+| **`ag-governed-implement`**<br>*(or `/speckit.architecture-guard.ag-governed-implement`)* | Implementation | Executes the generated tasks while strictly following the plan and architecture rules. |
+| **`ag-review-pr`** | Reviewing someone else's pull request | Fetches the pull request from your code host (GitHub, GitLab, Bitbucket, Azure DevOps, or plain git), reviews it against your architecture, security, and hygiene rules, and drafts a comment-only review that is posted only when you choose. |
+| **`ag-pr-feedback`** | Feedback on your own pull request | Triages unresolved review threads and failing checks, applies the fixes you approve, drafts replies, and lets you choose to reply only or reply and resolve. |
 
 *(Note: Granular commands like `ag-governed-spec`, `ag-governed-plan`, and `ag-governed-tasks` are still available if you want manual control. See the [Manual Workflow Guide](docs/manual-workflow-guide.md).)*
 
@@ -80,6 +83,15 @@ Instead of letting AI agents run wild, Architecture Guard provides structured en
   → /ag-governed-implement (writes the code)
   → /ag-verify (checks for unapproved drift)
 ```
+
+### Suggested Pull Request Flow
+
+```text
+/ag-review-pr <number or URL>   (reviewing a teammate's pull request)
+/ag-pr-feedback                 (working through feedback on your own pull request)
+```
+
+Both skills reach your code host through a [forge adapter](FORGES.md): a registered MCP server for the host, then its CLI (`gh`, `glab`, `az`), then plain git. Nothing is posted, pushed, or resolved without your approval.
 
 ---
 
@@ -94,7 +106,7 @@ architecture-guard/
     ├── beginner-guide.md       ← Plain-language explanation and first workflow
     ├── architecture-overview.md ← Problem statement, value, and behavior
     ├── governance-model.md      ← Constitution layers and delegation model
-    ├── workflows.md             ← Governed discovery, specification, planning, task, and implementation flows
+    ├── workflows.md             ← Governed discovery, specification, planning, task, implementation, and pull-request flows
     ├── reference-manual.md      ← Setup, commands, install, and validation details
     ├── presets.md               ← Supported framework presets (Angular, React, Vue, Next.js, Laravel, NestJS, etc.)
     ├── dry-cleanup.md           ← Brownfield DRY cleanup flow and duplication signals
@@ -106,6 +118,7 @@ architecture-guard/
 - [Standalone Usage Guide](docs/standalone-usage.md)
 - [Manual Workflow Guide](docs/manual-workflow-guide.md)
 - [Adapter Reference](ADAPTERS.md)
+- [Forge Reference (code hosts and pull-request skills)](FORGES.md)
 - [Spec Kit Integration Guide](SPECKIT-INTEGRATION.md)
 - [OpenSpec Integration Guide](OPENSPEC-INTEGRATION.md)
 - [Beginner Guide](docs/beginner-guide.md)
@@ -128,6 +141,6 @@ architecture-guard/
 
 ## 🔄 Spec Kit Compatibility
 
-The standalone orchestrator is the primary experience. Existing SpecKit users (v1.15.1 and earlier) remain fully supported through `extension.yml` installation. 
+The standalone orchestrator is the primary experience, and all new features ship there. The legacy Spec Kit extension (`extension.yml` installation) remains available for existing Spec Kit users with limited support: it receives safety and breakage fixes only, not new features. New Spec Kit projects should use the standalone installer with `--framework spec-kit`.
 
 If your project is already centered on Spec Kit, you can continue installing Architecture Guard as a native Spec Kit extension. See the [Spec Kit Integration Guide](SPECKIT-INTEGRATION.md).

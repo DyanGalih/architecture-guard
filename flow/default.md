@@ -45,7 +45,7 @@ The SDD lifecycle follows these sequential phases:
    - Target: `changes/{change}/tasks.md`.
 5. **Implementation (`ag-governed-implement`)**:
    - Execute unchecked tasks sequentially.
-   - Enforce the Verification Floor (runnable automated tests for all non-trivial logic).
+   - Enforce the Ponytail Verification Floor: non-trivial logic leaves at least one runnable check, preferring the project's existing test tooling, otherwise the smallest practical self-check or focused test (no new test framework solely for the change).
    - Maintain repository hygiene (zero leftover scratch/temporary files).
 6. **Verification (`ag-verify`)**:
    - Confirm code evidence satisfies acceptance criteria across all tasks and specifications.

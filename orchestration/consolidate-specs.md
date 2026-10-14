@@ -6,7 +6,7 @@ description: Generate a compact, non-authoritative local fallback index from fea
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing this command, read `.architecture-guard/adapters/resolve.md` and resolve the adapter with its chain (explicit `--adapter` override, `.architecture-guard/selected-adapter`, `.architecture-guard/config.yml`, then filesystem markers), then load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Stop with `Unavailable` and the exact path if the adapter file is missing. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. Resolve every adapter path and command token before continuing; all paths and commands below use the loaded adapter.
 
 ## Standalone Resource Resolution
 
@@ -29,8 +29,8 @@ Resolve and apply the `capability_composition` template with `architecture-guard
 
 Before making decisions or delegating work, read these inputs explicitly with file-reading tools:
 
-1. **Manifest & Configuration**: Read `openspec/config.yaml` first when the OpenSpec adapter is active (otherwise read the selected adapter project configuration), then inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
-2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. For OpenSpec, explicitly check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+1. **Manifest & Configuration**: Read the selected adapter's project configuration (`{adapter_path:project-config}`) first, then inspect it for references to further governance and constitution Markdown files (for example a `context` block). Never rely on a hardcoded partial list.
+2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. Explicitly check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 3. **Active Artifacts**: Read the feature, review, plan, task, or current-state artifacts required by this skill.
 
 ## Purpose
@@ -40,15 +40,16 @@ Provide the adapter's compact offline fallback for Budgeted Architecture Context
 ## Procedure
 
 1. Resolve {adapter_command:consolidate-specs} and `{adapter_path:fallback-spec-index}`.
-2. If consolidation is unsupported, execute {adapter_command:list-specs}, return that adapter-native index, and do not write a fallback artifact. Otherwise execute {adapter_command:consolidate-specs} and enumerate `{adapter_path:spec}` in normalized path order, excluding the fallback, generated artifacts, and explicitly archived sources.
+2. If consolidation is unsupported, execute {adapter_command:list-specs}, return that adapter-native index, and do not write a fallback artifact. Otherwise follow {adapter_command:consolidate-specs} only to build the fallback content in memory: enumerate `{adapter_path:spec}` in normalized path order, excluding the fallback, generated artifacts, and explicitly archived sources. Steps 2–6 are read-only; nothing is written to the fallback index or any other path before the step 6 confirmation.
 3. If no source specs exist, report that no fallback was generated and leave any existing fallback untouched unless the user explicitly authorizes replacing it.
 4. Read each source only far enough to extract its title or one-line purpose, requirement and acceptance-criteria identifiers, shared invariants, cross-feature dependencies, and explicit conflicts. Acceptance-criteria bodies remain in the source spec.
 5. Deduplicate only statements that are clearly identical. Keep similar statements separate. Never resolve conflicts or ambiguity silently.
-6. Write the complete generated artifact in one operation with the structure below. Keep feature entries to one line plus identifiers and provenance so the fallback does not become another full specification.
+6. **Confirm before writing**: Show the resolved output path, whether it creates or replaces an existing fallback, and a summary of the generated entries. Request explicit confirmation. If the user declines or does not confirm, return the generated content and source manifest without writing, and stop.
+7. Only after explicit confirmation, write the complete generated artifact in one operation (this is the only write this command performs) with the structure below. Keep feature entries to one line plus identifiers and provenance so the fallback does not become another full specification.
 
 ## User Interaction and Result
 
-In Generic workflow mode, ask the user for source specification paths and the desired fallback output path when the adapter cannot resolve them. Before writing or replacing a fallback, show the resolved output path and request explicit confirmation. A decline or unsupported consolidation returns the available adapter-native index or source manifest without writing.
+In Generic workflow mode, ask the user for source specification paths and the desired fallback output path when the adapter cannot resolve them. Writing or replacing a fallback always requires the confirmation in step 6. A decline or unsupported consolidation returns the available adapter-native index or source manifest without writing.
 
 ## Required Output
 

@@ -36,7 +36,7 @@ const CATEGORY_MAP: Record<string, string> = {
 function unsupportedCategoryError(rawCategory: string): Error {
   const category = rawCategory.toLowerCase().trim();
   if (category === "adapter" || category === "adapters") {
-    return new Error("Adapter selection is file-based, not a resource category. Read .architecture-guard/selected-adapter and adapters/{name}.md; resolve supports engine resources only.");
+    return new Error("Adapter selection is file-based, not a resource category. Read .architecture-guard/selected-adapter and .architecture-guard/adapters/{name}.md; resolve supports engine resources only.");
   }
   return new Error("Unknown category \"" + rawCategory + "\". Supported categories: " + Object.keys(CATEGORY_MAP).join(", "));
 }

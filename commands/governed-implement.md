@@ -6,7 +6,7 @@ description: Execute implementation tasks, then review the result against availa
 
 ## SDD Adapter Resolution
 
-Before executing command, read `.specify/extensions/architecture-guard/adapters/resolve.md` (or `adapters/resolve.md` in a standalone install or source checkout). Resolve the active adapter in this order: explicit `--adapter` override, `.architecture-guard/selected-adapter` as the authoritative persisted selection, then filesystem markers only when no persisted selection exists. Load `.specify/extensions/architecture-guard/adapters/{tool}.md` (or `adapters/{tool}.md` in a standalone install or source checkout) for path maps, command maps, and gap fills. Resolve every adapter token before continuing.
+This legacy Spec Kit extension command is self-contained: it uses Spec Kit paths directly and does not load SDD adapters or `.architecture-guard/selected-adapter`. For other SDD tools, use the standalone `architecture-guard` installer.
 
 ## Ponytail Core Contract
 
@@ -14,7 +14,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Capability Composition
 
-Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation. On Spec Kit extension installs, resolve a capability `<capability>` to the registered `speckit.architecture-guard.ag-<capability>` command file in the agent's command directory, or to `.specify/extensions/architecture-guard/commands/<capability>.md`.
 
 ## Budgeted Context Contract
 
@@ -96,7 +96,7 @@ Activate this protocol only when the Claude Code host exposes named teammate spa
 - The lead maps `[BE]`, `[FE]`, and `[TEST]` tasks to named implementors and keeps `[ORCHESTRATION]` tasks in the lead session.
 - Before spawning, the lead assigns non-overlapping tasks and explicit file ownership. If overlap is discovered, pause one owner and coordinate a handoff; never edit the same file concurrently.
 - The Code Reviewer audits boundary compliance, security constraints, and runnable checks before handoff.
-- The lead presents implementation evidence and requires explicit user confirmation before advancing to `/ag-verify`.
+- The lead presents implementation evidence and requires explicit user confirmation before advancing to `/speckit.architecture-guard.ag-verify`.
 
 3. **Write Code**: Perform the actual coding work (writing files, running tests) required by the tasks.
 4. **Inline Pre-Completion Self-Verification Gate**: Before marking any task complete:
@@ -120,7 +120,7 @@ IF Security Review is available:
 
 Run:
 ```text
-/ag-review-implementation
+/speckit.architecture-guard.ag-review-implementation
 ```
 
 Review implementation against:
@@ -152,13 +152,13 @@ ELSE (no critical violations):
 ### Step 6 — Generate Refactor Tasks
 
 IF architecture violations exist:
-1. Run `/ag-refactor-generator`.
+1. Run `/speckit.architecture-guard.ag-refactor-generator`.
 2. Generate non-blocking refactor, migration, or correction tasks.
 3. Skip performance refactors unless explicitly requested.
 
 ### Step 7 — Mandatory Verification Gate
 
-Run `/ag-verify` after implementation and reviews. Do not mark implementation complete or ready to merge until verification passes with no unresolved blocking findings. If `/ag-verify` is not registered and callable, execute the workflow in `verify.md` inline and report the fallback. Stop and return remediation guidance when verification reports any blocking finding.
+Run `/speckit.architecture-guard.ag-verify` after implementation and reviews. Do not mark implementation complete or ready to merge until verification passes with no unresolved blocking findings. If `/speckit.architecture-guard.ag-verify` is not registered and callable, execute the workflow in `verify.md` inline and report the fallback. Stop and return remediation guidance when verification reports any blocking finding.
 
 ### Step 8 — Proactive Durable Memory Preservation
 
@@ -200,7 +200,7 @@ Produce a final `Governed Implementation Summary`.
 - Execute implementation via core Spec Kit
 - Run architecture review on output
 - Generate non-blocking refactor tasks
-- Pass mandatory verification, using the inline fallback when `/ag-verify` is unavailable
+- Pass mandatory verification, using the inline fallback when `/speckit.architecture-guard.ag-verify` is unavailable
 - Produce summary
 
 ## Output Structure
@@ -231,7 +231,7 @@ The command MUST return:
 ## Recommended Next Step
 - [e.g., Merge changes]
 - [e.g., Revise implementation to address Security Conflict]
-- [e.g., Run /ag-apply]
+- [e.g., Run /speckit.architecture-guard.ag-apply]
 - **Durable Memory Preservation**: [Approved and captured / Awaiting approval / Skipped]
 - **Verification Gate**: [Passed / Blocked / Inline fallback passed]
 ```

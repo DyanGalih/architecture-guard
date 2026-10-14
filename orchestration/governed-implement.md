@@ -6,11 +6,11 @@ description: Execute implementation tasks, then review the result against availa
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md`. Resolve the active adapter in this order: explicit `--adapter` override, `.architecture-guard/selected-adapter` as the authoritative persisted selection, then filesystem markers only when no persisted selection exists. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. Resolve every adapter token before continuing.
+Before executing this command, read `.architecture-guard/adapters/resolve.md` and resolve the adapter with its chain (explicit `--adapter` override, `.architecture-guard/selected-adapter`, `.architecture-guard/config.yml`, then filesystem markers), then load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Stop with `Unavailable` and the exact path if the adapter file is missing. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. Resolve every adapter path and command token before continuing; all paths and commands below use the loaded adapter.
 
-## OpenSpec Change Scope
+## Change Scope
 
-When the selected adapter is `openspec`, establish one `CHANGE_ID` before any OpenSpec artifact lookup or command. Resolve it from an explicit user-provided change, one unambiguous result from `openspec list --specs --json`, or a new kebab-case name approved for creation; create or reuse that change before continuing. Pass `--change "$CHANGE_ID"` to every `openspec instructions` and `openspec status` command, validate with `openspec validate "$CHANGE_ID" --strict`, and reuse the same id for every artifact and archive step. A capability name is not a change id. If no unambiguous change can be resolved, stop and ask the user rather than invoking an action with an empty `CHANGE_ID`.
+Before any SDD artifact lookup or command, establish the active change scope with {adapter_command:change-scope}. If no unambiguous scope can be resolved, stop and ask the user rather than continuing without one.
 
 ## Standalone Resource Resolution
 
@@ -49,7 +49,20 @@ Provide a single command that ensures:
 
 ### Write Approval Gate
 
-Before the first mutation, resolve and preview the exact code, test, and task artifacts together with all planned implementation, test, and task-checkbox operations. Obtain explicit user approval, then allow routine writes already previewed within this implementation phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+Before the first mutation, resolve and preview the working branch and the exact code, test, and task artifacts together with all planned implementation, test, and task-checkbox operations. Obtain explicit user approval, then allow routine writes already previewed within this implementation phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+
+### Constitution Inputs
+
+Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file with file-reading tools. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file, and do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`. Later steps refer to this set as the **Constitution Inputs**; load it once and reuse it.
+
+### Step 0 — Preconditions
+
+Check these before the Write Approval Gate preview; stop and report if any fails.
+
+1. **Branch**: Run `git branch --show-current`. If it is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch, include `feature/<change-name>` in the Write Approval Gate preview and create and switch to it only after explicit user approval. If the user declines or creation fails, stop; MUST NOT implement on a protected branch. Preserve existing uncommitted changes; never reset or discard them.
+2. **Tasks exist**: `{adapter_path:tasks}` exists and contains unchecked tasks. Otherwise stop and recommend {adapter_command:create-tasks} or the governed tasks workflow.
+3. **Not blocked**: Stop if the latest available governed plan, tasks, or delivery summary for this feature reports a `Blocked` plan, tasks, or Gate Status, or if `{adapter_path:tasks}` contains unresolved blocking (P0 or policy-designated) remediation tasks that are not part of this run. A simple proceed prompt cannot override this.
+4. **Not stale**: If `{adapter_path:spec}` or `{adapter_path:plan}` changed materially after `{adapter_path:tasks}` was produced, stop and recommend rerunning the governed tasks workflow. If no governed tasks or delivery summary exists to show the tasks were analyzed, say so and ask the user whether to analyze first or proceed.
 
 ### Step 1 — Detect Optional Integrations
 
@@ -66,7 +79,7 @@ Check for the availability of:
 
 When Flash-Mem is available, execute both `get_project_summary` and `search_memory` scoped to the active feature, affected files, architecture boundaries, security-sensitive areas, prior decisions, and approved exceptions before implementation. Prefer summary-first context and load full entries only when those results are insufficient.
 
-If Flash-Mem is unavailable or the context is insufficient, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before continuing with repository artifacts. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+If Flash-Mem is unavailable or the context is insufficient, rely on the Constitution Inputs before continuing with repository artifacts.
 
 **[OPTIONAL SUB-AGENT DELEGATION]**
 * **Capability Gate:** Determine whether the host exposes a registered synthesis/delegation capability. If unavailable, execute inline regardless of size and report the degraded path.
@@ -93,11 +106,20 @@ You must orchestrate {adapter_command:implement} (core implementation) workflow 
 1. **Apply Ponytail Core**: Trace the affected execution flow and apply the shared decision ladder in order. A one-line solution is preferred only when it is correct, readable, and reached after checking YAGNI, existing code, the standard library, native platform features, and installed dependencies.
    - For fixes or shared behavior, search every caller and sibling path, then correct the owning implementation once when that is the true root cause.
    - Preserve the contract safety floor and leave at least one runnable check for non-trivial logic.
-2. **Execute Tasks**: Run {adapter_command:implement}. If {adapter_command:implement} is not available as a registered command, fall back to inline implementation:
+2. **Execute Tasks**: Follow {adapter_command:implement}; if it names a command that is not available, use the adapter's own inline fallback. When implementing inline:
    - Read `{adapter_path:tasks}` and execute each unchecked task sequentially.
-   - Resolve the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. Use any available Flash-Mem context before coding.
+   - Use the Constitution Inputs and any available Flash-Mem context before coding.
    - Perform the actual coding work (writing files, running tests) for each task, enforcing Ponytail minimalism.
-   - Note in the Governance Summary that {adapter_command:implement} was unavailable and implementation was performed inline.
+   - Note in the Governance Summary that implementation was performed inline.
+3. **Write Code**: Perform the actual coding work (writing files, running tests) required by the tasks.
+4. **Inline Pre-Completion Self-Verification Gate**: Before marking any task complete:
+   - **Deprecated & Dangerous Code Check**: Resolve `deprecated-and-dangerous-code` with `architecture-guard resolve hygiene-rule deprecated-and-dangerous-code`, then check changed and target files against it.
+   - **Repository Hygiene Check**: Run {adapter_command:hygiene} (the `architecture-guard hygiene --json` runner) and take each finding's severity and `blocking` flag exactly as the runner reports them (no `.tmp`, `.new`, or scratch files left behind; no commented-out code; no dead imports). A finding with `blocking: true` must be fixed before the task is marked complete. If the CLI is unavailable, report the hygiene check as `Unavailable`.
+   - **Heuristic SonarLint Scan**: Resolve the bundle with `architecture-guard resolve sonar-rules`, then check changed files against it (ensure no cognitive overload, tight coupling, loose `any`/`unknown` casts, or missing parameter validation).
+   - **Remediation**: Correct detected quality or hygiene violations at the current task boundary. Edits inside the approved Write Approval Gate scope proceed; any file deletion or any fix outside that scope needs its own preview and explicit approval.
+5. **Sync the tasks**: You MUST update `{adapter_path:tasks}` to mark completed tasks with `[x]`, check them off, and add any new subtasks discovered during implementation.
+   - If implementation would expand beyond accepted spec/plan/task scope, stop and obtain explicit user approval before adding or executing that work. Record the approved expansion in the authoritative artifacts first.
+6. The implementation MUST follow current tasks and context. Use Flash-Mem first when available, and the Constitution Inputs alongside the active artifacts.
 
 #### Claude Code Agent Teams Coordination (When Active)
 
@@ -108,16 +130,6 @@ Activate this protocol only when the Claude Code host exposes named teammate spa
 - **Code Reviewer** audits code changes across boundaries, reviews security constraints, and verifies tests before handoff.
 - **Human-in-the-Loop Gate**:
   - Lead session collects implementation evidence, presents the completed task checklist, and requires explicit user confirmation before concluding or advancing to the registered `ag-verify` capability.
-
-3. **Write Code**: Perform the actual coding work (writing files, running tests) required by the tasks.
-4. **Inline Pre-Completion Self-Verification Gate**: Before marking any task complete:
-   - **Deprecated & Dangerous Code Check**: Resolve `deprecated-and-dangerous-code` with `architecture-guard resolve hygiene-rule deprecated-and-dangerous-code`, then check changed and target files against it.
-   - **Repository Hygiene Check**: Run `architecture-guard resolve hygiene-rules --list`, resolve every returned rule, and inspect changed files against the complete effective rule set (no `.tmp`, `.new`, or scratch files left behind; no commented-out code; no dead imports).
-   - **Heuristic SonarLint Scan**: Resolve the bundle with `architecture-guard resolve sonar-rules`, then check changed files against it (ensure no cognitive overload, tight coupling, loose `any`/`unknown` casts, or missing parameter validation).
-   - **Immediate Remediation**: Correct any detected quality or hygiene violations immediately at the current task boundary.
-5. **Sync the tasks**: You MUST update `{adapter_path:tasks}` to mark completed tasks with `[x]`, check them off, and add any new subtasks discovered during implementation.
-   - If implementation would expand beyond accepted spec/plan/task scope, stop and obtain explicit user approval before adding or executing that work. Record the approved expansion in the authoritative artifacts first.
-6. The implementation MUST follow current tasks and context. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, resolve the selected adapter project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file alongside the active artifacts with file-reading tools. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. Do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
 
 The SDD-tool-native implementation behavior is defined by the selected adapter and any registered host capability; do not infer a package-specific command.
 
@@ -143,16 +155,15 @@ Review implementation against:
 **Critical Decision Point**: Evaluate architecture and security findings independently for blocking issues.
 
 ```
-IF Architecture Review finds CRITICAL or HIGH violations:
-  IF Constitution marks violation as P0 (blocking):
-    STOP implementation
-    Surface violations in report
-    Return early with architecture remediation tasks; a simple proceed prompt cannot override P0
-  ELSE (violation is HIGH but not Constitution P0):
-    Continue with warning
-    Create non-blocking refactor tasks
-    Flag for post-merge remediation
-ELSE (no critical violations):
+IF the Constitution marks any architecture violation as P0 (blocking), at ANY review severity:
+  STOP implementation
+  Surface violations in report
+  Return early with architecture remediation tasks; a simple proceed prompt cannot override P0
+ELSE IF Architecture Review finds CRITICAL or HIGH violations:
+  Continue with warning
+  Create non-blocking refactor tasks
+  Flag for post-merge remediation
+ELSE:
   Continue to Step 6
 
 IF Security Review finds a policy-designated blocking violation:
@@ -176,8 +187,8 @@ Run {adapter_command:verify} after implementation and reviews. Do not mark the w
 ### Step 8 — Proactive Durable Memory Preservation
 
 If the implementation review or security audit identified new architectural patterns, critical decisions, or repeatable lessons:
-1. **Approval Required**: Propose validated durable-memory entries and execute the capture flow only after explicit user approval.
-2. **Standard**: Do not silently write memory outside the approved capture flow.
+1. **Approval Required**: Propose validated entries for `capture_artifact_memory` or `add_memory` and call those Flash-Mem tools only after explicit user approval.
+2. **Standard**: Never write memory without that approval. If Flash-Mem is unavailable, report the proposals as `Unavailable`.
 
 ### Step 9 — Implementation Governance Summary
 
@@ -195,12 +206,12 @@ Produce a final `Governed Implementation Summary`.
 - Continue to architecture review directly
 - Flag missing security implementation review in summary
 
-**Critical Architecture Violations Found**:
-- If Constitution marks as P0 (blocking):
+**Architecture Violations Found**:
+- If the Constitution marks any violation as P0 (blocking), regardless of its review severity:
   - STOP implementation workflow
   - Surface violations immediately
   - Return early with remediation guidance
-- If HIGH but not P0:
+- If CRITICAL or HIGH but not P0:
   - Continue with warning
   - Create non-blocking refactor tasks
   - Flag for post-merge remediation
@@ -224,6 +235,7 @@ The command MUST return:
 - **Relevant Decisions**: [Durable lessons applied during implementation]
 
 ## Security Review
+- **Status**: [Reviewed / Advisory / Blocked / Unavailable] — `Unavailable` means no independent Security Review ran; never report it as a pass.
 - **Findings**: [List of security vulnerabilities found]
 - **Constraints**: [Trust boundaries validated]
 - **Blocking Concerns**: [Policy-designated blocking security findings]
@@ -260,5 +272,5 @@ If implementation repeatedly violates a standard because the standard is outdate
 
 - **Modular**: Do not mix security findings into a generic architecture list.
 - **Framework-Agnostic**: Maintain boundary concepts (Entry, Domain, Data).
-- **Non-Blocking**: Adhere to the non-blocking philosophy for architecture findings.
+- **Non-Blocking by Default**: Architecture findings block only when the Constitution marks them P0; security findings block only when the security policy designates them blocking. Either stops the workflow (Step 5.5); severity alone never blocks.
 - **Memory-First**: Prefer cached synthesis and selected index entries before broad file reads.

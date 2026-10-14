@@ -18,10 +18,9 @@ program
 
 import { runInstallCommand } from '../cli/install';
 import { runDetectChangedFiles } from '../cli/detect-changed-files';
-import { runCheckArchitecture } from '../cli/check-architecture';
+import { runValidateSyncConfig } from '../cli/validate-sync-config';
 import { runValidateSetup } from '../cli/validate-setup';
 import { runCreateContextBudgetFixtures } from '../cli/create-context-budget-fixtures';
-import { runTestInstall } from '../cli/test-install';
 import { runReviewArtifacts } from '../cli/review-artifacts';
 import { runReviewImplementation } from '../cli/review-implementation';
 import { runArchive } from '../cli/archive';
@@ -31,8 +30,9 @@ program
   .description('Install governance commands')
   .option('-y, --yes', 'Non-interactive; --agent and --framework are required unless auto-detected')
   .option('--agent <names>', 'Comma-separated agent keys')
-  .option('--framework <f>', 'spec-kit | openspec | none')
-  .option('--commands <list>', 'Comma-separated command names, indices, or aliases (all, review)')
+  .option('--framework <f>', 'spec-kit | openspec | none | <custom adapter name>')
+  .option('--forge <name>', 'auto | github | gitlab | bitbucket | azure-devops | generic | <custom forge> (default: auto)')
+  .option('--commands <list>', 'Comma-separated command names, indices, or aliases (all, review, pr)')
   .option('--overwrite <mode>', 'replace | skip | keep-both')
   .option('--vendor', 'Copy immutable runtime resources locally (for air-gapped setups)')
   .option('--full', 'Alias for --vendor')
@@ -53,25 +53,25 @@ program
 
 program
   .command('detect-changed-files')
-  .description('Detect staged, unstaged, and untracked files')
+  .description('Detect files changed since the merge-base with the default branch, plus staged, unstaged, and untracked files')
   .option('--json', 'Output results in JSON format')
+  .option('--base <ref>', 'Compare against this ref instead of the default branch')
   .action(runDetectChangedFiles);
 
 program
-  .command('check-architecture')
-  .action(runCheckArchitecture);
+  .command('validate-sync-config [path]')
+  .description('Strictly validate the external sync configuration (default: .architecture-guard/sync.yml)')
+  .action(runValidateSyncConfig);
 
 program
-  .command('validate-setup')
+  .command('validate-setup [target]')
+  .description('Check the selected adapter, resolvable resources, constitutions, and governance config (exits non-zero on errors)')
   .action(runValidateSetup);
 
 program
-  .command('create-fixtures')
+  .command('create-fixtures <target>')
+  .description('Generate context-budget benchmark fixtures into an empty directory')
   .action(runCreateContextBudgetFixtures);
-
-program
-  .command('test-install')
-  .action(runTestInstall);
 
 program
   .command('review-artifacts')
@@ -87,8 +87,16 @@ program
   .command('archive <changeName>')
   .description('Finalize or archive a completed SDD feature')
   .option('--json', 'Output a machine-readable result')
-  .option('--framework <framework>', 'Override detection: speckit | openspec')
-  .action(async (changeName, options) => { await runArchive(changeName, options); });
+  .option('--framework <framework>', 'Override the selected adapter: spec-kit | openspec | generic')
+  .action(async (changeName, options) => {
+    try {
+      await runArchive(changeName, options);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Error: " + message);
+      process.exitCode = 1;
+    }
+  });
 
 import { runHygiene } from '../cli/hygiene';
 import { runResolveCommand } from '../cli/resolve';
@@ -99,6 +107,7 @@ program
   .option('--json', 'Output a machine-readable report')
   .option('--target <dir>', 'Target workspace directory (default: current working directory)')
   .option('--rules <ids>', 'Comma-separated rule identifiers to run')
+  .option('--files <paths>', 'Comma-separated file paths relative to the target; report findings only for these files (for example, a pull request\'s changed files)')
   .action(async (options) => {
     await runHygiene(options);
   });

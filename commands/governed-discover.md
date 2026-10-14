@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Capability Composition
 
-Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation. On Spec Kit extension installs, resolve a capability `<capability>` to the registered `speckit.architecture-guard.ag-<capability>` command file in the agent's command directory, or to `.specify/extensions/architecture-guard/commands/<capability>.md`.
 
 You are orchestrating the `ag-governed-discover` workflow for `architecture-guard`.
 
@@ -38,7 +38,7 @@ Provide a single command that ensures:
 2. The user can discuss, refine, and brainstorm their feature idea interactively.
 3. The AI actively warns the user if a proposed idea conflicts with established architecture.
 4. Non-blocking architecture concerns are recorded as risks and alternatives; only explicitly blocking or P0 rules should stop the discovery path.
-5. The final, agreed-upon idea is drafted into a clean format ready to be passed to `/ag-governed-spec`.
+5. The final, agreed-upon idea is drafted into a clean format ready to be passed to `/speckit.architecture-guard.ag-governed-spec`.
 
 ## Orchestration Flow
 
@@ -124,13 +124,13 @@ When the discussion is concluded and aligned, the command MUST return:
 - [Duplicate ownership, repeated logic, misplaced/generated artifacts, temporary files, or "None identified"]
 
 ## Recommended Next Step
-To proceed to implementation and avoid a "Feature: Not selected" error, you must initialize the feature using the active SDD tool's workflow (e.g., creating a new OpenSpec change) before running a delivery phase.
+To proceed to implementation and avoid a "Feature: Not selected" error, you must initialize the Spec Kit feature (which `/speckit.specify` does, creating the numbered feature directory and branch after approval) before running a delivery phase.
 
 You can now run:
-1. The adapter-registered command to create a new change/feature (Suggested name: `<suggested-feature-name>`).
+1. `/speckit.architecture-guard.ag-governed-spec` (which runs `/speckit.specify`) to create the new feature (Suggested name: `<suggested-feature-name>`).
 2. Then choose a delivery workflow with this Discovery Summary Draft as input:
-   - For solo developers: run `/ag-governed-delivery` or `/ag-governed-spec`.
-   - For teams: run `/ag-governed-delivery-team` to generate a User Story for business review first.
+   - For solo developers: run `/speckit.architecture-guard.ag-governed-delivery` or `/speckit.architecture-guard.ag-governed-spec`.
+   - For teams: run `/speckit.architecture-guard.ag-governed-delivery-team` to generate a User Story for business review first.
 ```
 
 ## Guardrails

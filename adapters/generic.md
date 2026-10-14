@@ -4,42 +4,47 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 
 ## Path Map
 
-| Canonical Name | Generic Path |
-|---|---|
-| project-root | `.` |
-| sdd-tool-dir | `.architecture-guard/flow/` |
-| constitution | `.architecture-guard/constitution.md` (or user-provided governance artifact path) |
-| arch-constitution | `.architecture-guard/architecture.md` (or user-provided architecture artifact path) |
-| security-constitution | `.architecture-guard/security.md` (or user-provided security artifact path, if any) |
-| governance-config | `.architecture-guard/config.yml` |
-| config | `.architecture-guard/config.yml` (compatibility alias of `governance-config`) |
-| extensions | Unsupported; detect host capabilities directly |
-| extensions-dir | Unsupported; do not probe an extension directory |
-| spec | `changes/{change}/spec.md` (or user-provided active specification path) |
-| plan | `changes/{change}/plan.md` (or user-provided active planning artifact path) |
-| tasks | `changes/{change}/tasks.md` (or user-provided active task artifact path) |
-| proposal | `changes/{change}/proposal.md` (or user-provided proposal path) |
-| security-constraints | `changes/{change}/security-constraints.md` (or user-provided security constraints path, if any) |
-| change-root | `changes/{change}/` |
-| flow-template | `.architecture-guard/flow/default.md` |
-| draft | `.architecture-guard/constitution.draft.md` |
-| ponytail-template | `.architecture-guard/templates/ponytail_core.md` |
-| capability-composition-template | `.architecture-guard/templates/capability_composition.md` |
-| budgeted-context-template | `.architecture-guard/templates/budgeted_context_sdd.md` |
-| hygiene-rules | `.architecture-guard/hygiene-rules/*.md` |
-| presets | `.architecture-guard/presets/{preset}.md` |
-| sonar-rules | `.architecture-guard/sonar-rules` |
-| scripts | `.architecture-guard/scripts` |
-| templates | `.architecture-guard/templates` (compatibility alias; prefer `ponytail-template`) |
-| fallback-spec-index | Unsupported; inspect only user-named historical specs |
+| Canonical Name | Generic Path | Notes |
+|---|---|---|
+| project-root | `.` | |
+| sdd-tool-dir | `.architecture-guard/flow/` | |
+| constitution | `.architecture-guard/constitution.md` | Or user-provided governance artifact path |
+| arch-constitution | `.architecture-guard/architecture.md` | Or user-provided architecture artifact path |
+| security-constitution | `.architecture-guard/security.md` | Or user-provided security artifact path, if any |
+| governance-config | `.architecture-guard/config.yml` | |
+| config | `.architecture-guard/config.yml` | Compatibility alias of `governance-config` |
+| extensions | Unsupported; detect host capabilities directly | |
+| extensions-dir | Unsupported; do not probe an extension directory | |
+| spec | `changes/{change}/spec.md` | Or user-provided active specification path |
+| plan | `changes/{change}/plan.md` | Or user-provided active planning artifact path |
+| tasks | `changes/{change}/tasks.md` | Or user-provided active task artifact path |
+| proposal | `changes/{change}/proposal.md` | Or user-provided proposal path |
+| security-constraints | `changes/{change}/security-constraints.md` | Or user-provided security constraints path, if any |
+| project-config | `.architecture-guard/flow/default.md` | |
+| constitution-set | `.architecture-guard/constitution.md`, `.architecture-guard/architecture.md`, `.architecture-guard/security.md`, plus any user-provided governance paths | |
+| change-root | `changes/{change}/` | |
+| flow-template | `.architecture-guard/flow/default.md` | |
+| draft | `.architecture-guard/constitution.draft.md` | |
+| ponytail-template | `.architecture-guard/templates/ponytail_core.md` | |
+| capability-composition-template | `.architecture-guard/templates/capability_composition.md` | |
+| budgeted-context-template | `.architecture-guard/templates/budgeted_context_sdd.md` | |
+| hygiene-rules | `.architecture-guard/hygiene-rules/*.md` | |
+| presets | `.architecture-guard/presets/{preset}.md` | |
+| sonar-rules | `.architecture-guard/sonar-rules` | |
+| scripts | `.architecture-guard/scripts` | |
+| templates | `.architecture-guard/templates` | Compatibility alias; prefer `ponytail-template` |
+| fallback-spec-index | Unsupported; inspect only user-named historical specs | |
 
 ## Command Map
 
 | Canonical Key | Generic Invocation or Fallback |
 |---|---|
 | create-spec | Resolve `architecture-guard resolve flow default` and `architecture-guard resolve template generic_spec`, then create `{adapter_path:spec}` inline following the flow-template guidance |
+| change-scope | Use the user-selected active artifact set (default `changes/{change}/` from the flow template). If several are plausible, ask; never pick by recency. Reuse the same change for every phase. |
+| validate-spec | No native spec validator; check `{adapter_path:spec}` inline against the resolved spec template for required sections, unique requirement IDs, and testable acceptance criteria |
+| spec-template | Resolve `architecture-guard resolve template generic_spec` |
 | create-change | Ensure `{adapter_path:change-root}` directory exists; use the flow-defined or user-selected artifact paths |
-| archive | Run `architecture-guard archive <changeName> --framework generic` or move `{adapter_path:change-root}` to `changes/archive/{YYYY-MM-DD}-{change}/` after user confirmation |
+| archive | Preview the destination, then after explicit user approval run `architecture-guard archive <changeName> --framework generic`, or move `{adapter_path:change-root}` to `changes/archive/{YYYY-MM-DD}-{change}/`; never run either without that approval |
 | verify | Run the Architecture Guard verification workflow against the active artifacts |
 | clarify-spec | Ask and apply an inline ambiguity-resolution loop |
 | create-plan | Resolve `architecture-guard resolve flow default` and `architecture-guard resolve template generic_plan`, then create `{adapter_path:plan}` inline following the flow-template guidance |

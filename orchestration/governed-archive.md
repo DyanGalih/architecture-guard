@@ -6,11 +6,11 @@ description: Verify, then archive a completed feature with explicit approval for
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md`. Resolve the active adapter in this order: explicit `--adapter` override, `.architecture-guard/selected-adapter` as the authoritative persisted selection, then filesystem markers only when no persisted selection exists. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. Resolve every adapter token before continuing.
+Before executing this command, read `.architecture-guard/adapters/resolve.md` and resolve the adapter with its chain (explicit `--adapter` override, `.architecture-guard/selected-adapter`, `.architecture-guard/config.yml`, then filesystem markers), then load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Stop with `Unavailable` and the exact path if the adapter file is missing. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. Resolve every adapter path and command token before continuing; all paths and commands below use the loaded adapter.
 
-## OpenSpec Change Scope
+## Change Scope
 
-When the selected adapter is `openspec`, establish one `CHANGE_ID` before any OpenSpec artifact lookup or command. Resolve it from an explicit user-provided change, one unambiguous result from `openspec list --specs --json`, or a new kebab-case name approved for creation; create or reuse that change before continuing. Pass `--change "$CHANGE_ID"` to every `openspec instructions` and `openspec status` command, validate with `openspec validate "$CHANGE_ID" --strict`, and reuse the same id for every artifact and archive step. A capability name is not a change id. If no unambiguous change can be resolved, stop and ask the user rather than invoking an action with an empty `CHANGE_ID`.
+Before any SDD artifact lookup or command, establish the active change scope with {adapter_command:change-scope}. If no unambiguous scope can be resolved, stop and ask the user rather than continuing without one.
 
 ## Standalone Resource Resolution
 
@@ -33,8 +33,8 @@ Resolve and apply the `capability_composition` template with `architecture-guard
 
 Before making decisions or delegating work, read these inputs explicitly with file-reading tools:
 
-1. **Manifest & Configuration**: Read `openspec/config.yaml` first when the OpenSpec adapter is active (otherwise read the selected adapter project configuration), then inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
-2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. For OpenSpec, explicitly check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+1. **Manifest & Configuration**: Read the selected adapter's project configuration (`{adapter_path:project-config}`) first, then inspect it for references to further governance and constitution Markdown files (for example a `context` block). Never rely on a hardcoded partial list.
+2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. Explicitly check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 3. **Active Artifacts**: Read the feature, review, plan, task, or current-state artifacts required by this skill.
 
 ## Purpose
@@ -44,10 +44,9 @@ Verifies, then finalizes a completed feature. Changelog, memory, Git, and worksp
 ## Orchestration Flow
 
 ### Step 1 — Verification and SDD Framework Archival Execution
-- Determine the active framework via `adapters/resolve.md`.
+- Determine the active framework via `.architecture-guard/adapters/resolve.md`.
 - **All frameworks**: Trigger {adapter_command:verify} first and stop if verification fails or has unresolved blocking findings.
-- **If OpenSpec**: After verification and explicit approval, trigger {adapter_command:archive}; ask for the change name and archive destination if either is ambiguous.
-- **If SpecKit**: After verification and explicit approval, execute the adapter's retain-in-place archive behavior: keep the active feature artifacts in `{adapter_path:spec}`'s feature directory and incrementally update `{adapter_path:fallback-spec-index}`. Report index update failures as non-blocking warnings; do not move the feature artifacts.
+- After verification and explicit approval, execute {adapter_command:archive} exactly as the adapter defines it (a native archive command, a retain-in-place index update, or a manual-archive report). Ask for the change name and archive destination if either is ambiguous. Do not move artifacts unless the adapter's archive behavior says to.
 - **If Generic**: Explain that native archival is unsupported. Ask for and preview an archive destination; move only the explicitly selected artifacts after approval, and never overwrite an existing destination.
 - Before any write, inspect uncommitted changes and report files the archive would touch. Never discard, stage, commit, or overwrite unrelated changes.
 - Preflight every destination for collisions. Do not overwrite or merge an existing archive/index entry without explicit approval and a stated overwrite strategy.
@@ -68,6 +67,12 @@ Prompt the user to execute final Git operations:
 
 Prepare semantic commit messages and PR descriptions from the SDD artifacts, but execute Git operations only after the user selects an action and confirms the target branch and files.
 
+**Protected-branch guard** (applies to every option):
+- Run `git branch --show-current` first. Refuse to commit or push on `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch; report the branch and stop the Git step (offer "Do nothing" or ask the user to switch to a feature branch).
+- Commit only the files listed in the confirmed preview; never stage unrelated changes.
+- Push only after a separate explicit approval that names the remote and branch, even when "Commit & Push" was selected. Never force-push (`--force`, `--force-with-lease`, or a `+` refspec).
+- Create a PR only after its own approval of the title, description, and base branch.
+
 ### Step 5 — Workspace Cleanup
 If Git operations were successful, offer workspace cleanup as a separate confirmation. Show exactly what will be removed, refuse cleanup while affected files have uncommitted changes, and verify archive/index results before deletion. Never check out another branch or delete a feature branch without explicit approval.
 
@@ -79,7 +84,7 @@ The command MUST return:
 # Governed Archive Summary
 
 ## Archival Status
-- **Framework**: [OpenSpec / SpecKit / etc.]
+- **Adapter**: [selected adapter name]
 - **Status**: [Success / Partial / Blocked / Failed / Retained In Place]
 - **Synced/Consolidated**: [Success / Partial / Skipped / Failed]
 - **Destination**: [Retained in place / archive path / None]

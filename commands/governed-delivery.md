@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Capability Composition
 
-Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation. On Spec Kit extension installs, resolve a capability `<capability>` to the registered `speckit.architecture-guard.ag-<capability>` command file in the agent's command directory, or to `.specify/extensions/architecture-guard/commands/<capability>.md`.
 
 ## Budgeted Context Contract
 
@@ -39,23 +39,23 @@ Before the first mutation, resolve and preview the exact branch, change containe
 Before creating, planning, or modifying any active change:
 
 1. Run `git branch --show-current`.
-2. If the branch is `main`, `master`, `dev`, `staging`, or another protected branch:
-   - MUST create and switch to `feature/<change-name>`.
-   - MUST NOT continue on the protected branch.
-3. If already on a feature branch, reuse it.
+2. If the branch is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch:
+   - Do not create a separate `feature/*` branch. When no active feature exists, `/speckit.specify` creates the numbered Spec Kit feature branch (`NNN-<short-name>`) together with the feature directory: include that branch in the Write Approval Gate preview, and let `/speckit.specify` create and switch to it only after explicit user approval.
+   - When an active feature already exists, include its existing feature branch in the Write Approval Gate preview, and create and switch to it only after explicit user approval.
+   - If the user declines or branch creation fails, stop. MUST NOT continue on the protected branch.
+3. If already on a feature branch, reuse it. When no active feature exists, `/speckit.specify` still creates its own numbered feature branch; include it in the Write Approval Gate preview.
 4. Preserve existing uncommitted changes; never reset or discard them.
 5. Report the selected branch before creating artifacts.
 
 ## Phase 1 — Detect the Active Feature and Integrations
 
 1. Resolve the active feature from the user's explicit path, `.specify/feature.json` (for SpecKit), Spec Kit feature metadata, current branch, or a single unambiguous directory under `specs/`, in that order.
-2. If no active feature directories or specifications exist (ignoring archives), run the adapter-registered `governed-spec` capability (or `/speckit.specify`) to properly initialize the feature workspace and specification following native SDD tool numbering rules.
+2. If no active feature directories or specifications exist (ignoring archives), run `/speckit.architecture-guard.ag-governed-spec` (which runs `/speckit.specify`) to initialize the feature workspace, feature branch, and specification following Spec Kit numbering rules.
 3. Do not guess when multiple feature directories are plausible. Ask the user to identify the feature.
 4. Detect `flash-mem` as an MCP service. Do not look for it in `.specify/extensions.yml`.
 5. Inspect the installed list in `.specify/extensions.yml` for `security-review` or its compatibility alias `spec-kit-security-review`. Manifest presence alone is not availability.
 6. For each phase, select the SpecKit integration only after verifying its applicable command is registered and callable: `/speckit.security-review.plan` for plan review and `/speckit.security-review.tasks` for task review. If an applicable command is absent, detect an independently registered Architecture Guard-compatible Security Review host capability and use its corresponding plan or tasks operation. If neither path is callable, mark that phase's Security Review `Unavailable` and degrade without claiming a pass.
-7. Detect OpenSpec by looking for `openspec/config.yaml` or an `openspec` directory.
-8. Read the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for SpecKit, check `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file.
+7. Read the selected adapter's project configuration first (`openspec/config.yaml` for OpenSpec), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. For OpenSpec, check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for SpecKit, check `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any adapter-defined layout constitution. Never silently omit an existing file.
 
 ## Phase 2 — Mandatory Memory Preflight When Available
 
@@ -68,17 +68,13 @@ Prefer summaries, metadata, tags, confidence, and related files. Load full entri
 
 ## Phase 3 — Branch Management
 
-Before generating artifacts or modifying files, you MUST ensure work happens on a feature branch.
-1. Check the current git branch.
-2. If on `main`, `master`, `dev*` (e.g., `dev`, `develop`, `development`), or `staging`, ask the user if they want to create a new branch for this feature.
-3. If they approve, create the branch using available tools before proceeding.
+Branch handling is defined once in the Mandatory Branch Preflight above. Do not ask again or create a second branch here.
 
 ## Phase 4 — Spec & Proposal Gate
 
 Check if a formal specification or proposal already exists for the active feature. If missing, automatically generate it using the available discovery context or prompt the user for input:
 
-1. **If OpenSpec is detected:** Run the adapter-defined OpenSpec change creation flow using one resolved `CHANGE_ID`. Keep `proposal.md`, `design.md`, `specs/**/*.md`, and `tasks.md` under the OpenSpec change root; do not copy or wire them into SpecKit directories. Use the selected adapter mapping for subsequent validation.
-2. **If SpecKit (without OpenSpec) is detected:** Automatically run `/ag-governed-spec` to generate `spec.md` from the discovery draft.
+1. Run `/speckit.architecture-guard.ag-governed-spec` to generate `spec.md` from the discovery draft. This legacy extension supports Spec Kit only; for OpenSpec or other SDD tools, use the standalone `architecture-guard` installer.
 
 ## Phase 5 — Inspect Resume State
 
@@ -103,15 +99,15 @@ Do not use timestamps as the only evidence of material staleness. Compare artifa
 
 ## Phase 6 — Plan Gate
 
-If the plan is `missing` or `stale`, execute the full `/ag-governed-plan` (or `/ag-governed-plan`) workflow.
+If the plan is `missing` or `stale`, execute the full `/speckit.architecture-guard.ag-governed-plan` workflow.
 
-If the plan is `review-required`, reuse it and run the selected security plan operation plus `/ag-review-artifacts`. Recheck command or host-operation registration immediately before dispatch. Do not regenerate a plan merely because review is needed.
+If the plan is `review-required`, reuse it and run the selected security plan operation plus `/speckit.architecture-guard.ag-review-artifacts`. Recheck command or host-operation registration immediately before dispatch. Do not regenerate a plan merely because review is needed.
 
 - Continue automatically when there are no blocking findings.
 - Record advisory architecture drift without stopping.
 - Stop before task generation for unresolved Constitution P0 architecture findings or independently blocking Security Review findings.
 - Stop when resolution requires a material product or architecture choice.
-- When a safe correction is already authorized, repair the plan, rerun affected reviews, and continue.
+- When a safe correction is already authorized, repair the plan, rerun affected reviews, and continue (subject to the repair-cycle limit in the task phase).
 
 The plan does not need to be perfect. It must be sufficiently stable and free of unresolved blocking findings.
 
@@ -119,7 +115,7 @@ The plan does not need to be perfect. It must be sufficiently stable and free of
 
 Only enter this phase after the plan is `accepted`.
 
-If tasks are `missing`, `stale`, or `review-required`, execute `/ag-governed-tasks` with the accepted plan and cached context.
+If tasks are `missing`, `stale`, or `review-required`, execute `/speckit.architecture-guard.ag-governed-tasks` with the accepted plan and cached context.
 
 The governed task phase must:
 
@@ -137,7 +133,7 @@ Activate this protocol only when the Claude Code host exposes named teammate spa
 - **Implementor Dispatch**: Upon approval, tasks are handed off to the Implementor teammates (`BE`, `FE`, `TEST`) for concurrent execution.
 - **Fallback**: If not running in Claude Code Agent Teams mode, execute standard single-agent plan-to-task delivery.
 
-If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks.
+If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks. Allow at most 2 plan/tasks repair cycles per run (counting Plan Gate repairs and returns from analysis together); if a blocking finding or plan defect remains after the second cycle, stop with status `Blocked` and ask the user how to proceed.
 
 ## Phase 8 — Durable Memory Preservation
 

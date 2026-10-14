@@ -6,7 +6,7 @@ description: Perform brownfield-first project initialization and discovery for e
 
 ## SDD Adapter Resolution
 
-Before executing command, read `adapters/resolve.md` to resolve the selected SDD adapter. Load `adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing this command, read `.architecture-guard/adapters/resolve.md` and resolve the adapter with its chain (explicit `--adapter` override, `.architecture-guard/selected-adapter`, `.architecture-guard/config.yml`, then filesystem markers), then load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Stop with `Unavailable` and the exact path if the adapter file is missing. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. Resolve every adapter path and command token before continuing; all paths and commands below use the loaded adapter.
 
 ## Standalone Resource Resolution
 
@@ -29,8 +29,8 @@ Resolve and apply the `capability_composition` template with `architecture-guard
 
 Before mapping the current system, read these inputs explicitly with file-reading tools:
 
-1. **Manifest & Configuration**: Read `openspec/config.yaml` first when the OpenSpec adapter is active (otherwise read the selected adapter project configuration), then inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
-2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. For OpenSpec, explicitly check `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`; for other adapters, read every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+1. **Manifest & Configuration**: Read the selected adapter's project configuration (`{adapter_path:project-config}`) first, then inspect it for references to further governance and constitution Markdown files (for example a `context` block). Never rely on a hardcoded partial list.
+2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. Explicitly check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 3. **Current-State Artifacts**: Read the repository and active planning artifacts required for the brownfield baseline.
 
 Brownfield-first project initialization for existing codebases.
@@ -58,7 +58,7 @@ Create a reliable current-state baseline before any architectural or delivery gu
 - System boundaries and dependency map
 - Existing conventions and exceptions
 - Migration or refactor candidates
-- First-pass plan for bringing the project under governance
+- First-pass recommendation outline for bringing the project under governance (not the canonical plan)
 
 ## Guidance
 
@@ -68,7 +68,7 @@ Create a reliable current-state baseline before any architectural or delivery gu
 - Keep the first pass lightweight and non-destructive.
 - Ask for confirmation before suggesting broad refactors.
 - Recommend targeted mode for small spec sets. For larger histories, explain that budgeted mode queries Flash-Mem first, uses `{adapter_path:fallback-spec-index}` only when supported, and never replaces active artifacts.
-- If the user wants budgeted mode, record the recommendation in the brownfield output and hand it to the adapter-registered init capability. Do not create configuration or generate `system_context.md` during this non-destructive mapping pass.
+- If the user wants budgeted mode, record the recommendation in the brownfield output and hand it to the adapter-registered init capability. Do not create configuration or generate the fallback spec index (adapter mapping: {adapter_path:fallback-spec-index}) during this non-destructive mapping pass.
 - Do not promise token savings before representative measurement and do not write operational settings into constitution files.
 - Label the result `Brownfield Recommendation Outline`. The canonical technical plan is created later by the adapter-registered governed-plan capability after active constitutions and a specification exist.
 
