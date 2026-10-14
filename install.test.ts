@@ -1052,3 +1052,78 @@ test('Sonar rules bundle is consistent with its manifest and README', () => {
   assert.match(readme, new RegExp(`^${rules.length} rules`, 'm'));
   assert.doesNotMatch(readme + JSON.stringify(manifest), /extract-sonar-rules|\.github\/sonar-rules/);
 });
+
+const forgeModule = () => require('./cli/forge');
+
+test('every built-in forge defines every forge key, and FORGES.md lists exactly those keys', () => {
+  const { BUILTIN_FORGES, FORGE_KEYS, missingForgeKeys, forgeTokensUsed } = forgeModule();
+  for (const name of BUILTIN_FORGES) {
+    const content = fs.readFileSync(path.join(repoRoot, 'adapters/forges', `${name}.md`), 'utf8');
+    assert.deepEqual(missingForgeKeys(content), [], `adapters/forges/${name}.md`);
+  }
+  for (const key of forgeTokensUsed()) assert.ok(FORGE_KEYS.includes(key), `orchestration uses undeclared forge key ${key}`);
+  const doc = fs.readFileSync(path.join(repoRoot, 'FORGES.md'), 'utf8');
+  const listed = [...doc.match(/^- Command Map: (.*)$/m)[1].matchAll(/`([a-z0-9-]+)`/g)].map(match => match[1]).sort();
+  assert.deepEqual(listed, [...FORGE_KEYS].sort());
+});
+
+test('forge auto-detection maps origin remotes to built-in forges', () => {
+  const { detectForge } = forgeModule();
+  const cases = [
+    ['https://github.com/acme/app.git', 'github'],
+    ['git@github.com:acme/app.git', 'github'],
+    ['https://gitlab.com/acme/app.git', 'gitlab'],
+    ['git@gitlab.example.com:acme/app.git', 'gitlab'],
+    ['https://user@bitbucket.org/acme/app.git', 'bitbucket'],
+    ['https://dev.azure.com/acme/proj/_git/app', 'azure-devops'],
+    ['git@ssh.dev.azure.com:v3/acme/proj/app', 'azure-devops'],
+    ['https://git.internal.example/acme/app.git', 'generic'],
+  ];
+  for (const [url, expected] of cases) {
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-forge-'));
+    spawnSync('git', ['init', '-q'], { cwd: repo });
+    spawnSync('git', ['remote', 'add', 'origin', url], { cwd: repo });
+    assert.equal(detectForge(repo).forge, expected, url);
+  }
+  assert.equal(detectForge(fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-forge-'))).forge, 'generic');
+});
+
+test('init records the forge, installs forge adapters, and validates custom forges first', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  spawnSync('git', ['init', '-q'], { cwd });
+  spawnSync('git', ['remote', 'add', 'origin', 'git@github.com:acme/app.git'], { cwd });
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'], cwd);
+  assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-forge'), 'utf8').trim(), 'github');
+  for (const name of [...forgeModule().BUILTIN_FORGES, 'resolve']) {
+    assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard/forges', `${name}.md`)), name);
+  }
+
+  const custom = path.join(cwd, '.architecture-guard/forges/gitea.md');
+  fs.writeFileSync(custom, fs.readFileSync(path.join(repoRoot, 'adapters/forges/generic.md'), 'utf8').replace(/^\| thread-resolve \|.*\n/m, ''));
+  const broken = spawnSync(process.execPath, [installer, 'init', '--yes', '--agent', 'claude', '--framework', 'none', '--forge', 'gitea', '--commands', 'init'], { cwd, encoding: 'utf8' });
+  assert.notEqual(broken.status, 0);
+  assert.match(broken.stderr, /missing required keys/);
+  assert.match(broken.stderr, /thread-resolve/);
+  assert.ok(!fs.existsSync(path.join(cwd, '.claude')), 'nothing written for a broken custom forge');
+
+  fs.writeFileSync(custom, fs.readFileSync(path.join(repoRoot, 'adapters/forges/generic.md'), 'utf8'));
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--forge', 'gitea', '--commands', 'init'], cwd);
+  assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-forge'), 'utf8').trim(), 'gitea');
+});
+
+test('forge tokens are materialized with the selected forge actions', () => {
+  const { materializeForgeTokens } = forgeModule();
+  const out = materializeForgeTokens('Fetch the diff with {forge_command:pr-diff}.', 'generic');
+  assert.doesNotMatch(out, /\{forge_command:/);
+  assert.match(out, /the forge-defined "pr-diff" action/);
+  assert.match(out, /## Resolved Forge Actions \(generic\)/);
+  assert.match(out, /git diff <base>\.\.\.<head>/);
+  assert.equal(materializeForgeTokens('no tokens here', 'generic'), 'no tokens here');
+});
+
+test('validate-setup reports the selected forge', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--forge', 'gitlab', '--commands', 'init'], cwd);
+  const out = spawnSync(process.execPath, [installer, 'validate-setup', cwd], { encoding: 'utf8' }).stdout;
+  assert.match(out, /Forge "gitlab" defines all required keys/);
+});

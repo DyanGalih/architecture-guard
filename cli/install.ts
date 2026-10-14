@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT_DIR = path.join(__dirname, '..', '..');
+const { resolveForge, installForges, materializeForgeTokens } = require('./forge');
 
 // ponytail: stdin detection is the trickiest part of a prompt-style installer.
 // Node has no synchronous peek on stdin, so we distinguish three cases:
@@ -498,7 +499,11 @@ async function installCommand(agentType: any, commandName: any, cmdDir: any, opt
   }
 
   const adapterName = opts.adapterName || opts.framework || 'generic';
-  const content = materializeAdapterTokens(readPrompt(promptPath), adapterName, opts.targetDir || null);
+  const content = materializeForgeTokens(
+    materializeAdapterTokens(readPrompt(promptPath), adapterName, opts.targetDir || null),
+    opts.forgeName || 'generic',
+    opts.targetDir || null,
+  );
   const sk = slug(commandName);
   let dest = commandDestination(cfg, sk, cmdDir, agentType);
 
@@ -642,7 +647,7 @@ function configureClaudeAgentTeams(targetDir: string) {
 }
 
 function parseArgs(argv) {
-  const opts = { target: null, agents: null, framework: null, commands: null, overwrite: null, yes: false, help: false, version: false, claudeAgentTeams: false, vendor: false, values: [] };
+  const opts = { target: null, agents: null, framework: null, forge: null, commands: null, overwrite: null, yes: false, help: false, version: false, claudeAgentTeams: false, vendor: false, values: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
@@ -662,6 +667,8 @@ function parseArgs(argv) {
         opts.agents = argv[++i]; break;
       case '--framework':
         opts.framework = argv[++i]; break;
+      case '--forge':
+        opts.forge = argv[++i]; break;
       case '--commands': case '--command':
         opts.commands = argv[++i]; break;
       case '--':
@@ -669,6 +676,7 @@ function parseArgs(argv) {
       default:
         if (a.startsWith('--agent=')) opts.agents = a.slice('--agent='.length);
         else if (a.startsWith('--framework=')) opts.framework = a.slice('--framework='.length);
+        else if (a.startsWith('--forge=')) opts.forge = a.slice('--forge='.length);
         else if (a.startsWith('--commands=')) opts.commands = a.slice('--commands='.length);
         else if (a.startsWith('--overwrite=')) opts.overwrite = a.slice('--overwrite='.length);
         else if (a === '--claude-agent-teams' || a === '--claude-teams') opts.claudeAgentTeams = true;
@@ -693,6 +701,7 @@ Options:
   -y, --yes             Non-interactive; --agent and --framework are required unless auto-detected
   --agent <names>       Comma-separated agent keys (e.g. opencode,claude)
   --framework <f>       spec-kit | openspec | none | <custom adapter name>
+  --forge <name>        auto | github | gitlab | bitbucket | azure-devops | generic | <custom forge> (default: auto)
   --commands <list>     Comma-separated command names, indices, or aliases (all, review)
   --overwrite <mode>    replace | skip | keep-both (default: replace)
   --vendor, --full      Copy immutable runtime resources locally (for air-gapped setups)
@@ -843,6 +852,10 @@ async function runInit(targetDir, opts) {
     }
   }
 
+  // Code host for pull-request skills; resolved before any file is written so a bad custom forge fails early.
+  const { forge, reason: forgeReason } = resolveForge(opts.forge, targetDir);
+  console.log(`Forge: ${forge} (${forgeReason})`);
+
   let selectedCommands;
   if (opts.commands) {
     selectedCommands = parseCommandSelection(opts.commands);
@@ -868,7 +881,7 @@ async function runInit(targetDir, opts) {
     }
 
     for (const cmd of selectedCommands) {
-      await installCommand(agent, cmd, cmdDir, { ...opts, targetDir, adapterName: framework === 'none' ? 'generic' : framework }, isAgy ? workflowsDir : null);
+      await installCommand(agent, cmd, cmdDir, { ...opts, targetDir, forgeName: forge, adapterName: framework === 'none' ? 'generic' : framework }, isAgy ? workflowsDir : null);
     }
   }
 
@@ -906,6 +919,8 @@ async function runInit(targetDir, opts) {
 
   writeInstallerConfig(path.join(runtimeDir, 'config.yml'), adapter);
   fs.writeFileSync(path.join(runtimeDir, 'selected-adapter'), `${adapter}\n`);
+  installForges(targetDir, opts.overwrite === "skip" || opts.overwrite === "keep-both");
+  fs.writeFileSync(path.join(runtimeDir, 'selected-forge'), `${forge}\n`);
 
   if (adapter === 'generic') {
     const flowDir = path.join(runtimeDir, 'flow');
@@ -927,6 +942,7 @@ async function runInit(targetDir, opts) {
   console.log(`Commands installed: ${selectedCommands.length}`);
   console.log(`Agents: ${selectedAgents.join(', ')}`);
   console.log(`Adapter: .architecture-guard/adapters/${adapter}.md`);
+  console.log(`Forge: .architecture-guard/forges/${forge}.md`);
   console.log('Resolution: .architecture-guard/adapters/resolve.md');
 }
 
