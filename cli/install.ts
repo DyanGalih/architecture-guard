@@ -31,9 +31,11 @@ function nextLine() {
 }
 function readAllStdin() {
   return new Promise((resolve) => {
-    // Drain piped answers only when stdout is not interactive (tests, CI, redirects).
-    // Interactive stdout => readline prompts work even if stdin is a pipe (opencode).
-    if (!process.stdout.isTTY) {
+    // Drain piped answers only when stdout is not interactive (tests, CI) and stdin is
+    // actually a pipe. Interactive stdout => readline prompts work even if stdin is a pipe
+    // (opencode); an interactive stdin with redirected stdout (`init > log`) is never
+    // drained, or the installer would wait for an EOF the user never sends.
+    if (!process.stdout.isTTY && !process.stdin.isTTY) {
       const rl = require('readline').createInterface({ input: process.stdin });
       const lines: string[] = [];
       rl.on('line', (l: string) => lines.push(l));
@@ -430,8 +432,9 @@ function installSkillMd(sk, content, cmdDir, dest, agentType) {
     cleanContent = cleanContent.substring(match[0].length).trim();
   }
 
+  // keep-both writes ag-<sk>-2/SKILL.md; the skill name must match its directory.
   const frontmatter = `---
-name: ag-${sk}
+name: ${path.basename(path.dirname(dest))}
 description: ${description}
 metadata:
   author: architecture-guard
@@ -442,14 +445,28 @@ ${cleanContent}`;
   fs.writeFileSync(dest, frontmatter);
 }
 
+// Prompts contain backslashes (LaTeX, regexes) that are escapes in TOML basic strings, so
+// prefer a multi-line literal string, which keeps the text verbatim. Fall back to an escaped
+// basic string only when the text contains ''' or a control character literals cannot hold.
+function tomlMultilineString(text) {
+  // eslint-disable-next-line no-control-regex
+  const control = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g;
+  if (!text.includes("'''") && !text.match(control)) {
+    return `'''\n${text}\n'''`;
+  }
+  const escaped = text
+    .replace(/\\/g, '\\\\')
+    .replace(/"""/g, '\\"\\"\\"')
+    .replace(control, ch => `\\u${ch.charCodeAt(0).toString(16).padStart(4, '0')}`);
+  return `"""\n${escaped}\n"""`;
+}
+
 function installToml(sk, content, cmdDir, dest) {
   dest ||= path.join(cmdDir, `${sk}.toml`);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   const toml = `description = "Architecture Guard: ag-${sk}"
 
-prompt = """
-${content.trim().replace(/"""/g, '\\"\\"\\"')}
-"""
+prompt = ${tomlMultilineString(content.trim())}
 `;
   fs.writeFileSync(dest, toml);
 }
@@ -491,6 +508,17 @@ function availableCopy(dest, cfg, sk, cmdDir, agentType) {
   return candidate;
 }
 
+const OVERWRITE_MODES = ['replace', 'skip', 'keep-both'];
+
+// Applies --overwrite to an existing destination: the path to write, or null to skip it.
+function writableDestination(dest, overwrite, keepBothCopy) {
+  if (!fs.existsSync(dest)) return dest;
+  if (overwrite === 'skip') return null;
+  if (overwrite === 'keep-both') return keepBothCopy(dest);
+  fs.rmSync(dest, { recursive: true, force: true });
+  return dest;
+}
+
 async function installCommand(agentType: any, commandName: any, cmdDir: any, opts: any = {}, workflowsDir: any = null) {
   const cfg = AGENT_CONFIGS[agentType];
   if (!cfg) return;
@@ -508,22 +536,13 @@ async function installCommand(agentType: any, commandName: any, cmdDir: any, opt
     opts.targetDir || null,
   );
   const sk = slug(commandName);
-  let dest = commandDestination(cfg, sk, cmdDir, agentType);
-
-  if (fs.existsSync(dest)) {
-    const action = overwrite === 'keep-both' ? 'keep both' : (overwrite === 'skip' ? 'skip' : 'replace');
-    if (action !== 'replace' && action !== 'keep both') {
-      return;
-    }
-    if (action === 'keep both') {
-      dest = availableCopy(dest, cfg, sk, cmdDir, agentType);
-    } else if (action === 'replace') {
-      fs.rmSync(dest, { recursive: true, force: true });
-    }
-  }
+  const dest = writableDestination(commandDestination(cfg, sk, cmdDir, agentType), overwrite,
+    existing => availableCopy(existing, cfg, sk, cmdDir, agentType));
 
   try {
-    if (cfg.ext === '.md') {
+    if (!dest) {
+      // --overwrite skip: the existing file is left untouched.
+    } else if (cfg.ext === '.md') {
       installMarkdown(sk, content, cmdDir, dest);
     } else if (cfg.ext === '/SKILL.md') {
       installSkillMd(sk, content, cmdDir, dest, agentType);
@@ -532,9 +551,11 @@ async function installCommand(agentType: any, commandName: any, cmdDir: any, opt
     } else if (cfg.ext === '.yaml') {
       installYaml(sk, content, cmdDir, dest);
     }
-    
-    if (workflowsDir) {
-      const wfDest = path.join(workflowsDir, `agx-${sk}.md`);
+
+    // Antigravity workflow files follow the same overwrite mode as the skills.
+    const wfDest = workflowsDir && writableDestination(path.join(workflowsDir, `agx-${sk}.md`), overwrite,
+      existing => availableCopy(existing, { ext: '.md' }, sk, workflowsDir, agentType));
+    if (wfDest) {
       fs.mkdirSync(path.dirname(wfDest), { recursive: true });
       fs.writeFileSync(wfDest, content);
     }
@@ -649,104 +670,7 @@ function configureClaudeAgentTeams(targetDir: string) {
   console.log(`  ✓ Configured Claude Code Agent Teams (Beta) in ${path.relative(process.cwd(), settingsPath)}`);
 }
 
-function parseArgs(argv) {
-  const opts = { target: null, agents: null, framework: null, forge: null, commands: null, overwrite: null, yes: false, help: false, version: false, claudeAgentTeams: false, vendor: false, values: [] };
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    switch (a) {
-      case '-h': case '--help':
-        opts.help = true; break;
-      case '-v': case '--version':
-        opts.version = true; break;
-      case '-y': case '--yes':
-        opts.yes = true; break;
-      case '--claude-agent-teams': case '--claude-teams':
-        opts.claudeAgentTeams = true; break;
-      case '--vendor': case '--full':
-        opts.vendor = true; break;
-      case '--overwrite':
-        opts.overwrite = argv[++i]; break;
-      case '--agent': case '--agents':
-        opts.agents = argv[++i]; break;
-      case '--framework':
-        opts.framework = argv[++i]; break;
-      case '--forge':
-        opts.forge = argv[++i]; break;
-      case '--commands': case '--command':
-        opts.commands = argv[++i]; break;
-      case '--':
-        opts.values = argv.slice(i + 1); i = argv.length; break;
-      default:
-        if (a.startsWith('--agent=')) opts.agents = a.slice('--agent='.length);
-        else if (a.startsWith('--framework=')) opts.framework = a.slice('--framework='.length);
-        else if (a.startsWith('--forge=')) opts.forge = a.slice('--forge='.length);
-        else if (a.startsWith('--commands=')) opts.commands = a.slice('--commands='.length);
-        else if (a.startsWith('--overwrite=')) opts.overwrite = a.slice('--overwrite='.length);
-        else if (a === '--claude-agent-teams' || a === '--claude-teams') opts.claudeAgentTeams = true;
-        else if (a === '--vendor' || a === '--full') opts.vendor = true;
-        else if (!a.startsWith('-')) { opts.values.push(a); }
-        break;
-    }
-  }
-  return opts;
-}
-
-function printHelp() {
-  console.log(`architecture-guard init [target] [options]
-
-Install governance commands and adapters for an AI agent in the target directory.
-
-Arguments:
-  target                Target directory (default: current directory)
-
-Options:
-  -h, --help            Show this help
-  -y, --yes             Non-interactive; --agent and --framework are required unless auto-detected
-  --agent <names>       Comma-separated agent keys (e.g. opencode,claude)
-  --framework <f>       spec-kit | openspec | none | <custom adapter name>
-  --forge <name>        auto | github | gitlab | bitbucket | azure-devops | generic | <custom forge> (default: auto)
-  --commands <list>     Comma-separated command names, indices, or aliases (all, review, pr)
-  --overwrite <mode>    replace | skip | keep-both (default: replace)
-  --vendor, --full      Copy immutable runtime resources locally (for air-gapped setups)
-  --claude-agent-teams  Enable Claude Code Agent Teams (Beta / Experimental)
-
-When --yes is set, --agent and --framework are required unless the framework is
-auto-detected from target; --commands defaults to all. By default, existing files are replaced;
-use --overwrite keep-both to preserve originals, or --overwrite skip to skip them.`);
-}
-
 const REQUIRED_RESOURCES = ['templates', 'presets', 'hygiene-rules', 'sonar-rules'];
-
-async function main() {
-  const opts = parseArgs(process.argv.slice(2));
-  if (opts.help) { printHelp(); return; }
-  
-  if (opts.version) {
-    const pkg = require('./package.json');
-    console.log(`architecture-guard v${pkg.version}`);
-    return;
-  }
-
-  const cmd = opts.values[0];
-  if (cmd && cmd !== 'init') {
-    console.error(`Unknown command: ${cmd}`);
-    printHelp();
-    process.exit(1);
-  }
-
-  console.log('Architecture Guard Installer\n');
-  // --yes never prompts, so never wait on stdin (it may stay open in shells and CI runners).
-  if (!opts.yes) await readAllStdin();
-  validateRuntimeResources();
-  requireInteractiveOrYes(opts);
-
-  const positional = opts.values.filter(v => v !== 'init');
-  const userPath = opts.target || positional[0];
-  const target = userPath || process.cwd();
-  const targetDir = path.resolve(target);
-
-  await runInit(targetDir, opts);
-}
 
 function readPersistedAdapter(targetDir) {
   const markerPath = path.join(targetDir, ".architecture-guard", "selected-adapter");
@@ -768,7 +692,60 @@ function readPersistedAdapter(targetDir) {
   return null;
 }
 
+// A rerun without --forge keeps a previously selected forge that still validates, so a
+// custom or self-hosted forge is not silently replaced by auto-detection.
+function resolveSelectedForge(requested, targetDir) {
+  const markerPath = path.join(targetDir, '.architecture-guard', 'selected-forge');
+  if (!requested && fs.existsSync(markerPath)) {
+    const persisted = fs.readFileSync(markerPath, 'utf8').trim();
+    if (persisted) {
+      try {
+        return { forge: resolveForge(persisted, targetDir).forge, reason: 'kept from .architecture-guard/selected-forge; pass --forge to change it' };
+      } catch {
+        // The recorded forge no longer validates; fall back to auto-detection.
+      }
+    }
+  }
+  return resolveForge(requested, targetDir);
+}
+
+// Lean installs resolve engine resources from the CLI bundle, and cli/resolve.ts treats any
+// file under .architecture-guard/{templates,presets,sonar-rules} as a local override. Only
+// byte-identical copies left by an older vendored install are removed; user content is kept.
+function pruneVendoredCopies(runtimeDir, overwrite) {
+  if (overwrite === 'skip' || overwrite === 'keep-both') return;
+  const kept = [];
+  const prune = (localDir, bundledDir) => {
+    for (const entry of fs.readdirSync(localDir, { withFileTypes: true })) {
+      const local = path.join(localDir, entry.name);
+      const bundled = path.join(bundledDir, entry.name);
+      if (entry.isDirectory()) {
+        prune(local, bundled);
+        if (fs.readdirSync(local).length === 0) fs.rmdirSync(local);
+      } else if (entry.isFile() && fs.existsSync(bundled) && fs.statSync(bundled).isFile()
+        && fs.readFileSync(local).equals(fs.readFileSync(bundled))) {
+        fs.unlinkSync(local);
+      } else {
+        kept.push(path.relative(runtimeDir, local).split(path.sep).join('/'));
+      }
+    }
+  };
+  for (const dir of ['templates', 'presets', 'sonar-rules']) {
+    const localDir = path.join(runtimeDir, dir);
+    if (!fs.existsSync(localDir) || !fs.statSync(localDir).isDirectory()) continue;
+    prune(localDir, path.join(ROOT_DIR, dir));
+    if (fs.readdirSync(localDir).length === 0) fs.rmdirSync(localDir);
+  }
+  if (kept.length) {
+    console.log('  ! Kept local overrides (they take precedence over the bundled engine resources):');
+    for (const file of kept) console.log(`    - .architecture-guard/${file}`);
+  }
+}
+
 async function runInit(targetDir, opts) {
+  if (opts.overwrite != null && !OVERWRITE_MODES.includes(opts.overwrite)) {
+    throw new Error(`Invalid --overwrite mode "${opts.overwrite}". Use one of: ${OVERWRITE_MODES.join(', ')}.`);
+  }
   if (opts.yes && !opts.agents) {
     throw new Error('--yes requires --agent <names> unless an agent is supplied by an interactive prompt');
   }
@@ -856,7 +833,7 @@ async function runInit(targetDir, opts) {
   }
 
   // Code host for pull-request skills; resolved before any file is written so a bad custom forge fails early.
-  const { forge, reason: forgeReason } = resolveForge(opts.forge, targetDir);
+  const { forge, reason: forgeReason } = resolveSelectedForge(opts.forge, targetDir);
   console.log(`Forge: ${forge} (${forgeReason})`);
 
   let selectedCommands;
@@ -908,13 +885,7 @@ async function runInit(targetDir, opts) {
   if (isVendor) {
     await installRuntimeResources(runtimeDir, opts);
   } else {
-    // Purge legacy static unmodifiable directories
-    for (const dir of ['templates', 'presets', 'sonar-rules']) {
-      const legacyDir = path.join(runtimeDir, dir);
-      if (fs.existsSync(legacyDir)) {
-        fs.rmSync(legacyDir, { recursive: true, force: true });
-      }
-    }
+    pruneVendoredCopies(runtimeDir, opts.overwrite);
   }
 
   const adapter = framework === "none" ? "generic" : framework;
