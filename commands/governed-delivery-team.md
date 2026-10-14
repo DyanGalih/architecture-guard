@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Capability Composition
 
-Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation. On Spec Kit extension installs, resolve a capability `<capability>` to the registered `speckit.architecture-guard.ag-<capability>` command file in the agent's command directory, or to `.specify/extensions/architecture-guard/commands/<capability>.md`.
 
 ## Budgeted Context Contract
 
@@ -41,16 +41,17 @@ Before creating, planning, or modifying any active change:
 
 1. Run `git branch --show-current`.
 2. If the branch is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch:
-   - Include `feature/<change-name>` in the Write Approval Gate preview, and create and switch to it only after explicit user approval.
+   - Do not create a separate `feature/*` branch. When no active feature exists, `/speckit.specify` creates the numbered Spec Kit feature branch (`NNN-<short-name>`) together with the feature directory: include that branch in the Write Approval Gate preview, and let `/speckit.specify` create and switch to it only after explicit user approval.
+   - When an active feature already exists, include its existing feature branch in the Write Approval Gate preview, and create and switch to it only after explicit user approval.
    - If the user declines or branch creation fails, stop. MUST NOT continue on the protected branch.
-3. If already on a feature branch, reuse it.
+3. If already on a feature branch, reuse it. When no active feature exists, `/speckit.specify` still creates its own numbered feature branch; include it in the Write Approval Gate preview.
 4. Preserve existing uncommitted changes; never reset or discard them.
 5. Report the selected branch before creating artifacts.
 
 ## Phase 1 — Detect the Active Feature and Integrations
 
 1. Resolve the active feature from the user's explicit path, Spec Kit feature metadata, current branch, or a single unambiguous directory under `specs/`, in that order.
-2. If no active feature directories exist (ignoring archives), automatically derive a kebab-case name from the user's goal and create the new feature directory using the active SDD tool's workflow.
+2. If no active feature directories exist (ignoring archives), derive a short kebab-case name from the user's goal and let `/speckit.specify` create the numbered feature directory and its feature branch, as previewed and approved in the Write Approval Gate.
 3. Do not guess when multiple feature directories are plausible. Ask the user to identify the feature.
 4. Detect `flash-mem` as an MCP service. Do not look for it in `.specify/extensions.yml`.
 5. Inspect the installed list in `.specify/extensions.yml` for `security-review` or its compatibility alias `spec-kit-security-review`. Manifest presence alone is not availability.
@@ -88,7 +89,8 @@ Before engineering planning begins, generate a business-oriented User Story repr
 4. Persist the generated User Story as `<feature-name>.md` in the `<root>/user-stories/` directory with status `draft`.
 5. Present it for stakeholder review and stop before engineering planning until the user explicitly accepts it. Record the result as `approved` in the file.
 6. Once the User Story is approved, check for the presence of `.architecture-guard/sync.yml`. If it exists:
-   - Run `npx architecture-guard validate-sync-config .architecture-guard/sync.yml` to strictly validate the configuration; a non-zero exit means invalid.
+   - Only when the `architecture-guard` CLI is already on PATH, run `architecture-guard validate-sync-config .architecture-guard/sync.yml` to strictly validate the configuration; a non-zero exit means invalid. Never download or run the CLI through `npx` or another package runner. If the CLI is not on PATH, skip sync, report it as `Unavailable`, and continue delivery.
+   - If the configuration is invalid, perform no remote write; report the validation errors and continue delivery.
    - If the configuration is valid and `enabled: true`, preview the configured provider and project/repository target and require explicit user approval of that target before any remote write.
    - Before creating anything, inspect `.architecture-guard/sync_status.json` and query the approved target for an existing item linked to this User Story. Reuse a confirmed match; never create a duplicate. Reruns with unchanged content and a confirmed remote ID are a no-op, while changed content updates that same remote item when supported.
    - After approval and duplicate checks, read the User Story content and create or update it through the configured provider (e.g., via `github-mcp-server`).
@@ -134,7 +136,7 @@ If the plan is `review-required`, reuse it and run the selected security plan op
 - Record advisory architecture drift without stopping.
 - Stop before task generation for unresolved Constitution P0 architecture findings or independently blocking Security Review findings.
 - Stop when resolution requires a material product or architecture choice.
-- When a safe correction is already authorized, repair the plan, rerun affected reviews, and continue.
+- When a safe correction is already authorized, repair the plan, rerun affected reviews, and continue (subject to the repair-cycle limit in the task phase).
 
 The plan does not need to be perfect. It must be sufficiently stable and free of unresolved blocking findings.
 
@@ -142,7 +144,7 @@ The plan does not need to be perfect. It must be sufficiently stable and free of
 
 Only enter this phase after the plan is `accepted`.
 
-If tasks are `missing`, `stale`, or `review-required`, execute `/speckit.architecture-guard.ag-governed-tasks` (or `/speckit.architecture-guard.ag-governed-tasks`) with the accepted plan and cached context.
+If tasks are `missing`, `stale`, or `review-required`, execute `/speckit.architecture-guard.ag-governed-tasks` with the accepted plan and cached context.
 
 The governed task phase must:
 
@@ -152,7 +154,7 @@ The governed task phase must:
 4. Run analysis (e.g., `/speckit.analyze`) against the complete plan and task set if available in the SDD tool.
 5. Keep implementation, security, migration, and refactor work explicit.
 
-If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks.
+If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks. Allow at most 2 plan/tasks repair cycles per run (counting Plan Gate repairs and returns from analysis together); if a blocking finding or plan defect remains after the second cycle, stop with status `Blocked` and ask the user how to proceed.
 
 ## Phase 9 — Durable Memory Preservation
 

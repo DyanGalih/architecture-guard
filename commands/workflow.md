@@ -10,7 +10,7 @@ Before continuing, read and apply `.specify/extensions/architecture-guard/templa
 
 ## Capability Composition
 
-Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation. On Spec Kit extension installs, resolve a capability `<capability>` to the registered `speckit.architecture-guard.ag-<capability>` command file in the agent's command directory, or to `.specify/extensions/architecture-guard/commands/<capability>.md`.
 
 Use this command as the end-to-end Architecture Guard entry point for SpecKit. Delegate each phase to its registered Architecture Guard capability instead of reproducing that phase's internal prompt.
 

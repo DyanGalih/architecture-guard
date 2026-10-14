@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Capability Composition
 
-Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation. On Spec Kit extension installs, resolve a capability `<capability>` to the registered `speckit.architecture-guard.ag-<capability>` command file in the agent's command directory, or to `.specify/extensions/architecture-guard/commands/<capability>.md`.
 
 ## Budgeted Context Contract
 
@@ -62,8 +62,8 @@ Require the complete set of applicable constitution inputs as active inputs. Rea
 
 Before generating the specification, you MUST ensure work happens on a feature branch.
 1. Check the current git branch.
-2. If on `main`, `master`, `dev*` (e.g., `dev`, `develop`, `development`), or `staging`, require approval to create or select a feature branch before any specification write.
-3. Stop if approval is declined or branch creation, selection, or checkout fails.
+2. If on `main`, `master`, `dev*` (e.g., `dev`, `develop`, `development`), or `staging`, require approval before any specification write. Do not create a separate `feature/*` branch: `/speckit.specify` creates and switches to the numbered Spec Kit feature branch (`NNN-<short-name>`), so preview that branch and run `/speckit.specify` only after explicit user approval. To continue an existing feature instead, select its existing feature branch after approval.
+3. Stop if approval is declined or branch creation, selection, or checkout fails. Never continue on a protected branch.
 
 ### Step 4 — Orchestrate Spec Kit Specification
 
@@ -106,7 +106,7 @@ If `context.mode` is `budgeted` and `stale_policy` is `regenerate`, run `/specki
 
 ### Step 9 — Interactive Auto-Fix Loop
 
-If any architectural gaps, security boundary issues, or drift are detected in Step 7:
+If any architectural gaps, security boundary issues, or drift are detected in Step 6:
 1. **Pause and Ask**: Conclude your response by asking the user:
    > *"I found [number] architectural gaps. Would you like me to automatically revise the specification to address these findings and re-run clarification?"*
 2. **Execute if Approved**: If the user answers "yes" (or equivalent) in their next message, you must:

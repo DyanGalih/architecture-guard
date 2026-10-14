@@ -62,7 +62,9 @@ The extension hooks are optional. In standalone mode, the agent-native command p
 
 ## Detection and Overrides
 
-Use an explicit adapter override in the installed command when the project intentionally contains both workflows:
+This section applies to standalone installs only. The legacy `extension.yml` commands are self-contained, use Spec Kit paths directly, and never load SDD adapters or accept `--adapter`.
+
+In a standalone install, use an explicit adapter override in the installed command when the project intentionally contains both workflows:
 
 ```text
 --adapter spec-kit

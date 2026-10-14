@@ -22,6 +22,14 @@
 - **Fixed — SpecKit finalize**: re-finalizing no longer erases hand-written text after an entry in `specs/system_context.md` or truncates a multi-line Purpose, the spec link is relative to the index (`feat/spec.md`), and a missing `spec.md` or an unwritable index exits non-zero with `{"status": "skipped" | "failed", "reason": ...}` under `--json`.
 - **Fixed — smaller fixes**: `init > log` with an interactive terminal no longer waits for stdin; `validate-setup` rejects `selected-adapter`/`selected-forge` values that are not plain names; the hygiene file walk reports POSIX paths on Windows outside a git repository; the build cleans `dist/` and the npm package no longer ships compiled tests or stale removed commands.
 
+- **Legacy Spec Kit extension fixes** (`commands/`, safety and breakage only):
+  - Delegation now resolves capabilities to the registered `speckit.architecture-guard.ag-<capability>` command file or `.specify/extensions/architecture-guard/commands/<capability>.md`, so delegated commands no longer fail to resolve on Spec Kit installs.
+  - The repository hygiene policy is written to and read from `.specify/config/repository_hygiene.yml` (a top-level `repository_hygiene:` block), which `architecture-guard hygiene` actually reads; the config template comment now names both locations.
+  - Delivery commands no longer create a separate `feature/*` branch before `/speckit.specify` creates its own numbered feature branch; branch creation stays approval-gated and work never continues on a protected branch.
+  - `ag-apply` proposes Flash-Mem entries and writes them only after a separate `[y/N]` approval; `ag-init` asks before saving or archiving a constitution draft.
+  - `ag-governed-delivery-team` runs `validate-sync-config` only when the CLI is on PATH (never through `npx`) and skips User Story sync, reported as `Unavailable`, otherwise; an invalid config means no remote write.
+  - The budgeted context contract names the registered `/speckit.architecture-guard.ag-consolidate-specs` command; delivery repair loops stop as `Blocked` after two cycles; review commands run `architecture-guard hygiene --json` when available (artifact review stays artifact-only); `SPECKIT-INTEGRATION.md` states that adapter overrides apply to standalone installs only.
+
 ## 3.0.0
 
 Architecture Guard's standalone orchestrator now supports any SDD tool through custom adapters, and its skills are SDD-tool-agnostic. This release also closes several safety-gate gaps, repairs broken CLI helpers, and limits the legacy Spec Kit extension to safety and breakage fixes.
