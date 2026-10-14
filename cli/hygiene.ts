@@ -8,6 +8,8 @@ export interface HygieneOptions {
   target?: string;
   json?: boolean;
   rules?: string;
+  // Comma-separated paths relative to the target; limits findings to these files.
+  files?: string;
 }
 
 type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'WARNING' | 'INFO';
@@ -54,9 +56,17 @@ interface HygienePolicy {
   };
 }
 
+export interface HygieneScope {
+  mode: 'repository' | 'files';
+  files: string[];
+  // Requested files that are absent, ignored by policy, or not tracked (for example, deleted by the change).
+  unmatched: string[];
+}
+
 export interface HygieneReport {
   status: 'passed' | 'failed' | 'degraded' | 'disabled';
   target: string;
+  scope: HygieneScope;
   policy: {
     enabled: boolean;
     failOn: string[];
@@ -96,6 +106,29 @@ const TEXT_EXTENSIONS = new Set([
 const DEFAULT_IGNORED_PATHS = ['.git/**', 'node_modules/**'];
 
 const SeverityDetectors: Record<string, (rule: HygieneRule, files: ProjectFile[]) => RawFinding[]> = {};
+
+// Detectors that compare files with each other: in a scoped run they still see the whole
+// repository, so a changed file that duplicates an unchanged one is reported.
+const CROSS_FILE_DETECTORS = new Set(['duplicate-experimental-files', 'duplicate-business-logic']);
+
+function toPosix(value: string) {
+  return value.split(path.sep).join('/');
+}
+
+function parseScope(target: string, files: string | undefined): string[] | null {
+  if (files === undefined) return null;
+  const entries = files.split(',').map(value => value.trim()).filter(Boolean);
+  const scoped = new Set<string>();
+  for (const entry of entries) {
+    const absolute = path.resolve(target, entry);
+    const relative = path.relative(target, absolute);
+    if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
+      throw new Error(`--files entry "${entry}" is outside the target directory ${target}`);
+    }
+    scoped.add(toPosix(relative));
+  }
+  return [...scoped].sort();
+}
 
 function isSourceFile(file: ProjectFile) {
   return SOURCE_EXTENSIONS.has(path.extname(file.relativePath).toLowerCase());
@@ -454,7 +487,14 @@ export function scanHygiene(options: HygieneOptions = {}): HygieneReport {
     ? names.filter(name => requested.has(name.toLowerCase()) || requested.has(name.replace(/\.[^.]+$/, '').toLowerCase()))
     : names;
 
-  const files = projectFiles(target, policy);
+  const scopedPaths = parseScope(target, options.files);
+  const allFiles = projectFiles(target, policy);
+  const inScope = scopedPaths ? new Set(scopedPaths) : null;
+  const scopedFiles = inScope ? allFiles.filter(file => inScope.has(toPosix(file.relativePath))) : allFiles;
+  const matched = new Set(scopedFiles.map(file => toPosix(file.relativePath)));
+  const scope: HygieneScope = scopedPaths
+    ? { mode: 'files', files: scopedPaths, unmatched: scopedPaths.filter(file => !matched.has(file)) }
+    : { mode: 'repository', files: [], unmatched: [] };
   const rules = selectedNames.map(name => {
     const resource = resolveResource('hygiene-rules', name, { target });
     return parseRule(name, resource.content, resource.path, resource.source);
@@ -464,6 +504,7 @@ export function scanHygiene(options: HygieneOptions = {}): HygieneReport {
     return {
       status: 'disabled',
       target,
+      scope,
       policy: { enabled: false, failOn: policy.failOn, warnOn: policy.warnOn },
       rules: rules.map(rule => ({
         identifier: rule.identifier,
@@ -489,7 +530,10 @@ export function scanHygiene(options: HygieneOptions = {}): HygieneReport {
   const findings = rules.flatMap(rule => {
     const detector = SeverityDetectors[rule.identifier];
     if (!detector) return [];
-    return detector(rule, files).map(finding => applyFindingPolicy(rule, finding, policy));
+    const detected = CROSS_FILE_DETECTORS.has(rule.identifier)
+      ? detector(rule, allFiles).filter(finding => !inScope || inScope.has(toPosix(finding.relativePath)))
+      : detector(rule, scopedFiles);
+    return detected.map(finding => applyFindingPolicy(rule, finding, policy));
   });
   const uniqueFindings = [...new Map(
     findings.map(finding => [
@@ -503,6 +547,7 @@ export function scanHygiene(options: HygieneOptions = {}): HygieneReport {
   return {
     status: blocking > 0 ? 'failed' : manualRules.length > 0 ? 'degraded' : 'passed',
     target,
+    scope,
     policy: { enabled: true, failOn: policy.failOn, warnOn: policy.warnOn },
     rules: rules.map(rule => {
       const ruleFindings = uniqueFindings.filter(finding => finding.rule === rule.identifier);
@@ -532,6 +577,9 @@ function humanReport(report: HygieneReport) {
   const lines = [
     'Repository Hygiene: ' + report.status.toUpperCase(),
     'Target: ' + report.target,
+    'Scope: ' + (report.scope.mode === 'files'
+      ? report.scope.files.length + ' file(s)' + (report.scope.unmatched.length ? ' (not scanned: ' + report.scope.unmatched.join(', ') + ')' : '')
+      : 'repository'),
     'Rules loaded: ' + report.counts.loadedRules,
     'Rules executed: ' + report.counts.executedRules,
     'Manual rules: ' + report.counts.manualRules,
