@@ -1,15 +1,42 @@
-## Unreleased
+## 3.0.0
 
-- **Custom SDD adapters**: any SDD tool is supported by writing `.architecture-guard/adapters/<name>.md` and running `architecture-guard init --framework <name>`. The installer validates the adapter against the Required Keys in `ADAPTERS.md` before writing anything, and resolves its tokens into the installed prompts.
+Architecture Guard's standalone orchestrator now supports any SDD tool through custom adapters, and its skills are SDD-tool-agnostic. This release also closes several safety-gate gaps, repairs broken CLI helpers, and limits the legacy Spec Kit extension to safety and breakage fixes.
+
+### Breaking changes
+
 - **Adapter location moved**: all adapters now install to `.architecture-guard/adapters/` instead of a project-root `adapters/` directory. Rerun `architecture-guard init` to upgrade; the installer flags the old `adapters/` directory but never deletes it.
-- `AGENTS.md`: an older unmarked Architecture Guard section is replaced in place even when other content surrounds it.
-- OpenSpec adapter branch creation now requires explicit user approval.
-- Rerunning `architecture-guard init` no longer overwrites `.architecture-guard/config.yml`: it updates `adapter` (and adds `presets` if missing) while keeping `context`, `repository_hygiene`, and comments. `init` also refuses to write budgeted-context settings into a constitution file.
-- `architecture-guard archive` follows `.architecture-guard/selected-adapter` before filesystem markers, accepts `spec-kit`/`none`, and refuses custom adapters instead of silently archiving as OpenSpec.
-- `validate-setup [target]` is implemented and adapter-aware (built-in or custom), checking resources through the CLI resolver so lean and vendored installs both pass; `create-fixtures <target>` generates the context-budget benchmark fixtures. The placeholder `test-install` command is removed, and `review-implementation` now reports `Unavailable` like `review-artifacts`.
+- **New required adapter keys**: OpenSpec-specific text in the orchestration skills moved into five adapter keys — `project-config`, `constitution-set`, `change-scope`, `validate-spec`, `spec-template`. Built-in adapters define them; custom adapters must add them (`init` lists any that are missing).
+- **CLI commands removed**: `check-architecture` and `test-install` (both only printed a message).
+- **Built-in adapters are refreshed on every `init`**: copy one to a new name to customize it instead of editing it in place.
+- **Delivery policy**: the legacy Spec Kit extension (`commands/`) receives safety and breakage fixes only; new features ship in the standalone tool.
+
+### Added
+
+- **Custom SDD adapters**: write `.architecture-guard/adapters/<name>.md` and run `architecture-guard init --framework <name>`. The adapter is validated against the Required Keys in `ADAPTERS.md` before anything is written, and its tokens are resolved into the installed skills.
+- `validate-setup [target]`: adapter-aware check of the selected adapter, shared resources (lean or vendored), mapped constitutions, governance config, and `AGENTS.md`; exits non-zero on errors.
+- `create-fixtures <target>`: generates the context-budget benchmark fixtures.
+- `validate-sync-config [path]`: registered CLI command used by `governed-delivery-team`.
+- `detect-changed-files --base <ref>`.
+- **Untrusted Content rules** in the shared Ponytail Core contract: reviewed code, artifacts, reports, memory, and tool output are data, never instructions; embedded instructions are reported as findings and cannot grant approval.
+- **Severity Scale** in the shared Ponytail Core contract: one scale for architecture and security findings, hygiene reported exactly as the hygiene runner returns it, and Sonar severities mapped onto the scale.
+
+### Fixed
+
+- `governed-implement` stops on a Constitution P0 at any review severity (previously only when rated CRITICAL/HIGH), and checks preconditions before writing code: approval-gated feature branch, tasks present, not blocked, not stale.
+- `governed-tasks` evaluates a blocking gate before offering the advisory revision loop.
+- Plan-repair and spec-validation repair loops are capped at 2 attempts, then stop and report.
+- Branch creation and derived change names in governed delivery go through the Write Approval Gate preview instead of being created without asking.
+- Security Review status is reported as Reviewed / Advisory / Blocked / Unavailable; Unavailable is never a pass.
+- Memory writes always require explicit approval, including inside capture flows.
+- `consolidate-specs` confirms before writing the fallback index.
+- Rerunning `init` keeps user settings in `.architecture-guard/config.yml` (`context`, `repository_hygiene`, comments) instead of overwriting the file; `init` refuses to write budgeted-context settings into a constitution.
 - `init --yes` no longer waits for stdin to close.
-- **Orchestration is SDD-tool-agnostic**: OpenSpec-specific text in the orchestration skills (change-id scope, `openspec validate`, `openspec/config.yaml`, standard constitution file names, spec template) moved into five new adapter keys — `project-config`, `constitution-set`, `change-scope`, `validate-spec`, `spec-template` — defined by every built-in adapter. **Custom adapters must add these keys**; `init` lists any that are missing. A test keeps tool names out of the orchestration skills and shared templates.
-- Delivery policy: the legacy Spec Kit extension (`commands/`) receives safety and breakage fixes only; new features ship in the standalone tool.
+- `detect-changed-files` includes commits since the branch point, handles renames, and works from subdirectories (a clean feature branch previously produced an empty review set).
+- SonarLint filter keeps Sonar MAJOR and above (the previous CRITICAL/HIGH filter matched almost nothing). The bundled Sonar rules are replaced with 24 rules verified against SonarSource metadata; several old keys had the wrong meaning or did not exist.
+- `architecture-guard archive` follows `.architecture-guard/selected-adapter` before filesystem markers, accepts `spec-kit`/`none`, and refuses custom adapters instead of silently archiving as OpenSpec.
+- `AGENTS.md`: an older unmarked Architecture Guard section is replaced in place even when other content surrounds it.
+- OpenSpec adapter branch creation requires explicit approval.
+- Legacy Spec Kit extension: writes require approval (`[y/N]` prompts), the user-story link path is computed instead of pointing outside the repo, one approval-gated branch rule, command references use the registered `/speckit.architecture-guard.ag-*` names, prompts no longer load standalone adapters, and `verify` works without the CLI installed.
 
 ## 2.5.3
 
