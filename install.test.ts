@@ -1204,8 +1204,9 @@ test('forge tokens are materialized with the selected forge actions', () => {
   assert.doesNotMatch(out, /\{forge_command:/);
   assert.match(out, /the forge-defined "pr-diff" action/);
   assert.match(out, /## Resolved Forge Actions \(generic\)/);
-  assert.match(out, /git diff <base>\.\.\.<head>/);
+  assert.match(out, /git diff '<base>\.\.\.<head>'/);
   assert.match(out, /Placeholders in these actions:/);
+  assert.match(out, /untrusted: validate each against the forge adapter's allowlist/);
   assert.match(out, /<n>, <iid>, <id>: the pull or merge request number or id/);
   assert.match(out, /temporary file created outside the repository/);
   assert.equal(materializeForgeTokens('no tokens here', 'generic'), 'no tokens here');
@@ -1259,10 +1260,24 @@ test('forge adapters pass review and reply text through temporary files, never s
       const value = commands.get(key);
       const fetches = (value.match(/git fetch/g) ?? []).length;
       assert.ok(fetches > 0, `${name} ${key} fetches the branch`);
-      assert.equal((value.match(/git fetch origin '(\+|refs\/|<(source|target) ref>)/g) ?? []).length, fetches, `${name} ${key} passes only quoted full refspecs: ${value}`);
+      assert.equal((value.match(/git fetch (origin|'<source remote>') '(\+|refs\/|<(source|target) ref>)/g) ?? []).length, fetches, `${name} ${key} passes only quoted full refspecs: ${value}`);
     }
   }
-  assert.match(fs.readFileSync(path.join(repoRoot, 'adapters/forges/generic.md'), 'utf8'), /Reject a ref that starts with `-`/);
+  // Bitbucket pull requests from forks fetch the source branch from the fork, then check the commit.
+  const bitbucket = fs.readFileSync(path.join(repoRoot, 'adapters/forges/bitbucket.md'), 'utf8');
+  assert.match(bitbucket, /`<source repo>` is source\.repository\.full_name/);
+  assert.match(bitbucket, /`<source repo>` matches `\^\[A-Za-z0-9\._-\]\+\/\[A-Za-z0-9\._-\]\+\$`/);
+  for (const key of ['pr-diff', 'pr-checkout']) {
+    const value = forgeCommands(bitbucket).get(key);
+    assert.match(value, /git fetch '<source remote>' 'refs\/heads\/<source branch>'/, `bitbucket ${key} fetches the source from its own repository`);
+    assert.match(value, /git rev-parse FETCH_HEAD.*source\.commit\.hash/, `bitbucket ${key} checks the fetched commit`);
+  }
+  // Generic refs are user input: an allowlist, not just quoting.
+  const genericDoc = fs.readFileSync(path.join(repoRoot, 'adapters/forges/generic.md'), 'utf8');
+  assert.match(genericDoc, /confirm it matches `\^\[A-Za-z0-9\._\/~\^-\]\+\$`/);
+  for (const [key, value] of forgeCommands(genericDoc)) {
+    assert.doesNotMatch(value, /(^|\s)<(base|head)>/, `generic ${key} uses an unquoted ref: ${value}`);
+  }
   assert.match(fs.readFileSync(path.join(repoRoot, 'adapters/forges/azure-devops.md'), 'utf8'), /--resource 499b84ac-1321-427f-aa17-267ca6975798/);
   const generic = forgeCommands(fs.readFileSync(path.join(repoRoot, 'adapters/forges/generic.md'), 'utf8'));
   assert.match(generic.get('review-post'), /reviews\/<slug>\.md/);
@@ -1376,6 +1391,65 @@ test('the pr alias installs both pull-request skills', () => {
   assert.match(fs.readFileSync(path.join(cwd, '.opencode/commands/ag-pr-feedback.md'), 'utf8'), /"status": "fixed"/);
 });
 
+test('bitbucket git fallbacks review a pull request whose source branch lives in a fork', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-fork-'));
+  const run = (cwd, ...args) => {
+    const result = spawnSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args], { cwd, encoding: 'utf8' });
+    assert.equal(result.status, 0, `git ${args.join(' ')}: ${result.stderr}`);
+    return result.stdout;
+  };
+  // Destination repository with main; the fork adds a branch that exists only in the fork.
+  const origin = path.join(root, 'origin.git');
+  run(root, 'init', '-q', '--bare', '-b', 'main', origin);
+  const author = path.join(root, 'author');
+  run(root, 'clone', '-q', origin, author);
+  run(author, 'switch', '-q', '-c', 'main');
+  fs.writeFileSync(path.join(author, 'a.txt'), 'one\n');
+  run(author, 'add', '.');
+  run(author, 'commit', '-q', '-m', 'base');
+  run(author, 'push', '-q', 'origin', 'main');
+  const fork = path.join(root, 'fork.git');
+  run(root, 'clone', '-q', '--bare', origin, fork);
+  run(author, 'remote', 'add', 'fork', fork);
+  run(author, 'switch', '-q', '-c', 'fork-feature');
+  fs.writeFileSync(path.join(author, 'b.txt'), 'from the fork\n');
+  run(author, 'add', '.');
+  run(author, 'commit', '-q', '-m', 'fork work');
+  run(author, 'push', '-q', 'fork', 'fork-feature');
+  const forkSha = run(author, 'rev-parse', 'HEAD').trim();
+  const reviewer = path.join(root, 'reviewer');
+  run(root, 'clone', '-q', origin, reviewer);
+
+  const raw = fs.readFileSync(path.join(repoRoot, 'adapters/forges/bitbucket.md'), 'utf8');
+  const cell = (key) => raw.match(new RegExp(`^\\| ${key} \\| (.*) \\|$`, 'm'))[1];
+  const gitSnippets = (key) => [...cell(key).matchAll(/`(git [^`]+)`/g)].map(match => match[1]);
+  // The fork's clone URL stands in for git@bitbucket.org:<source repo>.git.
+  const fill = (command) => command
+    .replaceAll('<destination branch>', 'main')
+    .replaceAll('<source branch>', 'fork-feature')
+    .replaceAll('<source remote>', fork);
+  const sh = (command) => {
+    const result = spawnSync('sh', ['-c', command], { cwd: reviewer, encoding: 'utf8' });
+    assert.equal(result.status, 0, `${command}: ${result.stderr}`);
+    return result.stdout;
+  };
+
+  const outputs = gitSnippets('pr-diff').map(command => sh(fill(command)));
+  assert.ok(outputs.some(out => out.trim() === forkSha), 'FETCH_HEAD is the fork commit');
+  assert.ok(outputs.some(out => /^\+from the fork$/m.test(out)), 'the diff shows the fork change');
+  assert.ok(outputs.some(out => /^A\tb\.txt$/m.test(out)), 'changed files include the fork file');
+
+  const worktree = path.join(root, 'review-worktree');
+  run(reviewer, 'worktree', 'add', '-q', '--detach', worktree);
+  for (const command of gitSnippets('pr-checkout')) {
+    const result = spawnSync('sh', ['-c', fill(command)], { cwd: worktree, encoding: 'utf8' });
+    assert.equal(result.status, 0, `${command}: ${result.stderr}`);
+  }
+  assert.equal(run(worktree, 'rev-parse', 'HEAD').trim(), forkSha, 'checkout is the fork commit');
+  assert.equal(run(reviewer, 'branch', '--show-current').trim(), 'main', "reviewer's checkout is unchanged");
+  run(reviewer, 'worktree', 'remove', worktree);
+});
+
 test('generic forge commands work end to end against a real repository', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-e2e-'));
   const run = (cwd, ...args) => {
@@ -1454,7 +1528,7 @@ test('generic forge commands work end to end against a real repository', () => {
   // Installed skills carry the same commands for this forge.
   runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--forge', 'generic', '--commands', 'pr'], reviewer);
   const skill = fs.readFileSync(path.join(reviewer, '.opencode/commands/ag-review-pr.md'), 'utf8');
-  assert.match(skill, /git diff --name-status <base>\.\.\.<head>/);
+  assert.match(skill, /git diff --name-status '<base>\.\.\.<head>'/);
 });
 
 test('legacy Spec Kit prompts never run the CLI through npx', () => {

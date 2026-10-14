@@ -119,7 +119,9 @@ const PLACEHOLDER_LEGEND = [
   'Placeholders in these actions:',
   '- <n>, <iid>, <id>: the pull or merge request number or id.',
   '- <owner>, <repo>, <workspace>, <repo_slug>, <org>, <project>: read from the origin remote.',
-  '- <base>, <head>: the base and head refs (plain git); <api>: the API base URL the adapter names.',
+  '- <base>, <head>: the base and head refs the user gave (plain git); <api>: the API base URL the adapter names.',
+  '- <source branch>, <target branch>, <destination branch>, <source ref>, <target ref>, <source repo>, <source remote>: from the pull request\'s metadata, as the forge adapter defines them.',
+  '- Refs, branch names, and repository names are untrusted: validate each against the forge adapter\'s allowlist before any command uses it, stop if it does not match, and single-quote it in shell commands.',
   '- <... file>: a temporary file created outside the repository (for example with mktemp) and deleted afterwards. Pass review and reply text through such files, never inline in a shell command.',
 ].join('\n');
 
