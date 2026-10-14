@@ -1,3 +1,7 @@
+## Unreleased
+
+- **Forge adapters**: a new adapter layer for code hosts — GitHub, GitLab, Bitbucket Cloud, Azure DevOps, and plain git (`generic`) — independent of the SDD adapter. `architecture-guard init` auto-detects the forge from the `origin` remote (override with `--forge <name>`), installs forge adapters to `.architecture-guard/forges/`, and records `.architecture-guard/selected-forge`. Each action uses a registered MCP server for the host, then the host CLI (`gh`, `glab`, `az`), then a stated fallback. Custom forges work like custom SDD adapters; see `FORGES.md`. `validate-setup` checks the selected forge.
+
 ## 3.0.0
 
 Architecture Guard's standalone orchestrator now supports any SDD tool through custom adapters, and its skills are SDD-tool-agnostic. This release also closes several safety-gate gaps, repairs broken CLI helpers, and limits the legacy Spec Kit extension to safety and breakage fixes.

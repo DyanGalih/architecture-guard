@@ -3,6 +3,7 @@ import path from 'node:path';
 import { parse } from 'yaml';
 import { missingAdapterKeys } from './install';
 import { listCategoryResources, resolveResource } from './resolve';
+import { missingForgeKeys } from './forge';
 
 type Level = 'pass' | 'warn' | 'fail' | 'info';
 type Check = { level: Level; message: string };
@@ -69,6 +70,19 @@ export function validateSetup(projectRoot: string): Check[] {
     } catch (error) {
       add('fail', `Governance config is not valid YAML (${config}): ${error instanceof Error ? error.message : error}`);
     }
+  }
+
+  const forgeMarker = path.join(runtimeDir, 'selected-forge');
+  const forge = fs.existsSync(forgeMarker) ? fs.readFileSync(forgeMarker, 'utf8').trim() : '';
+  const forgePath = path.join(runtimeDir, 'forges', `${forge}.md`);
+  if (!forge) {
+    add('warn', 'No selected forge (.architecture-guard/selected-forge); pull-request skills fall back to plain git. Rerun `architecture-guard init`.');
+  } else if (!fs.existsSync(forgePath)) {
+    add('fail', `Selected forge "${forge}" not found at .architecture-guard/forges/${forge}.md. Rerun \`architecture-guard init\`.`);
+  } else {
+    const missingForge = missingForgeKeys(fs.readFileSync(forgePath, 'utf8'));
+    if (missingForge.length) add('fail', `Forge "${forge}" is missing required keys: ${missingForge.join(', ')}`);
+    else add('pass', `Forge "${forge}" defines all required keys`);
   }
 
   const agents = path.join(projectRoot, 'AGENTS.md');

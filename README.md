@@ -52,6 +52,7 @@ To update a globally installed CLI explicitly, run `architecture-guard update` (
 The installer launches a setup wizard that asks you to select:
 1. **AI agent(s)** — OpenCode, Claude Code, Gemini CLI, etc.
 2. **SDD tool** — Spec Kit, OpenSpec, a generic Markdown workflow, or any other SDD tool through a [custom adapter](ADAPTERS.md#custom-adapters).
+   The **code host** (GitHub, GitLab, Bitbucket, Azure DevOps, or plain git) is auto-detected from the `origin` remote for pull-request work; override it with `--forge`. See [FORGES.md](FORGES.md).
 3.  **Governed workflows** — Pick the orchestration and governance workflows you need.
 
 It installs the necessary command files directly into the agent command or skill directory. The installer uses `@inquirer/prompts`; lean prompts require a callable `architecture-guard` CLI for resource resolution and CLI-backed hygiene, while `--vendor` copies static engine resources locally and avoids bundled-resource lookup for those assets.
