@@ -2,7 +2,7 @@
 
 **Identifier**: `debug-artifacts`
 **Description**: Detect common debug leftovers including console logging, print statements, debug output files, temporary log files (e.g., `console.log(...)`, `print(...)`, `println(...)`, `dump(...)`, `dd(...)`, `var_dump(...)`, `debug.log`).
-**Default Severity**: Critical
+**Default Severity**: Warning
 **Recommendation**: Remove debug statements and artifacts from production code before committing.
 
 ## Detection Logic

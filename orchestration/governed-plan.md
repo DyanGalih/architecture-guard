@@ -6,7 +6,7 @@ description: Generate and validate a technical plan with optional Flash-Mem cont
 
 ## SDD Adapter Resolution
 
-Before executing command, read `.architecture-guard/adapters/resolve.md` to resolve the selected SDD adapter. Load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing this command, read `.architecture-guard/adapters/resolve.md` and resolve the adapter with its chain (explicit `--adapter` override, `.architecture-guard/selected-adapter`, `.architecture-guard/config.yml`, then filesystem markers), then load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Stop with `Unavailable` and the exact path if the adapter file is missing. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. Resolve every adapter path and command token before continuing; all paths and commands below use the loaded adapter.
 
 ## Change Scope
 
@@ -51,9 +51,13 @@ Provide a single command that ensures:
 
 Before the first mutation, resolve and preview the exact target plan and constraint artifacts together with all planned generation, correction, and constraint-write operations. Obtain explicit user approval, then allow routine writes already previewed within this planning phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 
+### Constitution Inputs
+
+Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present governance, constitution, architecture, security, and layout Markdown file with file-reading tools. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file, and do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`. For optional split layouts, embedded rules in `{adapter_path:constitution}` satisfy the corresponding input. Later steps refer to this set as the **Constitution Inputs**; load it once and reuse it.
+
 ### Required Active Inputs
 
-Require an active `{adapter_path:spec}` and the complete set of applicable constitution inputs. Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. For optional split layouts, embedded rules in `{adapter_path:constitution}` satisfy the corresponding input. Ask for Generic paths when unresolved. If the active specification, governance rules, or architecture rules are missing, stop and direct the user to governed-spec or init as appropriate; if security rules are missing, report the gap and obtain explicit confirmation before continuing with baseline security validation.
+Require an active `{adapter_path:spec}` and the complete Constitution Inputs. Ask for Generic paths when unresolved. If the active specification, governance rules, or architecture rules are missing, stop and direct the user to governed-spec or init as appropriate; if security rules are missing, report the gap and obtain explicit confirmation before continuing with baseline security validation.
 
 ### Step 1 — Detect Optional Integrations
 
@@ -72,7 +76,7 @@ Check for the availability of:
 
 When Flash-Mem is available, use it first to gather the most relevant architectural context before plan generation. Prefer summary-first context and only expand into repository files when needed.
 
-If Flash-Mem is unavailable or the context is insufficient, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before continuing with repository artifacts. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+If Flash-Mem is unavailable or the context is insufficient, rely on the Constitution Inputs loaded above before continuing with repository artifacts.
 
 When Flash-Mem MCP is unavailable but the Memory MD CLI detected in Step 1 is present, use that CLI for supported local context preparation, search, or synthesis before falling back to repository artifacts. Inspect its help once when command syntax is needed; do not search for an MCP wrapper or a global/shared publication tool.
 
@@ -107,12 +111,13 @@ You must orchestrate {adapter_command:create-plan} workflow directly.
    - Also prefer one shared plan path for repeated behavior instead of separate duplicated steps or parallel implementations.
 2. **Execute Plan**: Run {adapter_command:create-plan} to generate and save `{adapter_path:plan}`.
 
-   **If {adapter_command:create-plan} is not available as a registered command** (i.e., the AI agent does not recognize it as a slash command), fall back to inline planning:
-   - Read the active spec at `{adapter_path:spec}` (or the path provided by the user).
-   - Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+   Follow the adapter-defined action; if it names a command that is not available, use the adapter's own inline fallback. When planning inline:
+   - Read the active spec at `{adapter_path:spec}` (or the path provided by the user) and the Constitution Inputs.
    - Use Flash-Mem context if available.
    - Generate `{adapter_path:plan}` directly, incorporating all context above and enforcing Ponytail minimalism.
-   - Note in the Governance Summary that {adapter_command:create-plan} was unavailable and planning was performed inline.
+   - Note in the Governance Summary that planning was performed inline.
+3. The planning process must incorporate the Constitution Inputs and memory synthesis. Use Flash-Mem first when available.
+4. Prefer the cached synthesis and selected index entries over reopening the full durable memory set.
 
 #### Claude Code Agent Teams Coordination (When Active)
 
@@ -121,8 +126,6 @@ Activate this protocol only when the Claude Code host exposes named teammate spa
 - **Analyst Reviewer** audits the artifacts against the constitutions, Ponytail pragmatism, DRY boundaries, and security constraints through host messaging.
 - **Lead Session** resolves review findings, synthesizes the final plan, and pauses for explicit human approval before task generation.
 
-3. The planning process must incorporate the Project Constitution documents and memory synthesis. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, read the selected adapter project configuration first (`{adapter_path:project-config}`), inspect its `context` block, and explicitly read every declared or present governance, constitution, architecture, security, and layout Markdown file with file-reading tools. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file or rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
-4. Prefer the cached synthesis and selected index entries over reopening the full durable memory set.
 
 ### Step 4 — Security Review (Optional)
 

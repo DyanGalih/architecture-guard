@@ -64,7 +64,9 @@ When no SDD tool is detected and the user declines to pick one:
 Generic workflow mode:
 - Architecture review, violation detection, refactor generation, and hygiene checks
   work without SDD-tool-specific paths.
-- Init, spec, plan, tasks, and implement steps require user to specify paths manually.
+- Init, spec, plan, tasks, and implement steps use the generic adapter's default
+  `changes/{change}/` paths (or the active flow template's layout) and ask the
+  user for paths only when they are ambiguous or differ from that layout.
 - Ponytail contract and governance rules apply regardless.
 ```
 
