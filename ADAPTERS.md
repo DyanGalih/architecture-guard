@@ -47,18 +47,20 @@ What the newer keys mean:
 This list is exactly the set of adapter tokens used by `orchestration/`, `templates/`, and `flow/`; the test suite fails if they drift apart. Adding a token is a contract change: define it in every built-in adapter, add it here, and call it out in the release notes because custom adapters must add it too.
 
 ### Path Map
-A table mapping canonical names to concrete file paths:
+A table mapping canonical names to concrete file paths, with an optional third `Notes` column:
 
 ```markdown
 ## Path Map
 
-| Canonical Name | Path |
-|---|---|
-| constitution | `path/to/constitution.md` |
-| spec | `path/to/specs/{name}/spec.md` |
-| plan | `path/to/plan.md` |
-| ponytail-template | `.architecture-guard/templates/ponytail_core.md` |
+| Canonical Name | Path | Notes |
+|---|---|---|
+| constitution | `path/to/constitution.md` | Or a user-provided governance path |
+| spec | `path/to/specs/{name}/spec.md` | |
+| plan | `path/to/plan.md` | |
+| ponytail-template | `.architecture-guard/templates/ponytail_core.md` | |
 ```
+
+Only the second column is inlined into installed prompts (with backticks removed), so keep it to the plain path or an explicit unsupported statement. Put annotations such as "optional" or "or a user-provided path" in the `Notes` column; they would otherwise end up inside the materialized path.
 
 ### Command Map
 A table mapping governance actions to SDD-tool-native invocations:

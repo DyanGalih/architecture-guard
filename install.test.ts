@@ -693,7 +693,7 @@ test('validate-sync-config is a registered CLI command', () => {
 
   for (const dir of ['orchestration', 'commands']) {
     const prompt = fs.readFileSync(path.join(__dirname, '..', dir, 'governed-delivery-team.md'), 'utf8');
-    assert.match(prompt, /npx architecture-guard validate-sync-config/);
+    assert.match(prompt, /architecture-guard validate-sync-config/);
     assert.doesNotMatch(prompt, /src\/cli\//);
   }
 });
@@ -1381,6 +1381,182 @@ test('generic forge commands work end to end against a real repository', () => {
   runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--forge', 'generic', '--commands', 'pr'], reviewer);
   const skill = fs.readFileSync(path.join(reviewer, '.opencode/commands/ag-review-pr.md'), 'utf8');
   assert.match(skill, /git diff --name-status <base>\.\.\.<head>/);
+});
+
+test('orchestration never fetches the CLI through npx and skips sync when it is not installed', () => {
+  for (const file of fs.readdirSync(path.join(repoRoot, 'orchestration')).filter(name => name.endsWith('.md'))) {
+    assert.doesNotMatch(orchestrationPrompt(file), /npx architecture-guard/, file);
+  }
+  const team = orchestrationPrompt('governed-delivery-team.md');
+  assert.match(team, /When the `architecture-guard` CLI is installed, run `architecture-guard validate-sync-config/);
+  assert.match(team, /if it is not installed, skip sync and record `Unavailable`/);
+  assert.match(team, /non-zero exit means invalid and no remote write happens/);
+});
+
+const materialized = (file, adapter) => installerModule().materializeAdapterTokens(orchestrationPrompt(file), adapter);
+const adapterFile = (name) => fs.readFileSync(path.join(repoRoot, 'adapters', `${name}.md`), 'utf8');
+const inScopeOrchestration = () => fs.readdirSync(path.join(repoRoot, 'orchestration'))
+  .filter(name => name.endsWith('.md') && !['review-pr.md', 'pr-feedback.md', 'review-implementation.md'].includes(name));
+
+test('OpenSpec adapter discovers changes with openspec list --json and creates changes only after approval', () => {
+  const content = adapterFile('openspec');
+  const { command } = installerModule().adapterKeys(content);
+  assert.match(command.get('change-scope'), /openspec list --json/);
+  assert.doesNotMatch(command.get('change-scope'), /openspec list --specs --json/);
+  assert.match(command.get('create-change'), /only after explicit user approval/);
+  const scope = content.split('## Explicit Change Scope')[1].split('## Command Map')[0];
+  assert.match(scope, /discovered by `openspec list --json`/);
+  assert.doesNotMatch(scope, /discovered by `openspec list --specs --json`/);
+  assert.match(scope, /openspec new change "\$CHANGE_ID"` only after explicit user approval/);
+  assert.match(command.get('list-specs'), /openspec list --specs --json to list durable capability specs/);
+});
+
+test('generic adapter archive and resolver defaults are approval-gated and consistent', () => {
+  const { command } = installerModule().adapterKeys(adapterFile('generic'));
+  assert.match(command.get('archive'), /after explicit user approval run architecture-guard archive/);
+  assert.match(command.get('archive'), /never run either without that approval/);
+  const resolve = fs.readFileSync(path.join(repoRoot, 'adapters', 'resolve.md'), 'utf8');
+  assert.doesNotMatch(resolve, /require user to specify paths manually/);
+  assert.match(resolve, /default\n\s*`changes\/\{change\}\/` paths/);
+});
+
+test('adapter Path Map values are plain paths without parenthetical annotations', () => {
+  for (const name of installerModule().BUILTIN_ADAPTERS) {
+    const { path: paths } = installerModule().adapterKeys(adapterFile(name));
+    for (const [key, value] of paths) {
+      if (key === '---') continue;
+      assert.doesNotMatch(value, /[()]/, `adapters/${name}.md path:${key} = ${value}`);
+    }
+  }
+  const spec = materialized('governed-spec.md', 'generic');
+  assert.match(spec, /`changes\/\{change\}\/spec\.md`/);
+  assert.doesNotMatch(spec, /spec\.md \(or user-provided/);
+});
+
+test('every in-scope orchestration skill resolves the adapter through the same resolve.md chain', () => {
+  for (const file of inScopeOrchestration()) {
+    const section = orchestrationPrompt(file).split('## SDD Adapter Resolution')[1].split('\n## ')[0];
+    assert.match(section, /resolve the adapter with its chain \(explicit `--adapter` override, `\.architecture-guard\/selected-adapter`, `\.architecture-guard\/config\.yml`, then filesystem markers\)/, file);
+    assert.match(section, /Stop with `Unavailable`/, file);
+    assert.doesNotMatch(section, /Read `\.architecture-guard\/selected-adapter` directly/, file);
+  }
+});
+
+test('governed-spec creates the change only after the branch gate and re-validates auto-fixes', () => {
+  const prompt = orchestrationPrompt('governed-spec.md');
+  const preamble = prompt.split('## SDD Adapter Resolution')[1].split('\n## ')[0];
+  assert.match(preamble, /without creating anything/);
+  const branch = prompt.indexOf('### Step 3 — Branch Management');
+  const create = prompt.indexOf('execute {adapter_command:create-change} only after explicit approval');
+  assert.ok(branch !== -1 && create > branch, 'change creation must follow the branch gate');
+  assert.match(prompt, /Ask separately for the change \(feature\) name and/);
+  const loop = prompt.split('### Step 10')[1];
+  assert.match(loop, /Re-run \{adapter_command:validate-spec\} after each rewrite/);
+  assert.match(loop, /re-evaluate any blocking findings/);
+  assert.doesNotMatch(prompt, /run \{adapter_command:consolidate-specs\}/);
+  assert.doesNotMatch(prompt, /automatically launch/);
+});
+
+test('governed-tasks gates before summarizing and re-runs analysis after rewrites', () => {
+  const prompt = orchestrationPrompt('governed-tasks.md');
+  const gate = prompt.indexOf('### Step 8 — Blocking Gate');
+  const summary = prompt.indexOf('### Step 9 — Task Governance Summary');
+  assert.ok(gate !== -1 && summary > gate, 'gate must be evaluated before the summary');
+  assert.match(prompt, /Re-run \{adapter_command:analyze\} after each rewrite, at most 2 repair attempts/);
+  assert.match(prompt, /Re-evaluate the Blocking Gate/);
+  assert.doesNotMatch(prompt, /automatically launch/);
+  assert.match(prompt, /Role Tagging\*\* \(only when Agent Teams mode is active\)/);
+});
+
+test('constitution loading is stated once and the create-action fallback reads correctly after materialization', () => {
+  const paragraph = /explicitly read every declared or present (governance, )?constitution, architecture, security, and layout Markdown file/g;
+  for (const file of ['governed-plan.md', 'governed-tasks.md', 'governed-implement.md']) {
+    const prompt = orchestrationPrompt(file);
+    assert.equal((prompt.match(paragraph) || []).length, 1, file);
+    assert.match(prompt, /### Constitution Inputs/, file);
+  }
+  for (const file of inScopeOrchestration()) {
+    assert.doesNotMatch(orchestrationPrompt(file), /inspect its `context` block/i, file);
+  }
+  for (const [file, key] of [['governed-plan.md', 'create-plan'], ['governed-tasks.md', 'create-tasks']]) {
+    const prompt = materialized(file, 'openspec');
+    assert.doesNotMatch(prompt, /does not recognize it as a slash command/, file);
+    assert.match(prompt, /Follow the adapter-defined action; if it names a command that is not available, use the adapter's own inline fallback/, file);
+    assert.match(prompt, new RegExp(`\\*\\*${key}\\*\\*: Read openspec instructions`), file);
+  }
+});
+
+test('consolidation writes only after confirmation, and other workflows hand off instead of writing', () => {
+  const prompt = orchestrationPrompt('consolidate-specs.md');
+  const beforeConfirm = prompt.split('**Confirm before writing**')[0];
+  assert.match(beforeConfirm, /only to build the fallback content in memory/);
+  assert.match(beforeConfirm, /nothing is written to the fallback index or any other path before the step 6 confirmation/);
+  assert.doesNotMatch(beforeConfirm, /Otherwise execute \{adapter_command:consolidate-specs\}/);
+  const budget = fs.readFileSync(path.join(repoRoot, 'templates', 'budgeted_context_sdd.md'), 'utf8');
+  assert.doesNotMatch(budget, /execute `\{adapter_command:consolidate-specs\}`/);
+  assert.match(budget, /recommend `ag-consolidate-specs`/);
+  assert.match(orchestrationPrompt('init.md'), /offer to run `ag-consolidate-specs`/);
+});
+
+test('governed-archive refuses protected branches, never force-pushes, and asks before pushing', () => {
+  const prompt = orchestrationPrompt('governed-archive.md');
+  const git = prompt.split('### Step 4 — Interactive Git Orchestration')[1].split('### Step 5')[0];
+  assert.match(git, /Refuse to commit or push on `main`, `master`, `dev`, `develop`, `development`, `staging`/);
+  assert.match(git, /Never force-push/);
+  assert.match(git, /Push only after a separate explicit approval/);
+});
+
+test('apply gates memory writes and branch creation, and reads correctly after materialization', () => {
+  const prompt = orchestrationPrompt('apply.md');
+  assert.doesNotMatch(prompt, /memory-synthesis\.md|prepare-context alias|sync durable lessons or architecture decisions back into Flash-Mem/);
+  assert.match(prompt, /write them only after a separate explicit approval/);
+  assert.match(prompt, /MUST NOT apply edits on a protected branch/);
+  assert.match(prompt, /proposal, when the adapter has one > specification `\{adapter_path:spec\}` > planning artifact/);
+  const installed = materialized('apply.md', 'openspec');
+  assert.doesNotMatch(installed, /adapter's the adapter-defined/);
+  assert.match(installed, /If the adapter-defined "architecture-apply" action names a native update capability/);
+});
+
+test('governed-implement uses the hygiene runner and P0-only architecture blocking', () => {
+  const prompt = orchestrationPrompt('governed-implement.md');
+  assert.doesNotMatch(prompt, /architecture-guard resolve hygiene-rules --list/);
+  assert.match(prompt, /Run \{adapter_command:hygiene\} \(the `architecture-guard hygiene --json` runner\)/);
+  assert.match(prompt, /any file deletion or any fix outside that scope needs its own preview and explicit approval/);
+  assert.match(prompt, /Architecture findings block only when the Constitution marks them P0; security findings block only when the security policy designates them blocking/);
+});
+
+test('workflow picks the delivery skill by story approval and verifies once', () => {
+  const prompt = orchestrationPrompt('workflow.md');
+  assert.match(prompt, /When stakeholder User Story approval is required, run the registered `ag-governed-delivery-team` capability, in single-agent or Agent Teams mode/);
+  assert.doesNotMatch(prompt, /In single-agent mode, run the registered `ag-governed-delivery` capability/);
+  assert.match(prompt, /`ag-governed-implement` owns verification/);
+});
+
+test('init memory, draft, and consolidation steps stay approval-gated', () => {
+  const init = orchestrationPrompt('init.md');
+  assert.doesNotMatch(init, /use `capture_artifact_memory` for changed constitution artifacts/);
+  assert.doesNotMatch(init, /1\. Save current answers to/);
+  assert.doesNotMatch(init, /the consolidation command/);
+  assert.doesNotMatch(materialized('init.md', 'spec-kit'), /Generic adapter paths for/);
+});
+
+test('verify, review-artifacts, and violation-detection take severity and blocking from policy', () => {
+  const verify = orchestrationPrompt('verify.md');
+  assert.doesNotMatch(verify, /\*\*CRITICAL\*\*:[^\n]*Boundary bypass/);
+  assert.match(verify, /\*\*HIGH\*\*: Boundary bypass/);
+  assert.doesNotMatch(verify, /\| CRITICAL \| Yes \|/);
+  const review = orchestrationPrompt('review-artifacts.md');
+  assert.doesNotMatch(review, /Evaluate the planning structure against every hygiene rule/);
+  assert.match(review, /keep only findings whose location is one of the resolved planning artifacts/);
+  const detection = orchestrationPrompt('violation-detection.md');
+  assert.doesNotMatch(detection, /`spec\.md`|`security-constraints\.md`/);
+  assert.match(detection, /`CRITICAL`: A governing rule/);
+  assert.doesNotMatch(detection, /`(Critical|High|Medium|Low)`:/);
+});
+
+test('debug-artifacts defaults to a non-blocking Warning', () => {
+  const rule = fs.readFileSync(path.join(repoRoot, 'hygiene-rules', 'debug-artifacts.md'), 'utf8');
+  assert.match(rule, /^\*\*Default Severity\*\*: Warning$/m);
 });
 
 // Parses TOML files with Python's tomllib; returns null (and says so) when it is unavailable.

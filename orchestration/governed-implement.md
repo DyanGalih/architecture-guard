@@ -6,7 +6,7 @@ description: Execute implementation tasks, then review the result against availa
 
 ## SDD Adapter Resolution
 
-Before executing command, read `.architecture-guard/adapters/resolve.md`. Resolve the active adapter in this order: explicit `--adapter` override, `.architecture-guard/selected-adapter` as the authoritative persisted selection, then filesystem markers only when no persisted selection exists. Load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Resolve every adapter token before continuing.
+Before executing this command, read `.architecture-guard/adapters/resolve.md` and resolve the adapter with its chain (explicit `--adapter` override, `.architecture-guard/selected-adapter`, `.architecture-guard/config.yml`, then filesystem markers), then load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Stop with `Unavailable` and the exact path if the adapter file is missing. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. Resolve every adapter path and command token before continuing; all paths and commands below use the loaded adapter.
 
 ## Change Scope
 
@@ -51,6 +51,10 @@ Provide a single command that ensures:
 
 Before the first mutation, resolve and preview the working branch and the exact code, test, and task artifacts together with all planned implementation, test, and task-checkbox operations. Obtain explicit user approval, then allow routine writes already previewed within this implementation phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 
+### Constitution Inputs
+
+Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file with file-reading tools. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file, and do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`. Later steps refer to this set as the **Constitution Inputs**; load it once and reuse it.
+
 ### Step 0 — Preconditions
 
 Check these before the Write Approval Gate preview; stop and report if any fails.
@@ -75,7 +79,7 @@ Check for the availability of:
 
 When Flash-Mem is available, execute both `get_project_summary` and `search_memory` scoped to the active feature, affected files, architecture boundaries, security-sensitive areas, prior decisions, and approved exceptions before implementation. Prefer summary-first context and load full entries only when those results are insufficient.
 
-If Flash-Mem is unavailable or the context is insufficient, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before continuing with repository artifacts. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+If Flash-Mem is unavailable or the context is insufficient, rely on the Constitution Inputs before continuing with repository artifacts.
 
 **[OPTIONAL SUB-AGENT DELEGATION]**
 * **Capability Gate:** Determine whether the host exposes a registered synthesis/delegation capability. If unavailable, execute inline regardless of size and report the degraded path.
@@ -102,11 +106,20 @@ You must orchestrate {adapter_command:implement} (core implementation) workflow 
 1. **Apply Ponytail Core**: Trace the affected execution flow and apply the shared decision ladder in order. A one-line solution is preferred only when it is correct, readable, and reached after checking YAGNI, existing code, the standard library, native platform features, and installed dependencies.
    - For fixes or shared behavior, search every caller and sibling path, then correct the owning implementation once when that is the true root cause.
    - Preserve the contract safety floor and leave at least one runnable check for non-trivial logic.
-2. **Execute Tasks**: Run {adapter_command:implement}. If {adapter_command:implement} is not available as a registered command, fall back to inline implementation:
+2. **Execute Tasks**: Follow {adapter_command:implement}; if it names a command that is not available, use the adapter's own inline fallback. When implementing inline:
    - Read `{adapter_path:tasks}` and execute each unchecked task sequentially.
-   - Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. Use any available Flash-Mem context before coding.
+   - Use the Constitution Inputs and any available Flash-Mem context before coding.
    - Perform the actual coding work (writing files, running tests) for each task, enforcing Ponytail minimalism.
-   - Note in the Governance Summary that {adapter_command:implement} was unavailable and implementation was performed inline.
+   - Note in the Governance Summary that implementation was performed inline.
+3. **Write Code**: Perform the actual coding work (writing files, running tests) required by the tasks.
+4. **Inline Pre-Completion Self-Verification Gate**: Before marking any task complete:
+   - **Deprecated & Dangerous Code Check**: Resolve `deprecated-and-dangerous-code` with `architecture-guard resolve hygiene-rule deprecated-and-dangerous-code`, then check changed and target files against it.
+   - **Repository Hygiene Check**: Run {adapter_command:hygiene} (the `architecture-guard hygiene --json` runner) and take each finding's severity and `blocking` flag exactly as the runner reports them (no `.tmp`, `.new`, or scratch files left behind; no commented-out code; no dead imports). A finding with `blocking: true` must be fixed before the task is marked complete. If the CLI is unavailable, report the hygiene check as `Unavailable`.
+   - **Heuristic SonarLint Scan**: Resolve the bundle with `architecture-guard resolve sonar-rules`, then check changed files against it (ensure no cognitive overload, tight coupling, loose `any`/`unknown` casts, or missing parameter validation).
+   - **Remediation**: Correct detected quality or hygiene violations at the current task boundary. Edits inside the approved Write Approval Gate scope proceed; any file deletion or any fix outside that scope needs its own preview and explicit approval.
+5. **Sync the tasks**: You MUST update `{adapter_path:tasks}` to mark completed tasks with `[x]`, check them off, and add any new subtasks discovered during implementation.
+   - If implementation would expand beyond accepted spec/plan/task scope, stop and obtain explicit user approval before adding or executing that work. Record the approved expansion in the authoritative artifacts first.
+6. The implementation MUST follow current tasks and context. Use Flash-Mem first when available, and the Constitution Inputs alongside the active artifacts.
 
 #### Claude Code Agent Teams Coordination (When Active)
 
@@ -117,16 +130,6 @@ Activate this protocol only when the Claude Code host exposes named teammate spa
 - **Code Reviewer** audits code changes across boundaries, reviews security constraints, and verifies tests before handoff.
 - **Human-in-the-Loop Gate**:
   - Lead session collects implementation evidence, presents the completed task checklist, and requires explicit user confirmation before concluding or advancing to the registered `ag-verify` capability.
-
-3. **Write Code**: Perform the actual coding work (writing files, running tests) required by the tasks.
-4. **Inline Pre-Completion Self-Verification Gate**: Before marking any task complete:
-   - **Deprecated & Dangerous Code Check**: Resolve `deprecated-and-dangerous-code` with `architecture-guard resolve hygiene-rule deprecated-and-dangerous-code`, then check changed and target files against it.
-   - **Repository Hygiene Check**: Run `architecture-guard resolve hygiene-rules --list`, resolve every returned rule, and inspect changed files against the complete effective rule set (no `.tmp`, `.new`, or scratch files left behind; no commented-out code; no dead imports).
-   - **Heuristic SonarLint Scan**: Resolve the bundle with `architecture-guard resolve sonar-rules`, then check changed files against it (ensure no cognitive overload, tight coupling, loose `any`/`unknown` casts, or missing parameter validation).
-   - **Immediate Remediation**: Correct any detected quality or hygiene violations immediately at the current task boundary.
-5. **Sync the tasks**: You MUST update `{adapter_path:tasks}` to mark completed tasks with `[x]`, check them off, and add any new subtasks discovered during implementation.
-   - If implementation would expand beyond accepted spec/plan/task scope, stop and obtain explicit user approval before adding or executing that work. Record the approved expansion in the authoritative artifacts first.
-6. The implementation MUST follow current tasks and context. Use Flash-Mem first when available. If retrieval is unavailable or insufficient, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file alongside the active artifacts with file-reading tools. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. Do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`.
 
 The SDD-tool-native implementation behavior is defined by the selected adapter and any registered host capability; do not infer a package-specific command.
 
@@ -184,8 +187,8 @@ Run {adapter_command:verify} after implementation and reviews. Do not mark the w
 ### Step 8 — Proactive Durable Memory Preservation
 
 If the implementation review or security audit identified new architectural patterns, critical decisions, or repeatable lessons:
-1. **Approval Required**: Propose validated durable-memory entries and execute the capture flow only after explicit user approval.
-2. **Standard**: Do not silently write memory outside the approved capture flow.
+1. **Approval Required**: Propose validated entries for `capture_artifact_memory` or `add_memory` and call those Flash-Mem tools only after explicit user approval.
+2. **Standard**: Never write memory without that approval. If Flash-Mem is unavailable, report the proposals as `Unavailable`.
 
 ### Step 9 — Implementation Governance Summary
 
@@ -269,5 +272,5 @@ If implementation repeatedly violates a standard because the standard is outdate
 
 - **Modular**: Do not mix security findings into a generic architecture list.
 - **Framework-Agnostic**: Maintain boundary concepts (Entry, Domain, Data).
-- **Non-Blocking by Default**: Architecture findings are advisory unless the Constitution marks them P0 or policy designates them blocking; those always stop the workflow (Step 5.5).
+- **Non-Blocking by Default**: Architecture findings block only when the Constitution marks them P0; security findings block only when the security policy designates them blocking. Either stops the workflow (Step 5.5); severity alone never blocks.
 - **Memory-First**: Prefer cached synthesis and selected index entries before broad file reads.

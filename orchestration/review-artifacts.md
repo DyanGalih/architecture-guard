@@ -6,13 +6,7 @@ description: Review specification and planning artifacts against architectural r
 
 ## SDD Adapter Resolution
 
-Before executing this command, read `.architecture-guard/adapters/resolve.md`. Resolve the active adapter in this order:
-
-1. An explicit `--adapter` override, when provided.
-2. `.architecture-guard/selected-adapter`, which is authoritative after CLI installation.
-3. Filesystem markers only when no persisted selection exists.
-
-Load `.architecture-guard/adapters/{tool}.md` and resolve every adapter path token (for example, a token whose key is `spec`) before reading review artifacts. Stop if the adapter is missing or any token remains unresolved.
+Before executing this command, read `.architecture-guard/adapters/resolve.md` and resolve the adapter with its chain (explicit `--adapter` override, `.architecture-guard/selected-adapter`, `.architecture-guard/config.yml`, then filesystem markers), then load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Stop with `Unavailable` and the exact path if the adapter file is missing. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. Resolve every adapter path and command token before continuing; all paths and commands below use the loaded adapter.
 
 ## Standalone Resource Resolution
 
@@ -84,7 +78,7 @@ You are running `architecture-guard`, a technology-agnostic architecture review 
 Review any available artifacts from these common locations. **IMPORTANT**: You MUST read these files explicitly using your file-reading tools (absolute or relative paths). Do not rely solely on workspace search or semantic indexers, as these files are often in `.gitignore` and may be excluded from default context:
 
 1. **Manifest & Configuration**:
-    - Resolve `{adapter_path:governance-config}` or the adapter-native project configuration first (`{adapter_path:project-config}`). Inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
+    - Resolve `{adapter_path:governance-config}` or the adapter-native project configuration first (`{adapter_path:project-config}`). Inspect it for references to further governance and constitution Markdown files (for example a `context` block). Never rely on a hardcoded partial list.
 
 2. **Authoritative Constitutions**:
     - Read every constitution, architecture, security, and layout Markdown file declared by the configuration or present in the adapter-resolved project paths. Explicitly check these standard files when present:
@@ -96,15 +90,14 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
 
    Try Flash-Mem first. If the context is incomplete, read the repository constitution files with file-reading tools rather than workspace search alone.
 
-   If Flash-Mem is unavailable or the context is insufficient, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before continuing with repository artifacts. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+   If Flash-Mem is unavailable or the context is insufficient, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before continuing with repository artifacts. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 
 4. **Planning Context**:
     - Active specification and planning artifacts (the exact filenames depend on the active SDD tool)
 
-5. **Repository Hygiene**:
-    - Config: `{adapter_path:governance-config}` (or `repository_hygiene` block in constitution).
-    - Rules: Run `architecture-guard resolve hygiene-rules --list`, then resolve and load every returned rule in deterministic order. Workspace files under `.architecture-guard/hygiene-rules/` override same-named bundled rules.
-    - **Direct Discovery Guard**: When checking adapter-resolved hidden paths such as `.architecture-guard/**`, use direct directory inspection first, then read listed files. A Glob/search no-match result is inconclusive and MUST NOT be reported as missing. Report a path as unavailable only after direct inspection confirms it does not exist. The review report MUST explicitly list loaded rule files and counts. Missing optional hygiene rules are non-blocking.
+5. **Repository Hygiene (artifact paths only)**:
+    - Run {adapter_command:hygiene} (the `architecture-guard hygiene --json` runner, which applies `{adapter_path:governance-config}` exclusions and severity policy) and keep only findings whose location is one of the resolved planning artifacts or their change directory. Discard findings on implementation code without reading that code; this command does not review it.
+    - Report each kept finding's severity and blocking status exactly as the runner returns them. If the runner is unavailable, report the hygiene scan as `Unavailable` and do not evaluate hygiene rules by hand.
 
 ## Semantic Modeling
 
@@ -163,7 +156,7 @@ Detect violations such as:
   - Cross-reference architecture decisions with security trust boundaries.
 7. **Ponytail Audit**: Apply both sides of the shared contract to the plan. Check for planned bloat and unsafe under-building.
 8. **Performance Scan (if mode=performance)**: Skip violations; focus on optimizations.
-9. **Repository Hygiene Scan**: Evaluate the planning structure against every hygiene rule resolved through `architecture-guard`.
+9. **Repository Hygiene Scan**: Use the runner output from input 5, filtered to planning artifact paths; never scan implementation code.
 10. **Generate Refactors**: Produce structured tasks for each confirmed violation in the plan.
 
 ---
@@ -226,8 +219,8 @@ Return only this structure:
 - **Trade-off**: 
 
 ### Repository Hygiene Report
-(Always included if hygiene rules are evaluated)
-Findings categorized by severity based on the active hygiene rules.
+(Included when the hygiene runner ran; otherwise state `Unavailable`)
+Runner findings located in planning artifact paths only, with severity and blocking status as the runner reports them.
 
 | Category | Severity | Blocking | Location(s) | Summary | Recommendation |
 |:---|:---|:---|:---|:---|:---|

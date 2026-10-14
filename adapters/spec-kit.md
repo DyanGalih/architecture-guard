@@ -4,34 +4,34 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 
 ## Path Map
 
-| Canonical Name | SpecKit Path |
-|---|---|
-| project-root | `.` |
-| sdd-tool-dir | `.specify/` |
-| constitution | `.specify/memory/constitution.md` |
-| arch-constitution | `.specify/memory/architecture_constitution.md` |
-| security-constitution | `.specify/memory/security_constitution.md` |
-| governance-config | `.architecture-guard/config.yml` |
-| config | `.architecture-guard/config.yml` (compatibility alias of `governance-config`) |
-| extensions | `.specify/extensions.yml` |
-| extensions-dir | `.specify/extensions/` |
-| spec | `specs/{feature}/spec.md` |
-| plan | `specs/{feature}/plan.md` |
-| tasks | `specs/{feature}/tasks.md` |
-| security-constraints | `specs/{feature}/security-constraints.md` |
-| project-config | `.specify/memory/constitution.md` |
-| constitution-set | `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any layout constitution under `.specify/memory/` |
-| draft | `.architecture-guard/constitution.draft.md` |
-| ponytail-template | `.architecture-guard/templates/ponytail_core.md` |
-| capability-composition-template | `.architecture-guard/templates/capability_composition.md` |
-| budgeted-context-template | `.architecture-guard/templates/budgeted_context_sdd.md` |
-| hygiene-rules | `.architecture-guard/hygiene-rules/*.md` |
-| presets | `.architecture-guard/presets/{preset}.md` |
-| sonar-rules | `.architecture-guard/sonar-rules` |
-| scripts | `.architecture-guard/scripts` |
-| templates | `.architecture-guard/templates` (compatibility alias; prefer `ponytail-template`) |
-| fallback-spec-index | `specs/system_context.md` |
-| flash-mem-project-id | Read from `.specify/memory/` or Flash-Mem MCP |
+| Canonical Name | SpecKit Path | Notes |
+|---|---|---|
+| project-root | `.` | |
+| sdd-tool-dir | `.specify/` | |
+| constitution | `.specify/memory/constitution.md` | |
+| arch-constitution | `.specify/memory/architecture_constitution.md` | |
+| security-constitution | `.specify/memory/security_constitution.md` | |
+| governance-config | `.architecture-guard/config.yml` | |
+| config | `.architecture-guard/config.yml` | Compatibility alias of `governance-config` |
+| extensions | `.specify/extensions.yml` | |
+| extensions-dir | `.specify/extensions/` | |
+| spec | `specs/{feature}/spec.md` | |
+| plan | `specs/{feature}/plan.md` | |
+| tasks | `specs/{feature}/tasks.md` | |
+| security-constraints | `specs/{feature}/security-constraints.md` | |
+| project-config | `.specify/memory/constitution.md` | |
+| constitution-set | `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any layout constitution under `.specify/memory/` | |
+| draft | `.architecture-guard/constitution.draft.md` | |
+| ponytail-template | `.architecture-guard/templates/ponytail_core.md` | |
+| capability-composition-template | `.architecture-guard/templates/capability_composition.md` | |
+| budgeted-context-template | `.architecture-guard/templates/budgeted_context_sdd.md` | |
+| hygiene-rules | `.architecture-guard/hygiene-rules/*.md` | |
+| presets | `.architecture-guard/presets/{preset}.md` | |
+| sonar-rules | `.architecture-guard/sonar-rules` | |
+| scripts | `.architecture-guard/scripts` | |
+| templates | `.architecture-guard/templates` | Compatibility alias; prefer `ponytail-template` |
+| fallback-spec-index | `specs/system_context.md` | |
+| flash-mem-project-id | Read from `.specify/memory/` or Flash-Mem MCP | |
 
 ## Command Map
 

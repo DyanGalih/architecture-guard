@@ -20,6 +20,7 @@ test('runs selected built-in hygiene checks and applies blocking policy', () => 
         '  enabled: true',
         '  fail_on:',
         '    - critical',
+        '    - debug-artifacts',
       ].join('\n') + '\n'
     );
     fs.writeFileSync(path.join(target, 'debug.ts'), "console.log('leftover debug output');\n");
@@ -38,6 +39,21 @@ test('runs selected built-in hygiene checks and applies blocking policy', () => 
     assert.ok(report.findings.some(finding => finding.blocking && finding.severity === 'CRITICAL'));
     assert.equal(report.rules.find(rule => rule.identifier === 'debug-artifacts').severity, 'CRITICAL');
     assert.equal(report.rules.find(rule => rule.identifier === 'debug-artifacts').blocking, true);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test('debug artifacts are a non-blocking warning unless the project fails on them', () => {
+  const target = temporaryProject();
+  try {
+    fs.writeFileSync(path.join(target, 'debug.ts'), "console.log('entry boundary output');\n");
+    const report = scanHygiene({ target, rules: 'debug-artifacts' });
+    const rule = report.rules.find(entry => entry.identifier === 'debug-artifacts');
+    assert.equal(rule.severity, 'WARNING');
+    assert.equal(rule.blocking, false);
+    assert.equal(report.counts.blocking, 0);
+    assert.ok(report.findings.some(finding => finding.rule === 'debug-artifacts' && finding.severity === 'WARNING'));
   } finally {
     fs.rmSync(target, { recursive: true, force: true });
   }
@@ -119,7 +135,7 @@ test('uses repository_hygiene policy embedded in a constitution when no standalo
         '',
         'repository_hygiene:',
         '  fail_on:',
-        '    - critical',
+        '    - debug-artifacts',
       ].join('\n') + '\n'
     );
     fs.writeFileSync(path.join(target, 'debug.ts'), "console.log('constitution policy');\n");

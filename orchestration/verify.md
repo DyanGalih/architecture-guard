@@ -6,7 +6,7 @@ description: Verify implementation against specification, design, plan, tasks, a
 
 ## SDD Adapter Resolution
 
-Before executing command, resolve the project root as the directory containing `.architecture-guard/` (normally the repository root). Read `.architecture-guard/adapters/resolve.md`, then read the adapter selected by `.architecture-guard/selected-adapter` (or `.architecture-guard/config.yml`) from `.architecture-guard/adapters/<name>.md`, built-in or custom. Do not run `architecture-guard resolve adapter ...`; `resolve` handles engine resources, while adapter files handle SDD paths and commands. Materialize every adapter token before executing the command body.
+Resolve the project root as the directory containing `.architecture-guard/` (normally the repository root). Before executing this command, read `.architecture-guard/adapters/resolve.md` and resolve the adapter with its chain (explicit `--adapter` override, `.architecture-guard/selected-adapter`, `.architecture-guard/config.yml`, then filesystem markers), then load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Stop with `Unavailable` and the exact path if the adapter file is missing. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. Resolve every adapter path and command token before continuing; all paths and commands below use the loaded adapter.
 
 ## Adapter-Bound Artifact Contract
 
@@ -88,7 +88,7 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 
 1. Resolve explicit artifact paths from native user input first; otherwise discover existing artifacts by matching `{adapter_path:tasks}`, `{adapter_path:plan}`, and `{adapter_path:spec}`. If multiple active sets are plausible, ask the user instead of guessing. If an optional artifact is absent, use an adapter-documented fallback only for the checks it can support, record its provenance, and mark unsupported checks `Degraded` rather than inventing evidence.
 2. Resolve the selected artifact set to absolute paths without invoking SDD-tool-specific prerequisite scripts.
-3. Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`) and inspect its `context` block for every referenced governance and constitution Markdown file.
+3. Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`) and inspect it for references to further governance and constitution Markdown files (for example a `context` block).
 4. Read every declared or present constitution, architecture, security, and layout Markdown file explicitly. Check {adapter_path:constitution-set} when present, plus every corresponding file resolved by the adapter path map. Never silently omit an existing file.
 5. Load the adapter-resolved Repository Hygiene Config: `{adapter_path:governance-config}` (falling back to its documented constitution block).
 6. Run `architecture-guard resolve hygiene-rules --list`, then resolve and load every returned hygiene rule in deterministic order. Workspace overrides replace same-named bundled rules.
@@ -113,7 +113,7 @@ Build internal representations:
 
 #### A. Task-Code Alignment
 - **Ghost Tasks**: Tasks marked complete but with no evidence in the referenced files.
-- **Orphaned Code**: Implementation logic present in files that wasn't planned in `tasks.md`.
+- **Orphaned Code**: Implementation logic present in files that wasn't planned in `{adapter_path:tasks}`.
 - **Missing Files**: Files referenced in tasks that do not exist on disk.
 - **Requirement Coverage**: Every requirement and acceptance criterion must be `Verified`, `Partial`, `Missing`, `Contradicted`, or `Not Applicable` with cited artifact and code/test evidence.
 - **Artifact Contradictions**: Report conflicting requirements, acceptance criteria, design decisions, or completion claims across spec, plan, and tasks; do not resolve contradictions by silently choosing one artifact.
@@ -143,8 +143,8 @@ Build internal representations:
 ### 4. Severity Assignment
 
 - Preserve each governing policy's native severity, then record `Blocking: Yes/No` separately. Architecture P0 and configured hygiene/security blocking levels fail the gate; advisory findings do not.
-- **CRITICAL**: Task marked done but implementation is missing; policy-designated critical Constitution violation; Boundary bypass (e.g., direct DB access from UI).
-- **HIGH**: Contract mismatch; Missing error-handling/edge-cases from spec; Major boundary erosion; repeated business rules with no shared extraction.
+- **CRITICAL**: Task marked done but implementation is missing; policy-designated critical Constitution violation.
+- **HIGH**: Boundary bypass (e.g., direct DB access from UI), unless the constitution designates it CRITICAL or P0; Contract mismatch; Missing error-handling/edge-cases from spec; Major boundary erosion; repeated business rules with no shared extraction.
 - **MEDIUM**: Pattern drift; Task-referenced file exists but logic is incomplete.
 - **LOW**: Naming inconsistencies; Minor structure drift.
 
@@ -152,8 +152,8 @@ Build internal representations:
 
 | ID | Category | Severity | Blocking | Location(s) | Target | Summary | Recommendation |
 |:---|:---|:---|:---|:---|:---|:---|:---|
-| V1 | Task Integrity | CRITICAL | Yes | `tasks.md:T01` | `tasks.md` | Task marked complete but logic missing in `auth.ts` | Implement logic or uncheck task |
-| V2 | Boundary | HIGH | No | `ctrl/user.ts` | `{adapter_path:plan}` | Database query found in Controller layer | Move query to Repository/Data layer |
+| V1 | Task Integrity | CRITICAL | [from policy] | `{adapter_path:tasks}:T01` | `{adapter_path:tasks}` | Task marked complete but logic missing in `auth.ts` | Implement logic or uncheck task |
+| V2 | Boundary | HIGH | [from policy] | `ctrl/user.ts` | `{adapter_path:plan}` | Database query found in Controller layer | Move query to Repository/Data layer |
 
 ## Verification Scope
 - **Mode**: [Explicit Artifact Set / Active Change / Git Diff Only (Degraded) / Blocked]
@@ -177,7 +177,7 @@ Build internal representations:
 - **Resolution Required**: [Authoritative artifact and decision needed]
 
 ### Task Status Analysis
-For each task in `tasks.md`:
+For each task in `{adapter_path:tasks}`:
 - **Implemented?**: [Yes/No/Partial]
 - **Evidence**: [File path or logic pattern]
 - **Gap Analysis**: If "No" or "Partial", explain why the task is incomplete and suggest the remediation.

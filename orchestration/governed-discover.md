@@ -6,7 +6,7 @@ description: Facilitate an architecture-aware discussion to flesh out ideas befo
 
 ## SDD Adapter Resolution
 
-Before executing command, read `.architecture-guard/adapters/resolve.md` to resolve the selected SDD adapter. Load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter.
+Before executing this command, read `.architecture-guard/adapters/resolve.md` and resolve the adapter with its chain (explicit `--adapter` override, `.architecture-guard/selected-adapter`, `.architecture-guard/config.yml`, then filesystem markers), then load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Stop with `Unavailable` and the exact path if the adapter file is missing. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. Resolve every adapter path and command token before continuing; all paths and commands below use the loaded adapter.
 
 ## Standalone Resource Resolution
 
@@ -31,7 +31,7 @@ This command coordinates an architecture-aware brainstorming and discovery phase
 
 ## Flash-Mem-First Architecture Context Retrieval
 
-When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. If retrieval is unavailable or insufficient, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before using repository artifacts. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. If retrieval is unavailable or insufficient, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before using repository artifacts. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 
 ## Goal
 
@@ -53,7 +53,7 @@ Check for the availability of:
 **Detection Logic**:
 1. Detect `flash-mem` as an MCP-backed memory service in the current environment.
 2. Detect Security Review as an independent host capability, never from an SDD extension manifest. If present, note it for downstream security flagging.
-3. If either capability is missing, degrade gracefully. Without `flash-mem`, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+3. If either capability is missing, degrade gracefully. Without `flash-mem`, load the governance files as described in Flash-Mem-First Architecture Context Retrieval above.
 
 ### Step 2 — Architecture Context Retrieval
 
@@ -128,13 +128,11 @@ When the discussion is concluded and aligned, the command MUST return:
 - [Proposed decision/constraint/lesson, rationale, and intended Flash-Mem type; or "None"]
 
 ## Recommended Next Step
-To proceed to implementation and avoid a "Feature: Not selected" error, you must initialize the feature using {adapter_command:create-change} before running a delivery phase.
+Run `ag-governed-spec` with this Discovery Summary Draft as its seed (suggested change name: `<suggested-feature-name>`). It establishes the change through {adapter_command:create-change} after its branch and write-approval gates, then writes and validates the specification.
 
-You can now run:
-1. The adapter-registered command to create a new change/feature (Suggested name: `<suggested-feature-name>`).
-2. Then choose a delivery workflow with this Discovery Summary Draft as input:
-   - For solo developers: run the adapter-registered `governed-delivery` capability.
-   - For teams: run the adapter-registered `governed-delivery-team` capability to generate a User Story for business review first.
+After the specification is accepted, choose a delivery workflow:
+- For solo developers: run `ag-governed-delivery`.
+- For teams that need stakeholder User Story approval: run `ag-governed-delivery-team`.
 ```
 
 ## Guardrails
