@@ -1249,7 +1249,20 @@ test('forge adapters pass review and reply text through temporary files, never s
   assert.match(gitlab, /never call bulk_publish and never send reviewer_state/);
   const azure = forgeCommands(fs.readFileSync(path.join(repoRoot, 'adapters/forges/azure-devops.md'), 'utf8'));
   assert.doesNotMatch(azure.get('pr-diff'), /pr-checkout|pr checkout|git switch/, 'the Azure diff never switches the checkout');
-  assert.match(azure.get('pr-diff'), /git diff origin\/<target branch>\.\.\.origin\/<source branch>/);
+  assert.match(azure.get('pr-diff'), /git diff 'origin\/<target branch>\.\.\.origin\/<source branch>'/);
+  // Refs from pull-request metadata are validated and never reach git as bare arguments.
+  for (const name of ['azure-devops', 'bitbucket']) {
+    const content = fs.readFileSync(path.join(repoRoot, 'adapters/forges', `${name}.md`), 'utf8');
+    assert.match(content, /untrusted: before using one in any command/, `${name} validates pull-request branch names`);
+    const commands = forgeCommands(content);
+    for (const key of ['pr-diff', 'pr-checkout']) {
+      const value = commands.get(key);
+      const fetches = (value.match(/git fetch/g) ?? []).length;
+      assert.ok(fetches > 0, `${name} ${key} fetches the branch`);
+      assert.equal((value.match(/git fetch --end-of-options origin '/g) ?? []).length, fetches, `${name} ${key} passes quoted refspecs after --end-of-options: ${value}`);
+    }
+  }
+  assert.match(fs.readFileSync(path.join(repoRoot, 'adapters/forges/generic.md'), 'utf8'), /Reject a ref that starts with `-`/);
   assert.match(fs.readFileSync(path.join(repoRoot, 'adapters/forges/azure-devops.md'), 'utf8'), /--resource 499b84ac-1321-427f-aa17-267ca6975798/);
   const generic = forgeCommands(fs.readFileSync(path.join(repoRoot, 'adapters/forges/generic.md'), 'utf8'));
   assert.match(generic.get('review-post'), /reviews\/<slug>\.md/);

@@ -4,7 +4,7 @@ Use this forge for any git repository without a supported code-host integration.
 
 ## Inputs
 
-Ask the user for the base ref and head ref of the change under review (for example `origin/main` and `feature/x`) when they are not given. Fetch them first with `git fetch` if they are remote refs.
+Ask the user for the base ref and head ref of the change under review (for example `origin/main` and `feature/x`) when they are not given. Fetch them first with `git fetch` if they are remote refs. Reject a ref that starts with `-` (it would be read as an option), and single-quote refs in shell commands.
 
 Files are named after the refs: `<slug>` is `<base>..<head>` with every `/` replaced by `-` (for example `origin-main..feature-x`), so a ref name never creates nested directories.
 
