@@ -1430,3 +1430,14 @@ test('installer has no unused argv parser and the package excludes compiled test
   assert.ok(files.includes('dist/bin/cli.js'));
   assert.deepEqual(files.filter(file => /^dist\/.*\.test\.js$/.test(file)), []);
 });
+
+test('a recorded generic forge is kept but init points out a newly detected host', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  spawnSync('git', ['init', '-q'], { cwd });
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'], cwd);
+  assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-forge'), 'utf8').trim(), 'generic');
+  spawnSync('git', ['remote', 'add', 'origin', 'git@github.com:acme/app.git'], { cwd });
+  const out = runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'], cwd);
+  assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-forge'), 'utf8').trim(), 'generic');
+  assert.match(out, /github remote detected, rerun with --forge github/);
+});

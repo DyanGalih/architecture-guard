@@ -700,7 +700,11 @@ function resolveSelectedForge(requested, targetDir) {
     const persisted = fs.readFileSync(markerPath, 'utf8').trim();
     if (persisted) {
       try {
-        return { forge: resolveForge(persisted, targetDir).forge, reason: 'kept from .architecture-guard/selected-forge; pass --forge to change it' };
+        const kept = resolveForge(persisted, targetDir).forge;
+        // A recorded plain-git forge may predate the remote; point out a better match without switching silently.
+        const detected = kept === 'generic' ? resolveForge('auto', targetDir).forge : kept;
+        const hint = detected !== kept ? `; ${detected} remote detected, rerun with --forge ${detected} to use it` : '';
+        return { forge: kept, reason: `kept from .architecture-guard/selected-forge; pass --forge to change it${hint}` };
       } catch {
         // The recorded forge no longer validates; fall back to auto-detection.
       }
