@@ -1878,3 +1878,20 @@ test('accepted risks carry owner, rationale, compensating control, trigger and g
     assert.match(prompt, /only mitigation is to revisit/i, file);
   }
 });
+
+test('governance readability is judged by the repository that holds the file (nested repositories)', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  git(cwd, 'init', '-q');
+  fs.writeFileSync(path.join(cwd, '.gitignore'), 'src/\n');
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit', '--commands', 'init'], cwd);
+  fs.mkdirSync(path.join(cwd, 'src/docs'), { recursive: true });
+  git(path.join(cwd, 'src'), 'init', '-q');
+  fs.writeFileSync(path.join(cwd, 'src/docs/constitution.md'), '# Governance');
+  fs.writeFileSync(path.join(cwd, 'src/docs/notes_constitution.md'), '# Private');
+  fs.writeFileSync(path.join(cwd, 'src/.gitignore'), 'docs/notes_constitution.md\n');
+  fs.appendFileSync(path.join(cwd, '.architecture-guard/config.yml'), 'governance:\n  constitution: src/docs/constitution.md\n  notes: src/docs/notes_constitution.md\n');
+
+  const out = spawnSync(process.execPath, [installer, 'validate-setup', cwd], { encoding: 'utf8' }).stdout;
+  assert.match(out, /Governance document "constitution" readable \(src\/docs\/constitution\.md\)/);
+  assert.match(out, /Governance document "notes" is gitignored \(src\/docs\/notes_constitution\.md\)/);
+});

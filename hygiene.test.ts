@@ -235,3 +235,20 @@ test('unresolved-governance-citations flags cited constitutions reviewers cannot
     fs.rmSync(target, { recursive: true, force: true });
   }
 });
+
+test('unresolved-governance-citations accepts a citation into a nested repository that tracks the file', () => {
+  const target = temporaryProject();
+  try {
+    execFileSync('git', ['init', '-q', target]);
+    fs.writeFileSync(path.join(target, '.gitignore'), 'src/\n');
+    fs.mkdirSync(path.join(target, 'src', 'docs'), { recursive: true });
+    execFileSync('git', ['init', '-q', path.join(target, 'src')]);
+    fs.writeFileSync(path.join(target, 'src', 'docs', 'constitution.md'), '# Governance\n');
+    fs.writeFileSync(path.join(target, 'README.md'), 'Rules: [governance](src/docs/constitution.md) and [gone](src/docs/missing_constitution.md).\n');
+
+    const report = scanHygiene({ target, rules: 'unresolved-governance-citations' });
+    assert.deepEqual(report.findings.map(finding => finding.message), ['Cited governance document src/docs/missing_constitution.md does not exist.']);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});

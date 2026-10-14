@@ -1,10 +1,10 @@
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'yaml';
 import { missingAdapterKeys } from './install';
 import { listCategoryResources, resolveResource } from './resolve';
 import { missingForgeKeys } from './forge';
+import { ignoredByOwningRepository } from './hygiene';
 
 type Level = 'pass' | 'warn' | 'fail' | 'info';
 type Check = { level: Level; message: string };
@@ -22,14 +22,13 @@ function mappedPath(adapter: string, key: string) {
 }
 
 // Whether a reviewer can open a governance document: inside the repository, present, and not gitignored. Tracked
-// files are never reported as ignored, so a force-added constitution counts as readable. Outside a git repository
-// the ignore check is skipped.
+// files are never reported as ignored, so a force-added constitution counts as readable. The repository that holds the
+// file decides, so a nested application repository inside an ignoring workspace is judged by its own rules.
 function readability(projectRoot: string, file: string): 'readable' | 'outside' | 'missing' | 'ignored' {
   const relative = path.relative(projectRoot, path.resolve(projectRoot, file));
   if (relative.startsWith('..') || path.isAbsolute(relative)) return 'outside';
   if (!fs.existsSync(path.join(projectRoot, relative))) return 'missing';
-  const ignored = spawnSync('git', ['-C', projectRoot, 'check-ignore', '-q', '--', relative], { stdio: 'ignore' });
-  return ignored.status === 0 ? 'ignored' : 'readable';
+  return ignoredByOwningRepository(projectRoot, relative) ? 'ignored' : 'readable';
 }
 
 export function validateSetup(projectRoot: string): Check[] {

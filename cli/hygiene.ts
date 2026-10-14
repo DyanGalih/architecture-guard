@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
@@ -462,6 +462,21 @@ SeverityDetectors['duplicate-business-logic'] = (_rule, files) => {
     })));
 };
 
+// Whether the git repository that holds a file ignores it: the nearest ancestor with `.git`, up to `root`. A
+// workspace that wraps an application repository (and ignores it) must not hide files that repository tracks.
+// Returns null outside any repository.
+export function ignoredByOwningRepository(root: string, relative: string): boolean | null {
+  const top = path.resolve(root);
+  const absolute = path.resolve(top, relative);
+  for (let dir = path.dirname(absolute); ; dir = path.dirname(dir)) {
+    if (fs.existsSync(path.join(dir, '.git'))) {
+      const result = spawnSync('git', ['-C', dir, 'check-ignore', '-q', '--', path.relative(dir, absolute)], { stdio: 'ignore' });
+      return result.status === 0 ? true : result.status === 1 ? false : null;
+    }
+    if (dir === top || path.dirname(dir) === dir) return null;
+  }
+}
+
 // A governance document a reviewer cannot open is no rule at all. A cited path containing a slash (a Markdown link
 // target or a path in prose or a comment) must resolve, from the citing file or the repository root, to a file in
 // the reviewed set: tracked or untracked but not gitignored. Bare names such as `constitution.md` are prose.
@@ -482,6 +497,7 @@ SeverityDetectors['unresolved-governance-citations'] = (_rule, files) => {
         if (!cited.startsWith('.')) candidates.push(path.posix.normalize(cited));
         if (candidates.some(candidate => readable.has(candidate))) continue;
         const inside = candidates.filter(candidate => !candidate.startsWith('../') && candidate !== '..');
+        if (inside.some(candidate => fs.existsSync(path.join(root, candidate)) && ignoredByOwningRepository(root, candidate) === false)) continue;
         const message = !inside.length
           ? `Cited governance document ${cited} is outside the repository; reviewers cannot open it.`
           : inside.some(candidate => fs.existsSync(path.join(root, candidate)))
