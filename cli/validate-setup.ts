@@ -8,6 +8,9 @@ import { missingForgeKeys } from './forge';
 type Level = 'pass' | 'warn' | 'fail' | 'info';
 type Check = { level: Level; message: string };
 
+// Marker contents become file names; anything else could point outside .architecture-guard/.
+const SELECTION_NAME = /^[a-z0-9][a-z0-9-]*$/;
+
 // First backticked value in an adapter Path Map row, or null when the row has no literal path
 // (user-provided, unsupported, or templated per feature).
 function mappedPath(adapter: string, key: string) {
@@ -28,6 +31,10 @@ export function validateSetup(projectRoot: string): Check[] {
     return checks;
   }
   const name = fs.readFileSync(selectedPath, 'utf8').trim();
+  if (!SELECTION_NAME.test(name)) {
+    add('fail', `.architecture-guard/selected-adapter contains an invalid adapter name "${name}"; use lowercase letters, digits, and hyphens. Rerun \`architecture-guard init\`.`);
+    return checks;
+  }
   const adapterPath = path.join(runtimeDir, 'adapters', `${name}.md`);
   if (!fs.existsSync(adapterPath)) {
     add('fail', `Selected adapter "${name}" not found at .architecture-guard/adapters/${name}.md. Rerun \`architecture-guard init\`.`);
@@ -75,7 +82,9 @@ export function validateSetup(projectRoot: string): Check[] {
   const forgeMarker = path.join(runtimeDir, 'selected-forge');
   const forge = fs.existsSync(forgeMarker) ? fs.readFileSync(forgeMarker, 'utf8').trim() : '';
   const forgePath = path.join(runtimeDir, 'forges', `${forge}.md`);
-  if (!forge) {
+  if (forge && !SELECTION_NAME.test(forge)) {
+    add('fail', `.architecture-guard/selected-forge contains an invalid forge name "${forge}"; use lowercase letters, digits, and hyphens. Rerun \`architecture-guard init\`.`);
+  } else if (!forge) {
     add('warn', 'No selected forge (.architecture-guard/selected-forge); pull-request skills fall back to plain git. Rerun `architecture-guard init`.');
   } else if (!fs.existsSync(forgePath)) {
     add('fail', `Selected forge "${forge}" not found at .architecture-guard/forges/${forge}.md. Rerun \`architecture-guard init\`.`);

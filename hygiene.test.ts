@@ -133,6 +133,20 @@ test('uses repository_hygiene policy embedded in a constitution when no standalo
   }
 });
 
+test('walks a non-repository target with POSIX relative paths so nested detectors match', () => {
+  const target = temporaryProject();
+  try {
+    fs.mkdirSync(path.join(target, 'src', 'tmp'), { recursive: true });
+    fs.writeFileSync(path.join(target, 'src', 'tmp', 'notes.md'), 'scratch\n');
+
+    const report = scanHygiene({ target, rules: 'temporary-files' });
+
+    assert.deepEqual(report.findings.map(finding => finding.relativePath), ['src/tmp/notes.md']);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});
+
 test('--files limits findings to the listed files and records the scope', () => {
   const target = temporaryProject();
   try {

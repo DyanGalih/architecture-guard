@@ -196,7 +196,8 @@ function ignored(relativePath: string, policy: HygienePolicy) {
 function walkFiles(root: string, current: string, output: ProjectFile[], policy: HygienePolicy) {
   for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
     const absolutePath = path.join(current, entry.name);
-    const relativePath = path.relative(root, absolutePath);
+    // Detectors match POSIX separators, the same form the tracked-file listing reports.
+    const relativePath = path.relative(root, absolutePath).split(path.sep).join('/');
     if (ignored(relativePath, policy)) continue;
     if (entry.isDirectory()) {
       walkFiles(root, absolutePath, output, policy);

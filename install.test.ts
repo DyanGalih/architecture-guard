@@ -298,11 +298,24 @@ test('reports missing canonical prompts without a stack trace', () => {
   }
 });
 
-test('escapes TOML triple quotes and emits safe YAML metadata', () => {
+test('emits valid TOML for quotes and backslashes and safe YAML metadata', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
-  const toml = path.join(cwd, 'test.toml');
-  require('./cli/install').installToml('init', 'say """ safely', cwd, toml);
-  assert.match(fs.readFileSync(toml, 'utf8'), /\\"\\"\\"/);
+  const prompts = {
+    'literal.toml': 'say """ safely; keep $\\ge 15$ and C:\\path verbatim',
+    'basic.toml': "has ''' and \"\"\" and a \\ge backslash\nending with a quote\"",
+  };
+  for (const [file, prompt] of Object.entries(prompts)) {
+    require('./cli/install').installToml('init', prompt, cwd, path.join(cwd, file));
+  }
+  assert.match(fs.readFileSync(path.join(cwd, 'literal.toml'), 'utf8'), /^prompt = '''$/m);
+  const parsed = parseTomlFiles(Object.keys(prompts).map(file => path.join(cwd, file)));
+  if (parsed) {
+    for (const [file, prompt] of Object.entries(prompts)) {
+      assert.equal(parsed[path.join(cwd, file)].error, undefined, file);
+      // Like the earlier basic-string output, the prompt keeps one trailing newline.
+      assert.equal(parsed[path.join(cwd, file)].prompt, `${prompt}\n`, file);
+    }
+  }
   const yaml = path.join(cwd, 'test.yaml');
   require('./cli/install').installYaml('init', 'prompt', cwd, yaml);
   assert.match(fs.readFileSync(yaml, 'utf8'), /title: "ag-init"/);
@@ -316,14 +329,22 @@ test('--vendor copies full runtime resources for air-gapped environments', () =>
   }
 });
 
-test('default init purges legacy unmodifiable engine directories', () => {
+test('default init removes only stale vendored copies of engine resources', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-legacy-'));
-  const legacyDir = path.join(cwd, '.architecture-guard/templates');
-  fs.mkdirSync(legacyDir, { recursive: true });
-  fs.writeFileSync(path.join(legacyDir, 'legacy.md'), 'legacy');
+  const repo = path.join(__dirname, '..');
+  const templatesDir = path.join(cwd, '.architecture-guard/templates');
+  const presetsDir = path.join(cwd, '.architecture-guard/presets');
+  fs.mkdirSync(templatesDir, { recursive: true });
+  fs.mkdirSync(presetsDir, { recursive: true });
+  fs.copyFileSync(path.join(repo, 'templates/ponytail_core.md'), path.join(templatesDir, 'ponytail_core.md'));
+  fs.copyFileSync(path.join(repo, 'presets/react.md'), path.join(presetsDir, 'react.md'));
+  fs.writeFileSync(path.join(templatesDir, 'legacy.md'), 'legacy');
 
-  spawnSync(process.execPath, [installer, 'init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit'], { cwd, encoding: 'utf8' });
-  assert.ok(!fs.existsSync(legacyDir), 'legacy templates dir should be purged');
+  const out = runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit'], cwd);
+  assert.ok(!fs.existsSync(path.join(templatesDir, 'ponytail_core.md')), 'byte-identical vendored copy is removed');
+  assert.ok(!fs.existsSync(presetsDir), 'a directory left empty is removed');
+  assert.equal(fs.readFileSync(path.join(templatesDir, 'legacy.md'), 'utf8'), 'legacy', 'user content is kept');
+  assert.match(out, /Kept local overrides[\s\S]*\.architecture-guard\/templates\/legacy\.md/);
   assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard/config.yml')));
 });
 
@@ -1360,4 +1381,163 @@ test('generic forge commands work end to end against a real repository', () => {
   runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--forge', 'generic', '--commands', 'pr'], reviewer);
   const skill = fs.readFileSync(path.join(reviewer, '.opencode/commands/ag-review-pr.md'), 'utf8');
   assert.match(skill, /git diff --name-status <base>\.\.\.<head>/);
+});
+
+// Parses TOML files with Python's tomllib; returns null (and says so) when it is unavailable.
+function parseTomlFiles(files) {
+  const script = [
+    'import json, sys',
+    'try:',
+    '    import tomllib',
+    'except ImportError:',
+    '    sys.exit(3)',
+    'out = {}',
+    'for name in json.load(sys.stdin):',
+    '    try:',
+    '        with open(name, "rb") as handle:',
+    '            data = tomllib.load(handle)',
+    '        out[name] = {"prompt": data.get("prompt"), "description": data.get("description")}',
+    '    except Exception as error:',
+    '        out[name] = {"error": str(error)}',
+    'print(json.dumps(out))',
+  ].join('\n');
+  const result = spawnSync('python3', ['-I', '-c', script], { input: JSON.stringify(files), encoding: 'utf8' });
+  if (result.error || result.status === 3) {
+    console.log('# TOML parse assertion skipped: python3 with tomllib is unavailable');
+    return null;
+  }
+  assert.equal(result.status, 0, result.stderr);
+  return JSON.parse(result.stdout);
+}
+
+test('every installed gemini and tabnine command is valid TOML', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-toml-'));
+  runArgs(['init', '--yes', '--agent', 'gemini,tabnine', '--framework', 'spec-kit', '--commands', 'all'], cwd);
+  const files = ['.gemini/commands', '.tabnine/agent/commands'].flatMap(dir =>
+    fs.readdirSync(path.join(cwd, dir)).filter(file => file.endsWith('.toml')).map(file => path.join(cwd, dir, file)));
+  assert.equal(files.length, 2 * require('./cli/install').COMMANDS.length);
+  const parsed = parseTomlFiles(files);
+  if (!parsed) return;
+  for (const file of files) {
+    assert.equal(parsed[file].error, undefined, `${file}: ${parsed[file].error}`);
+    assert.ok(parsed[file].prompt.length > 0, file);
+    assert.match(parsed[file].description, /^Architecture Guard: ag-/);
+  }
+  // Backslashes (e.g. LaTeX) survive verbatim.
+  assert.match(parsed[path.join(cwd, '.gemini/commands/ag-governed-plan.toml')].prompt, /\\ge/);
+});
+
+test('lean re-init keeps modified engine overrides and never prunes with skip or keep-both', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-overrides-'));
+  const base = ['init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit', '--commands', 'init'];
+  runArgs([...base, '--vendor'], cwd);
+  const template = path.join(cwd, '.architecture-guard/templates/ponytail_core.md');
+  const sonar = path.join(cwd, '.architecture-guard/sonar-rules/sonarlint-rules.json');
+  const stale = path.join(cwd, '.architecture-guard/templates/constitution.md');
+  fs.writeFileSync(template, 'custom ponytail');
+  fs.writeFileSync(sonar, '{"custom": true}\n');
+
+  for (const mode of ['skip', 'keep-both']) {
+    runArgs([...base, '--overwrite', mode], cwd);
+    assert.ok(fs.existsSync(stale), `--overwrite ${mode} never prunes`);
+  }
+
+  const out = runArgs(base, cwd);
+  assert.equal(fs.readFileSync(template, 'utf8'), 'custom ponytail');
+  assert.equal(fs.readFileSync(sonar, 'utf8'), '{"custom": true}\n');
+  assert.ok(!fs.existsSync(stale), 'unmodified vendored copy is removed');
+  assert.ok(!fs.existsSync(path.join(cwd, '.architecture-guard/presets')), 'all-stale directory is removed');
+  assert.match(out, /templates\/ponytail_core\.md/);
+  assert.match(out, /sonar-rules\/sonarlint-rules\.json/);
+});
+
+test('rejects an unknown --overwrite mode before writing anything', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  const result = spawnSync(process.execPath, [installer, 'init', '--yes', '--agent', 'opencode', '--framework', 'none', '--overwrite', 'keepboth'], { cwd, encoding: 'utf8' });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Invalid --overwrite mode "keepboth"\. Use one of: replace, skip, keep-both\./);
+  assert.deepEqual(fs.readdirSync(cwd), []);
+});
+
+test('rerunning init without --forge keeps a selected forge that still validates', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  spawnSync('git', ['init', '-q'], { cwd });
+  spawnSync('git', ['remote', 'add', 'origin', 'git@github.com:acme/app.git'], { cwd });
+  const base = ['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'];
+  const selected = () => fs.readFileSync(path.join(cwd, '.architecture-guard/selected-forge'), 'utf8').trim();
+  runArgs(base, cwd);
+  const custom = path.join(cwd, '.architecture-guard/forges/gitea.md');
+  const generic = fs.readFileSync(path.join(repoRoot, 'adapters/forges/generic.md'), 'utf8');
+  fs.writeFileSync(custom, generic);
+  runArgs([...base, '--forge', 'gitea'], cwd);
+  assert.equal(selected(), 'gitea');
+
+  assert.match(runArgs(base, cwd), /Forge: gitea \(kept from/);
+  assert.equal(selected(), 'gitea');
+
+  // A recorded forge that no longer validates falls back to auto-detection.
+  fs.writeFileSync(custom, generic.replace(/^\| pr-diff \|.*\n/m, ''));
+  runArgs(base, cwd);
+  assert.equal(selected(), 'github');
+});
+
+test('keep-both skills are named after their directory and Antigravity workflows honor --overwrite', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  const base = ['init', '--yes', '--agent', 'claude,antigravity', '--framework', 'none', '--commands', 'init'];
+  runArgs(base, cwd);
+  runArgs([...base, '--overwrite', 'keep-both'], cwd);
+  assert.match(fs.readFileSync(path.join(cwd, '.claude/skills/ag-init/SKILL.md'), 'utf8'), /^name: ag-init$/m);
+  assert.match(fs.readFileSync(path.join(cwd, '.claude/skills/ag-init-2/SKILL.md'), 'utf8'), /^name: ag-init-2$/m);
+
+  const workflow = path.join(cwd, '.agent/workflows/agx-init.md');
+  fs.writeFileSync(workflow, 'original');
+  fs.rmSync(path.join(cwd, '.agent/workflows/agx-init.architecture-guard.md'), { force: true });
+  runArgs([...base, '--overwrite', 'skip'], cwd);
+  assert.equal(fs.readFileSync(workflow, 'utf8'), 'original');
+  runArgs([...base, '--overwrite', 'keep-both'], cwd);
+  assert.equal(fs.readFileSync(workflow, 'utf8'), 'original');
+  assert.ok(fs.existsSync(path.join(cwd, '.agent/workflows/agx-init.architecture-guard.md')));
+  runArgs(base, cwd);
+  assert.notEqual(fs.readFileSync(workflow, 'utf8'), 'original');
+});
+
+test('validate-setup rejects selection markers that are not plain names', () => {
+  const { validateSetup } = require('./cli/validate-setup');
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--forge', 'generic', '--commands', 'init'], cwd);
+  const failures = () => validateSetup(cwd).filter(check => check.level === 'fail').map(check => check.message).join('\n');
+
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/selected-forge'), '../../forges/generic\n');
+  assert.match(failures(), /selected-forge contains an invalid forge name "\.\.\/\.\.\/forges\/generic"/);
+
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/selected-adapter'), '../adapters/generic\n');
+  assert.match(failures(), /selected-adapter contains an invalid adapter name "\.\.\/adapters\/generic"/);
+});
+
+test('installer has no unused argv parser and the package excludes compiled tests', () => {
+  const source = fs.readFileSync(path.join(repoRoot, 'cli/install.ts'), 'utf8');
+  assert.doesNotMatch(source, /function (?:parseArgs|printHelp|main)\(/);
+  assert.doesNotMatch(source, /require\('\.\/package\.json'\)/);
+
+  const pack = spawnSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd: repoRoot, encoding: 'utf8' });
+  if (pack.error || pack.status !== 0) {
+    console.log('# npm pack assertion skipped: npm is unavailable');
+    return;
+  }
+  // npm <12 prints an array of packages; npm 12 prints an object keyed by package name.
+  const packed = JSON.parse(pack.stdout);
+  const files = (Array.isArray(packed) ? packed[0] : Object.values(packed)[0] as any).files.map(file => file.path);
+  assert.ok(files.includes('dist/bin/cli.js'));
+  assert.deepEqual(files.filter(file => /^dist\/.*\.test\.js$/.test(file)), []);
+});
+
+test('a recorded generic forge is kept but init points out a newly detected host', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  spawnSync('git', ['init', '-q'], { cwd });
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'], cwd);
+  assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-forge'), 'utf8').trim(), 'generic');
+  spawnSync('git', ['remote', 'add', 'origin', 'git@github.com:acme/app.git'], { cwd });
+  const out = runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'], cwd);
+  assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-forge'), 'utf8').trim(), 'generic');
+  assert.match(out, /github remote detected, rerun with --forge github/);
 });
