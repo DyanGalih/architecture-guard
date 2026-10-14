@@ -1180,3 +1180,84 @@ test('the pr alias installs both pull-request skills', () => {
   }
   assert.match(fs.readFileSync(path.join(cwd, '.opencode/commands/ag-pr-feedback.md'), 'utf8'), /"status": "fixed"/);
 });
+
+test('generic forge commands work end to end against a real repository', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-e2e-'));
+  const run = (cwd, ...args) => {
+    const result = spawnSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args], { cwd, encoding: 'utf8' });
+    assert.equal(result.status, 0, `git ${args.join(' ')}: ${result.stderr}`);
+    return result.stdout;
+  };
+  const write = (dir, file, text) => fs.writeFileSync(path.join(dir, file), text);
+
+  // Author: a remote with main and a feature branch that modifies, adds, renames, and deletes files.
+  const origin = path.join(root, 'origin.git');
+  run(root, 'init', '-q', '--bare', '-b', 'main', origin);
+  const author = path.join(root, 'author');
+  run(root, 'clone', '-q', origin, author);
+  run(author, 'switch', '-q', '-c', 'main');
+  write(author, 'a.txt', 'one\ntwo\n');
+  write(author, 'c.txt', 'rename me\n'.repeat(5));
+  write(author, 'e.txt', 'delete me\n');
+  run(author, 'add', '.');
+  run(author, 'commit', '-q', '-m', 'base');
+  run(author, 'push', '-q', 'origin', 'main');
+  run(author, 'switch', '-q', '-c', 'feature');
+  write(author, 'a.txt', 'one\nTWO\n');
+  write(author, 'b.txt', 'new file\n');
+  run(author, 'mv', 'c.txt', 'd.txt');
+  run(author, 'rm', '-q', 'e.txt');
+  run(author, 'add', '.');
+  run(author, 'commit', '-q', '-m', 'feature work');
+  run(author, 'push', '-q', 'origin', 'feature');
+  const featureSha = run(author, 'rev-parse', 'HEAD').trim();
+
+  // Reviewer: a separate clone that stays on main.
+  const reviewer = path.join(root, 'reviewer');
+  run(root, 'clone', '-q', origin, reviewer);
+  run(reviewer, 'fetch', '-q', 'origin');
+
+  // Commands come from the shipped adapter, so the test fails if the adapter's commands break.
+  const commands = forgeModule().forgeCommands(fs.readFileSync(path.join(repoRoot, 'adapters/forges/generic.md'), 'utf8'));
+  const raw = fs.readFileSync(path.join(repoRoot, 'adapters/forges/generic.md'), 'utf8');
+  const cell = (key) => raw.match(new RegExp(`^\\| ${key} \\| (.*) \\|$`, 'm'))[1];
+  const snippets = (key) => [...cell(key).matchAll(/`([^`]+)`/g)].map(match => match[1]);
+  assert.ok(commands.has('pr-diff'));
+  const fill = (command, extra: { dir?: string } = {}) => command
+    .replaceAll('<base>', 'origin/main')
+    .replaceAll('<head>', 'origin/feature')
+    .replaceAll('<dir>', extra.dir || '');
+  const sh = (command) => {
+    const result = spawnSync('sh', ['-c', command], { cwd: reviewer, encoding: 'utf8' });
+    assert.equal(result.status, 0, `${command}: ${result.stderr}`);
+    return result.stdout;
+  };
+
+  const [diffCommand, nameStatusCommand] = snippets('pr-diff');
+  const diff = sh(fill(diffCommand));
+  assert.match(diff, /^-two$/m);
+  assert.match(diff, /^\+TWO$/m);
+  const nameStatus = sh(fill(nameStatusCommand)).trim().split('\n').map(line => line.split('\t'));
+  assert.deepEqual(nameStatus.find(([status]) => status === 'M'), ['M', 'a.txt']);
+  assert.deepEqual(nameStatus.find(([status]) => status === 'A'), ['A', 'b.txt']);
+  assert.deepEqual(nameStatus.find(([status]) => status === 'D'), ['D', 'e.txt']);
+  const renamed = nameStatus.find(([status]) => status.startsWith('R'));
+  assert.deepEqual(renamed.slice(1), ['c.txt', 'd.txt']);
+
+  const [logCommand, headCommand] = snippets('pr-view');
+  assert.deepEqual(sh(fill(logCommand)).trim().split('\n').map(line => line.split(' ').slice(2).join(' ')), ['feature work']);
+  assert.equal(sh(fill(headCommand)).trim(), featureSha);
+
+  const worktreeCommand = snippets('pr-checkout').find(command => command.includes('worktree'));
+  const worktree = path.join(root, 'review-worktree');
+  sh(fill(worktreeCommand, { dir: worktree }));
+  assert.ok(fs.existsSync(path.join(worktree, 'b.txt')), 'worktree has the pull request head');
+  assert.equal(run(reviewer, 'branch', '--show-current').trim(), 'main', "reviewer's checkout is unchanged");
+  assert.ok(!fs.existsSync(path.join(reviewer, 'b.txt')));
+  run(reviewer, 'worktree', 'remove', worktree);
+
+  // Installed skills carry the same commands for this forge.
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--forge', 'generic', '--commands', 'pr'], reviewer);
+  const skill = fs.readFileSync(path.join(reviewer, '.opencode/commands/ag-review-pr.md'), 'utf8');
+  assert.match(skill, /git diff --name-status <base>\.\.\.<head>/);
+});
