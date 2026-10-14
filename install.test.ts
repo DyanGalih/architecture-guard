@@ -348,6 +348,22 @@ test('default init removes only stale vendored copies of engine resources', () =
   assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard/config.yml')));
 });
 
+test('default init never prunes through a symlinked resource directory outside the target', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-symlink-'));
+  const repo = path.join(__dirname, '..');
+  const external = path.join(tmp, 'external');
+  const cwd = path.join(tmp, 'project');
+  fs.mkdirSync(external);
+  fs.mkdirSync(path.join(cwd, '.architecture-guard'), { recursive: true });
+  fs.copyFileSync(path.join(repo, 'templates/ponytail_core.md'), path.join(external, 'ponytail_core.md'));
+  fs.symlinkSync(external, path.join(cwd, '.architecture-guard/templates'), 'dir');
+
+  const out = runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit'], cwd);
+  assert.ok(fs.existsSync(path.join(external, 'ponytail_core.md')), 'byte-identical file outside the target is kept');
+  assert.ok(fs.lstatSync(path.join(cwd, '.architecture-guard/templates')).isSymbolicLink(), 'the symlink itself is left alone');
+  assert.match(out, /Kept local overrides[\s\S]*\.architecture-guard\/templates\//);
+});
+
 test('vendor mode runtime resources auto-replace by default and can be skipped with --overwrite skip', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   spawnSync(process.execPath, [installer, 'init', '--vendor', '--yes', '--agent', 'opencode', '--framework', 'spec-kit'], { cwd, encoding: 'utf8' });
