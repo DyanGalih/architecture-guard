@@ -75,7 +75,7 @@ You are running `architecture-guard`, a technology-agnostic architecture review 
 
 ## Input & Context Loading
 
-Review any available artifacts from these common locations. **IMPORTANT**: You MUST read these files explicitly using your file-reading tools (absolute or relative paths). Do not rely solely on workspace search or semantic indexers, as these files are often in `.gitignore` and may be excluded from default context:
+Review any available artifacts from these common locations. **IMPORTANT**: You MUST read these files explicitly using your file-reading tools (absolute or relative paths). Do not rely solely on workspace search or semantic indexers, as these files are often in `.gitignore` and may be excluded from default context. Read them anyway, but report any governance file that is gitignored or outside the repository as a hygiene WARNING: reviewers and teammates cannot open a rule that code or specs cite. The locations are:
 
 1. **Manifest & Configuration**:
     - Resolve `{adapter_path:governance-config}` or the adapter-native project configuration first (`{adapter_path:project-config}`). Inspect it for references to further governance and constitution Markdown files (for example a `context` block). Never rely on a hardcoded partial list.
@@ -133,6 +133,7 @@ Detect violations such as:
 - **Ponytail Violation (Unsafe Simplification)**: A small diff removes required validation, authorization, data-loss prevention, accessibility, external-system safeguards, or verification.
 - **Root-Cause Miss**: The plan addresses one affected path while omitting sibling paths that share the same defect.
 - **Constitution Breach**: Any conflict with a "MUST" principle in the Constitution.
+- **Accepted-risk completeness**: Every accepted risk or deviation in the artifacts names an owner, rationale, compensating control, trigger or expiry, and whether it gates a release. Report a missing field as LOW. Report a security-relevant risk whose only mitigation is to revisit it later, with no trigger or gate, as MEDIUM; it is non-blocking unless the security policy says otherwise.
 
 **Duplication Drift Example**
 - Finding: The plan assigns the same tax rule to both the checkout entry boundary and application service.

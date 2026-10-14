@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'yaml';
@@ -18,6 +19,17 @@ function mappedPath(adapter: string, key: string) {
   const value = row?.[1].match(/`([^`]+)`/)?.[1];
   if (!value || value.includes('{') || value.includes('<')) return { path: null, optional: false };
   return { path: value, optional: /optional/i.test(row![1]) };
+}
+
+// Whether a reviewer can open a governance document: inside the repository, present, and not gitignored. Tracked
+// files are never reported as ignored, so a force-added constitution counts as readable. Outside a git repository
+// the ignore check is skipped.
+function readability(projectRoot: string, file: string): 'readable' | 'outside' | 'missing' | 'ignored' {
+  const relative = path.relative(projectRoot, path.resolve(projectRoot, file));
+  if (relative.startsWith('..') || path.isAbsolute(relative)) return 'outside';
+  if (!fs.existsSync(path.join(projectRoot, relative))) return 'missing';
+  const ignored = spawnSync('git', ['-C', projectRoot, 'check-ignore', '-q', '--', relative], { stdio: 'ignore' });
+  return ignored.status === 0 ? 'ignored' : 'readable';
 }
 
 export function validateSetup(projectRoot: string): Check[] {
@@ -62,6 +74,7 @@ export function validateSetup(projectRoot: string): Check[] {
   for (const [key, label] of [['constitution', 'Governance constitution'], ['arch-constitution', 'Architecture constitution'], ['security-constitution', 'Security constitution']]) {
     const { path: file, optional } = mappedPath(adapter, key);
     if (!file) add('info', `${label}: path is user-provided for this adapter; not checked`);
+    else if (readability(projectRoot, file) === 'ignored') add('warn', `${label} is gitignored (${file}); reviewers cannot read it`);
     else if (fs.existsSync(path.join(projectRoot, file))) add('pass', `${label} found (${file})`);
     else if (key === 'constitution' && !optional) add('fail', `${label} missing (${file}). Run the init skill (ag-init) to create it.`);
     else add('warn', `${label} not found (${file})${optional ? ' — optional for this adapter' : ''}`);
@@ -71,12 +84,30 @@ export function validateSetup(projectRoot: string): Check[] {
   if (!config || !fs.existsSync(path.join(projectRoot, config))) {
     add('info', 'No governance config; targeted context mode and default hygiene policy apply');
   } else {
+    let settings: any = null;
     try {
-      parse(fs.readFileSync(path.join(projectRoot, config), 'utf8'));
+      settings = parse(fs.readFileSync(path.join(projectRoot, config), 'utf8'));
       add('pass', `Governance config parses (${config})`);
     } catch (error) {
       add('fail', `Governance config is not valid YAML (${config}): ${error instanceof Error ? error.message : error}`);
     }
+    // Declared governance documents are what code, specs and reviews cite, so every reviewer must be able to open them.
+    const governance = settings?.governance;
+    if (governance && typeof governance === 'object' && !Array.isArray(governance)) {
+      for (const [name, file] of Object.entries(governance)) {
+        if (typeof file !== 'string' || !file.trim()) {
+          add('warn', `Governance document "${name}" has no path`);
+          continue;
+        }
+        const state = readability(projectRoot, file);
+        if (state === 'readable') add('pass', `Governance document "${name}" readable (${file})`);
+        else if (state === 'missing') add('warn', `Governance document "${name}" not found (${file})`);
+        else add('warn', `Governance document "${name}" is ${state === 'outside' ? 'outside the repository' : 'gitignored'} (${file}); reviewers cannot read it`);
+      }
+    }
+    const sensitive = settings?.security_sensitive_paths;
+    if (Array.isArray(sensitive) && sensitive.length) add('pass', `${sensitive.length} security-sensitive path pattern(s) configured`);
+    else add('info', 'security_sensitive_paths not configured; skills judge which changes need a security re-review');
   }
 
   const forgeMarker = path.join(runtimeDir, 'selected-forge');

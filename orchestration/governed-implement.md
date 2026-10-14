@@ -53,7 +53,7 @@ Before the first mutation, resolve and preview the working branch and the exact 
 
 ### Constitution Inputs
 
-Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file with file-reading tools. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file, and do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`. Later steps refer to this set as the **Constitution Inputs**; load it once and reuse it.
+Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file with file-reading tools. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file, and do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`. Read them anyway, but report any governance file that is gitignored or outside the repository as a hygiene WARNING: reviewers and teammates cannot open a rule that code or specs cite. Later steps refer to this set as the **Constitution Inputs**; load it once and reuse it.
 
 ### Step 0 — Preconditions
 
@@ -135,6 +135,8 @@ The SDD-tool-native implementation behavior is defined by the selected adapter a
 
 ### Step 4 — Security Review on Implementation
 
+Run `architecture-guard detect-changed-files --json --security-sensitive` (globs from `security_sensitive_paths` in `.architecture-guard/config.yml`). Treat any listed file, or any change to authentication, authorization, sessions, credentials, or a trust boundary when no globs are configured, as security-sensitive; re-run this step after every later fix that touches one.
+
 IF `security-review` is available as a host capability:
 1. **Execute Review**: Dispatch the detected host Security Review capability's branch/implementation operation directly. Do not execute adapter fallback prose as a command.
 2. Check for: authorization bypass, missing validation, secret leakage, injection risk, and insecure data exposure.
@@ -202,7 +204,8 @@ Produce a final `Governed Implementation Summary`.
 - Use active spec, plan, tasks, repository evidence, and any present constitutions as current authority; report that historical memory context was unavailable rather than assuming no historical constraints exist
 
 **Without Security Review**:
-- Skip Step 4 (Security Review on Implementation)
+- Skip Step 4 (Security Review on Implementation) only when no change is security-sensitive
+- When a change is security-sensitive, record `security re-review required` as an open blocking item in the summary instead of skipping silently
 - Continue to architecture review directly
 - Flag missing security implementation review in summary
 

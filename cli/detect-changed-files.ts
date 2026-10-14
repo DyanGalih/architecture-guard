@@ -1,5 +1,7 @@
 import { execFileSync } from 'child_process';
 import fs from 'node:fs';
+import { parse } from 'yaml';
+import { globMatches } from './hygiene';
 
 function git(args: string[]) {
   return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -58,12 +60,28 @@ export function detectChangedFiles(base?: string) {
   }
 }
 
+// Globs from `security_sensitive_paths` in .architecture-guard/config.yml (repository root). Skills that change one of
+// these files must run the host Security Review again before committing (F1: an auth rule changed in a review fix).
+export function securitySensitivePatterns(root: string): string[] {
+  const configPath = `${root}/.architecture-guard/config.yml`;
+  if (!fs.existsSync(configPath)) return [];
+  const value = parse(fs.readFileSync(configPath, 'utf8'))?.security_sensitive_paths;
+  return Array.isArray(value) ? value.filter((pattern): pattern is string => typeof pattern === 'string' && pattern.trim() !== '') : [];
+}
+
+export function securitySensitiveFiles(files: string[], patterns: string[]) {
+  return files.filter(file => patterns.some(pattern => globMatches(file, pattern.trim())));
+}
+
 export function runDetectChangedFiles(opts: any) {
   if (!opts.json) {
     console.log("Detecting changed files...");
   }
   try {
-    const files = detectChangedFiles(opts.base);
+    let files = detectChangedFiles(opts.base);
+    if (opts.securitySensitive) {
+      files = securitySensitiveFiles(files, securitySensitivePatterns(git(['rev-parse', '--show-toplevel']).trim()));
+    }
     if (opts.json) {
       console.log(JSON.stringify(files));
     } else {

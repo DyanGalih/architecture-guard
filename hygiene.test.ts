@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { scanHygiene } from './cli/hygiene';
 
 function temporaryProject() {
@@ -200,6 +201,36 @@ test('--files still compares a changed file with unchanged files for duplicate r
 
     const report = scanHygiene({ target, rules: 'duplicate-business-logic', files: 'copied.ts' });
     assert.deepEqual(report.findings.map(finding => finding.relativePath), ['copied.ts']);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test('unresolved-governance-citations flags cited constitutions reviewers cannot open', () => {
+  const target = temporaryProject();
+  try {
+    execFileSync('git', ['init', '-q', target]);
+    fs.mkdirSync(path.join(target, 'docs'), { recursive: true });
+    fs.mkdirSync(path.join(target, 'specs'), { recursive: true });
+    fs.mkdirSync(path.join(target, 'config'), { recursive: true });
+    fs.writeFileSync(path.join(target, '.gitignore'), 'docs/private_constitution.md\n');
+    fs.writeFileSync(path.join(target, 'docs', 'security_constitution.md'), '# Security\n');
+    fs.writeFileSync(path.join(target, 'docs', 'private_constitution.md'), '# Private\n');
+    fs.writeFileSync(path.join(target, 'specs', 'feature.md'), [
+      'Aligns to [security](../docs/security_constitution.md#7-audit) and the governance in `constitution.md`.',
+      'Also [the old link](../../docs/security_constitution.md).',
+      'And [private rules](../docs/private_constitution.md) and [gone](../docs/missing_constitution.md).',
+      'External [example](https://example.com/constitution.md).',
+    ].join('\n'));
+    fs.writeFileSync(path.join(target, 'config', 'audit.php'), "<?php // Credentials never reach audits (docs/security_constitution.md §7).\n");
+
+    const report = scanHygiene({ target, rules: 'unresolved-governance-citations' });
+    const found = report.findings.map(finding => `${finding.relativePath}:${finding.line} ${finding.message}`);
+    assert.equal(found.length, 3, found.join('\n'));
+    assert.match(found.join('\n'), /specs\/feature\.md:2 .*outside the repository/);
+    assert.match(found.join('\n'), /specs\/feature\.md:3 .*gitignored or excluded/);
+    assert.match(found.join('\n'), /specs\/feature\.md:3 .*does not exist/);
+    assert.ok(report.findings.every(finding => finding.severity === 'WARNING' && !finding.blocking));
   } finally {
     fs.rmSync(target, { recursive: true, force: true });
   }

@@ -11,6 +11,27 @@ context:
     initial_result_limit: 5
     full_entry_limit: 3
 
+# Optional governance documents. Skills read these in addition to the adapter's constitution set, and
+# `architecture-guard validate-setup` warns when one is gitignored, outside the repository, or missing:
+# a rule that code or specs cite must be readable by every reviewer.
+# governance:
+#   constitution: docs/constitution.md
+#   architecture: architecture_constitution.md
+#   security: docs/security_constitution.md
+
+# Optional globs for security-sensitive files. A change to one makes pr-feedback, review-pr and
+# governed-implement require a host Security Review again (`detect-changed-files --security-sensitive`).
+# Example for a Laravel application:
+# security_sensitive_paths:
+#   - routes/auth.php
+#   - app/Http/Controllers/Auth/**
+#   - app/Http/Requests/Auth/**
+#   - app/Http/Middleware/**
+#   - app/Policies/**
+#   - app/Models/User.php
+#   - config/auth.php
+#   - config/session.php
+
 # Optional repository hygiene policy, read by `architecture-guard hygiene` from
 # `.architecture-guard/config.yml`, or from `.specify/config/repository_hygiene.yml`
 # for the Spec Kit extension (the runner does not read `.specify/config/architecture_guard.yml`).

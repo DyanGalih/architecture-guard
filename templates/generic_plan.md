@@ -15,6 +15,12 @@
 
 <!-- DTOs, parameters, API contracts, schema structures. -->
 
+## Accepted Risks
+
+<!-- One row per accepted risk or deviation. A risk with no trigger or expiry is not accepted. Security risks default to Gate: yes before production. -->
+| Risk | Owner | Rationale | Compensating control | Trigger or expiry | Gate |
+| --- | --- | --- | --- | --- | --- |
+
 ## Verification Strategy
 
 <!-- Automated test coverage (unit, integration), failure cases, and verification checkpoints. -->
