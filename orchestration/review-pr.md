@@ -45,7 +45,7 @@ Resolve and apply the `capability_composition` template with `architecture-guard
 
 1. Take the pull request from the arguments (number, id, or URL). If none is given, ask the user which pull request to review; do not guess.
 2. If the selected forge has no pull-request metadata (plain git), ask for the base ref and head ref instead.
-3. If the user is the pull request's author, say so and suggest addressing reviewer feedback instead; continue only if they still want a review of their own pull request.
+3. If the user is the pull request's author, say so and suggest `ag-pr-feedback` for working through reviewer feedback; continue only if they still want a review of their own pull request.
 
 ## Step 2 — Fetch the Pull Request
 

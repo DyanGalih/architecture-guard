@@ -1152,3 +1152,31 @@ test('review-pr installs with the selected forge actions resolved', () => {
   assert.match(skill, /draft_notes\/bulk_publish/);
   assert.match(skill, /glab mr view <iid> -F json/);
 });
+
+test('pr-feedback gates every write and only resolves eligible threads when asked', () => {
+  const prompt = orchestrationPrompt('pr-feedback.md');
+  for (const key of ['pr-view', 'pr-threads', 'checks-status', 'pr-checkout', 'thread-reply', 'thread-resolve']) {
+    assert.match(prompt, new RegExp(`\\{forge_command:${key}\\}`), key);
+  }
+  const order = ['## Step 3 — Triage', '## Step 4 — Apply Approved Fixes', '## Step 5 — Commit and Push', '## Step 6 — Draft Replies', '## Step 7 — Show Replies and Ask the Next Action', '## Step 8 — Post'];
+  const positions = order.map(heading => prompt.indexOf(heading));
+  assert.ok(positions.every(position => position !== -1), 'all steps present');
+  assert.deepEqual([...positions].sort((a, b) => a - b), positions, 'steps in order');
+  for (const choice of ['**Reply only**', '**Reply and resolve**', '**Adjust first**', "**Don't post**"]) assert.ok(prompt.includes(choice), choice);
+  assert.match(prompt, /Only \*\*Fix\*\* threads whose fix is pushed and \*\*Already addressed\*\* threads are eligible/);
+  assert.match(prompt, /Never resolve a thread whose reply failed/);
+  assert.match(prompt, /never force-push/i);
+  assert.match(prompt, /Ask separately before pushing/);
+  assert.match(prompt, /`ag-review-implementation`/);
+});
+
+test('the pr alias installs both pull-request skills', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--forge', 'azure-devops', '--commands', 'pr'], cwd);
+  for (const name of ['review-pr', 'pr-feedback']) {
+    const skill = fs.readFileSync(path.join(cwd, `.opencode/commands/ag-${name}.md`), 'utf8');
+    assert.doesNotMatch(skill, /\{(forge|adapter)_(command|path):/, name);
+    assert.match(skill, /## Resolved Forge Actions \(azure-devops\)/, name);
+  }
+  assert.match(fs.readFileSync(path.join(cwd, '.opencode/commands/ag-pr-feedback.md'), 'utf8'), /"status": "fixed"/);
+});
