@@ -1,5 +1,6 @@
 ## Unreleased
 
+- **`ag-review-pr`**: review someone else's pull request on any code host. It fetches the pull request through the selected forge, reads its full files from a temporary worktree (after approval), reviews the change against the constitutions and any linked SDD artifacts by reusing `ag-review-implementation`, adds intent, test, secret, and CI checks, and drafts a comment-only review. You then choose **Post as is**, **Adjust first**, or **Don't post**; it re-checks the head commit before posting and never approves, requests changes, or merges. Install with `--commands pr`.
 - **Forge adapters**: a new adapter layer for code hosts — GitHub, GitLab, Bitbucket Cloud, Azure DevOps, and plain git (`generic`) — independent of the SDD adapter. `architecture-guard init` auto-detects the forge from the `origin` remote (override with `--forge <name>`), installs forge adapters to `.architecture-guard/forges/`, and records `.architecture-guard/selected-forge`. Each action uses a registered MCP server for the host, then the host CLI (`gh`, `glab`, `az`), then a stated fallback. Custom forges work like custom SDD adapters; see `FORGES.md`. `validate-setup` checks the selected forge.
 
 ## 3.0.0

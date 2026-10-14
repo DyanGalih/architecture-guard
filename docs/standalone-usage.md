@@ -64,7 +64,7 @@ Override the persisted adapter for one installed command with its `--adapter` in
 
 ## 4. Choose Your Commands
 
-Pick from 18 governance commands:
+Pick from 19 governance commands:
 
 | Command | When |
 | :--- | :--- |
@@ -79,6 +79,7 @@ Pick from 18 governance commands:
 | `governed-implement` | Implement — apply tasks, then review |
 | `review-artifacts` | Review artifacts — boundary drift, DRY violations, and hygiene |
 | `review-implementation` | Review implementation — security and architecture findings |
+| `review-pr` | Review someone else's pull request on any code host — drafts the review, posts only when you choose |
 | `verify` | Final validation — tasks vs code evidence |
 | `apply` | Apply approved refactors into plans/tasks |
 | `workflow` | End-to-end review across all workflow phases |
@@ -87,7 +88,7 @@ Pick from 18 governance commands:
 | `consolidate-specs` | Budgeted/offline spec index (optional) |
 | `governed-archive` | Archive — verify, then finalize a completed feature |
 
-You can select one, several, or `all`. The `review` alias selects `review-artifacts` and `review-implementation`; the installer writes only the commands you pick.
+You can select one, several, or `all`. The `review` alias selects `review-artifacts` and `review-implementation`, and the `pr` alias selects the pull-request skills; the installer writes only the commands you pick.
 
 ## 5. What Gets Installed
 

@@ -32,7 +32,7 @@ program
   .option('--agent <names>', 'Comma-separated agent keys')
   .option('--framework <f>', 'spec-kit | openspec | none | <custom adapter name>')
   .option('--forge <name>', 'auto | github | gitlab | bitbucket | azure-devops | generic | <custom forge> (default: auto)')
-  .option('--commands <list>', 'Comma-separated command names, indices, or aliases (all, review)')
+  .option('--commands <list>', 'Comma-separated command names, indices, or aliases (all, review, pr)')
   .option('--overwrite <mode>', 'replace | skip | keep-both')
   .option('--vendor', 'Copy immutable runtime resources locally (for air-gapped setups)')
   .option('--full', 'Alias for --vendor')

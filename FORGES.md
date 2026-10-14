@@ -31,6 +31,10 @@ Pull-request skill (e.g., ag-review-pr)
 
 For each action, the skill uses a registered MCP server for the host when one is available, then the host's CLI, then the adapter's stated fallback. The agent never asks you to paste a token into the conversation — authenticate the MCP server or CLI yourself (for example `gh auth login`, `glab auth login`, `az login`).
 
+## Pull-Request Skills
+
+- **`ag-review-pr`** — review someone else's pull request: fetches it through the forge, reviews the change against your constitutions and linked SDD artifacts (reusing `ag-review-implementation`), drafts a comment-only review, and asks whether to **post as is**, **adjust first**, or **not post**. It never approves, requests changes, or merges.
+
 ## Forge Contract
 
 Each forge adapter must define a `## Command Map` table whose first column holds the keys below. When a host cannot perform an action, keep the key and state the fallback (for example, write Markdown for the user to post).
