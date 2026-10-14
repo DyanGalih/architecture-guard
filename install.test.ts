@@ -1259,7 +1259,7 @@ test('forge adapters pass review and reply text through temporary files, never s
       const value = commands.get(key);
       const fetches = (value.match(/git fetch/g) ?? []).length;
       assert.ok(fetches > 0, `${name} ${key} fetches the branch`);
-      assert.equal((value.match(/git fetch --end-of-options origin '/g) ?? []).length, fetches, `${name} ${key} passes quoted refspecs after --end-of-options: ${value}`);
+      assert.equal((value.match(/git fetch origin '(\+|refs\/|<(source|target) ref>)/g) ?? []).length, fetches, `${name} ${key} passes only quoted full refspecs: ${value}`);
     }
   }
   assert.match(fs.readFileSync(path.join(repoRoot, 'adapters/forges/generic.md'), 'utf8'), /Reject a ref that starts with `-`/);
