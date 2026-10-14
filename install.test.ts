@@ -679,6 +679,51 @@ test('detect-changed-files includes committed branch work, renames, and untracke
   assert.deepEqual(JSON.parse(result.stdout), ['a.txt', 'renamed.txt', 'src/committed.txt', 'untracked.txt']);
 });
 
+test('detect-changed-files finds a non-standard default branch and never silently drops committed work', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-git-'));
+  const gitIn = (cwd, ...args) => {
+    const result = spawnSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args], { cwd, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+  };
+  const detect = (cwd, ...args) => spawnSync(process.execPath, [installer, 'detect-changed-files', '--json', ...args], { cwd, encoding: 'utf8' });
+
+  const source = path.join(tmp, 'source');
+  fs.mkdirSync(source);
+  gitIn(source, 'init', '-q', '-b', 'develop');
+  fs.writeFileSync(path.join(source, 'base.txt'), 'base');
+  gitIn(source, 'add', '.');
+  gitIn(source, 'commit', '-q', '-m', 'base');
+
+  // Remote named "upstream" whose default branch is "develop": no origin/main, origin/master, main, or master exists.
+  const clone = path.join(tmp, 'clone');
+  gitIn(tmp, 'clone', '-q', '-o', 'upstream', source, clone);
+  gitIn(clone, 'checkout', '-q', '-b', 'feature');
+  fs.writeFileSync(path.join(clone, 'committed.txt'), 'c');
+  gitIn(clone, 'add', '.');
+  gitIn(clone, 'commit', '-q', '-m', 'feature work');
+  const found = detect(clone);
+  assert.equal(found.status, 0, found.stderr);
+  assert.deepEqual(JSON.parse(found.stdout), ['committed.txt']);
+
+  // Without any resolvable default branch, fail loudly and ask for --base.
+  gitIn(clone, 'remote', 'remove', 'upstream');
+  const missing = detect(clone);
+  assert.notEqual(missing.status, 0);
+  assert.match(JSON.parse(missing.stderr.match(/{.*}/s)[0]).error, /pass --base <ref>/);
+  const headOnly = detect(clone, '--base', 'HEAD');
+  assert.equal(headOnly.status, 0, headOnly.stderr);
+  assert.deepEqual(JSON.parse(headOnly.stdout), []);
+
+  // A repository with no commits has nothing committed to miss.
+  const empty = path.join(tmp, 'empty');
+  fs.mkdirSync(empty);
+  gitIn(empty, 'init', '-q', '-b', 'trunk');
+  fs.writeFileSync(path.join(empty, 'new.txt'), 'n');
+  const unborn = detect(empty);
+  assert.equal(unborn.status, 0, unborn.stderr);
+  assert.deepEqual(JSON.parse(unborn.stdout), ['new.txt']);
+});
+
 test('validate-sync-config is a registered CLI command', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   fs.mkdirSync(path.join(cwd, '.architecture-guard'));
