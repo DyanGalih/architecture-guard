@@ -1,9 +1,10 @@
-import { access, cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, cp, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
 
 const featureStateSchema = z.object({ feature_directory: z.string().min(1) });
 const frameworkSchema = z.enum(['speckit', 'openspec', 'generic']);
+const FRAMEWORK_CHOICES = 'spec-kit, openspec, generic (or none)';
 type ArchiveOptions = { json?: boolean; framework?: string };
 
 async function exists(target: string) {
@@ -15,8 +16,8 @@ async function exists(target: string) {
     }
 }
 
+// The CLI action prints the message once and sets a non-zero exit code.
 function reportError(message: string): never {
-    process.stderr.write(`Error: ${message}\n`);
     throw new Error(message);
 }
 
@@ -25,7 +26,7 @@ function reportWarning(message: string) {
 }
 
 export async function runArchive(changeName: string, options: ArchiveOptions = {}) {
-    if (!changeName) reportError('change name is required');
+    validateChangeName(changeName);
 
     const root = process.cwd();
     const framework = await resolveFramework(root, options.framework);
@@ -34,10 +35,20 @@ export async function runArchive(changeName: string, options: ArchiveOptions = {
     return archiveOpenSpecChange(changeName, root, options.json === true);
 }
 
+// A change name is a single directory name; anything else could move files outside the changes directory.
+function validateChangeName(changeName: string) {
+    if (!changeName || !changeName.trim()) reportError('change name is required');
+    if (path.isAbsolute(changeName) || /[/\\]/.test(changeName) || changeName.includes('..')) {
+        reportError(`invalid change name "${changeName}": use a single directory name without "/", "\\", or ".."`);
+    }
+}
+
 // Accepts the installer's adapter names (spec-kit, none) as well as the historical CLI spelling (speckit).
 function normalizeFramework(name: string) {
     const normalized = name === 'spec-kit' ? 'speckit' : name === 'none' ? 'generic' : name;
-    return frameworkSchema.parse(normalized);
+    const parsed = frameworkSchema.safeParse(normalized);
+    if (!parsed.success) reportError(`unknown framework "${name}"; use one of: ${FRAMEWORK_CHOICES}`);
+    return parsed.data;
 }
 
 async function resolveFramework(root: string, override?: string) {
@@ -58,9 +69,20 @@ async function resolveFramework(root: string, override?: string) {
     return 'openspec';
 }
 
-async function archiveGenericChange(changeName: string, root: string, json: boolean) {
-    const changesDir = path.join(root, 'changes');
-    const sourceDir = path.join(changesDir, changeName);
+function archiveGenericChange(changeName: string, root: string, json: boolean) {
+    return archiveChangeDirectory(changeName, path.join(root, 'changes'), 'generic', json);
+}
+
+function archiveOpenSpecChange(changeName: string, root: string, json: boolean) {
+    return archiveChangeDirectory(changeName, path.join(root, 'openspec', 'changes'), 'openspec', json);
+}
+
+async function archiveChangeDirectory(changeName: string, changesDir: string, framework: 'generic' | 'openspec', json: boolean) {
+    const sourceDir = path.resolve(changesDir, changeName);
+    const relativeSource = path.relative(changesDir, sourceDir);
+    if (!relativeSource || relativeSource.startsWith('..') || path.isAbsolute(relativeSource)) {
+        reportError(`change "${changeName}" must resolve inside ${changesDir}`);
+    }
     if (!await exists(sourceDir)) reportError(`source change directory not found: ${sourceDir}`);
 
     const date = new Date().toISOString().split('T')[0];
@@ -70,30 +92,21 @@ async function archiveGenericChange(changeName: string, root: string, json: bool
     if (await exists(targetDir)) reportError(`destination already exists: ${targetDir}`);
 
     await mkdir(archiveDir, { recursive: true });
-    await cp(sourceDir, targetDir, { recursive: true });
-    await rm(sourceDir, { recursive: true, force: true });
-    const result = { status: 'success', framework: 'generic', changeName, targetDir } as const;
+    await moveDirectory(sourceDir, targetDir);
+    const result = { status: 'success', framework, changeName, targetDir } as const;
     process.stdout.write(json ? `${JSON.stringify(result)}\n` : `Successfully archived ${changeName} to ${targetDir}\n`);
     return result;
 }
 
-async function archiveOpenSpecChange(changeName: string, root: string, json: boolean) {
-    const changesDir = path.join(root, 'openspec', 'changes');
-    const sourceDir = path.join(changesDir, changeName);
-    if (!await exists(sourceDir)) reportError(`source change directory not found: ${sourceDir}`);
-
-    const date = new Date().toISOString().split('T')[0];
-    const targetName = /^\d{4}-\d{2}-\d{2}-/.test(changeName) ? changeName : `${date}-${changeName}`;
-    const archiveDir = path.join(changesDir, 'archive');
-    const targetDir = path.join(archiveDir, targetName);
-    if (await exists(targetDir)) reportError(`destination already exists: ${targetDir}`);
-
-    await mkdir(archiveDir, { recursive: true });
-    await cp(sourceDir, targetDir, { recursive: true });
-    await rm(sourceDir, { recursive: true, force: true });
-    const result = { status: 'success', framework: 'openspec', changeName, targetDir } as const;
-    process.stdout.write(json ? `${JSON.stringify(result)}\n` : `Successfully archived ${changeName} to ${targetDir}\n`);
-    return result;
+// rename is atomic and never leaves a half-copied tree; copy+remove is only for moves across devices.
+async function moveDirectory(sourceDir: string, targetDir: string) {
+    try {
+        await rename(sourceDir, targetDir);
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EXDEV') throw error;
+        await cp(sourceDir, targetDir, { recursive: true });
+        await rm(sourceDir, { recursive: true, force: true });
+    }
 }
 
 async function finalizeSpecKitFeature(changeName: string, root: string, json: boolean) {
@@ -101,9 +114,9 @@ async function finalizeSpecKitFeature(changeName: string, root: string, json: bo
     const featureJson = path.join(root, '.specify', 'feature.json');
 
     if (await exists(featureJson)) {
-        const rawState = JSON.parse(await readFile(featureJson, 'utf8'));
-        const state = featureStateSchema.parse(rawState);
-        featureDirectory = state.feature_directory;
+        const state = featureStateSchema.safeParse(JSON.parse(await readFile(featureJson, 'utf8')));
+        if (!state.success) reportError('.specify/feature.json must define a non-empty feature_directory');
+        featureDirectory = state.data.feature_directory;
     }
 
     const featureRoot = path.resolve(root, featureDirectory);
@@ -112,32 +125,55 @@ async function finalizeSpecKitFeature(changeName: string, root: string, json: bo
         reportError('SpecKit feature_directory must resolve under the project root');
     }
 
-    const specPath = path.join(featureRoot, 'spec.md');
-    if (!await exists(specPath)) reportWarning(`SpecKit feature spec not found: ${specPath}`);
-    if (!await exists(specPath)) return;
-
     const normalizedFeature = relativeFeature.split(path.sep).join('/');
+    const specPath = path.join(featureRoot, 'spec.md');
+    if (!await exists(specPath)) {
+        return finalizeIncomplete('skipped', normalizedFeature, `SpecKit feature spec not found: ${specPath}`, json);
+    }
+
     const indexPath = path.join(root, 'specs', 'system_context.md');
     const specText = await readFile(specPath, 'utf8');
     const title = specText.match(/^#\s+(.+)$/m)?.[1] ?? path.basename(featureRoot);
-    const purpose = specText.match(/^## Purpose\s*\n+([\s\S]*?)(?=^## |$)/m)?.[1].trim().replace(/\s+/g, ' ') ?? 'Completed SpecKit feature.';
+    // The Purpose section runs to the next level-2 heading or the true end of the spec.
+    const purpose = specText.replace(/\r\n/g, '\n').match(/^## Purpose[ \t]*\n+([\s\S]*?)(?=^## |(?![\s\S]))/m)?.[1].trim() || 'Completed SpecKit feature.';
     const marker = `<!-- architecture-guard:feature=${normalizedFeature} -->`;
-    const entry = `${marker}\n## ${title}\n${purpose}\n\n- Feature spec: [${normalizedFeature}/spec.md](${normalizedFeature}/spec.md)\n`;
+    // Links inside specs/system_context.md resolve relative to the specs/ directory.
+    const specLink = `${path.posix.relative('specs', normalizedFeature)}/spec.md`;
+    const entry = `${marker}\n## ${title}\n${purpose}\n\n- Feature spec: [${specLink}](${specLink})`;
 
     try {
         await mkdir(path.dirname(indexPath), { recursive: true });
         const current = await exists(indexPath) ? await readFile(indexPath, 'utf8') : '# System Context\n\n';
         const markerStart = current.indexOf(marker);
-        const nextHeading = markerStart >= 0 ? current.indexOf('\n<!-- architecture-guard:feature=', markerStart + marker.length) : -1;
-        const replacementEnd = markerStart >= 0 ? (nextHeading >= 0 ? nextHeading + 1 : current.length) : current.length;
         const updated = markerStart >= 0
-            ? current.slice(0, markerStart) + entry + current.slice(replacementEnd)
+            ? current.slice(0, markerStart) + entry + current.slice(managedEntryEnd(current, markerStart + marker.length))
             : `${current.trimEnd()}\n\n${entry}`;
         await writeFile(indexPath, `${updated.trimEnd()}\n`);
-        const result = { status: 'success', framework: 'speckit', featureDirectory: normalizedFeature, indexPath } as const;
-        process.stdout.write(json ? `${JSON.stringify(result)}\n` : `Finalized SpecKit feature ${normalizedFeature}\n`);
-        return result;
-    } catch {
-        reportWarning(`unable to update SpecKit context index: ${indexPath}`);
+    } catch (error) {
+        return finalizeIncomplete('failed', normalizedFeature, `unable to update SpecKit context index ${indexPath}: ${error instanceof Error ? error.message : error}`, json);
     }
+    const result = { status: 'success', framework: 'speckit', featureDirectory: normalizedFeature, indexPath } as const;
+    process.stdout.write(json ? `${JSON.stringify(result)}\n` : `Finalized SpecKit feature ${normalizedFeature}\n`);
+    return result;
+}
+
+// A managed entry is its marker, its own "## title" line, and the body up to its "- Feature spec:"
+// line. It never extends past the next level-2 heading or managed marker, so hand-written text
+// after an entry survives re-finalizing.
+function managedEntryEnd(current: string, start: number) {
+    const rest = current.slice(start);
+    const ownHeading = rest.match(/^\r?\n## [^\n]*/)?.[0].length ?? 0;
+    const nextBoundary = rest.slice(ownHeading).search(/^(?:## |<!-- architecture-guard:feature=)/m);
+    const limit = nextBoundary >= 0 ? ownHeading + nextBoundary : rest.length;
+    const specLine = /^- Feature spec: [^\n]*/m.exec(rest.slice(0, limit));
+    return start + (specLine ? specLine.index + specLine[0].length : limit);
+}
+
+// Finalize did not update the index: say so explicitly and exit non-zero.
+function finalizeIncomplete(status: 'skipped' | 'failed', featureDirectory: string, reason: string, json: boolean) {
+    const result = { status, framework: 'speckit', featureDirectory, reason } as const;
+    if (json) process.stdout.write(`${JSON.stringify(result)}\n`);
+    else reportWarning(reason);
+    process.exitCode = 1;
+    return result;
 }

@@ -88,7 +88,15 @@ program
   .description('Finalize or archive a completed SDD feature')
   .option('--json', 'Output a machine-readable result')
   .option('--framework <framework>', 'Override the selected adapter: spec-kit | openspec | generic')
-  .action(async (changeName, options) => { await runArchive(changeName, options); });
+  .action(async (changeName, options) => {
+    try {
+      await runArchive(changeName, options);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Error: " + message);
+      process.exitCode = 1;
+    }
+  });
 
 import { runHygiene } from '../cli/hygiene';
 import { runResolveCommand } from '../cli/resolve';
@@ -99,6 +107,7 @@ program
   .option('--json', 'Output a machine-readable report')
   .option('--target <dir>', 'Target workspace directory (default: current working directory)')
   .option('--rules <ids>', 'Comma-separated rule identifiers to run')
+  .option('--files <paths>', 'Comma-separated file paths relative to the target; report findings only for these files (for example, a pull request\'s changed files)')
   .action(async (options) => {
     await runHygiene(options);
   });
