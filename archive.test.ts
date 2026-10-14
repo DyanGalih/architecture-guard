@@ -271,6 +271,26 @@ test('SpecKit re-finalize keeps hand-written text, the full purpose, and an inde
     });
 });
 
+test('SpecKit re-finalize refuses to rewrite a managed entry that lost its Feature spec line', async () => {
+    await inProject('ag-speckit-malformed-', async (tmpdir) => {
+        const featureRoot = path.join(tmpdir, 'specs', 'feat');
+        fs.mkdirSync(featureRoot, { recursive: true });
+        fs.mkdirSync(path.join(tmpdir, '.specify'), { recursive: true });
+        fs.writeFileSync(path.join(featureRoot, 'spec.md'), '# Feat\n\n## Purpose\nPurpose.\n');
+        await runArchive('feat');
+
+        const indexPath = path.join(tmpdir, 'specs', 'system_context.md');
+        const malformed = fs.readFileSync(indexPath, 'utf8').replace(/^- Feature spec:.*\n/m, '') + '\nHand-written trailing text.\n';
+        fs.writeFileSync(indexPath, malformed);
+        const failed = await captureStdout(() => runArchive('feat', { json: true }));
+        assert.strictEqual(process.exitCode, 1);
+        const failedJson = JSON.parse(failed.output);
+        assert.strictEqual(failedJson.status, 'failed');
+        assert.match(failedJson.reason, /has no "- Feature spec:" line/);
+        assert.strictEqual(fs.readFileSync(indexPath, 'utf8'), malformed, 'the index is left untouched');
+    });
+});
+
 test('SpecKit finalize reports a missing spec and an unwritable index explicitly', async () => {
     await inProject('ag-speckit-explicit-', async (tmpdir) => {
         fs.mkdirSync(path.join(tmpdir, '.specify'), { recursive: true });
