@@ -8,7 +8,7 @@ Execute this workflow through {adapter_command:architecture-apply}; the token is
 
 ## SDD Adapter Resolution
 
-Before executing command, read `.architecture-guard/adapters/resolve.md` to resolve the selected SDD adapter. Load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. All paths and commands below use the loaded adapter. Resolve the concrete paths for each available artifact before classifying findings.
+Before executing this command, read `.architecture-guard/adapters/resolve.md` and resolve the adapter with its chain (explicit `--adapter` override, `.architecture-guard/selected-adapter`, `.architecture-guard/config.yml`, then filesystem markers), then load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Stop with `Unavailable` and the exact path if the adapter file is missing. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. Resolve every adapter path and command token before continuing; all paths and commands below use the loaded adapter. Resolve the concrete paths for each available artifact before classifying findings.
 
 ## Standalone Resource Resolution
 
@@ -35,13 +35,13 @@ Resolve and apply the `capability_composition` template with `architecture-guard
 
 Before making decisions or delegating work, read these inputs explicitly with file-reading tools:
 
-1. **Manifest & Configuration**: Read the selected adapter's project configuration (`{adapter_path:project-config}`) first, then inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
+1. **Manifest & Configuration**: Read the selected adapter's project configuration (`{adapter_path:project-config}`) first, then inspect it for references to further governance and constitution Markdown files (for example a `context` block). Never rely on a hardcoded partial list.
 2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. Explicitly check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 3. **Active Artifacts**: Read the feature, review, plan, task, or current-state artifacts required by this skill.
 
 You are applying approved architecture refactors for `architecture-guard`.
-When `flash-mem` is available, use it first to gather memory context, then prefer `memory-synthesis.md` and the approved architecture review output before editing plan or task artifacts. Otherwise, use the repository artifacts directly.
-If `flash-mem` is available, use the MCP-backed context preparation flow exposed by `flash-mem`; otherwise treat the legacy prepare-context alias as a compatibility path. Compatibility tool names exposed by `flash-mem` may be used when the host still expects them. After applying changes, sync durable lessons or architecture decisions back into Flash-Mem when available.
+When Flash-Mem is available, call `get_project_summary` and `search_memory` first to gather memory context, then use the approved architecture review output before editing plan or task artifacts. Otherwise, use the repository artifacts directly.
+After applying changes, when Flash-Mem is available, propose durable lessons or architecture decisions as `add_memory` or `update_memory` entries and write them only after a separate explicit approval; approval of the artifact edits does not approve memory writes.
 
 This is the write-capable companion to the review workflow. Use it when the team wants the architecture feedback reflected directly in planning artifacts instead of only receiving suggestions.
 
@@ -54,11 +54,11 @@ You may update plan and task artifacts, but you must keep the changes small, tar
 ## Allowed Edits
 
 You may revise directly:
-- the technical design artifact (`plan.md` / `design.md`)
-- `tasks.md`
+- the technical design artifact (`{adapter_path:plan}`)
+- the task artifact (`{adapter_path:tasks}`)
 - Related task breakdown or checklist artifacts from the selected adapter workflow
 
-For findings targeting upstream artifacts (`proposal.md`, `spec.md`), `ag-apply` acts as an orchestrator and delegates those fixes to the SDD tool's native update capability (or runs an inline AG-native fallback) upon user confirmation. `ag-apply` does NOT edit upstream artifacts directly.
+For findings targeting upstream artifacts (the proposal, when the adapter has one, and `{adapter_path:spec}`), `ag-apply` acts as an orchestrator and delegates those fixes to the SDD tool's native update capability (or runs an inline AG-native fallback) upon user confirmation. `ag-apply` does NOT edit upstream artifacts directly.
 
 You should not:
 - Rewrite the whole plan unnecessarily.
@@ -86,17 +86,18 @@ Before executing edits, `ag-apply` partitions all review findings into two disti
 1. **Plan/Tasks Group**: Findings targeting the adapter-resolved planning, task, task-breakdown, or checklist paths.
 2. **Upstream Group**: Findings targeting adapter-resolved proposal or specification paths.
 
-For multi-artifact findings, resolution is performed in authoritative order (`spec.md` > planning artifact (`plan.md` or `design.md`) > `tasks.md` > `proposal.md`), fixing the authoritative artifact first and propagating downstream.
+For multi-artifact findings, resolution is performed in authoritative order (proposal, when the adapter has one > specification `{adapter_path:spec}` > planning artifact `{adapter_path:plan}` > tasks `{adapter_path:tasks}`), fixing the most upstream affected artifact first and propagating downstream.
 
 ## Apply Procedure
 
-### Step 0: Confirm Writes
-Present the grouped findings, concrete target paths, delegation targets, and intended edits. Ask for explicit confirmation before any repository or Flash-Mem write. If confirmation is declined, perform no writes and return all findings as `Declined`.
+### Step 0: Protected-Branch Preflight and Confirm Writes
+1. Run `git branch --show-current`. If it is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch, include `feature/<change-name>` in the confirmation preview and create and switch to it only after explicit user approval. If the user declines or creation fails, stop; MUST NOT apply edits on a protected branch. Preserve existing uncommitted changes.
+2. Present the grouped findings, concrete target paths, delegation targets, and intended edits. Ask for explicit confirmation before any repository write. If confirmation is declined, perform no writes and return all findings as `Declined`.
 
 ### Step 1: Direct Apply for Plan/Tasks Group
 1. After confirmation, process all findings in the **Plan/Tasks Group** directly.
 2. Preserve feature intent and implementation scope.
-3. Add or refine task entries in `tasks.md` for refactors that are safe to schedule.
+3. Add or refine task entries in `{adapter_path:tasks}` for refactors that are safe to schedule.
 4. Reorder tasks when architectural dependencies matter.
 5. Update plan/design language so boundaries, contracts, and ownership are explicit.
 6. Keep implementation moving unless the Constitution explicitly says the issue is blocking.
@@ -111,9 +112,9 @@ If the **Upstream Group** contains findings:
 
 ### Step 3: Upstream Delegation / Fallback Execution
 Upon user confirmation for the **Upstream Group**:
-1. **Native Delegation**: If the adapter's {adapter_command:architecture-apply} entry names a native update capability, delegate the upstream findings to that capability with finding details as input context.
+1. **Native Delegation**: If {adapter_command:architecture-apply} names a native update capability, delegate the upstream findings to that capability with finding details as input context.
 2. **AG-Native Fallback**: If the active SDD tool lacks a native update capability (e.g. generic mode), execute an inline AG-native artifact-fix following the exact same confirmation and authoritative-first ordering.
-3. **Propagation**: Ensure fixes are applied in authoritative order (`spec.md` first, then the adapter-resolved planning artifact, then `tasks.md` for coherence).
+3. **Propagation**: Ensure fixes are applied in authoritative order (the proposal first when present, then `{adapter_path:spec}`, then `{adapter_path:plan}`, then `{adapter_path:tasks}` for coherence).
 
 ## Write-Back Rules
 

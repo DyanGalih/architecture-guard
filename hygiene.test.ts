@@ -20,6 +20,7 @@ test('runs selected built-in hygiene checks and applies blocking policy', () => 
         '  enabled: true',
         '  fail_on:',
         '    - critical',
+        '    - debug-artifacts',
       ].join('\n') + '\n'
     );
     fs.writeFileSync(path.join(target, 'debug.ts'), "console.log('leftover debug output');\n");
@@ -38,6 +39,21 @@ test('runs selected built-in hygiene checks and applies blocking policy', () => 
     assert.ok(report.findings.some(finding => finding.blocking && finding.severity === 'CRITICAL'));
     assert.equal(report.rules.find(rule => rule.identifier === 'debug-artifacts').severity, 'CRITICAL');
     assert.equal(report.rules.find(rule => rule.identifier === 'debug-artifacts').blocking, true);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test('debug artifacts are a non-blocking warning unless the project fails on them', () => {
+  const target = temporaryProject();
+  try {
+    fs.writeFileSync(path.join(target, 'debug.ts'), "console.log('entry boundary output');\n");
+    const report = scanHygiene({ target, rules: 'debug-artifacts' });
+    const rule = report.rules.find(entry => entry.identifier === 'debug-artifacts');
+    assert.equal(rule.severity, 'WARNING');
+    assert.equal(rule.blocking, false);
+    assert.equal(report.counts.blocking, 0);
+    assert.ok(report.findings.some(finding => finding.rule === 'debug-artifacts' && finding.severity === 'WARNING'));
   } finally {
     fs.rmSync(target, { recursive: true, force: true });
   }
@@ -119,7 +135,7 @@ test('uses repository_hygiene policy embedded in a constitution when no standalo
         '',
         'repository_hygiene:',
         '  fail_on:',
-        '    - critical',
+        '    - debug-artifacts',
       ].join('\n') + '\n'
     );
     fs.writeFileSync(path.join(target, 'debug.ts'), "console.log('constitution policy');\n");
@@ -128,6 +144,62 @@ test('uses repository_hygiene policy embedded in a constitution when no standalo
 
     assert.equal(report.status, 'failed');
     assert.equal(report.counts.blocking, 1);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test('walks a non-repository target with POSIX relative paths so nested detectors match', () => {
+  const target = temporaryProject();
+  try {
+    fs.mkdirSync(path.join(target, 'src', 'tmp'), { recursive: true });
+    fs.writeFileSync(path.join(target, 'src', 'tmp', 'notes.md'), 'scratch\n');
+
+    const report = scanHygiene({ target, rules: 'temporary-files' });
+
+    assert.deepEqual(report.findings.map(finding => finding.relativePath), ['src/tmp/notes.md']);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test('--files limits findings to the listed files and records the scope', () => {
+  const target = temporaryProject();
+  try {
+    fs.mkdirSync(path.join(target, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(target, 'src', 'changed.ts'), "console.log('new debug output');\n");
+    fs.writeFileSync(path.join(target, 'legacy.ts'), "console.log('pre-existing debug output');\n");
+
+    const scoped = scanHygiene({ target, rules: 'debug-artifacts', files: 'src/changed.ts, ./src/removed.ts' });
+    assert.deepEqual(scoped.findings.map(finding => finding.relativePath), ['src/changed.ts']);
+    assert.equal(scoped.scope.mode, 'files');
+    assert.deepEqual(scoped.scope.files, ['src/changed.ts', 'src/removed.ts']);
+    assert.deepEqual(scoped.scope.unmatched, ['src/removed.ts']);
+
+    const outside = scanHygiene({ target, rules: 'debug-artifacts', files: 'src/clean.ts' });
+    assert.equal(outside.counts.findings, 0, 'a finding outside the scope is not reported');
+
+    const whole = scanHygiene({ target, rules: 'debug-artifacts' });
+    assert.equal(whole.scope.mode, 'repository');
+    assert.equal(whole.counts.findings, 2);
+
+    assert.throws(() => scanHygiene({ target, files: '../elsewhere.ts' }), /outside the target directory/);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test('--files still compares a changed file with unchanged files for duplicate rules', () => {
+  const target = temporaryProject();
+  try {
+    const logic = 'export function price(total: number) {\n'
+      + '  return total > 100 ? total * 0.9 : total; // shared discount rule for orders\n'.repeat(3)
+      + '}\n';
+    fs.writeFileSync(path.join(target, 'existing.ts'), logic);
+    fs.writeFileSync(path.join(target, 'copied.ts'), logic);
+
+    const report = scanHygiene({ target, rules: 'duplicate-business-logic', files: 'copied.ts' });
+    assert.deepEqual(report.findings.map(finding => finding.relativePath), ['copied.ts']);
   } finally {
     fs.rmSync(target, { recursive: true, force: true });
   }

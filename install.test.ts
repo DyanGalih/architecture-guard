@@ -298,11 +298,24 @@ test('reports missing canonical prompts without a stack trace', () => {
   }
 });
 
-test('escapes TOML triple quotes and emits safe YAML metadata', () => {
+test('emits valid TOML for quotes and backslashes and safe YAML metadata', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
-  const toml = path.join(cwd, 'test.toml');
-  require('./cli/install').installToml('init', 'say """ safely', cwd, toml);
-  assert.match(fs.readFileSync(toml, 'utf8'), /\\"\\"\\"/);
+  const prompts = {
+    'literal.toml': 'say """ safely; keep $\\ge 15$ and C:\\path verbatim',
+    'basic.toml': "has ''' and \"\"\" and a \\ge backslash\nending with a quote\"",
+  };
+  for (const [file, prompt] of Object.entries(prompts)) {
+    require('./cli/install').installToml('init', prompt, cwd, path.join(cwd, file));
+  }
+  assert.match(fs.readFileSync(path.join(cwd, 'literal.toml'), 'utf8'), /^prompt = '''$/m);
+  const parsed = parseTomlFiles(Object.keys(prompts).map(file => path.join(cwd, file)));
+  if (parsed) {
+    for (const [file, prompt] of Object.entries(prompts)) {
+      assert.equal(parsed[path.join(cwd, file)].error, undefined, file);
+      // Like the earlier basic-string output, the prompt keeps one trailing newline.
+      assert.equal(parsed[path.join(cwd, file)].prompt, `${prompt}\n`, file);
+    }
+  }
   const yaml = path.join(cwd, 'test.yaml');
   require('./cli/install').installYaml('init', 'prompt', cwd, yaml);
   assert.match(fs.readFileSync(yaml, 'utf8'), /title: "ag-init"/);
@@ -316,14 +329,22 @@ test('--vendor copies full runtime resources for air-gapped environments', () =>
   }
 });
 
-test('default init purges legacy unmodifiable engine directories', () => {
+test('default init removes only stale vendored copies of engine resources', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-legacy-'));
-  const legacyDir = path.join(cwd, '.architecture-guard/templates');
-  fs.mkdirSync(legacyDir, { recursive: true });
-  fs.writeFileSync(path.join(legacyDir, 'legacy.md'), 'legacy');
+  const repo = path.join(__dirname, '..');
+  const templatesDir = path.join(cwd, '.architecture-guard/templates');
+  const presetsDir = path.join(cwd, '.architecture-guard/presets');
+  fs.mkdirSync(templatesDir, { recursive: true });
+  fs.mkdirSync(presetsDir, { recursive: true });
+  fs.copyFileSync(path.join(repo, 'templates/ponytail_core.md'), path.join(templatesDir, 'ponytail_core.md'));
+  fs.copyFileSync(path.join(repo, 'presets/react.md'), path.join(presetsDir, 'react.md'));
+  fs.writeFileSync(path.join(templatesDir, 'legacy.md'), 'legacy');
 
-  spawnSync(process.execPath, [installer, 'init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit'], { cwd, encoding: 'utf8' });
-  assert.ok(!fs.existsSync(legacyDir), 'legacy templates dir should be purged');
+  const out = runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit'], cwd);
+  assert.ok(!fs.existsSync(path.join(templatesDir, 'ponytail_core.md')), 'byte-identical vendored copy is removed');
+  assert.ok(!fs.existsSync(presetsDir), 'a directory left empty is removed');
+  assert.equal(fs.readFileSync(path.join(templatesDir, 'legacy.md'), 'utf8'), 'legacy', 'user content is kept');
+  assert.match(out, /Kept local overrides[\s\S]*\.architecture-guard\/templates\/legacy\.md/);
   assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard/config.yml')));
 });
 
@@ -672,8 +693,7 @@ test('validate-sync-config is a registered CLI command', () => {
 
   for (const dir of ['orchestration', 'commands']) {
     const prompt = fs.readFileSync(path.join(__dirname, '..', dir, 'governed-delivery-team.md'), 'utf8');
-    // The legacy extension must not download an unpinned CLI; it runs the CLI only when it is on PATH.
-    assert.match(prompt, dir === 'commands' ? /`architecture-guard validate-sync-config/ : /npx architecture-guard validate-sync-config/);
+    assert.match(prompt, /architecture-guard validate-sync-config/);
     assert.doesNotMatch(prompt, /src\/cli\//);
   }
 });
@@ -1079,6 +1099,11 @@ test('forge auto-detection maps origin remotes to built-in forges', () => {
     ['https://dev.azure.com/acme/proj/_git/app', 'azure-devops'],
     ['git@ssh.dev.azure.com:v3/acme/proj/app', 'azure-devops'],
     ['https://git.internal.example/acme/app.git', 'generic'],
+    ['https://github.acme.example/acme/app.git', 'github'],
+    ['git@github.acme.example:acme/app.git', 'github'],
+    ['https://acme.ghe.com/acme/app.git', 'github'],
+    ['https://code.acme.example/acme/app.git', 'generic'],
+    ['https://notgithub.example/acme/app.git', 'generic'],
   ];
   for (const [url, expected] of cases) {
     const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-forge-'));
@@ -1119,7 +1144,56 @@ test('forge tokens are materialized with the selected forge actions', () => {
   assert.match(out, /the forge-defined "pr-diff" action/);
   assert.match(out, /## Resolved Forge Actions \(generic\)/);
   assert.match(out, /git diff <base>\.\.\.<head>/);
+  assert.match(out, /Placeholders in these actions:/);
+  assert.match(out, /<n>, <iid>, <id>: the pull or merge request number or id/);
+  assert.match(out, /temporary file created outside the repository/);
   assert.equal(materializeForgeTokens('no tokens here', 'generic'), 'no tokens here');
+});
+
+test('pull-request skills install with no unresolved tokens for every built-in forge', () => {
+  for (const forge of forgeModule().BUILTIN_FORGES) {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+    runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--forge', forge, '--commands', 'pr'], cwd);
+    for (const name of ['review-pr', 'pr-feedback']) {
+      const skill = fs.readFileSync(path.join(cwd, `.opencode/commands/ag-${name}.md`), 'utf8');
+      assert.doesNotMatch(skill, /\{forge_command:|\{adapter_(path|command):/, `${forge}: ag-${name}`);
+      assert.match(skill, new RegExp(`## Resolved Forge Actions \\(${forge}\\)`), `${forge}: ag-${name}`);
+    }
+  }
+});
+
+test('forge adapters pass review and reply text through temporary files, never shell arguments', () => {
+  const { forgeCommands } = forgeModule();
+  for (const name of ['github', 'gitlab', 'bitbucket', 'azure-devops']) {
+    const content = fs.readFileSync(path.join(repoRoot, 'adapters/forges', `${name}.md`), 'utf8');
+    const commands = forgeCommands(content);
+    for (const key of ['review-post', 'thread-reply']) {
+      const value = commands.get(key);
+      assert.match(value, /file/, `${name} ${key} passes text through a file`);
+      assert.doesNotMatch(value, /=<(reply|comment|body)>/, `${name} ${key} interpolates text into a shell argument`);
+    }
+    assert.match(content, /outside the repository/, `${name} creates temporary files outside the repository`);
+    for (const line of content.split('\n').filter(row => /^\| [a-z-]+ \|/.test(row))) {
+      assert.equal(line.split('|').length - 1, 3, `${name}: Command Map row must have exactly 3 pipes: ${line}`);
+    }
+  }
+  const github = fs.readFileSync(path.join(repoRoot, 'adapters/forges/github.md'), 'utf8');
+  assert.doesNotMatch(github, /-F b=<reply>/);
+  assert.match(github, /-F b=@<reply file>/);
+  assert.match(github, /gh pr checkout <n> --detach/);
+  assert.match(github, /databaseId/);
+  const gitlab = forgeCommands(fs.readFileSync(path.join(repoRoot, 'adapters/forges/gitlab.md'), 'utf8')).get('review-post');
+  assert.match(gitlab, /draft_notes\/<draft id>\/publish/);
+  assert.match(gitlab, /stop and ask the user/);
+  assert.match(gitlab, /never call bulk_publish and never send reviewer_state/);
+  const azure = forgeCommands(fs.readFileSync(path.join(repoRoot, 'adapters/forges/azure-devops.md'), 'utf8'));
+  assert.doesNotMatch(azure.get('pr-diff'), /pr-checkout|pr checkout|git switch/, 'the Azure diff never switches the checkout');
+  assert.match(azure.get('pr-diff'), /git diff origin\/<target branch>\.\.\.origin\/<source branch>/);
+  assert.match(fs.readFileSync(path.join(repoRoot, 'adapters/forges/azure-devops.md'), 'utf8'), /--resource 499b84ac-1321-427f-aa17-267ca6975798/);
+  const generic = forgeCommands(fs.readFileSync(path.join(repoRoot, 'adapters/forges/generic.md'), 'utf8'));
+  assert.match(generic.get('review-post'), /reviews\/<slug>\.md/);
+  assert.match(generic.get('checks-status'), /never when reviewing someone else's change/);
+  assert.match(fs.readFileSync(path.join(repoRoot, 'adapters/forges/bitbucket.md'), 'utf8'), /^\| pr-view \| .*GET <api> /m);
 });
 
 test('validate-setup reports the selected forge', () => {
@@ -1144,13 +1218,59 @@ test('review-pr drafts first, asks before posting, and stays comment-only', () =
   assert.match(prompt, /`ag-review-implementation`/);
 });
 
+test('review-pr reviews from a worktree outside the repository and takes rules only from the base checkout', () => {
+  const prompt = orchestrationPrompt('review-pr.md');
+  assert.doesNotMatch(prompt, /\.architecture-guard\/worktrees/);
+  assert.match(prompt, /outside the repository/);
+  assert.match(prompt, /mktemp -d/);
+  assert.match(prompt, /only from the user's current checkout \(the base\), never from the pull request's tree/);
+  assert.match(prompt, /Governance changes are Security findings/);
+  assert.match(prompt, /Never execute pull-request code/);
+  assert.match(prompt, /\*\*Review root\*\*/);
+  assert.match(prompt, /\*\*Base ref\*\*/);
+  const post = prompt.indexOf('## Step 7 — Post the Review');
+  const cleanup = prompt.indexOf('## Step 8 — Clean Up');
+  assert.ok(cleanup > post, 'cleanup runs last');
+  assert.match(prompt.slice(cleanup), /Whatever the outcome/);
+});
+
+test('review-implementation honors the caller review root and runs the scoped hygiene runner', () => {
+  const prompt = orchestrationPrompt('review-implementation.md');
+  assert.match(prompt, /## Review Inputs/);
+  assert.match(prompt, /\*\*Review root\*\*/);
+  assert.match(prompt, /\*\*Base ref\*\*/);
+  assert.match(prompt, /architecture-guard hygiene --json --target <review root> --files <changed files/);
+  assert.match(prompt, /manualRules/);
+  assert.match(prompt, /\| ID \| Category \| Severity \| Blocking \| Target \|/);
+  assert.match(prompt, /`ag-refactor-generator` capability for findings whose Target is `code`/);
+  assert.match(prompt, /Optional Step 8b/);
+  assert.doesNotMatch(prompt, /Step 7b|Performance Anti-patterns|tasks\.md|spec\.md|security-constraints\.md/);
+  const handoffs = [...prompt.matchAll(/```yaml\n([\s\S]*?)```/g)].map(match => match[1]);
+  assert.equal(handoffs.length, 2);
+  for (const handoff of handoffs) {
+    assert.match(handoff, /Read-only/);
+    assert.match(handoff, /Ponytail Core Untrusted Content rules apply/);
+    assert.match(handoff, /Review Root:/);
+  }
+});
+
+test('pr-feedback re-reads threads before posting and stops on a failed resolve', () => {
+  const prompt = orchestrationPrompt('pr-feedback.md');
+  const post = prompt.slice(prompt.indexOf('## Step 8 — Post'));
+  assert.ok(post.indexOf('{forge_command:pr-threads}') < post.indexOf('{forge_command:thread-reply}'), 'threads are re-read before replying');
+  assert.match(post, /If a resolve fails, stop/);
+  assert.match(prompt, /draft that reply without commit references/);
+  assert.match(prompt, /\*\*Review root\*\*/);
+});
+
 test('review-pr installs with the selected forge actions resolved', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'openspec', '--forge', 'gitlab', '--commands', 'pr'], cwd);
   const skill = fs.readFileSync(path.join(cwd, '.opencode/commands/ag-review-pr.md'), 'utf8');
   assert.doesNotMatch(skill, /\{(forge|adapter)_(command|path):/);
   assert.match(skill, /## Resolved Forge Actions \(gitlab\)/);
-  assert.match(skill, /draft_notes\/bulk_publish/);
+  assert.match(skill, /draft_notes\/<draft id>\/publish/);
+  assert.match(skill, /never call bulk_publish/);
   assert.match(skill, /glab mr view <iid> -F json/);
 });
 
@@ -1314,4 +1434,339 @@ test('legacy apply and init gate memory and draft writes behind explicit approva
   const init = fs.readFileSync(path.join(repoRoot, 'commands/init.md'), 'utf8');
   assert.doesNotMatch(init, /1\. Save current answers to/);
   assert.doesNotMatch(init, /optionally archive old draft/);
+});
+
+test('orchestration never fetches the CLI through npx and skips sync when it is not installed', () => {
+  for (const file of fs.readdirSync(path.join(repoRoot, 'orchestration')).filter(name => name.endsWith('.md'))) {
+    assert.doesNotMatch(orchestrationPrompt(file), /npx architecture-guard/, file);
+  }
+  const team = orchestrationPrompt('governed-delivery-team.md');
+  assert.match(team, /When the `architecture-guard` CLI is installed, run `architecture-guard validate-sync-config/);
+  assert.match(team, /if it is not installed, skip sync and record `Unavailable`/);
+  assert.match(team, /non-zero exit means invalid and no remote write happens/);
+});
+
+const materialized = (file, adapter) => installerModule().materializeAdapterTokens(orchestrationPrompt(file), adapter);
+const adapterFile = (name) => fs.readFileSync(path.join(repoRoot, 'adapters', `${name}.md`), 'utf8');
+const inScopeOrchestration = () => fs.readdirSync(path.join(repoRoot, 'orchestration'))
+  .filter(name => name.endsWith('.md') && !['review-pr.md', 'pr-feedback.md', 'review-implementation.md'].includes(name));
+
+test('OpenSpec adapter discovers changes with openspec list --json and creates changes only after approval', () => {
+  const content = adapterFile('openspec');
+  const { command } = installerModule().adapterKeys(content);
+  assert.match(command.get('change-scope'), /openspec list --json/);
+  assert.doesNotMatch(command.get('change-scope'), /openspec list --specs --json/);
+  assert.match(command.get('create-change'), /only after explicit user approval/);
+  const scope = content.split('## Explicit Change Scope')[1].split('## Command Map')[0];
+  assert.match(scope, /discovered by `openspec list --json`/);
+  assert.doesNotMatch(scope, /discovered by `openspec list --specs --json`/);
+  assert.match(scope, /openspec new change "\$CHANGE_ID"` only after explicit user approval/);
+  assert.match(command.get('list-specs'), /openspec list --specs --json to list durable capability specs/);
+});
+
+test('generic adapter archive and resolver defaults are approval-gated and consistent', () => {
+  const { command } = installerModule().adapterKeys(adapterFile('generic'));
+  assert.match(command.get('archive'), /after explicit user approval run architecture-guard archive/);
+  assert.match(command.get('archive'), /never run either without that approval/);
+  const resolve = fs.readFileSync(path.join(repoRoot, 'adapters', 'resolve.md'), 'utf8');
+  assert.doesNotMatch(resolve, /require user to specify paths manually/);
+  assert.match(resolve, /default\n\s*`changes\/\{change\}\/` paths/);
+});
+
+test('adapter Path Map values are plain paths without parenthetical annotations', () => {
+  for (const name of installerModule().BUILTIN_ADAPTERS) {
+    const { path: paths } = installerModule().adapterKeys(adapterFile(name));
+    for (const [key, value] of paths) {
+      if (key === '---') continue;
+      assert.doesNotMatch(value, /[()]/, `adapters/${name}.md path:${key} = ${value}`);
+    }
+  }
+  const spec = materialized('governed-spec.md', 'generic');
+  assert.match(spec, /`changes\/\{change\}\/spec\.md`/);
+  assert.doesNotMatch(spec, /spec\.md \(or user-provided/);
+});
+
+test('every in-scope orchestration skill resolves the adapter through the same resolve.md chain', () => {
+  for (const file of inScopeOrchestration()) {
+    const section = orchestrationPrompt(file).split('## SDD Adapter Resolution')[1].split('\n## ')[0];
+    assert.match(section, /resolve the adapter with its chain \(explicit `--adapter` override, `\.architecture-guard\/selected-adapter`, `\.architecture-guard\/config\.yml`, then filesystem markers\)/, file);
+    assert.match(section, /Stop with `Unavailable`/, file);
+    assert.doesNotMatch(section, /Read `\.architecture-guard\/selected-adapter` directly/, file);
+  }
+});
+
+test('governed-spec creates the change only after the branch gate and re-validates auto-fixes', () => {
+  const prompt = orchestrationPrompt('governed-spec.md');
+  const preamble = prompt.split('## SDD Adapter Resolution')[1].split('\n## ')[0];
+  assert.match(preamble, /without creating anything/);
+  const branch = prompt.indexOf('### Step 3 — Branch Management');
+  const create = prompt.indexOf('execute {adapter_command:create-change} only after explicit approval');
+  assert.ok(branch !== -1 && create > branch, 'change creation must follow the branch gate');
+  assert.match(prompt, /Ask separately for the change \(feature\) name and/);
+  const loop = prompt.split('### Step 10')[1];
+  assert.match(loop, /Re-run \{adapter_command:validate-spec\} after each rewrite/);
+  assert.match(loop, /re-evaluate any blocking findings/);
+  assert.doesNotMatch(prompt, /run \{adapter_command:consolidate-specs\}/);
+  assert.doesNotMatch(prompt, /automatically launch/);
+});
+
+test('governed-tasks gates before summarizing and re-runs analysis after rewrites', () => {
+  const prompt = orchestrationPrompt('governed-tasks.md');
+  const gate = prompt.indexOf('### Step 8 — Blocking Gate');
+  const summary = prompt.indexOf('### Step 9 — Task Governance Summary');
+  assert.ok(gate !== -1 && summary > gate, 'gate must be evaluated before the summary');
+  assert.match(prompt, /Re-run \{adapter_command:analyze\} after each rewrite, at most 2 repair attempts/);
+  assert.match(prompt, /Re-evaluate the Blocking Gate/);
+  assert.doesNotMatch(prompt, /automatically launch/);
+  assert.match(prompt, /Role Tagging\*\* \(only when Agent Teams mode is active\)/);
+});
+
+test('constitution loading is stated once and the create-action fallback reads correctly after materialization', () => {
+  const paragraph = /explicitly read every declared or present (governance, )?constitution, architecture, security, and layout Markdown file/g;
+  for (const file of ['governed-plan.md', 'governed-tasks.md', 'governed-implement.md']) {
+    const prompt = orchestrationPrompt(file);
+    assert.equal((prompt.match(paragraph) || []).length, 1, file);
+    assert.match(prompt, /### Constitution Inputs/, file);
+  }
+  for (const file of inScopeOrchestration()) {
+    assert.doesNotMatch(orchestrationPrompt(file), /inspect its `context` block/i, file);
+  }
+  for (const [file, key] of [['governed-plan.md', 'create-plan'], ['governed-tasks.md', 'create-tasks']]) {
+    const prompt = materialized(file, 'openspec');
+    assert.doesNotMatch(prompt, /does not recognize it as a slash command/, file);
+    assert.match(prompt, /Follow the adapter-defined action; if it names a command that is not available, use the adapter's own inline fallback/, file);
+    assert.match(prompt, new RegExp(`\\*\\*${key}\\*\\*: Read openspec instructions`), file);
+  }
+});
+
+test('consolidation writes only after confirmation, and other workflows hand off instead of writing', () => {
+  const prompt = orchestrationPrompt('consolidate-specs.md');
+  const beforeConfirm = prompt.split('**Confirm before writing**')[0];
+  assert.match(beforeConfirm, /only to build the fallback content in memory/);
+  assert.match(beforeConfirm, /nothing is written to the fallback index or any other path before the step 6 confirmation/);
+  assert.doesNotMatch(beforeConfirm, /Otherwise execute \{adapter_command:consolidate-specs\}/);
+  const budget = fs.readFileSync(path.join(repoRoot, 'templates', 'budgeted_context_sdd.md'), 'utf8');
+  assert.doesNotMatch(budget, /execute `\{adapter_command:consolidate-specs\}`/);
+  assert.match(budget, /recommend `ag-consolidate-specs`/);
+  assert.match(orchestrationPrompt('init.md'), /offer to run `ag-consolidate-specs`/);
+});
+
+test('governed-archive refuses protected branches, never force-pushes, and asks before pushing', () => {
+  const prompt = orchestrationPrompt('governed-archive.md');
+  const git = prompt.split('### Step 4 — Interactive Git Orchestration')[1].split('### Step 5')[0];
+  assert.match(git, /Refuse to commit or push on `main`, `master`, `dev`, `develop`, `development`, `staging`/);
+  assert.match(git, /Never force-push/);
+  assert.match(git, /Push only after a separate explicit approval/);
+});
+
+test('apply gates memory writes and branch creation, and reads correctly after materialization', () => {
+  const prompt = orchestrationPrompt('apply.md');
+  assert.doesNotMatch(prompt, /memory-synthesis\.md|prepare-context alias|sync durable lessons or architecture decisions back into Flash-Mem/);
+  assert.match(prompt, /write them only after a separate explicit approval/);
+  assert.match(prompt, /MUST NOT apply edits on a protected branch/);
+  assert.match(prompt, /proposal, when the adapter has one > specification `\{adapter_path:spec\}` > planning artifact/);
+  const installed = materialized('apply.md', 'openspec');
+  assert.doesNotMatch(installed, /adapter's the adapter-defined/);
+  assert.match(installed, /If the adapter-defined "architecture-apply" action names a native update capability/);
+});
+
+test('governed-implement uses the hygiene runner and P0-only architecture blocking', () => {
+  const prompt = orchestrationPrompt('governed-implement.md');
+  assert.doesNotMatch(prompt, /architecture-guard resolve hygiene-rules --list/);
+  assert.match(prompt, /Run \{adapter_command:hygiene\} \(the `architecture-guard hygiene --json` runner\)/);
+  assert.match(prompt, /any file deletion or any fix outside that scope needs its own preview and explicit approval/);
+  assert.match(prompt, /Architecture findings block only when the Constitution marks them P0; security findings block only when the security policy designates them blocking/);
+});
+
+test('workflow picks the delivery skill by story approval and verifies once', () => {
+  const prompt = orchestrationPrompt('workflow.md');
+  assert.match(prompt, /When stakeholder User Story approval is required, run the registered `ag-governed-delivery-team` capability, in single-agent or Agent Teams mode/);
+  assert.doesNotMatch(prompt, /In single-agent mode, run the registered `ag-governed-delivery` capability/);
+  assert.match(prompt, /`ag-governed-implement` owns verification/);
+});
+
+test('init memory, draft, and consolidation steps stay approval-gated', () => {
+  const init = orchestrationPrompt('init.md');
+  assert.doesNotMatch(init, /use `capture_artifact_memory` for changed constitution artifacts/);
+  assert.doesNotMatch(init, /1\. Save current answers to/);
+  assert.doesNotMatch(init, /the consolidation command/);
+  assert.doesNotMatch(materialized('init.md', 'spec-kit'), /Generic adapter paths for/);
+});
+
+test('verify, review-artifacts, and violation-detection take severity and blocking from policy', () => {
+  const verify = orchestrationPrompt('verify.md');
+  assert.doesNotMatch(verify, /\*\*CRITICAL\*\*:[^\n]*Boundary bypass/);
+  assert.match(verify, /\*\*HIGH\*\*: Boundary bypass/);
+  assert.doesNotMatch(verify, /\| CRITICAL \| Yes \|/);
+  const review = orchestrationPrompt('review-artifacts.md');
+  assert.doesNotMatch(review, /Evaluate the planning structure against every hygiene rule/);
+  assert.match(review, /keep only findings whose location is one of the resolved planning artifacts/);
+  const detection = orchestrationPrompt('violation-detection.md');
+  assert.doesNotMatch(detection, /`spec\.md`|`security-constraints\.md`/);
+  assert.match(detection, /`CRITICAL`: A governing rule/);
+  assert.doesNotMatch(detection, /`(Critical|High|Medium|Low)`:/);
+});
+
+test('debug-artifacts defaults to a non-blocking Warning', () => {
+  const rule = fs.readFileSync(path.join(repoRoot, 'hygiene-rules', 'debug-artifacts.md'), 'utf8');
+  assert.match(rule, /^\*\*Default Severity\*\*: Warning$/m);
+});
+
+// Parses TOML files with Python's tomllib; returns null (and says so) when it is unavailable.
+function parseTomlFiles(files) {
+  const script = [
+    'import json, sys',
+    'try:',
+    '    import tomllib',
+    'except ImportError:',
+    '    sys.exit(3)',
+    'out = {}',
+    'for name in json.load(sys.stdin):',
+    '    try:',
+    '        with open(name, "rb") as handle:',
+    '            data = tomllib.load(handle)',
+    '        out[name] = {"prompt": data.get("prompt"), "description": data.get("description")}',
+    '    except Exception as error:',
+    '        out[name] = {"error": str(error)}',
+    'print(json.dumps(out))',
+  ].join('\n');
+  const result = spawnSync('python3', ['-I', '-c', script], { input: JSON.stringify(files), encoding: 'utf8' });
+  if (result.error || result.status === 3) {
+    console.log('# TOML parse assertion skipped: python3 with tomllib is unavailable');
+    return null;
+  }
+  assert.equal(result.status, 0, result.stderr);
+  return JSON.parse(result.stdout);
+}
+
+test('every installed gemini and tabnine command is valid TOML', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-toml-'));
+  runArgs(['init', '--yes', '--agent', 'gemini,tabnine', '--framework', 'spec-kit', '--commands', 'all'], cwd);
+  const files = ['.gemini/commands', '.tabnine/agent/commands'].flatMap(dir =>
+    fs.readdirSync(path.join(cwd, dir)).filter(file => file.endsWith('.toml')).map(file => path.join(cwd, dir, file)));
+  assert.equal(files.length, 2 * require('./cli/install').COMMANDS.length);
+  const parsed = parseTomlFiles(files);
+  if (!parsed) return;
+  for (const file of files) {
+    assert.equal(parsed[file].error, undefined, `${file}: ${parsed[file].error}`);
+    assert.ok(parsed[file].prompt.length > 0, file);
+    assert.match(parsed[file].description, /^Architecture Guard: ag-/);
+  }
+  // Backslashes (e.g. LaTeX) survive verbatim.
+  assert.match(parsed[path.join(cwd, '.gemini/commands/ag-governed-plan.toml')].prompt, /\\ge/);
+});
+
+test('lean re-init keeps modified engine overrides and never prunes with skip or keep-both', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-overrides-'));
+  const base = ['init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit', '--commands', 'init'];
+  runArgs([...base, '--vendor'], cwd);
+  const template = path.join(cwd, '.architecture-guard/templates/ponytail_core.md');
+  const sonar = path.join(cwd, '.architecture-guard/sonar-rules/sonarlint-rules.json');
+  const stale = path.join(cwd, '.architecture-guard/templates/constitution.md');
+  fs.writeFileSync(template, 'custom ponytail');
+  fs.writeFileSync(sonar, '{"custom": true}\n');
+
+  for (const mode of ['skip', 'keep-both']) {
+    runArgs([...base, '--overwrite', mode], cwd);
+    assert.ok(fs.existsSync(stale), `--overwrite ${mode} never prunes`);
+  }
+
+  const out = runArgs(base, cwd);
+  assert.equal(fs.readFileSync(template, 'utf8'), 'custom ponytail');
+  assert.equal(fs.readFileSync(sonar, 'utf8'), '{"custom": true}\n');
+  assert.ok(!fs.existsSync(stale), 'unmodified vendored copy is removed');
+  assert.ok(!fs.existsSync(path.join(cwd, '.architecture-guard/presets')), 'all-stale directory is removed');
+  assert.match(out, /templates\/ponytail_core\.md/);
+  assert.match(out, /sonar-rules\/sonarlint-rules\.json/);
+});
+
+test('rejects an unknown --overwrite mode before writing anything', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  const result = spawnSync(process.execPath, [installer, 'init', '--yes', '--agent', 'opencode', '--framework', 'none', '--overwrite', 'keepboth'], { cwd, encoding: 'utf8' });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Invalid --overwrite mode "keepboth"\. Use one of: replace, skip, keep-both\./);
+  assert.deepEqual(fs.readdirSync(cwd), []);
+});
+
+test('rerunning init without --forge keeps a selected forge that still validates', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  spawnSync('git', ['init', '-q'], { cwd });
+  spawnSync('git', ['remote', 'add', 'origin', 'git@github.com:acme/app.git'], { cwd });
+  const base = ['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'];
+  const selected = () => fs.readFileSync(path.join(cwd, '.architecture-guard/selected-forge'), 'utf8').trim();
+  runArgs(base, cwd);
+  const custom = path.join(cwd, '.architecture-guard/forges/gitea.md');
+  const generic = fs.readFileSync(path.join(repoRoot, 'adapters/forges/generic.md'), 'utf8');
+  fs.writeFileSync(custom, generic);
+  runArgs([...base, '--forge', 'gitea'], cwd);
+  assert.equal(selected(), 'gitea');
+
+  assert.match(runArgs(base, cwd), /Forge: gitea \(kept from/);
+  assert.equal(selected(), 'gitea');
+
+  // A recorded forge that no longer validates falls back to auto-detection.
+  fs.writeFileSync(custom, generic.replace(/^\| pr-diff \|.*\n/m, ''));
+  runArgs(base, cwd);
+  assert.equal(selected(), 'github');
+});
+
+test('keep-both skills are named after their directory and Antigravity workflows honor --overwrite', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  const base = ['init', '--yes', '--agent', 'claude,antigravity', '--framework', 'none', '--commands', 'init'];
+  runArgs(base, cwd);
+  runArgs([...base, '--overwrite', 'keep-both'], cwd);
+  assert.match(fs.readFileSync(path.join(cwd, '.claude/skills/ag-init/SKILL.md'), 'utf8'), /^name: ag-init$/m);
+  assert.match(fs.readFileSync(path.join(cwd, '.claude/skills/ag-init-2/SKILL.md'), 'utf8'), /^name: ag-init-2$/m);
+
+  const workflow = path.join(cwd, '.agent/workflows/agx-init.md');
+  fs.writeFileSync(workflow, 'original');
+  fs.rmSync(path.join(cwd, '.agent/workflows/agx-init.architecture-guard.md'), { force: true });
+  runArgs([...base, '--overwrite', 'skip'], cwd);
+  assert.equal(fs.readFileSync(workflow, 'utf8'), 'original');
+  runArgs([...base, '--overwrite', 'keep-both'], cwd);
+  assert.equal(fs.readFileSync(workflow, 'utf8'), 'original');
+  assert.ok(fs.existsSync(path.join(cwd, '.agent/workflows/agx-init.architecture-guard.md')));
+  runArgs(base, cwd);
+  assert.notEqual(fs.readFileSync(workflow, 'utf8'), 'original');
+});
+
+test('validate-setup rejects selection markers that are not plain names', () => {
+  const { validateSetup } = require('./cli/validate-setup');
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--forge', 'generic', '--commands', 'init'], cwd);
+  const failures = () => validateSetup(cwd).filter(check => check.level === 'fail').map(check => check.message).join('\n');
+
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/selected-forge'), '../../forges/generic\n');
+  assert.match(failures(), /selected-forge contains an invalid forge name "\.\.\/\.\.\/forges\/generic"/);
+
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/selected-adapter'), '../adapters/generic\n');
+  assert.match(failures(), /selected-adapter contains an invalid adapter name "\.\.\/adapters\/generic"/);
+});
+
+test('installer has no unused argv parser and the package excludes compiled tests', () => {
+  const source = fs.readFileSync(path.join(repoRoot, 'cli/install.ts'), 'utf8');
+  assert.doesNotMatch(source, /function (?:parseArgs|printHelp|main)\(/);
+  assert.doesNotMatch(source, /require\('\.\/package\.json'\)/);
+
+  const pack = spawnSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd: repoRoot, encoding: 'utf8' });
+  if (pack.error || pack.status !== 0) {
+    console.log('# npm pack assertion skipped: npm is unavailable');
+    return;
+  }
+  // npm <12 prints an array of packages; npm 12 prints an object keyed by package name.
+  const packed = JSON.parse(pack.stdout);
+  const files = (Array.isArray(packed) ? packed[0] : Object.values(packed)[0] as any).files.map(file => file.path);
+  assert.ok(files.includes('dist/bin/cli.js'));
+  assert.deepEqual(files.filter(file => /^dist\/.*\.test\.js$/.test(file)), []);
+});
+
+test('a recorded generic forge is kept but init points out a newly detected host', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  spawnSync('git', ['init', '-q'], { cwd });
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'], cwd);
+  assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-forge'), 'utf8').trim(), 'generic');
+  spawnSync('git', ['remote', 'add', 'origin', 'git@github.com:acme/app.git'], { cwd });
+  const out = runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'], cwd);
+  assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-forge'), 'utf8').trim(), 'generic');
+  assert.match(out, /github remote detected, rerun with --forge github/);
 });

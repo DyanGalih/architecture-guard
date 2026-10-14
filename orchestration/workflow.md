@@ -6,7 +6,7 @@ description: Run the governed SDD lifecycle from discovery or an active change t
 
 ## SDD Adapter Resolution
 
-Before executing this command, read `.architecture-guard/adapters/resolve.md`, load the selected `.architecture-guard/adapters/{tool}.md`, and resolve all adapter path and command tokens used by each delegated phase.
+Before executing this command, read `.architecture-guard/adapters/resolve.md` and resolve the adapter with its chain (explicit `--adapter` override, `.architecture-guard/selected-adapter`, `.architecture-guard/config.yml`, then filesystem markers), then load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Stop with `Unavailable` and the exact path if the adapter file is missing. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. Resolve every adapter path and command token before continuing; all paths and commands below use the loaded adapter.
 
 ## Standalone Resource Resolution
 
@@ -41,7 +41,7 @@ When the environment flag is present, explain that `.architecture-guard/agents.y
 
 ### Step 1 - Resolve the Starting Point
 
-1. Read Flash-Mem context when its tools are available; otherwise Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+1. Read Flash-Mem context when its tools are available; otherwise resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 2. Resolve any user-supplied change name and artifact paths before filesystem discovery.
 3. If the request is still exploratory or materially ambiguous, run the registered `ag-governed-discover` capability and use its Discovery Summary Draft as the specification seed.
 4. If no active specification exists, run the registered `ag-governed-spec` capability. Do not enter planning until specification creation and clarification succeed.
@@ -49,8 +49,8 @@ When the environment flag is present, explain that `.architecture-guard/agents.y
 
 ### Step 2 - Governed Planning and Tasks
 
-- In single-agent mode, run the registered `ag-governed-delivery` capability.
-- In Agent Teams mode, run `ag-governed-delivery-team` when stakeholder User Story approval is required; otherwise run `ag-governed-delivery` with the active team profile.
+- When stakeholder User Story approval is required, run the registered `ag-governed-delivery-team` capability, in single-agent or Agent Teams mode.
+- Otherwise run the registered `ag-governed-delivery` capability (with the active team profile in Agent Teams mode).
 - Let the delegated delivery prompt perform its own plan, task, security, architecture, analysis, and write-approval gates.
 
 ### Human Gate 1 - Approve Plan and Tasks
@@ -63,11 +63,11 @@ Run the registered `ag-governed-implement` capability. In Agent Teams mode, the 
 
 ### Human Gate 2 - Review Implementation
 
-Present modified files, completed tasks, review findings, and test results. Obtain explicit user approval before final verification.
+Present modified files, completed tasks, review findings, test results, and the verification result. Obtain explicit user approval before the archival handoff.
 
 ### Step 4 - Verification
 
-Run the registered `ag-verify` capability. A pass requires task and requirement evidence, architecture and security-policy compliance, repository hygiene results, and no unresolved blocking findings. Do not equate unavailable optional integrations with a pass.
+`ag-governed-implement` owns verification: its Mandatory Verification Gate already runs `ag-verify`. Use that result here; do not run verification a second time. Run `ag-verify` directly only when implementation finished outside `ag-governed-implement` or its verification result is missing or stale (code changed after it ran). A pass requires task and requirement evidence, architecture and security-policy compliance, repository hygiene results, and no unresolved blocking findings. Do not equate unavailable optional integrations with a pass.
 
 ### Step 5 - Optional Archival Handoff
 

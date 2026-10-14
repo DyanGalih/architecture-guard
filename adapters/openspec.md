@@ -4,43 +4,43 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 
 ## Path Map
 
-| Canonical Name | OpenSpec Path |
-|---|---|
-| project-root | `.` |
-| sdd-tool-dir | `openspec/` |
-| constitution | `openspec/config.yaml` (context section) |
-| arch-constitution | `openspec/architecture.md` (optional — split from config) |
-| security-constitution | `openspec/security.md` (optional — split from config) |
-| governance-config | `.architecture-guard/config.yml` |
-| config | `.architecture-guard/config.yml` (compatibility alias of `governance-config`) |
-| extensions | Unsupported; detect optional integrations from host capabilities |
-| extensions-dir | Unsupported; do not probe an SDD tool extension directory |
-| spec | `openspec/changes/{change}/specs/{capability}/spec.md` |
-| plan | `openspec/changes/{change}/design.md` |
-| tasks | `openspec/changes/{change}/tasks.md` |
-| proposal | `openspec/changes/{change}/proposal.md` |
-| security-constraints | `openspec/changes/{change}/security-constraints.md` |
-| project-config | `openspec/config.yaml` |
-| constitution-set | `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md` |
-| draft | `.architecture-guard/constitution.draft.md` |
-| ponytail-template | `.architecture-guard/templates/ponytail_core.md` |
-| capability-composition-template | `.architecture-guard/templates/capability_composition.md` |
-| budgeted-context-template | `.architecture-guard/templates/budgeted_context_sdd.md` |
-| hygiene-rules | `.architecture-guard/hygiene-rules/*.md` |
-| presets | `.architecture-guard/presets/{preset}.md` |
-| sonar-rules | `.architecture-guard/sonar-rules` |
-| scripts | `.architecture-guard/scripts` |
-| templates | `.architecture-guard/templates` (compatibility alias; prefer `ponytail-template`) |
-| change-root | `openspec/changes/{change}/` |
-| fallback-spec-index | N/A — use `openspec list --specs --json` instead |
-| flash-mem-project-id | None — Flash-Mem MCP still works if configured |
+| Canonical Name | OpenSpec Path | Notes |
+|---|---|---|
+| project-root | `.` | |
+| sdd-tool-dir | `openspec/` | |
+| constitution | `openspec/config.yaml` | Governance lives in its `context:` section |
+| arch-constitution | `openspec/architecture.md` | Optional — split from config |
+| security-constitution | `openspec/security.md` | Optional — split from config |
+| governance-config | `.architecture-guard/config.yml` | |
+| config | `.architecture-guard/config.yml` | Compatibility alias of `governance-config` |
+| extensions | Unsupported; detect optional integrations from host capabilities | |
+| extensions-dir | Unsupported; do not probe an SDD tool extension directory | |
+| spec | `openspec/changes/{change}/specs/{capability}/spec.md` | |
+| plan | `openspec/changes/{change}/design.md` | |
+| tasks | `openspec/changes/{change}/tasks.md` | |
+| proposal | `openspec/changes/{change}/proposal.md` | |
+| security-constraints | `openspec/changes/{change}/security-constraints.md` | |
+| project-config | `openspec/config.yaml` | |
+| constitution-set | `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md` | |
+| draft | `.architecture-guard/constitution.draft.md` | |
+| ponytail-template | `.architecture-guard/templates/ponytail_core.md` | |
+| capability-composition-template | `.architecture-guard/templates/capability_composition.md` | |
+| budgeted-context-template | `.architecture-guard/templates/budgeted_context_sdd.md` | |
+| hygiene-rules | `.architecture-guard/hygiene-rules/*.md` | |
+| presets | `.architecture-guard/presets/{preset}.md` | |
+| sonar-rules | `.architecture-guard/sonar-rules` | |
+| scripts | `.architecture-guard/scripts` | |
+| templates | `.architecture-guard/templates` | Compatibility alias; prefer `ponytail-template` |
+| change-root | `openspec/changes/{change}/` | |
+| fallback-spec-index | N/A — use `openspec list --specs --json` instead | |
+| flash-mem-project-id | None — Flash-Mem MCP still works if configured | |
 
 ## Explicit Change Scope
 
 When this adapter is selected, establish one `CHANGE_ID` before running any OpenSpec command that reads or validates change artifacts.
 
-- Resolve `CHANGE_ID` from an explicit user-provided change name, a single active change discovered by `openspec list --specs --json`, or a new kebab-case name approved for creation.
-- If multiple active changes are plausible, ask the user to choose. If no change exists, create it first with `openspec new change "$CHANGE_ID"`.
+- Resolve `CHANGE_ID` from an explicit user-provided change name, a single active change discovered by `openspec list --json` (which lists changes; `--specs` lists durable specs instead), or a new kebab-case name approved for creation.
+- If multiple active changes are plausible, ask the user to choose. If no change exists, propose a kebab-case name and create it with `openspec new change "$CHANGE_ID"` only after explicit user approval; if the user declines, stop before writing change artifacts.
 - Never run `openspec instructions`, `openspec status`, or `openspec validate` without the resolved change scope.
 - Pass `--change "$CHANGE_ID"` to every `openspec instructions` and `openspec status` invocation.
 - OpenSpec validation takes the change id as its item argument, so run `openspec validate "$CHANGE_ID" --strict` rather than an unscoped validation command.
@@ -51,10 +51,10 @@ When this adapter is selected, establish one `CHANGE_ID` before running any Open
 | Canonical Key | OpenSpec Invocation or Fallback |
 |---|---|
 | create-spec | Read `openspec instructions specs --change "$CHANGE_ID" --json`, resolve `architecture-guard resolve template openspec_spec`, then create the requested change-level specs inline and validate with `openspec validate "$CHANGE_ID" --strict`|
-| change-scope | Establish one `CHANGE_ID` before any OpenSpec artifact lookup or command: from an explicit user-provided change, one unambiguous active change from `openspec list --specs --json`, or a new kebab-case name approved for creation (create it with `openspec new change "$CHANGE_ID"` only after approval). If several are plausible, ask; never pick by recency or treat a capability name as a change id. Pass `--change "$CHANGE_ID"` to every `openspec instructions` and `openspec status` call, inspect progress with `openspec status --change "$CHANGE_ID" --json`, and reuse the same id for spec, design, task, analysis, verification, and archive steps. Stop and ask rather than run with an empty `CHANGE_ID`. |
+| change-scope | Establish one `CHANGE_ID` before any OpenSpec artifact lookup or command: from an explicit user-provided change, one unambiguous active change from `openspec list --json` (changes, not `--specs`), or a new kebab-case name approved for creation (create it with `openspec new change "$CHANGE_ID"` only after approval). If several are plausible, ask; never pick by recency or treat a capability name as a change id. Pass `--change "$CHANGE_ID"` to every `openspec instructions` and `openspec status` call, inspect progress with `openspec status --change "$CHANGE_ID" --json`, and reuse the same id for spec, design, task, analysis, verification, and archive steps. Stop and ask rather than run with an empty `CHANGE_ID`. |
 | validate-spec | Run `openspec validate "$CHANGE_ID" --strict` |
 | spec-template | Resolve `architecture-guard resolve template openspec_spec` and use its schema-aware delta headings (`## ADDED Requirements`, `## MODIFIED Requirements`, `## REMOVED Requirements`); never generate a top-level `## Requirements` section |
-| create-change | If the named change does not exist, run `openspec new change "$CHANGE_ID"`; otherwise reuse it|
+| create-change | If the named change does not exist, run `openspec new change "$CHANGE_ID"` only after explicit user approval of the name; otherwise reuse it|
 | archive | After explicit user approval and collision preflight, run `openspec archive "$CHANGE_ID" --yes`.|
 | verify | Run the installed `ag-verify` capability; if host dispatch is unavailable, run `openspec validate "$CHANGE_ID" --strict` and perform the inline task-to-code checks defined by `ag-verify`.|
 | clarify-spec | Unsupported natively; ask and apply an inline ambiguity-resolution loop |
@@ -69,7 +69,7 @@ When this adapter is selected, establish one `CHANGE_ID` before running any Open
 | security-review-tasks | Not part of OpenSpec; detect the optional Security Review host capability or report the skipped review |
 | security-review-branch | Not part of OpenSpec; detect the optional Security Review host capability or report the skipped review |
 | subagent-synthesize | Unsupported natively; synthesize inline unless the host exposes an equivalent capability |
-| list-specs | Run `openspec list --specs --json`, group capability specs by their parent change, and return parent change artifact sets; never treat a capability name as a change identifier |
+| list-specs | Run `openspec list --specs --json` to list durable capability specs; for in-flight change-level specs, run `openspec list --json` to list changes and read `openspec/changes/<change>/specs/*/spec.md`. Never treat a capability name as a change identifier |
 | consolidate-specs | Unsupported: use `list-specs` as the fallback index and do not write a consolidated artifact |
 | architecture-apply | Apply plan/tasks findings directly inline; delegate upstream findings (`proposal.md`, `spec.md`) to `openspec-update-change` (or native update capability) with finding details as input context after user confirmation |
 | architecture-review | Use the registered architecture-review capability or review the resolved artifacts inline |

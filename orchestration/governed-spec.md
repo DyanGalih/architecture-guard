@@ -6,7 +6,7 @@ description: Orchestrate governed specification with memory, framework-native sp
 
 ## SDD Adapter Resolution
 
-Before executing command, read `.architecture-guard/adapters/resolve.md` to resolve the selected SDD adapter. Read `.architecture-guard/selected-adapter` directly and load the selected adapter file. Do not use the Architecture Guard resource resolver for adapter selection. Establish the change scope with {adapter_command:change-scope} before any SDD command.
+Before executing this command, read `.architecture-guard/adapters/resolve.md` and resolve the adapter with its chain (explicit `--adapter` override, `.architecture-guard/selected-adapter`, `.architecture-guard/config.yml`, then filesystem markers), then load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Stop with `Unavailable` and the exact path if the adapter file is missing. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. Resolve every adapter path and command token before continuing; all paths and commands below use the loaded adapter. Resolve an existing change scope with {adapter_command:change-scope} without creating anything; a new change is created only in Step 4, after the branch gate and with explicit approval.
 
 ## Standalone Resource Resolution
 
@@ -46,7 +46,7 @@ Provide a single command that ensures:
 
 ### Write Approval Gate
 
-Before the first mutation, resolve and preview the exact branch and target artifacts for change creation, specification generation, clarification updates, and any fallback-index refresh, together with the planned operations. Obtain explicit user approval, then allow routine writes already previewed within this specification phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+Before the first mutation, resolve and preview the exact branch, derived change name, and target artifacts for change creation, specification generation, clarification updates, and any fallback-index refresh, together with the planned operations. Obtain explicit user approval, then allow routine writes already previewed within this specification phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 
 ### Step 1 — Detect Optional Integrations
 
@@ -65,7 +65,7 @@ When Flash-Mem is available, use it first to gather the most relevant architectu
 
 ### Step 2.5 — Required Governance Inputs
 
-Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. For Generic mode, ask the user for every unresolved required path and the destination specification path before continuing; resolve that destination as `{adapter_path:spec}` and never guess or write until it is supplied. For adapters with optional split files, rules embedded in `{adapter_path:constitution}` satisfy the corresponding input. If governance or architecture rules are missing entirely, stop and direct the user to the adapter-registered init capability. If security rules are missing, report the gap and require explicit user confirmation before continuing with baseline security checks and optional host Security Review.
+Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. For Generic mode, ask the user for every unresolved required path and the destination specification path before continuing; resolve that destination as `{adapter_path:spec}` and never guess or write until it is supplied. For adapters with optional split files, rules embedded in `{adapter_path:constitution}` satisfy the corresponding input. If governance or architecture rules are missing entirely, stop and direct the user to the adapter-registered init capability. If security rules are missing, report the gap and require explicit user confirmation before continuing with baseline security checks and optional host Security Review.
 
 ### Step 3 — Branch Management
 
@@ -76,9 +76,9 @@ Before generating the specification, you MUST ensure work happens on a feature b
 
 ### Step 4 — Create or Select the Change Container
 
-1. Require a capability name; ask the user when it is omitted.
-2. Execute {adapter_command:create-change} before requesting framework instructions or writing specification artifacts.
-3. Reuse an existing matching change only after confirming it is the user's intended active work.
+1. Ask separately for the change (feature) name and, when the adapter organizes specifications by capability, the capability name; never derive one from the other or treat a capability name as a change name.
+2. Reuse an existing matching change only after confirming it is the user's intended active work.
+3. When a new change is needed, show the derived change name and container path in the Write Approval Gate preview and execute {adapter_command:create-change} only after explicit approval, before requesting framework instructions or writing specification artifacts. If approval is declined, stop.
 
 ### Step 5 — Orchestrate SDD Tool Specification
 
@@ -112,15 +112,15 @@ If the host exposes Security Review and the specification is security-sensitive 
 ### Step 8 — Proactive Durable Memory Preservation
 
 If the specification process or architecture validation identified new architectural patterns or critical decisions:
-1. **Proactive Proposal**: You **MUST automatically launch** the durable-memory capture flow in proposal-only mode.
+1. **Proactive Proposal**: When Flash-Mem is available, draft proposed entries for `capture_artifact_memory` (for the written specification) or `add_memory` (for a new durable decision) in proposal-only mode.
 2. **Approval Required**: Show the proposed entries and obtain explicit user approval before invoking any memory write tool.
-3. **Standard**: Do not silently write memory inside or outside the capture flow.
+3. **Standard**: Never write memory without that approval. If Flash-Mem is unavailable, report the proposals as `Unavailable` and skip the write.
 
 ### Step 9 — Generate Governance Summary
 
 Produce a final `Governed Specification Summary` outlining memory context, architectural review status, and any violations found.
 
-If `context.mode` is `budgeted` and `stale_policy` is `regenerate`, run {adapter_command:consolidate-specs} after the specification and clarification changes are complete. If the policy is `targeted`, report that the existing fallback is stale and do not load it until refreshed.
+If `context.mode` is `budgeted` and `stale_policy` is `regenerate`, recommend running `ag-consolidate-specs` (which previews and asks before writing) after the specification and clarification changes are complete; do not write the fallback index from this command. If the policy is `targeted`, report that the existing fallback is stale and do not load it until refreshed.
 
 ### Step 10 — Interactive Auto-Fix Loop
 
@@ -128,10 +128,12 @@ If any architectural gaps, security boundary issues, or drift are detected in St
 1. **Pause and Ask**: Conclude your response by asking the user:
    > *"I found [number] architectural gaps. Would you like me to automatically revise the specification to address these findings and re-run clarification?"*
 2. **Execute if Approved**: If the user answers "yes" (or equivalent) in their next message, you must:
-   - Automatically rewrite `{adapter_path:spec}` to resolve the detected gaps.
+   - Rewrite `{adapter_path:spec}` to resolve the detected gaps.
+   - Re-run {adapter_command:validate-spec} after each rewrite, sharing the Step 5 cap of at most 2 repair attempts; if validation still fails, stop and report the remaining errors.
    - Run the clarification process again to ensure no new ambiguities were introduced.
+   - Re-run the Step 7 architecture validation and re-evaluate any blocking findings (Constitution P0 or policy-designated security blockers) before presenting the result; if a blocker remains, report `Blocked` and stop.
    - Present the clean result.
-   - Refresh the fallback index through {adapter_command:consolidate-specs} when budgeted mode uses the `regenerate` policy.
+   - When budgeted mode uses the `regenerate` policy, recommend `ag-consolidate-specs` to refresh the fallback index.
 
 ## Output Structure
 

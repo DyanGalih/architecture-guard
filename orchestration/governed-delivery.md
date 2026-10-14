@@ -6,7 +6,7 @@ description: Resume governed delivery from an active specification through plan 
 
 ## SDD Adapter Resolution
 
-Before executing command, read `.architecture-guard/adapters/resolve.md` to resolve the selected SDD adapter. Read `.architecture-guard/selected-adapter` directly when it exists, then load the matching `.architecture-guard/adapters/{tool}.md`. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. If either adapter file is missing or the persisted value is unsupported, report `Unavailable` with the exact path/value and stop before running an SDD command.
+Before executing this command, read `.architecture-guard/adapters/resolve.md` and resolve the adapter with its chain (explicit `--adapter` override, `.architecture-guard/selected-adapter`, `.architecture-guard/config.yml`, then filesystem markers), then load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Stop with `Unavailable` and the exact path if the adapter file is missing. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. Resolve every adapter path and command token before continuing; all paths and commands below use the loaded adapter.
 
 ## Standalone Resource Resolution
 
@@ -40,7 +40,7 @@ This command coordinates the existing governed planning and task phases. It does
 
 ## Goal
 
-Produce an implementation-ready `tasks.md` from an accepted technical plan while ensuring:
+Produce an implementation-ready `{adapter_path:tasks}` from an accepted technical plan while ensuring:
 
 1. Flash-Mem context is retrieved before planning or task generation when the MCP server is available.
 2. The plan passes its architecture and applicable security gates before tasks are generated.
@@ -72,7 +72,7 @@ Before creating, planning, or modifying any active change:
 4. Do not guess when multiple active feature directories are plausible. Ask the user to identify the feature.
 5. Detect `flash-mem` as an MCP service. Do not inspect an SDD extension manifest for it.
 6. Detect Security Review as an independent host capability. It is not an SDD tool feature or extension; detect it only from host registrations.
-7. Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect its `context` block for every referenced governance and constitution Markdown file, then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
+7. Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 8. Load `.architecture-guard/config.yml` when present, then resolve the complete hygiene-rule set through `architecture-guard`. Apply configured exclusions and severity policy at the plan and task gates; missing optional hygiene configuration is non-blocking and must be reported.
 
 After a new or repaired spec is written, immediately run {adapter_command:validate-spec}. If validation fails, repair the spec against {adapter_command:spec-template} and validate again, at most 2 repair attempts; if it still fails, stop before planning and report the remaining validation errors. Do not continue with an invalid spec.
@@ -88,19 +88,19 @@ Prefer summaries, metadata, tags, confidence, and related files. Load full entri
 
 ## Phase 3 — Inspect Resume State
 
-Inspect `spec.md`, the technical design artifact, `tasks.md`, `security-constraints.md`, and available architecture review artifacts for the active feature.
+Inspect `{adapter_path:spec}`, the technical design artifact `{adapter_path:plan}`, `{adapter_path:tasks}`, `{adapter_path:security-constraints}`, and available architecture review artifacts for the active feature.
 
 Classify the plan:
 
 - `missing`: the technical design artifact does not exist or is empty.
-- `stale`: `spec.md` or governing constraints changed materially after the plan was produced.
+- `stale`: the specification or governing constraints changed materially after the plan was produced.
 - `blocked`: an unresolved P0 finding, policy-designated blocking security finding, or material design decision prevents safe task generation.
 - `review-required`: the plan exists but has not been validated against current inputs.
 - `accepted`: the plan matches current inputs and has no unresolved blocking findings.
 
 Classify tasks:
 
-- `missing`: `tasks.md` does not exist or is empty.
+- `missing`: `{adapter_path:tasks}` does not exist or is empty.
 - `stale`: the accepted plan changed materially after tasks were produced.
 - `review-required`: tasks exist but have not been analyzed against the accepted plan and current constraints.
 - `accepted`: tasks align with the accepted plan and have no unresolved blocking gaps.
@@ -110,6 +110,8 @@ Do not use timestamps as the only evidence of material staleness. Compare artifa
 ## Phase 4 — Plan Gate
 
 If the plan is `missing` or `stale`, run `ag-governed-plan` with the active feature context.
+
+If the plan is `blocked`, report the blocking findings, set **Plan** to `Blocked`, and stop; do not regenerate it or continue to task generation until the finding is resolved.
 
 If the plan is `review-required`, reuse it and run the applicable security plan review plus the adapter-registered violation-detection capability. Do not regenerate a plan merely because review is needed.
 
@@ -130,7 +132,7 @@ If tasks are `missing`, `stale`, or `review-required`, run `ag-governed-tasks` w
 
 The governed task phase must:
 
-1. Generate or reconcile `tasks.md` through {adapter_command:create-tasks} or its documented inline fallback.
+1. Generate or reconcile `{adapter_path:tasks}` through {adapter_command:create-tasks} or its documented inline fallback.
 2. Run the applicable security task review.
 3. Convert confirmed architecture findings into explicit work through {adapter_command:refactor-generator}.
 4. Run {adapter_command:analyze} against the complete plan and task set.
@@ -141,7 +143,7 @@ The governed task phase must:
 
 Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
 - **Analyst Creator** drafts the plan and role-annotated task breakdown. **Analyst Reviewer** audits it through host messaging and the shared task list. This path bypasses `delivery-team` User Story branching only when stakeholder story approval is not required.
-- **Human-in-the-Loop Gate**: Lead session presents the reconciled `tasks.md` and requires explicit human approval before concluding delivery or advancing to implementation.
+- **Human-in-the-Loop Gate**: Lead session presents the reconciled `{adapter_path:tasks}` and requires explicit human approval before concluding delivery or advancing to implementation.
 
 If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks.
 

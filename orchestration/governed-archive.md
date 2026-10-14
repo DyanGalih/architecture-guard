@@ -6,7 +6,7 @@ description: Verify, then archive a completed feature with explicit approval for
 
 ## SDD Adapter Resolution
 
-Before executing command, read `.architecture-guard/adapters/resolve.md`. Resolve the active adapter in this order: explicit `--adapter` override, `.architecture-guard/selected-adapter` as the authoritative persisted selection, then filesystem markers only when no persisted selection exists. Load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Resolve every adapter token before continuing.
+Before executing this command, read `.architecture-guard/adapters/resolve.md` and resolve the adapter with its chain (explicit `--adapter` override, `.architecture-guard/selected-adapter`, `.architecture-guard/config.yml`, then filesystem markers), then load `.architecture-guard/adapters/{tool}.md` for path maps, command maps, and gap fills. Stop with `Unavailable` and the exact path if the adapter file is missing. Do not use the Architecture Guard resource resolver for adapter selection: adapter files are not a `resolve` resource category. Resolve every adapter path and command token before continuing; all paths and commands below use the loaded adapter.
 
 ## Change Scope
 
@@ -33,7 +33,7 @@ Resolve and apply the `capability_composition` template with `architecture-guard
 
 Before making decisions or delegating work, read these inputs explicitly with file-reading tools:
 
-1. **Manifest & Configuration**: Read the selected adapter's project configuration (`{adapter_path:project-config}`) first, then inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.
+1. **Manifest & Configuration**: Read the selected adapter's project configuration (`{adapter_path:project-config}`) first, then inspect it for references to further governance and constitution Markdown files (for example a `context` block). Never rely on a hardcoded partial list.
 2. **Authoritative Constitutions (read all that exist)**: Read every declared or present governance, constitution, architecture, security, and layout Markdown file. Explicitly check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 3. **Active Artifacts**: Read the feature, review, plan, task, or current-state artifacts required by this skill.
 
@@ -66,6 +66,12 @@ Prompt the user to execute final Git operations:
 4. "Do nothing"
 
 Prepare semantic commit messages and PR descriptions from the SDD artifacts, but execute Git operations only after the user selects an action and confirms the target branch and files.
+
+**Protected-branch guard** (applies to every option):
+- Run `git branch --show-current` first. Refuse to commit or push on `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch; report the branch and stop the Git step (offer "Do nothing" or ask the user to switch to a feature branch).
+- Commit only the files listed in the confirmed preview; never stage unrelated changes.
+- Push only after a separate explicit approval that names the remote and branch, even when "Commit & Push" was selected. Never force-push (`--force`, `--force-with-lease`, or a `+` refspec).
+- Create a PR only after its own approval of the title, description, and base branch.
 
 ### Step 5 — Workspace Cleanup
 If Git operations were successful, offer workspace cleanup as a separate confirmation. Show exactly what will be removed, refuse cleanup while affected files have uncommitted changes, and verify archive/index results before deletion. Never check out another branch or delete a feature branch without explicit approval.
