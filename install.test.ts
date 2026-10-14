@@ -1127,3 +1127,28 @@ test('validate-setup reports the selected forge', () => {
   const out = spawnSync(process.execPath, [installer, 'validate-setup', cwd], { encoding: 'utf8' }).stdout;
   assert.match(out, /Forge "gitlab" defines all required keys/);
 });
+
+test('review-pr drafts first, asks before posting, and stays comment-only', () => {
+  const prompt = orchestrationPrompt('review-pr.md');
+  for (const key of ['pr-view', 'pr-diff', 'pr-threads', 'checks-status', 'pr-checkout', 'review-post']) {
+    assert.match(prompt, new RegExp(`\\{forge_command:${key}\\}`), key);
+  }
+  const ask = prompt.indexOf('## Step 6 — Show the Draft and Ask');
+  const post = prompt.indexOf('## Step 7 — Post the Review');
+  assert.ok(ask !== -1 && post > ask, 'the draft is shown before posting');
+  for (const choice of ['**Post as is**', '**Adjust first**', "**Don't post**"]) assert.ok(prompt.includes(choice), choice);
+  assert.match(prompt, /Only after \*\*Post as is\*\*/);
+  assert.match(prompt, /never approve, request changes on, merge, close, or reopen/);
+  assert.match(prompt, /If it changed, do not post/);
+  assert.match(prompt, /`ag-review-implementation`/);
+});
+
+test('review-pr installs with the selected forge actions resolved', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'openspec', '--forge', 'gitlab', '--commands', 'pr'], cwd);
+  const skill = fs.readFileSync(path.join(cwd, '.opencode/commands/ag-review-pr.md'), 'utf8');
+  assert.doesNotMatch(skill, /\{(forge|adapter)_(command|path):/);
+  assert.match(skill, /## Resolved Forge Actions \(gitlab\)/);
+  assert.match(skill, /draft_notes\/bulk_publish/);
+  assert.match(skill, /glab mr view <iid> -F json/);
+});

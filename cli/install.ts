@@ -115,6 +115,7 @@ const COMMANDS = [
   'governed-implement',
   'review-artifacts',
   'review-implementation',
+  'review-pr',
   'verify',
   'apply',
   'workflow',
@@ -127,6 +128,7 @@ const COMMANDS = [
 const COMMAND_ALIASES = {
   all: COMMANDS,
   review: ['review-artifacts', 'review-implementation'],
+  pr: ['review-pr'],
 };
 
 async function ask(promptText, choices, multi = false) {
@@ -396,7 +398,7 @@ function parseCommandSelection(rawCommands) {
   }
 
   if (invalid.length > 0) {
-    throw new Error(`Unknown command selection: ${invalid.join(", ")}. Use a canonical command name, index, or alias: all, review.`);
+    throw new Error(`Unknown command selection: ${invalid.join(", ")}. Use a canonical command name, index, or alias: all, review, pr.`);
   }
 
   return [...new Set(selected)];
@@ -702,7 +704,7 @@ Options:
   --agent <names>       Comma-separated agent keys (e.g. opencode,claude)
   --framework <f>       spec-kit | openspec | none | <custom adapter name>
   --forge <name>        auto | github | gitlab | bitbucket | azure-devops | generic | <custom forge> (default: auto)
-  --commands <list>     Comma-separated command names, indices, or aliases (all, review)
+  --commands <list>     Comma-separated command names, indices, or aliases (all, review, pr)
   --overwrite <mode>    replace | skip | keep-both (default: replace)
   --vendor, --full      Copy immutable runtime resources locally (for air-gapped setups)
   --claude-agent-teams  Enable Claude Code Agent Teams (Beta / Experimental)
@@ -864,7 +866,7 @@ async function runInit(targetDir, opts) {
   }
 
   if (!selectedCommands || selectedCommands.length === 0) {
-    throw new Error("No commands selected. Use a canonical command name, index, or alias: all, review.");
+    throw new Error("No commands selected. Use a canonical command name, index, or alias: all, review, pr.");
   }
 
   for (const agent of selectedAgents) {
