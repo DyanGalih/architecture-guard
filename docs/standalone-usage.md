@@ -64,7 +64,7 @@ Override the persisted adapter for one installed command with its `--adapter` in
 
 ## 4. Choose Your Commands
 
-Pick from 19 governance commands:
+Pick from 20 governance commands:
 
 | Command | When |
 | :--- | :--- |
@@ -80,6 +80,7 @@ Pick from 19 governance commands:
 | `review-artifacts` | Review artifacts — boundary drift, DRY violations, and hygiene |
 | `review-implementation` | Review implementation — security and architecture findings |
 | `review-pr` | Review someone else's pull request on any code host — drafts the review, posts only when you choose |
+| `pr-feedback` | Work through review feedback on your own pull request — triage, fix, reply, and optionally resolve, with approval at each step |
 | `verify` | Final validation — tasks vs code evidence |
 | `apply` | Apply approved refactors into plans/tasks |
 | `workflow` | End-to-end review across all workflow phases |

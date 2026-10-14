@@ -116,6 +116,7 @@ const COMMANDS = [
   'review-artifacts',
   'review-implementation',
   'review-pr',
+  'pr-feedback',
   'verify',
   'apply',
   'workflow',
@@ -128,7 +129,7 @@ const COMMANDS = [
 const COMMAND_ALIASES = {
   all: COMMANDS,
   review: ['review-artifacts', 'review-implementation'],
-  pr: ['review-pr'],
+  pr: ['review-pr', 'pr-feedback'],
 };
 
 async function ask(promptText, choices, multi = false) {

@@ -34,6 +34,7 @@ For each action, the skill uses a registered MCP server for the host when one is
 ## Pull-Request Skills
 
 - **`ag-review-pr`** — review someone else's pull request: fetches it through the forge, reviews the change against your constitutions and linked SDD artifacts (reusing `ag-review-implementation`), drafts a comment-only review, and asks whether to **post as is**, **adjust first**, or **not post**. It never approves, requests changes, or merges.
+- **`ag-pr-feedback`** — work through feedback on your own pull request: collects unresolved threads and failing checks, triages each (fix, discuss, disagree, already addressed, out of scope), applies only approved fixes, runs tests and a scoped architecture review, commits and pushes with separate approvals (never force-pushes), drafts replies, then asks whether to **reply only**, **reply and resolve** the eligible threads, **adjust first**, or **not post**.
 
 ## Forge Contract
 
