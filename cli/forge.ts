@@ -62,7 +62,8 @@ export function forgeTokensUsed() {
   return [...used].sort();
 }
 
-// Maps the origin remote's host to a built-in forge; self-hosted instances need --forge.
+// Maps the origin remote's host to a built-in forge. GitHub Enterprise hosts named github.*
+// or *.ghe.com are recognized; other self-hosted instances need --forge.
 export function detectForge(targetDir: string) {
   let url: string;
   try {
@@ -71,7 +72,9 @@ export function detectForge(targetDir: string) {
     return { forge: 'generic', reason: 'no origin remote' };
   }
   const host = (url.match(/^[a-z+]+:\/\/(?:[^@/]+@)?([^/:]+)/i) || url.match(/^[^@]+@([^:]+):/) || [])[1]?.toLowerCase() || '';
-  if (host === 'github.com' || host.endsWith('.github.com')) return { forge: 'github', reason: host };
+  if (host === 'github.com' || host.endsWith('.github.com') || host.startsWith('github.') || host.endsWith('.ghe.com')) {
+    return { forge: 'github', reason: host };
+  }
   if (host === 'bitbucket.org') return { forge: 'bitbucket', reason: host };
   if (host === 'dev.azure.com' || host === 'ssh.dev.azure.com' || host.endsWith('.visualstudio.com')) return { forge: 'azure-devops', reason: host };
   if (host === 'gitlab.com' || host.startsWith('gitlab.')) return { forge: 'gitlab', reason: host };
@@ -112,6 +115,14 @@ export function installForges(targetDir: string, preserve: boolean) {
   }
 }
 
+const PLACEHOLDER_LEGEND = [
+  'Placeholders in these actions:',
+  '- <n>, <iid>, <id>: the pull or merge request number or id.',
+  '- <owner>, <repo>, <workspace>, <repo_slug>, <org>, <project>: read from the origin remote.',
+  '- <base>, <head>: the base and head refs (plain git); <api>: the API base URL the adapter names.',
+  '- <... file>: a temporary file created outside the repository (for example with mktemp) and deleted afterwards. Pass review and reply text through such files, never inline in a shell command.',
+].join('\n');
+
 export function materializeForgeTokens(content: string, forgeName: string, targetDir: string | null = null) {
   if (!FORGE_TOKEN.test(content)) return content;
   FORGE_TOKEN.lastIndex = 0;
@@ -126,5 +137,5 @@ export function materializeForgeTokens(content: string, forgeName: string, targe
     return `the forge-defined "${key}" action`;
   });
   const lines = [...resolved.entries()].map(([key, value]) => `- **${key}**: ${value}`).join('\n');
-  return `${materialized.trim()}\n\n## Resolved Forge Actions (${forgeName})\n\nThese are the selected forge adapter's actions for this code host. Use a registered MCP server for the host when one is available; otherwise use the named CLI; otherwise follow the stated fallback. Every write to the code host still requires the approvals defined above.\n\n${lines}\n`;
+  return `${materialized.trim()}\n\n## Resolved Forge Actions (${forgeName})\n\nThese are the selected forge adapter's actions for this code host. Use a registered MCP server for the host when one is available; otherwise use the named CLI; otherwise follow the stated fallback. Every write to the code host still requires the approvals defined above.\n\n${lines}\n\n${PLACEHOLDER_LEGEND}\n`;
 }

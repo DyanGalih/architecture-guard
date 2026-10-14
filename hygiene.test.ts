@@ -146,3 +146,45 @@ test('walks a non-repository target with POSIX relative paths so nested detector
     fs.rmSync(target, { recursive: true, force: true });
   }
 });
+
+test('--files limits findings to the listed files and records the scope', () => {
+  const target = temporaryProject();
+  try {
+    fs.mkdirSync(path.join(target, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(target, 'src', 'changed.ts'), "console.log('new debug output');\n");
+    fs.writeFileSync(path.join(target, 'legacy.ts'), "console.log('pre-existing debug output');\n");
+
+    const scoped = scanHygiene({ target, rules: 'debug-artifacts', files: 'src/changed.ts, ./src/removed.ts' });
+    assert.deepEqual(scoped.findings.map(finding => finding.relativePath), ['src/changed.ts']);
+    assert.equal(scoped.scope.mode, 'files');
+    assert.deepEqual(scoped.scope.files, ['src/changed.ts', 'src/removed.ts']);
+    assert.deepEqual(scoped.scope.unmatched, ['src/removed.ts']);
+
+    const outside = scanHygiene({ target, rules: 'debug-artifacts', files: 'src/clean.ts' });
+    assert.equal(outside.counts.findings, 0, 'a finding outside the scope is not reported');
+
+    const whole = scanHygiene({ target, rules: 'debug-artifacts' });
+    assert.equal(whole.scope.mode, 'repository');
+    assert.equal(whole.counts.findings, 2);
+
+    assert.throws(() => scanHygiene({ target, files: '../elsewhere.ts' }), /outside the target directory/);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test('--files still compares a changed file with unchanged files for duplicate rules', () => {
+  const target = temporaryProject();
+  try {
+    const logic = 'export function price(total: number) {\n'
+      + '  return total > 100 ? total * 0.9 : total; // shared discount rule for orders\n'.repeat(3)
+      + '}\n';
+    fs.writeFileSync(path.join(target, 'existing.ts'), logic);
+    fs.writeFileSync(path.join(target, 'copied.ts'), logic);
+
+    const report = scanHygiene({ target, rules: 'duplicate-business-logic', files: 'copied.ts' });
+    assert.deepEqual(report.findings.map(finding => finding.relativePath), ['copied.ts']);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});

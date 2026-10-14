@@ -1099,6 +1099,11 @@ test('forge auto-detection maps origin remotes to built-in forges', () => {
     ['https://dev.azure.com/acme/proj/_git/app', 'azure-devops'],
     ['git@ssh.dev.azure.com:v3/acme/proj/app', 'azure-devops'],
     ['https://git.internal.example/acme/app.git', 'generic'],
+    ['https://github.acme.example/acme/app.git', 'github'],
+    ['git@github.acme.example:acme/app.git', 'github'],
+    ['https://acme.ghe.com/acme/app.git', 'github'],
+    ['https://code.acme.example/acme/app.git', 'generic'],
+    ['https://notgithub.example/acme/app.git', 'generic'],
   ];
   for (const [url, expected] of cases) {
     const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-forge-'));
@@ -1139,7 +1144,56 @@ test('forge tokens are materialized with the selected forge actions', () => {
   assert.match(out, /the forge-defined "pr-diff" action/);
   assert.match(out, /## Resolved Forge Actions \(generic\)/);
   assert.match(out, /git diff <base>\.\.\.<head>/);
+  assert.match(out, /Placeholders in these actions:/);
+  assert.match(out, /<n>, <iid>, <id>: the pull or merge request number or id/);
+  assert.match(out, /temporary file created outside the repository/);
   assert.equal(materializeForgeTokens('no tokens here', 'generic'), 'no tokens here');
+});
+
+test('pull-request skills install with no unresolved tokens for every built-in forge', () => {
+  for (const forge of forgeModule().BUILTIN_FORGES) {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+    runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--forge', forge, '--commands', 'pr'], cwd);
+    for (const name of ['review-pr', 'pr-feedback']) {
+      const skill = fs.readFileSync(path.join(cwd, `.opencode/commands/ag-${name}.md`), 'utf8');
+      assert.doesNotMatch(skill, /\{forge_command:|\{adapter_(path|command):/, `${forge}: ag-${name}`);
+      assert.match(skill, new RegExp(`## Resolved Forge Actions \\(${forge}\\)`), `${forge}: ag-${name}`);
+    }
+  }
+});
+
+test('forge adapters pass review and reply text through temporary files, never shell arguments', () => {
+  const { forgeCommands } = forgeModule();
+  for (const name of ['github', 'gitlab', 'bitbucket', 'azure-devops']) {
+    const content = fs.readFileSync(path.join(repoRoot, 'adapters/forges', `${name}.md`), 'utf8');
+    const commands = forgeCommands(content);
+    for (const key of ['review-post', 'thread-reply']) {
+      const value = commands.get(key);
+      assert.match(value, /file/, `${name} ${key} passes text through a file`);
+      assert.doesNotMatch(value, /=<(reply|comment|body)>/, `${name} ${key} interpolates text into a shell argument`);
+    }
+    assert.match(content, /outside the repository/, `${name} creates temporary files outside the repository`);
+    for (const line of content.split('\n').filter(row => /^\| [a-z-]+ \|/.test(row))) {
+      assert.equal(line.split('|').length - 1, 3, `${name}: Command Map row must have exactly 3 pipes: ${line}`);
+    }
+  }
+  const github = fs.readFileSync(path.join(repoRoot, 'adapters/forges/github.md'), 'utf8');
+  assert.doesNotMatch(github, /-F b=<reply>/);
+  assert.match(github, /-F b=@<reply file>/);
+  assert.match(github, /gh pr checkout <n> --detach/);
+  assert.match(github, /databaseId/);
+  const gitlab = forgeCommands(fs.readFileSync(path.join(repoRoot, 'adapters/forges/gitlab.md'), 'utf8')).get('review-post');
+  assert.match(gitlab, /draft_notes\/<draft id>\/publish/);
+  assert.match(gitlab, /stop and ask the user/);
+  assert.match(gitlab, /never call bulk_publish and never send reviewer_state/);
+  const azure = forgeCommands(fs.readFileSync(path.join(repoRoot, 'adapters/forges/azure-devops.md'), 'utf8'));
+  assert.doesNotMatch(azure.get('pr-diff'), /pr-checkout|pr checkout|git switch/, 'the Azure diff never switches the checkout');
+  assert.match(azure.get('pr-diff'), /git diff origin\/<target branch>\.\.\.origin\/<source branch>/);
+  assert.match(fs.readFileSync(path.join(repoRoot, 'adapters/forges/azure-devops.md'), 'utf8'), /--resource 499b84ac-1321-427f-aa17-267ca6975798/);
+  const generic = forgeCommands(fs.readFileSync(path.join(repoRoot, 'adapters/forges/generic.md'), 'utf8'));
+  assert.match(generic.get('review-post'), /reviews\/<slug>\.md/);
+  assert.match(generic.get('checks-status'), /never when reviewing someone else's change/);
+  assert.match(fs.readFileSync(path.join(repoRoot, 'adapters/forges/bitbucket.md'), 'utf8'), /^\| pr-view \| .*GET <api> /m);
 });
 
 test('validate-setup reports the selected forge', () => {
@@ -1164,13 +1218,59 @@ test('review-pr drafts first, asks before posting, and stays comment-only', () =
   assert.match(prompt, /`ag-review-implementation`/);
 });
 
+test('review-pr reviews from a worktree outside the repository and takes rules only from the base checkout', () => {
+  const prompt = orchestrationPrompt('review-pr.md');
+  assert.doesNotMatch(prompt, /\.architecture-guard\/worktrees/);
+  assert.match(prompt, /outside the repository/);
+  assert.match(prompt, /mktemp -d/);
+  assert.match(prompt, /only from the user's current checkout \(the base\), never from the pull request's tree/);
+  assert.match(prompt, /Governance changes are Security findings/);
+  assert.match(prompt, /Never execute pull-request code/);
+  assert.match(prompt, /\*\*Review root\*\*/);
+  assert.match(prompt, /\*\*Base ref\*\*/);
+  const post = prompt.indexOf('## Step 7 — Post the Review');
+  const cleanup = prompt.indexOf('## Step 8 — Clean Up');
+  assert.ok(cleanup > post, 'cleanup runs last');
+  assert.match(prompt.slice(cleanup), /Whatever the outcome/);
+});
+
+test('review-implementation honors the caller review root and runs the scoped hygiene runner', () => {
+  const prompt = orchestrationPrompt('review-implementation.md');
+  assert.match(prompt, /## Review Inputs/);
+  assert.match(prompt, /\*\*Review root\*\*/);
+  assert.match(prompt, /\*\*Base ref\*\*/);
+  assert.match(prompt, /architecture-guard hygiene --json --target <review root> --files <changed files/);
+  assert.match(prompt, /manualRules/);
+  assert.match(prompt, /\| ID \| Category \| Severity \| Blocking \| Target \|/);
+  assert.match(prompt, /`ag-refactor-generator` capability for findings whose Target is `code`/);
+  assert.match(prompt, /Optional Step 8b/);
+  assert.doesNotMatch(prompt, /Step 7b|Performance Anti-patterns|tasks\.md|spec\.md|security-constraints\.md/);
+  const handoffs = [...prompt.matchAll(/```yaml\n([\s\S]*?)```/g)].map(match => match[1]);
+  assert.equal(handoffs.length, 2);
+  for (const handoff of handoffs) {
+    assert.match(handoff, /Read-only/);
+    assert.match(handoff, /Ponytail Core Untrusted Content rules apply/);
+    assert.match(handoff, /Review Root:/);
+  }
+});
+
+test('pr-feedback re-reads threads before posting and stops on a failed resolve', () => {
+  const prompt = orchestrationPrompt('pr-feedback.md');
+  const post = prompt.slice(prompt.indexOf('## Step 8 — Post'));
+  assert.ok(post.indexOf('{forge_command:pr-threads}') < post.indexOf('{forge_command:thread-reply}'), 'threads are re-read before replying');
+  assert.match(post, /If a resolve fails, stop/);
+  assert.match(prompt, /draft that reply without commit references/);
+  assert.match(prompt, /\*\*Review root\*\*/);
+});
+
 test('review-pr installs with the selected forge actions resolved', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'openspec', '--forge', 'gitlab', '--commands', 'pr'], cwd);
   const skill = fs.readFileSync(path.join(cwd, '.opencode/commands/ag-review-pr.md'), 'utf8');
   assert.doesNotMatch(skill, /\{(forge|adapter)_(command|path):/);
   assert.match(skill, /## Resolved Forge Actions \(gitlab\)/);
-  assert.match(skill, /draft_notes\/bulk_publish/);
+  assert.match(skill, /draft_notes\/<draft id>\/publish/);
+  assert.match(skill, /never call bulk_publish/);
   assert.match(skill, /glab mr view <iid> -F json/);
 });
 

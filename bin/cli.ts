@@ -107,6 +107,7 @@ program
   .option('--json', 'Output a machine-readable report')
   .option('--target <dir>', 'Target workspace directory (default: current working directory)')
   .option('--rules <ids>', 'Comma-separated rule identifiers to run')
+  .option('--files <paths>', 'Comma-separated file paths relative to the target; report findings only for these files (for example, a pull request\'s changed files)')
   .action(async (options) => {
     await runHygiene(options);
   });

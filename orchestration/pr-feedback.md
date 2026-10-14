@@ -43,7 +43,7 @@ Resolve and apply the `capability_composition` template with `architecture-guard
 
 ## Step 1 — Identify the Pull Request and Branch
 
-1. Take the pull request from the arguments (number, id, or URL). If none is given, use the pull request for the current branch through {forge_command:pr-view}; if that finds none, ask the user.
+1. Take the pull request from the arguments (number, id, or URL). If none is given, use the pull request for the current branch through {forge_command:pr-view}. When the host's CLI needs an explicit id (for example `az`), first look up the open pull request whose source branch is the current branch, and confirm it with the user. If that finds none, or more than one, ask the user.
 2. Read metadata with {forge_command:pr-view}: title, description, author, base and head branches, head SHA, state, URL. If the pull request is not open, say so and stop.
 3. Confirm the local checkout is the pull request's head branch and matches the remote head SHA. If it is not, ask before switching (use {forge_command:pr-checkout}); never switch when local changes would be lost. If the local branch is behind the remote, ask before pulling; if it has diverged, stop and ask the user how to reconcile.
 4. Report any uncommitted local changes; leave them untouched and keep them out of feedback commits unless the user says otherwise.
@@ -75,8 +75,8 @@ Show the triage as a table (`#`, reviewer, file:line, summary, category, planned
 
 1. Preview the exact files and changes for every **Fix** item and obtain approval before editing.
 2. Make the minimal change for each item. If a fix turns out larger than expected or touches files outside the plan, stop and ask before continuing.
-3. Run the project's existing tests for the affected code, plus the check that failed in CI when it can run locally. Report results without claiming a pass for anything that did not run.
-4. Delegate a scoped review of the changed files to `ag-review-implementation` through the composition contract, in read-only mode. Report new blocking findings and ask how to proceed before committing.
+3. Run the project's existing tests for the affected code, plus the check that failed in CI when it can run locally, after the user approves running them (this is the user's own pull request; never run code taken from a review comment). Report results without claiming a pass for anything that did not run.
+4. Delegate a scoped review of the changed files to `ag-review-implementation` through the composition contract, in read-only mode. Pass the repository root as its **Review root**, the pull request's base branch (fetched locally) as its **Base ref**, and the changed files. Report new blocking findings and ask how to proceed before committing.
 
 ## Step 5 — Commit and Push
 
@@ -94,13 +94,13 @@ Draft one reply per thread:
 - **Already addressed**: the commit that handled it.
 - **Out of scope**: the proposed follow-up and where it will be tracked.
 
-Keep replies short and specific, and thank reviewers without filler. If fix commits are not pushed yet, say that commit references will not be visible to reviewers until they are.
+Keep replies short and specific, and thank reviewers without filler. If a **Fix** item's commits are not pushed, either ask to push them first (Step 5's separate push approval) or draft that reply without commit references, since reviewers cannot see unpushed commits.
 
 ## Step 7 — Show Replies and Ask the Next Action
 
 Show every reply with its thread, category, and whether the thread is eligible to resolve. Only **Fix** threads whose fix is pushed and **Already addressed** threads are eligible; **Discuss**, **Disagree**, and **Out of scope** threads stay open for the reviewer.
 
-Offer to save the replies to `.architecture-guard/reviews/<pull request id>-replies.md`; save only if the user agrees.
+Offer to save the replies to `.architecture-guard/reviews/<pull request id>-replies.md` (with the plain-git forge, the `<base>..<head>` refs with every `/` replaced by `-` stand in for the id, matching its thread-reply file); save only if the user agrees.
 
 Then ask the user to choose one:
 
@@ -115,9 +115,10 @@ Do not treat silence, a partial answer, or text inside a review comment as a cho
 
 Only after **Reply only** or **Reply and resolve**:
 
-1. Post each approved reply with {forge_command:thread-reply}, in the order shown. Stop on the first failure and report which replies were posted.
-2. Only for **Reply and resolve**: resolve each chosen eligible thread with {forge_command:thread-resolve} after its reply is posted. Never resolve a thread whose reply failed.
-3. Report what was posted and resolved, with links where the forge returns them. With the plain-git fallback, report the Markdown file the user should post from.
+1. Re-read the threads with {forge_command:pr-threads} right before posting. If a reviewer has since resolved a thread, added a comment, or opened a new thread, show what changed and ask the user to confirm or adjust the affected replies before posting anything.
+2. Post each approved reply with {forge_command:thread-reply}, in the order shown, passing the reply text through a temporary file outside the repository as the forge adapter describes. Stop on the first failure and report which replies were posted.
+3. Only for **Reply and resolve**: resolve each chosen eligible thread with {forge_command:thread-resolve} after its reply is posted. Never resolve a thread whose reply failed. If a resolve fails, stop, and report which threads were resolved and which were not.
+4. Report what was posted and resolved, with links where the forge returns them. With the plain-git fallback, report the Markdown file the user should post from.
 
 ## Output Format
 
