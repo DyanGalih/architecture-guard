@@ -10,7 +10,7 @@ Before continuing, you **MUST** read and apply `.specify/extensions/architecture
 
 ## Capability Composition
 
-Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation.
+Read and apply `.specify/extensions/architecture-guard/templates/capability_composition.md` (or `templates/capability_composition.md` in the extension source checkout) before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name, slash-command spelling, or Markdown path as an invocation. On Spec Kit extension installs, resolve a capability `<capability>` to the registered `speckit.architecture-guard.ag-<capability>` command file in the agent's command directory, or to `.specify/extensions/architecture-guard/commands/<capability>.md`.
 
 ## Budgeted Context Contract
 
@@ -40,16 +40,17 @@ Before creating, planning, or modifying any active change:
 
 1. Run `git branch --show-current`.
 2. If the branch is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch:
-   - Include `feature/<change-name>` in the Write Approval Gate preview, and create and switch to it only after explicit user approval.
+   - Do not create a separate `feature/*` branch. When no active feature exists, `/speckit.specify` creates the numbered Spec Kit feature branch (`NNN-<short-name>`) together with the feature directory: include that branch in the Write Approval Gate preview, and let `/speckit.specify` create and switch to it only after explicit user approval.
+   - When an active feature already exists, include its existing feature branch in the Write Approval Gate preview, and create and switch to it only after explicit user approval.
    - If the user declines or branch creation fails, stop. MUST NOT continue on the protected branch.
-3. If already on a feature branch, reuse it.
+3. If already on a feature branch, reuse it. When no active feature exists, `/speckit.specify` still creates its own numbered feature branch; include it in the Write Approval Gate preview.
 4. Preserve existing uncommitted changes; never reset or discard them.
 5. Report the selected branch before creating artifacts.
 
 ## Phase 1 — Detect the Active Feature and Integrations
 
 1. Resolve the active feature from the user's explicit path, `.specify/feature.json` (for SpecKit), Spec Kit feature metadata, current branch, or a single unambiguous directory under `specs/`, in that order.
-2. If no active feature directories or specifications exist (ignoring archives), run the adapter-registered `governed-spec` capability (or `/speckit.specify`) to properly initialize the feature workspace and specification following native SDD tool numbering rules.
+2. If no active feature directories or specifications exist (ignoring archives), run `/speckit.architecture-guard.ag-governed-spec` (which runs `/speckit.specify`) to initialize the feature workspace, feature branch, and specification following Spec Kit numbering rules.
 3. Do not guess when multiple feature directories are plausible. Ask the user to identify the feature.
 4. Detect `flash-mem` as an MCP service. Do not look for it in `.specify/extensions.yml`.
 5. Inspect the installed list in `.specify/extensions.yml` for `security-review` or its compatibility alias `spec-kit-security-review`. Manifest presence alone is not availability.
@@ -106,7 +107,7 @@ If the plan is `review-required`, reuse it and run the selected security plan op
 - Record advisory architecture drift without stopping.
 - Stop before task generation for unresolved Constitution P0 architecture findings or independently blocking Security Review findings.
 - Stop when resolution requires a material product or architecture choice.
-- When a safe correction is already authorized, repair the plan, rerun affected reviews, and continue.
+- When a safe correction is already authorized, repair the plan, rerun affected reviews, and continue (subject to the repair-cycle limit in the task phase).
 
 The plan does not need to be perfect. It must be sufficiently stable and free of unresolved blocking findings.
 
@@ -132,7 +133,7 @@ Activate this protocol only when the Claude Code host exposes named teammate spa
 - **Implementor Dispatch**: Upon approval, tasks are handed off to the Implementor teammates (`BE`, `FE`, `TEST`) for concurrent execution.
 - **Fallback**: If not running in Claude Code Agent Teams mode, execute standard single-agent plan-to-task delivery.
 
-If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks.
+If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks. Allow at most 2 plan/tasks repair cycles per run (counting Plan Gate repairs and returns from analysis together); if a blocking finding or plan defect remains after the second cycle, stop with status `Blocked` and ask the user how to proceed.
 
 ## Phase 8 — Durable Memory Preservation
 

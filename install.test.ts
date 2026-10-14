@@ -672,7 +672,8 @@ test('validate-sync-config is a registered CLI command', () => {
 
   for (const dir of ['orchestration', 'commands']) {
     const prompt = fs.readFileSync(path.join(__dirname, '..', dir, 'governed-delivery-team.md'), 'utf8');
-    assert.match(prompt, /npx architecture-guard validate-sync-config/);
+    // The legacy extension must not download an unpinned CLI; it runs the CLI only when it is on PATH.
+    assert.match(prompt, dir === 'commands' ? /`architecture-guard validate-sync-config/ : /npx architecture-guard validate-sync-config/);
     assert.doesNotMatch(prompt, /src\/cli\//);
   }
 });
@@ -1260,4 +1261,57 @@ test('generic forge commands work end to end against a real repository', () => {
   runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--forge', 'generic', '--commands', 'pr'], reviewer);
   const skill = fs.readFileSync(path.join(reviewer, '.opencode/commands/ag-review-pr.md'), 'utf8');
   assert.match(skill, /git diff --name-status <base>\.\.\.<head>/);
+});
+
+test('legacy Spec Kit prompts never run the CLI through npx', () => {
+  for (const [file, prompt] of legacyPrompts()) {
+    assert.doesNotMatch(prompt, /npx\s+architecture-guard/, `${file} downloads an unpinned CLI`);
+  }
+  const team = fs.readFileSync(path.join(repoRoot, 'commands/governed-delivery-team.md'), 'utf8');
+  assert.match(team, /Only when the `architecture-guard` CLI is already on PATH/);
+  assert.match(team, /If the configuration is invalid, perform no remote write/);
+});
+
+test('legacy Spec Kit delegation and context contracts use registered command names', () => {
+  const budgeted = fs.readFileSync(path.join(repoRoot, 'templates/budgeted_context.md'), 'utf8');
+  assert.doesNotMatch(budgeted, /(^|[^\w.-])\/ag-[a-z]/m);
+  assert.match(budgeted, /`\/speckit\.architecture-guard\.ag-consolidate-specs`/);
+  for (const [file, prompt] of legacyPrompts()) {
+    assert.match(prompt, /registered `speckit\.architecture-guard\.ag-<capability>` command file/, `${file} must resolve Spec Kit command names`);
+  }
+});
+
+test('legacy init writes the hygiene policy where the hygiene runner reads it', () => {
+  const init = fs.readFileSync(path.join(repoRoot, 'commands/init.md'), 'utf8');
+  assert.match(init, /top-level `repository_hygiene:` block in `\.specify\/config\/repository_hygiene\.yml`/);
+  const hygiene = fs.readFileSync(path.join(repoRoot, 'cli/hygiene.ts'), 'utf8');
+  assert.match(hygiene, /'\.specify', 'config', 'repository_hygiene\.yml'/);
+  assert.doesNotMatch(hygiene, /architecture_guard\.yml/);
+  for (const file of ['verify.md', 'review-artifacts.md', 'review-implementation.md']) {
+    const prompt = fs.readFileSync(path.join(repoRoot, 'commands', file), 'utf8');
+    assert.match(prompt, /\.specify\/config\/repository_hygiene\.yml/, file);
+  }
+  assert.match(fs.readFileSync(path.join(repoRoot, 'commands/review-implementation.md'), 'utf8'), /architecture-guard hygiene --json/);
+  assert.match(fs.readFileSync(path.join(repoRoot, 'commands/review-artifacts.md'), 'utf8'), /do not scan implementation code/);
+});
+
+test('legacy delivery prompts let /speckit.specify create the only feature branch', () => {
+  for (const file of ['governed-delivery.md', 'governed-delivery-team.md', 'governed-spec.md']) {
+    const prompt = fs.readFileSync(path.join(repoRoot, 'commands', file), 'utf8');
+    assert.doesNotMatch(prompt, /`feature\/</, `${file} creates a separate feature/* branch`);
+    assert.match(prompt, /Do not create a separate `feature\/\*` branch/, file);
+    assert.match(prompt, /(MUST NOT|Never) continue on (the|a) protected branch/, file);
+  }
+  for (const file of ['governed-delivery.md', 'governed-delivery-team.md']) {
+    assert.match(fs.readFileSync(path.join(repoRoot, 'commands', file), 'utf8'), /at most 2 plan\/tasks repair cycles/, file);
+  }
+});
+
+test('legacy apply and init gate memory and draft writes behind explicit approval', () => {
+  const apply = fs.readFileSync(path.join(repoRoot, 'commands/apply.md'), 'utf8');
+  assert.doesNotMatch(apply, /sync durable lessons or architecture decisions back into Flash-Mem when available/);
+  assert.match(apply, /only after a separate explicit `\[y\/N\]` approval/);
+  const init = fs.readFileSync(path.join(repoRoot, 'commands/init.md'), 'utf8');
+  assert.doesNotMatch(init, /1\. Save current answers to/);
+  assert.doesNotMatch(init, /optionally archive old draft/);
 });

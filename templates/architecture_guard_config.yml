@@ -11,7 +11,9 @@ context:
     initial_result_limit: 5
     full_entry_limit: 3
 
-# Optional repository hygiene policy, read by `architecture-guard hygiene`.
+# Optional repository hygiene policy, read by `architecture-guard hygiene` from
+# `.architecture-guard/config.yml`, or from `.specify/config/repository_hygiene.yml`
+# for the Spec Kit extension (the runner does not read `.specify/config/architecture_guard.yml`).
 # fail_on raises matching findings to CRITICAL (blocking); warn_on reports them as WARNING.
 # repository_hygiene:
 #   enabled: true
