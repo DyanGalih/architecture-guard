@@ -114,7 +114,7 @@ rules:
 ### `openspec/architecture.md` (optional split)
 ```
 Same structure as architecture_constitution.md but stored in OpenSpec conventions.
-Layer boundaries, business logic placement, contracts, module ownership, P0 violations.
+Layer boundaries, business logic placement, contracts, module ownership, performance constraints, P0 violations.
 ```
 
 ### `openspec/security.md` (optional split)

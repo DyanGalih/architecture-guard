@@ -107,6 +107,7 @@ You must orchestrate {adapter_command:create-plan} workflow directly.
    - Proactively design explicit request/response DTO serialization envelopes and OpenAPI contracts.
    - Proactively define input parameter validation (e.g. UUID pipes, sanitization) at controller/API boundaries.
    - Proactively establish transaction failure-safety and error-recovery ownership boundaries.
+   - When the constitution declares `Performance Constraints`, state for each one that applies to the change how the plan meets it (for example the page size, the index, or the work moved off the request path). Do not add performance work the constitution does not ask for.
    - Proactively plan repository hygiene: explicitly declare target paths and forbid temporary/comparison artifacts or unverified schema clones.
    - Also prefer one shared plan path for repeated behavior instead of separate duplicated steps or parallel implementations.
 2. **Execute Plan**: Run {adapter_command:create-plan} to generate and save `{adapter_path:plan}`.

@@ -991,6 +991,7 @@ test('orchestration prompts and runtime templates stay SDD-tool-agnostic', () =>
     'templates/ponytail_core.md',
     'templates/budgeted_context_sdd.md',
     'templates/capability_composition.md',
+    'templates/performance_review.md',
     'templates/agent_communication.md',
     'flow/default.md',
   ];
@@ -1252,6 +1253,21 @@ test('review-implementation honors the caller review root and runs the scoped hy
     assert.match(handoff, /Ponytail Core Untrusted Content rules apply/);
     assert.match(handoff, /Review Root:/);
   }
+});
+
+test('performance is governed by declared constitution constraints, not speculation', () => {
+  const template = fs.readFileSync(path.join(repoRoot, 'templates/performance_review.md'), 'utf8');
+  assert.match(template, /Performance constraints: none declared/);
+  assert.match(template, /\[Focus: <focus>\]/);
+  assert.match(template, /Static analysis; not measured/);
+  for (const file of ['review-implementation.md', 'review-artifacts.md', 'verify.md']) {
+    assert.match(orchestrationPrompt(file), /architecture-guard resolve template performance_review/, `${file} must apply the shared performance contract`);
+  }
+  assert.match(orchestrationPrompt('governed-plan.md'), /declares `Performance Constraints`/);
+  const init = orchestrationPrompt('init.md');
+  assert.match(init, /Are there performance constraints the project must meet\? \(Optional/);
+  assert.match(init, /7\. Performance Constraints/);
+  assert.match(fs.readFileSync(path.join(repoRoot, 'templates/architecture_constitution.md'), 'utf8'), /## Performance Constraints/);
 });
 
 test('pr-feedback re-reads threads before posting and stops on a failed resolve', () => {

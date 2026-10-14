@@ -133,6 +133,7 @@ Detect violations such as:
 - **Ponytail Violation (Unsafe Simplification)**: A small diff removes required validation, authorization, data-loss prevention, accessibility, external-system safeguards, or verification.
 - **Root-Cause Miss**: The plan addresses one affected path while omitting sibling paths that share the same defect.
 - **Constitution Breach**: Any conflict with a "MUST" principle in the Constitution.
+- **Performance Constraint Gap**: The plan does not say how it meets a constraint declared in the constitution's `Performance Constraints` section that applies to the change, or its design contradicts one. Report only declared constraints here; other performance concerns belong to `mode=performance`.
 
 **Duplication Drift Example**
 - Finding: The plan assigns the same tax rule to both the checkout entry boundary and application service.
@@ -155,7 +156,7 @@ Detect violations such as:
   - If a security constraint is breached, preserve the severity and blocking status defined by the governing security policy; category alone does not make it Critical.
   - Cross-reference architecture decisions with security trust boundaries.
 7. **Ponytail Audit**: Apply both sides of the shared contract to the plan. Check for planned bloat and unsafe under-building.
-8. **Performance Scan (if mode=performance)**: Skip violations; focus on optimizations.
+8. **Performance Scan (if mode=performance)**: Resolve and apply the `performance_review` template with `architecture-guard resolve template performance_review` for the selected `focus`. Skip architecture violations other than breaches of declared performance constraints.
 9. **Repository Hygiene Scan**: Use the runner output from input 5, filtered to planning artifact paths; never scan implementation code.
 10. **Generate Refactors**: Produce structured tasks for each confirmed violation in the plan.
 
@@ -215,8 +216,12 @@ Return only this structure:
 
 (Only if `mode=performance`)
 ### Performance Insights
-- **Suggestion**: 
-- **Trade-off**: 
+- **Constraints**: [Declared constraints applied, or `none declared`]
+- **Focus**: [general / db / api / async]
+
+| Location | Growth Driver | Constraint | Suggestion | Trade-off | Evidence |
+|:---|:---|:---|:---|:---|:---|
+| [File:Line or artifact section] | [What grows: rows, items, users, payload] | [Declared constraint, or `Advisory`] | [Smallest fix] | [Cost of the fix] | [Static analysis; not measured / measured: source] |
 
 ### Repository Hygiene Report
 (Included when the hygiene runner ran; otherwise state `Unavailable`)
