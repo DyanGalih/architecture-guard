@@ -4,7 +4,8 @@ import { parse } from 'yaml';
 import { missingAdapterKeys } from './install';
 import { listCategoryResources, resolveResource } from './resolve';
 import { detectForge, missingForgeKeys } from './forge';
-import { REPOSITORY_NAME, insideWorkspace, isGitRepository, rawRepositoryEntries } from './repositories';
+import { REPOSITORY_NAME, configuredRepositories, detectNestedRepositories, insideWorkspace, isGitRepository, rawRepositoryEntries } from './repositories';
+import { spawnSync } from 'node:child_process';
 import { ignoredByOwningRepository } from './hygiene';
 
 type Level = 'pass' | 'warn' | 'fail' | 'info';
@@ -132,8 +133,28 @@ export function validateSetup(projectRoot: string): Check[] {
         const forge = typeof entry.forge === 'string' ? entry.forge : detected.forge;
         const origin = detected.reason === 'no origin remote' ? 'no origin remote' : `origin ${detected.reason}`;
         add('pass', `Repository "${name}" (${location}): git repository, ${origin}, forge ${forge}`);
-        if (installedForge && forge !== installedForge) {
+        if (installedForge && forge !== installedForge && detected.reason !== 'no origin remote') {
           add('warn', `Repository "${name}" uses forge ${forge}, but the installed skills use ${installedForge}; pull-request skills support one code host per workspace (rerun init with --forge ${forge} if this is the code host you review)`);
+        }
+      }
+    }
+    // A nested repository the workspace ignores is invisible to every check until it is listed.
+    const listed = new Set(configuredRepositories(projectRoot).map(repository => repository.path));
+    for (const location of detectNestedRepositories(projectRoot)) {
+      if (listed.has(location)) continue;
+      const ignoredHere = spawnSync('git', ['-C', projectRoot, 'check-ignore', '-q', '--', location], { stdio: 'ignore' }).status === 0;
+      if (ignoredHere) add('warn', `Nested repository "${location}" is ignored by the workspace but not listed under repositories; change detection, hygiene and security re-reviews do not see it`);
+    }
+    // With repositories, workspace globs are workspace-relative: one that names no repository path and no existing
+    // workspace path silently matches nothing.
+    const repositoryPaths = [...listed];
+    if (repositoryPaths.length && Array.isArray(settings?.security_sensitive_paths)) {
+      for (const pattern of settings.security_sensitive_paths) {
+        if (typeof pattern !== 'string') continue;
+        const staticPart = pattern.split(/[*?[]/)[0].replace(/\/+$/, '');
+        const namesRepository = repositoryPaths.some(location => pattern === location || pattern.startsWith(`${location}/`));
+        if (!namesRepository && !pattern.startsWith('**') && !(staticPart && fs.existsSync(path.join(projectRoot, staticPart)))) {
+          add('warn', `security_sensitive_paths entry "${pattern}" matches no repository path; with repositories configured, workspace globs need the repository path (for example ${repositoryPaths[0]}/${pattern})`);
         }
       }
     }

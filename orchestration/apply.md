@@ -95,7 +95,7 @@ For multi-artifact findings, resolution is performed in authoritative order (pro
 ## Apply Procedure
 
 ### Step 0: Protected-Branch Preflight and Confirm Writes
-1. Run `git branch --show-current`. If it is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch, include `feature/<change-name>` in the confirmation preview and create and switch to it only after explicit user approval. If the user declines or creation fails, stop; MUST NOT apply edits on a protected branch. Preserve existing uncommitted changes.
+1. Run `git branch --show-current` in the workspace and in every repository this phase writes to (Repository Context). If any of them is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch, include `feature/<change-name>` in the confirmation preview and create and switch to it only after explicit user approval. If the user declines or creation fails, stop; MUST NOT apply edits on a protected branch. Preserve existing uncommitted changes.
 2. Present the grouped findings, concrete target paths, delegation targets, and intended edits. Ask for explicit confirmation before any repository write. If confirmation is declined, perform no writes and return all findings as `Declined`.
 
 ### Step 1: Direct Apply for Plan/Tasks Group

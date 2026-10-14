@@ -57,7 +57,7 @@ Resolve and apply the `repository_context` template with `architecture-guard res
 
 ## Step 1 — Identify the Pull Request
 
-1. Take the pull request from the arguments (number, id, or URL). If none is given, ask the user which pull request to review; do not guess. With `repositories` configured, identify the repository it belongs to: match a URL against each repository's `origin`; for a bare number, ask which repository unless only one code repository is configured. Run every forge action and git command below from that repository (Repository Context).
+1. Take the pull request from the arguments (number, id, or URL). If none is given, ask the user which pull request to review; do not guess. With `repositories` configured, identify the repository it belongs to: match a URL against the workspace's own `origin` and each repository's `origin`; for a bare number, ask which repository (the workspace or one of the repositories) unless the workspace has no other repository. Run every forge action and git command below from that repository (Repository Context).
 2. If the selected forge has no pull-request metadata (plain git), ask for the base ref and head ref instead.
 3. If the user is the pull request's author, say so and suggest `ag-pr-feedback` for working through reviewer feedback; continue only if they still want a review of their own pull request.
 

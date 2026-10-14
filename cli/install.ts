@@ -696,19 +696,25 @@ function readPersistedAdapter(targetDir) {
 }
 
 // Application repositories the workspace wraps. A `repositories` key the user wrote (even an empty list) is kept;
-// otherwise standalone nested git repositories are detected and returned for recording. The first code repository
-// is where pull requests live, so the forge is detected from its origin.
+// otherwise standalone nested git repositories that the workspace ignores (or any, when the workspace is not a git
+// repository) are returned for recording: a tracked or vendored checkout is not a separate application. The first
+// code repository is where pull requests live, so the forge is detected from its origin.
 function resolveWorkspaceRepositories(targetDir) {
   const config = readWorkspaceConfig(targetDir);
   let record = null;
+  const messages = [];
   if (!config || config.repositories === undefined) {
     const taken = new Set();
-    record = detectNestedRepositories(targetDir).map(location => {
+    const ignoredByWorkspace = location => {
+      const result = require('child_process').spawnSync('git', ['-C', targetDir, 'check-ignore', '-q', '--', location], { stdio: 'ignore' });
+      return result.status !== 1; // 0: ignored; 128: the workspace is not a git repository
+    };
+    record = detectNestedRepositories(targetDir).filter(ignoredByWorkspace).map(location => {
       const base = path.basename(location).toLowerCase().replace(/[^a-z0-9._-]/g, '-') || 'app';
       let name = base;
       for (let index = 2; taken.has(name); index += 1) name = `${base}-${index}`;
       taken.add(name);
-      console.log(`  ℹ Detected repository "${name}" (${location}); recorded under repositories in .architecture-guard/config.yml (roles: code; add specs if it holds specifications)`);
+      messages.push(`  ℹ Detected repository "${name}" (${location}); recorded under repositories in .architecture-guard/config.yml (roles: code; add specs if it holds specifications, or set repositories: [] to opt out)`);
       return { name, path: location, roles: ['code'] };
     });
     if (!record.length) record = null;
@@ -716,7 +722,7 @@ function resolveWorkspaceRepositories(targetDir) {
   const code = record
     ? record[0]
     : configuredRepositories(targetDir).find(repository => repository.roles.includes('code') && isGitRepository(repository.absolutePath));
-  return { record, codeDirectory: code ? path.resolve(targetDir, code.path) : null };
+  return { record, messages, codeDirectory: code ? path.resolve(targetDir, code.path) : null };
 }
 
 // A rerun without --forge keeps a previously selected forge that still validates, so a
@@ -739,7 +745,7 @@ function resolveSelectedForge(requested, targetDir, detectDirectory = targetDir)
   }
   // An explicit --forge is validated against the workspace (custom forges live there); auto-detection reads the
   // origin of the repository that holds the pull requests.
-  return requested ? resolveForge(requested, targetDir) : resolveForge('auto', detectDirectory);
+  return requested && requested.toLowerCase() !== 'auto' ? resolveForge(requested, targetDir) : resolveForge('auto', detectDirectory);
 }
 
 // Lean installs resolve engine resources from the CLI bundle, and cli/resolve.ts treats any
@@ -926,6 +932,7 @@ async function runInit(targetDir, opts) {
   installAdapters(targetDir, opts.overwrite === "skip" || opts.overwrite === "keep-both");
 
   writeInstallerConfig(path.join(runtimeDir, 'config.yml'), adapter, workspaceRepositories.record);
+  for (const message of workspaceRepositories.messages) console.log(message);
   fs.writeFileSync(path.join(runtimeDir, 'selected-adapter'), `${adapter}\n`);
   installForges(targetDir, opts.overwrite === "skip" || opts.overwrite === "keep-both");
   fs.writeFileSync(path.join(runtimeDir, 'selected-forge'), `${forge}\n`);

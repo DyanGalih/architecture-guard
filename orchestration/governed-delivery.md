@@ -60,7 +60,7 @@ Before the first mutation, resolve and preview the exact branch, change containe
 
 Before creating, planning, or modifying any active change:
 
-1. Run `git branch --show-current`.
+1. Run `git branch --show-current` in the workspace and in every repository this phase writes to (Repository Context); apply the steps below to each.
 2. If the branch is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch:
    - Include `feature/<change-name>` in the Write Approval Gate preview, and create and switch to it only after explicit user approval.
    - If the user declines or branch creation fails, stop. MUST NOT continue on the protected branch.

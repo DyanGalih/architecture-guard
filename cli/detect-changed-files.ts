@@ -2,7 +2,7 @@ import { execFileSync } from 'child_process';
 import fs from 'node:fs';
 import { parse } from 'yaml';
 import { globMatches } from './hygiene';
-import { configuredRepositories, gitToplevel, isGitRepository, owningRepository, resolveWorkspace } from './repositories';
+import { configuredRepositories, isGitRepository, locateWorkspace, owningRepository } from './repositories';
 
 function git(args: string[]) {
   return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -80,33 +80,44 @@ export function securitySensitiveFiles(files: string[], patterns: string[]) {
 
 // Workspace view: the workspace's own changes plus every configured repository's, as workspace-relative paths
 // (`src/app/...`). `repo` limits it to one repository; run inside a configured repository, that repository is
-// selected and the workspace's settings still apply. An explicit base applies to the workspace or the selected
-// repository; other repositories use their own default base.
+// selected and the workspace's settings still apply. With repositories configured, `base` needs `repo`, because
+// each repository has its own history.
 export function workspaceChangedFiles(opts: { base?: string; repo?: string; securitySensitive?: boolean }, cwd = process.cwd()) {
-  const { workspace, repository: here } = resolveWorkspace(gitToplevel(cwd));
+  const { workspace, repository: here, unlistedAncestor, workspaceIsGit } = locateWorkspace(cwd);
   const repositories = configuredRepositories(workspace);
   const selected = opts.repo ? repositories.find(repository => repository.name === opts.repo) : here;
   if (opts.repo && !selected) {
     throw new Error(`Unknown repository "${opts.repo}"; configured: ${repositories.map(repository => repository.name).join(', ') || 'none'}`);
   }
+  if (selected && !isGitRepository(selected.absolutePath)) {
+    throw new Error(`Repository "${selected.name}" (${selected.path}) is not a git repository`);
+  }
+  if (opts.base && repositories.length && !selected) {
+    throw new Error('--base needs --repo when repositories are configured: each repository has its own history');
+  }
+  const warnings: string[] = [];
+  if (opts.securitySensitive && unlistedAncestor) {
+    warnings.push(`This repository sits inside the workspace ${unlistedAncestor} but is not listed under repositories in its .architecture-guard/config.yml, so that workspace's security_sensitive_paths do not apply here.`);
+  }
   const prefixed = (prefix: string, files: string[]) => files.map(file => `${prefix}/${file}`);
+  const insideRepository = (file: string) => repositories.some(repository => file === repository.path || file === `${repository.path}/` || file.startsWith(`${repository.path}/`));
   let files = selected
     ? prefixed(selected.path, changedFilesIn(selected.absolutePath, opts.base))
     : [
-      ...changedFilesIn(workspace, opts.base),
+      ...(workspaceIsGit ? changedFilesIn(workspace, opts.base).filter(file => !insideRepository(file)) : []),
       ...repositories.filter(repository => isGitRepository(repository.absolutePath))
         .flatMap(repository => prefixed(repository.path, changedFilesIn(repository.absolutePath))),
     ];
   if (opts.securitySensitive) {
     const workspacePatterns = securitySensitivePatterns(workspace);
-    const repositoryPatterns = new Map(repositories.map(repository => [repository.name, securitySensitivePatterns(repository.absolutePath)]));
+    const repositoryPatterns = new Map(repositories.map(repository => [repository.path, securitySensitivePatterns(repository.absolutePath)]));
     files = files.filter(file => {
       if (securitySensitiveFiles([file], workspacePatterns).length) return true;
       const owner = owningRepository(repositories, file);
-      return Boolean(owner && securitySensitiveFiles([file.slice(owner.path.length + 1)], repositoryPatterns.get(owner.name) || []).length);
+      return Boolean(owner && securitySensitiveFiles([file.slice(owner.path.length + 1)], repositoryPatterns.get(owner.path) || []).length);
     });
   }
-  return [...new Set(files)].sort();
+  return { files: [...new Set(files)].sort(), warnings };
 }
 
 export function runDetectChangedFiles(opts: any) {
@@ -114,7 +125,8 @@ export function runDetectChangedFiles(opts: any) {
     console.log("Detecting changed files...");
   }
   try {
-    const files = workspaceChangedFiles({ base: opts.base, repo: opts.repo, securitySensitive: opts.securitySensitive });
+    const { files, warnings } = workspaceChangedFiles({ base: opts.base, repo: opts.repo, securitySensitive: opts.securitySensitive });
+    for (const warning of warnings) console.error(`Warning: ${warning}`);
     if (opts.json) {
       console.log(JSON.stringify(files));
     } else {
