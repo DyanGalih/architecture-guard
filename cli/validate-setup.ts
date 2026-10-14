@@ -3,7 +3,8 @@ import path from 'node:path';
 import { parse } from 'yaml';
 import { missingAdapterKeys } from './install';
 import { listCategoryResources, resolveResource } from './resolve';
-import { missingForgeKeys } from './forge';
+import { detectForge, missingForgeKeys } from './forge';
+import { REPOSITORY_NAME, insideWorkspace, isGitRepository, rawRepositoryEntries } from './repositories';
 import { ignoredByOwningRepository } from './hygiene';
 
 type Level = 'pass' | 'warn' | 'fail' | 'info';
@@ -102,6 +103,38 @@ export function validateSetup(projectRoot: string): Check[] {
         if (state === 'readable') add('pass', `Governance document "${name}" readable (${file})`);
         else if (state === 'missing') add('warn', `Governance document "${name}" not found (${file})`);
         else add('warn', `Governance document "${name}" is ${state === 'outside' ? 'outside the repository' : 'gitignored'} (${file}); reviewers cannot read it`);
+      }
+    }
+    // Application repositories the workspace wraps: each must be a git repository inside the workspace, and the
+    // pull-request skills (installed for one code host) must match its origin.
+    const selectedForgePath = path.join(runtimeDir, 'selected-forge');
+    const installedForge = fs.existsSync(selectedForgePath) ? fs.readFileSync(selectedForgePath, 'utf8').trim() : '';
+    const seen = new Set<string>();
+    for (const entry of rawRepositoryEntries(projectRoot)) {
+      const name = entry?.name;
+      const location = entry?.path;
+      if (typeof name !== 'string' || !REPOSITORY_NAME.test(name)) {
+        add('fail', `Repository entry needs a name (letters, digits, dots, hyphens, underscores): ${JSON.stringify(entry)}`);
+        continue;
+      }
+      if (seen.has(name)) add('fail', `Repository name "${name}" is listed twice`);
+      seen.add(name);
+      if (typeof location !== 'string' || !location.trim()) {
+        add('fail', `Repository "${name}" has no path`);
+      } else if (!insideWorkspace(projectRoot, location)) {
+        add('fail', `Repository "${name}" (${location}) must be inside the workspace`);
+      } else if (!fs.existsSync(path.join(projectRoot, location))) {
+        add('fail', `Repository "${name}" (${location}) not found`);
+      } else if (!isGitRepository(path.join(projectRoot, location))) {
+        add('fail', `Repository "${name}" (${location}) is not a git repository`);
+      } else {
+        const detected = detectForge(path.join(projectRoot, location));
+        const forge = typeof entry.forge === 'string' ? entry.forge : detected.forge;
+        const origin = detected.reason === 'no origin remote' ? 'no origin remote' : `origin ${detected.reason}`;
+        add('pass', `Repository "${name}" (${location}): git repository, ${origin}, forge ${forge}`);
+        if (installedForge && forge !== installedForge) {
+          add('warn', `Repository "${name}" uses forge ${forge}, but the installed skills use ${installedForge}; pull-request skills support one code host per workspace (rerun init with --forge ${forge} if this is the code host you review)`);
+        }
       }
     }
     const sensitive = settings?.security_sensitive_paths;

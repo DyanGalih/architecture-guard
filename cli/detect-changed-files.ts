@@ -2,6 +2,7 @@ import { execFileSync } from 'child_process';
 import fs from 'node:fs';
 import { parse } from 'yaml';
 import { globMatches } from './hygiene';
+import { configuredRepositories, gitToplevel, isGitRepository, owningRepository, resolveWorkspace } from './repositories';
 
 function git(args: string[]) {
   return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -47,17 +48,21 @@ function workingTreeFiles() {
   return files;
 }
 
-export function detectChangedFiles(base?: string) {
-  const root = git(['rev-parse', '--show-toplevel']).trim();
+// Changed files of one git repository, relative to it: committed since the merge-base, plus staged, unstaged and
+// untracked files that still exist.
+export function changedFilesIn(directory: string, base?: string) {
   const previousCwd = process.cwd();
-  process.chdir(root);
+  process.chdir(directory);
   try {
     const all = new Set([...committedFiles(resolveBase(base)), ...workingTreeFiles()]);
-    // Deleted files cannot be reviewed; keep only paths that still exist.
     return [...all].filter(file => fs.existsSync(file)).sort();
   } finally {
     process.chdir(previousCwd);
   }
+}
+
+export function detectChangedFiles(base?: string) {
+  return changedFilesIn(git(['rev-parse', '--show-toplevel']).trim(), base);
 }
 
 // Globs from `security_sensitive_paths` in .architecture-guard/config.yml (repository root). Skills that change one of
@@ -73,15 +78,43 @@ export function securitySensitiveFiles(files: string[], patterns: string[]) {
   return files.filter(file => patterns.some(pattern => globMatches(file, pattern.trim())));
 }
 
+// Workspace view: the workspace's own changes plus every configured repository's, as workspace-relative paths
+// (`src/app/...`). `repo` limits it to one repository; run inside a configured repository, that repository is
+// selected and the workspace's settings still apply. An explicit base applies to the workspace or the selected
+// repository; other repositories use their own default base.
+export function workspaceChangedFiles(opts: { base?: string; repo?: string; securitySensitive?: boolean }, cwd = process.cwd()) {
+  const { workspace, repository: here } = resolveWorkspace(gitToplevel(cwd));
+  const repositories = configuredRepositories(workspace);
+  const selected = opts.repo ? repositories.find(repository => repository.name === opts.repo) : here;
+  if (opts.repo && !selected) {
+    throw new Error(`Unknown repository "${opts.repo}"; configured: ${repositories.map(repository => repository.name).join(', ') || 'none'}`);
+  }
+  const prefixed = (prefix: string, files: string[]) => files.map(file => `${prefix}/${file}`);
+  let files = selected
+    ? prefixed(selected.path, changedFilesIn(selected.absolutePath, opts.base))
+    : [
+      ...changedFilesIn(workspace, opts.base),
+      ...repositories.filter(repository => isGitRepository(repository.absolutePath))
+        .flatMap(repository => prefixed(repository.path, changedFilesIn(repository.absolutePath))),
+    ];
+  if (opts.securitySensitive) {
+    const workspacePatterns = securitySensitivePatterns(workspace);
+    const repositoryPatterns = new Map(repositories.map(repository => [repository.name, securitySensitivePatterns(repository.absolutePath)]));
+    files = files.filter(file => {
+      if (securitySensitiveFiles([file], workspacePatterns).length) return true;
+      const owner = owningRepository(repositories, file);
+      return Boolean(owner && securitySensitiveFiles([file.slice(owner.path.length + 1)], repositoryPatterns.get(owner.name) || []).length);
+    });
+  }
+  return [...new Set(files)].sort();
+}
+
 export function runDetectChangedFiles(opts: any) {
   if (!opts.json) {
     console.log("Detecting changed files...");
   }
   try {
-    let files = detectChangedFiles(opts.base);
-    if (opts.securitySensitive) {
-      files = securitySensitiveFiles(files, securitySensitivePatterns(git(['rev-parse', '--show-toplevel']).trim()));
-    }
+    const files = workspaceChangedFiles({ base: opts.base, repo: opts.repo, securitySensitive: opts.securitySensitive });
     if (opts.json) {
       console.log(JSON.stringify(files));
     } else {
@@ -89,7 +122,7 @@ export function runDetectChangedFiles(opts: any) {
     }
   } catch (error) {
     if (opts.json) {
-      console.error(JSON.stringify({ error: String(error) }));
+      console.error(JSON.stringify({ error: String(error instanceof Error ? error.message : error) }));
       process.exit(1);
     } else {
       console.error("Failed to detect changed files", error);

@@ -4,6 +4,7 @@ const path = require('path');
 
 const ROOT_DIR = path.join(__dirname, '..', '..');
 const { resolveForge, installForges, materializeForgeTokens } = require('./forge');
+const { configuredRepositories, detectNestedRepositories, isGitRepository, readWorkspaceConfig } = require('./repositories');
 
 // ponytail: stdin detection is the trickiest part of a prompt-style installer.
 // Node has no synchronous peek on stdin, so we distinguish three cases:
@@ -285,10 +286,11 @@ function resolveCustomAdapter(name, targetDir) {
 
 // config.yml is also the adapters' governance-config, so keep the user's settings
 // (context budget, repository_hygiene, presets) and only update the installer-owned keys.
-function writeInstallerConfig(configPath, adapter) {
+function writeInstallerConfig(configPath, adapter, repositories = null) {
   const YAML = require('yaml');
   if (!fs.existsSync(configPath)) {
-    fs.writeFileSync(configPath, `adapter: ${adapter}\npresets: []\n`);
+    const initial = { adapter, presets: [], ...(repositories ? { repositories } : {}) };
+    fs.writeFileSync(configPath, YAML.stringify(initial));
     return;
   }
   const doc = YAML.parseDocument(fs.readFileSync(configPath, 'utf8'));
@@ -299,6 +301,7 @@ function writeInstallerConfig(configPath, adapter) {
   if (!doc.contents) doc.contents = doc.createNode({});
   doc.set('adapter', adapter);
   if (!doc.has('presets')) doc.set('presets', []);
+  if (repositories && !doc.has('repositories')) doc.set('repositories', repositories);
   fs.writeFileSync(configPath, String(doc));
 }
 
@@ -692,9 +695,33 @@ function readPersistedAdapter(targetDir) {
   return null;
 }
 
+// Application repositories the workspace wraps. A `repositories` key the user wrote (even an empty list) is kept;
+// otherwise standalone nested git repositories are detected and returned for recording. The first code repository
+// is where pull requests live, so the forge is detected from its origin.
+function resolveWorkspaceRepositories(targetDir) {
+  const config = readWorkspaceConfig(targetDir);
+  let record = null;
+  if (!config || config.repositories === undefined) {
+    const taken = new Set();
+    record = detectNestedRepositories(targetDir).map(location => {
+      const base = path.basename(location).toLowerCase().replace(/[^a-z0-9._-]/g, '-') || 'app';
+      let name = base;
+      for (let index = 2; taken.has(name); index += 1) name = `${base}-${index}`;
+      taken.add(name);
+      console.log(`  ℹ Detected repository "${name}" (${location}); recorded under repositories in .architecture-guard/config.yml (roles: code; add specs if it holds specifications)`);
+      return { name, path: location, roles: ['code'] };
+    });
+    if (!record.length) record = null;
+  }
+  const code = record
+    ? record[0]
+    : configuredRepositories(targetDir).find(repository => repository.roles.includes('code') && isGitRepository(repository.absolutePath));
+  return { record, codeDirectory: code ? path.resolve(targetDir, code.path) : null };
+}
+
 // A rerun without --forge keeps a previously selected forge that still validates, so a
 // custom or self-hosted forge is not silently replaced by auto-detection.
-function resolveSelectedForge(requested, targetDir) {
+function resolveSelectedForge(requested, targetDir, detectDirectory = targetDir) {
   const markerPath = path.join(targetDir, '.architecture-guard', 'selected-forge');
   if (!requested && fs.existsSync(markerPath)) {
     const persisted = fs.readFileSync(markerPath, 'utf8').trim();
@@ -702,7 +729,7 @@ function resolveSelectedForge(requested, targetDir) {
       try {
         const kept = resolveForge(persisted, targetDir).forge;
         // A recorded plain-git forge may predate the remote; point out a better match without switching silently.
-        const detected = kept === 'generic' ? resolveForge('auto', targetDir).forge : kept;
+        const detected = kept === 'generic' ? resolveForge('auto', detectDirectory).forge : kept;
         const hint = detected !== kept ? `; ${detected} remote detected, rerun with --forge ${detected} to use it` : '';
         return { forge: kept, reason: `kept from .architecture-guard/selected-forge; pass --forge to change it${hint}` };
       } catch {
@@ -710,7 +737,9 @@ function resolveSelectedForge(requested, targetDir) {
       }
     }
   }
-  return resolveForge(requested, targetDir);
+  // An explicit --forge is validated against the workspace (custom forges live there); auto-detection reads the
+  // origin of the repository that holds the pull requests.
+  return requested ? resolveForge(requested, targetDir) : resolveForge('auto', detectDirectory);
 }
 
 // Lean installs resolve engine resources from the CLI bundle, and cli/resolve.ts treats any
@@ -837,7 +866,8 @@ async function runInit(targetDir, opts) {
   }
 
   // Code host for pull-request skills; resolved before any file is written so a bad custom forge fails early.
-  const { forge, reason: forgeReason } = resolveSelectedForge(opts.forge, targetDir);
+  const workspaceRepositories = resolveWorkspaceRepositories(targetDir);
+  const { forge, reason: forgeReason } = resolveSelectedForge(opts.forge, targetDir, workspaceRepositories.codeDirectory || targetDir);
   console.log(`Forge: ${forge} (${forgeReason})`);
 
   let selectedCommands;
@@ -895,7 +925,7 @@ async function runInit(targetDir, opts) {
   const adapter = framework === "none" ? "generic" : framework;
   installAdapters(targetDir, opts.overwrite === "skip" || opts.overwrite === "keep-both");
 
-  writeInstallerConfig(path.join(runtimeDir, 'config.yml'), adapter);
+  writeInstallerConfig(path.join(runtimeDir, 'config.yml'), adapter, workspaceRepositories.record);
   fs.writeFileSync(path.join(runtimeDir, 'selected-adapter'), `${adapter}\n`);
   installForges(targetDir, opts.overwrite === "skip" || opts.overwrite === "keep-both");
   fs.writeFileSync(path.join(runtimeDir, 'selected-forge'), `${forge}\n`);

@@ -27,6 +27,10 @@ Resolve and apply the `capability_composition` template with `architecture-guard
 
 Use this command as the end-to-end Architecture Guard entry point. Delegate each phase to its registered Architecture Guard capability instead of reproducing that phase's internal prompt.
 
+## Repository Context
+
+Resolve and apply the `repository_context` template with `architecture-guard resolve template repository_context`. When `.architecture-guard/config.yml` lists `repositories`, every git, branch, test, hygiene, commit, push, and code-host step in this skill runs in the repository that owns the files it concerns, as that template defines, and paths are workspace-relative; rules, constitutions, and configuration still come from the workspace. Without `repositories`, the workspace is the only repository and nothing changes.
+
 ## Agent Teams Activation
 
 Agent Teams mode is active only when all of the following are true:

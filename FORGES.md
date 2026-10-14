@@ -17,7 +17,7 @@ Pull-request skill (e.g., ag-review-pr)
   MCP server → client CLI → fallback
 ```
 
-`architecture-guard init` installs every forge adapter into `.architecture-guard/forges/` and records the selection in `.architecture-guard/selected-forge`. The forge is auto-detected from the `origin` remote; pass `--forge <name>` to choose one explicitly (needed for self-hosted instances).
+`architecture-guard init` installs every forge adapter into `.architecture-guard/forges/` and records the selection in `.architecture-guard/selected-forge`. The forge is auto-detected from the `origin` remote (of the first code repository when the workspace lists `repositories`; see `templates/repository_context.md`); pass `--forge <name>` to choose one explicitly (needed for self-hosted instances). Forge actions run from the directory of the repository that owns the pull request, so the host CLI reads that repository's `origin`; the installed skills target one code host per workspace.
 
 ## Built-in Forges
 

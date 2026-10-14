@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { listCategoryResources, resolveResource } from './resolve';
+import { configuredRepositories, isGitRepository } from './repositories';
 
 export interface HygieneOptions {
   target?: string;
@@ -250,11 +251,21 @@ function readText(filePath: string) {
 }
 
 function projectFiles(root: string, policy: HygienePolicy) {
-  return gitFiles(root, policy) ?? (() => {
+  const own = gitFiles(root, policy) ?? (() => {
     const files: ProjectFile[] = [];
     walkFiles(root, root, files, policy);
     return files;
   })();
+  // A workspace's application repositories have their own git history (and are often gitignored by the workspace):
+  // list each with its own git and report its files under the repository path, so `src/...` is scanned too.
+  const repositories = configuredRepositories(root).filter(repository => isGitRepository(repository.absolutePath));
+  if (!repositories.length) return own;
+  const unfiltered: HygienePolicy = { ...policy, ignore: { paths: [], files: [], patterns: [] } };
+  const insideRepository = (file: string) => repositories.some(repository => file === repository.path || file.startsWith(`${repository.path}/`));
+  const nested = repositories.flatMap(repository => (gitFiles(repository.absolutePath, unfiltered) ?? [])
+    .map(file => ({ ...file, relativePath: `${repository.path}/${file.relativePath}` }))
+    .filter(file => !ignored(file.relativePath, policy)));
+  return [...own.filter(file => !insideRepository(toPosix(file.relativePath))), ...nested];
 }
 
 function stringArray(value: unknown): string[] {

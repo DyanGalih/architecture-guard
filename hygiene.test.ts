@@ -252,3 +252,24 @@ test('unresolved-governance-citations accepts a citation into a nested repositor
     fs.rmSync(target, { recursive: true, force: true });
   }
 });
+
+test('a workspace target also scans the application repositories it configures', () => {
+  const target = temporaryProject();
+  try {
+    execFileSync('git', ['init', '-q', target]);
+    fs.writeFileSync(path.join(target, '.gitignore'), 'src/\n');
+    fs.mkdirSync(path.join(target, '.architecture-guard'), { recursive: true });
+    fs.writeFileSync(path.join(target, '.architecture-guard', 'config.yml'), 'repositories:\n  - name: app\n    path: src\n');
+    fs.mkdirSync(path.join(target, 'src', 'lib'), { recursive: true });
+    execFileSync('git', ['init', '-q', path.join(target, 'src')]);
+    fs.writeFileSync(path.join(target, 'src', 'lib', 'a.ts'), '// TODO: finish\n');
+    fs.writeFileSync(path.join(target, 'notes.md'), 'TODO: write\n');
+
+    const report = scanHygiene({ target, rules: 'todo-comments' });
+    assert.deepEqual(report.findings.map(finding => finding.relativePath).sort(), ['notes.md', 'src/lib/a.ts']);
+    const scoped = scanHygiene({ target, rules: 'todo-comments', files: 'src/lib/a.ts' });
+    assert.deepEqual(scoped.findings.map(finding => finding.relativePath), ['src/lib/a.ts']);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});

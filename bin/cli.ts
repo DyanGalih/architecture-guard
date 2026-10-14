@@ -57,6 +57,7 @@ program
   .option('--json', 'Output results in JSON format')
   .option('--base <ref>', 'Compare against this ref instead of the default branch')
   .option('--security-sensitive', 'List only changed files matching security_sensitive_paths in .architecture-guard/config.yml')
+  .option('--repo <name>', 'Limit to one repository listed under repositories in .architecture-guard/config.yml')
   .action(runDetectChangedFiles);
 
 program

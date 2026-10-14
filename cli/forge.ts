@@ -118,7 +118,7 @@ export function installForges(targetDir: string, preserve: boolean) {
 const PLACEHOLDER_LEGEND = [
   'Placeholders in these actions:',
   '- <n>, <iid>, <id>: the pull or merge request number or id.',
-  '- <owner>, <repo>, <workspace>, <repo_slug>, <org>, <project>: read from the origin remote.',
+  '- <owner>, <repo>, <workspace>, <repo_slug>, <org>, <project>: read from the origin remote of the repository that owns the pull request; run every action from that repository\'s directory (see the Repository Context section when `repositories` is configured).',
   '- <base>, <head>: the base and head refs (plain git); <api>: the API base URL the adapter names.',
   '- <... file>: a temporary file created outside the repository (for example with mktemp) and deleted afterwards. Pass review and reply text through such files, never inline in a shell command.',
 ].join('\n');
