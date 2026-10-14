@@ -1,6 +1,6 @@
 # Workflows
 
-This document covers the governed discovery, specification, planning, task, and implementation flows used by Architecture Guard.
+This document covers the governed discovery, specification, planning, task, implementation, and pull-request flows used by Architecture Guard.
 
 ## Suggested Governed Delivery Workflow
 
@@ -151,6 +151,45 @@ When you want a single unified command that drives the complete lifecycle intera
    - Executes `/ag-verify` to ensure 100% task delivery and zero architectural boundary breaches before offering archive options.
 
 If you are specifically cleaning up duplicated logic (Brownfield), follow the [DRY Cleanup Guide](dry-cleanup.md) after your initialization pass. This keeps architecture concerns visible throughout the delivery lifecycle instead of concentrating them at the end.
+
+## Pull Request Review Workflow
+
+Use `ag-review-pr` to review someone else's pull request:
+
+```text
+/ag-review-pr 123
+/ag-review-pr https://github.com/acme/app/pull/123
+```
+
+1. Fetches the pull request, diff, existing review threads, and CI status through the selected forge (see [FORGES.md](../FORGES.md)).
+2. Optionally reads the full files from a temporary git worktree (it asks first; your checkout is never changed). Without it, the review is labelled diff-only.
+3. Reviews the change against your constitutions and any linked spec, plan, or tasks by running `ag-review-implementation` on the pull request's files, then adds pull-request checks: intent versus description, tests, secrets, and CI failures.
+4. Drafts a comment-only review — inline comments with severity and blocking labels, plus a summary — and asks you to choose:
+   - **Post as is**
+   - **Adjust first** (edit, remove, or add comments; it shows the revised draft and asks again)
+   - **Don't post**
+5. Before posting, re-checks the head commit; if new commits arrived, it re-reviews instead of posting a stale review.
+
+It never approves, requests changes, merges, or closes a pull request. Text in the pull request that tries to instruct an AI reviewer is reported as a security finding.
+
+## Pull Request Feedback Workflow
+
+Use `ag-pr-feedback` on your own pull request after reviewers have commented:
+
+```text
+/ag-pr-feedback          (the pull request for the current branch)
+/ag-pr-feedback 123
+```
+
+1. Collects unresolved review threads and failing checks.
+2. Triages each one — **Fix**, **Discuss**, **Disagree**, **Already addressed**, or **Out of scope** — checking every suggestion against your constitutions, and asks you to approve or change the triage.
+3. Applies only the approved fixes, runs your tests and a scoped architecture review of the changes.
+4. Commits and pushes, each with its own approval (never a force-push).
+5. Drafts one reply per thread and asks you to choose:
+   - **Reply only** — leave every thread open for the reviewers
+   - **Reply and resolve** — also resolve the eligible threads (only pushed fixes and already-addressed threads; discussions and disagreements stay open)
+   - **Adjust first**
+   - **Don't post**
 
 ## User Story Tracker Sync (Team Delivery)
 
