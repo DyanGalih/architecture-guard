@@ -236,6 +236,32 @@ test('unresolved-governance-citations flags cited constitutions reviewers cannot
   }
 });
 
+test('unresolved-governance-citations flags a cited constitution that is a symlink to outside the repository', () => {
+  const target = temporaryProject();
+  const outside = temporaryProject();
+  try {
+    execFileSync('git', ['init', '-q', target]);
+    fs.writeFileSync(path.join(outside, 'security_constitution.md'), '# Private\n');
+    fs.mkdirSync(path.join(target, 'docs'), { recursive: true });
+    fs.mkdirSync(path.join(target, 'specs'), { recursive: true });
+    fs.writeFileSync(path.join(target, 'docs', 'constitution.md'), '# Governance\n');
+    fs.symlinkSync(path.join(outside, 'security_constitution.md'), path.join(target, 'docs', 'security_constitution.md'));
+    fs.symlinkSync(path.join(target, 'docs', 'constitution.md'), path.join(target, 'docs', 'alias_constitution.md'));
+    fs.writeFileSync(path.join(target, 'specs', 'feature.md'), [
+      'Aligns to [security](../docs/security_constitution.md).',
+      'And [alias](../docs/alias_constitution.md).',
+    ].join('\n'));
+
+    const report = scanHygiene({ target, rules: 'unresolved-governance-citations' });
+    const found = report.findings.map(finding => `${finding.relativePath}:${finding.line} ${finding.message}`);
+    assert.equal(found.length, 1, found.join('\n'));
+    assert.match(found[0], /specs\/feature\.md:1 .*security_constitution\.md resolves outside the repository through a symlink/);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
+});
+
 test('unresolved-governance-citations accepts a citation into a nested repository that tracks the file', () => {
   const target = temporaryProject();
   try {

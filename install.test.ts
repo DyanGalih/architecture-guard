@@ -2077,6 +2077,32 @@ test('accepted risks carry owner, rationale, compensating control, trigger and g
   }
 });
 
+test('governance documents that resolve through a symlink to outside the repository are not readable', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-outside-'));
+  fs.writeFileSync(path.join(outside, 'security_constitution.md'), '# Private security');
+  fs.writeFileSync(path.join(outside, 'constitution.md'), '# Private constitution');
+  git(cwd, 'init', '-q');
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit', '--commands', 'init'], cwd);
+  fs.mkdirSync(path.join(cwd, '.specify/memory'), { recursive: true });
+  fs.symlinkSync(path.join(outside, 'constitution.md'), path.join(cwd, '.specify/memory/constitution.md'));
+  fs.mkdirSync(path.join(cwd, 'docs'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, 'docs/constitution.md'), '# Governance');
+  fs.symlinkSync(path.join(outside, 'security_constitution.md'), path.join(cwd, 'docs/security_constitution.md'));
+  fs.symlinkSync(path.join(cwd, 'docs/constitution.md'), path.join(cwd, 'docs/alias_constitution.md'));
+  fs.appendFileSync(path.join(cwd, '.architecture-guard/config.yml'), [
+    'governance:',
+    '  security: docs/security_constitution.md',
+    '  alias: docs/alias_constitution.md',
+    '',
+  ].join('\n'));
+
+  const out = spawnSync(process.execPath, [installer, 'validate-setup', cwd], { encoding: 'utf8' }).stdout;
+  assert.match(out, /Governance document "security" is outside the repository \(docs\/security_constitution\.md\); reviewers cannot read it/);
+  assert.match(out, /Governance document "alias" readable \(docs\/alias_constitution\.md\)/);
+  assert.match(out, /Governance constitution is outside the repository \(\.specify\/memory\/constitution\.md\); reviewers cannot read it/);
+});
+
 test('governance readability is judged by the repository that holds the file (nested repositories)', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   git(cwd, 'init', '-q');

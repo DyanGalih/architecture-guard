@@ -4,7 +4,7 @@ import { parse } from 'yaml';
 import { missingAdapterKeys } from './install';
 import { listCategoryResources, resolveResource } from './resolve';
 import { detectForge, missingForgeKeys } from './forge';
-import { REPOSITORY_NAME, configuredRepositories, detectNestedRepositories, insideWorkspace, isGitRepository, rawRepositoryEntries } from './repositories';
+import { REPOSITORY_NAME, configuredRepositories, detectNestedRepositories, insideWorkspace, isGitRepository, rawRepositoryEntries, resolvesInsideOwningRepository } from './repositories';
 import { spawnSync } from 'node:child_process';
 import { ignoredByOwningRepository } from './hygiene';
 
@@ -23,13 +23,15 @@ function mappedPath(adapter: string, key: string) {
   return { path: value, optional: /optional/i.test(row![1]) };
 }
 
-// Whether a reviewer can open a governance document: inside the repository, present, and not gitignored. Tracked
-// files are never reported as ignored, so a force-added constitution counts as readable. The repository that holds the
+// Whether a reviewer can open a governance document: inside the repository (also after resolving symlinks, since git
+// stores a symlink as its target path), present, and not gitignored. Tracked files are never reported as ignored, so
+// a force-added constitution counts as readable. The repository that holds the
 // file decides, so a nested application repository inside an ignoring workspace is judged by its own rules.
 function readability(projectRoot: string, file: string): 'readable' | 'outside' | 'missing' | 'ignored' {
   const relative = path.relative(projectRoot, path.resolve(projectRoot, file));
   if (relative.startsWith('..') || path.isAbsolute(relative)) return 'outside';
   if (!fs.existsSync(path.join(projectRoot, relative))) return 'missing';
+  if (!resolvesInsideOwningRepository(projectRoot, relative)) return 'outside';
   return ignoredByOwningRepository(projectRoot, relative) ? 'ignored' : 'readable';
 }
 
@@ -74,9 +76,10 @@ export function validateSetup(projectRoot: string): Check[] {
 
   for (const [key, label] of [['constitution', 'Governance constitution'], ['arch-constitution', 'Architecture constitution'], ['security-constitution', 'Security constitution']]) {
     const { path: file, optional } = mappedPath(adapter, key);
+    const state = file ? readability(projectRoot, file) : null;
     if (!file) add('info', `${label}: path is user-provided for this adapter; not checked`);
-    else if (readability(projectRoot, file) === 'ignored') add('warn', `${label} is gitignored (${file}); reviewers cannot read it`);
-    else if (fs.existsSync(path.join(projectRoot, file))) add('pass', `${label} found (${file})`);
+    else if (state === 'ignored' || state === 'outside') add('warn', `${label} is ${state === 'outside' ? 'outside the repository' : 'gitignored'} (${file}); reviewers cannot read it`);
+    else if (state === 'readable') add('pass', `${label} found (${file})`);
     else if (key === 'constitution' && !optional) add('fail', `${label} missing (${file}). Run the init skill (ag-init) to create it.`);
     else add('warn', `${label} not found (${file})${optional ? ' — optional for this adapter' : ''}`);
   }
