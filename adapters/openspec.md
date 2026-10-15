@@ -21,7 +21,7 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | proposal | `openspec/changes/{change}/proposal.md` | |
 | security-constraints | `openspec/changes/{change}/security-constraints.md` | |
 | project-config | `openspec/config.yaml` | |
-| constitution-set | `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md` | |
+| constitution-set | `openspec/constitution.md`, `openspec/architecture.md`, `openspec/security.md`, and `openspec/layout.md`, plus every path declared under `governance` in `.architecture-guard/config.yml` | |
 | draft | `.architecture-guard/constitution.draft.md` | |
 | ponytail-template | `.architecture-guard/templates/ponytail_core.md` | |
 | capability-composition-template | `.architecture-guard/templates/capability_composition.md` | |

@@ -11,6 +11,38 @@ context:
     initial_result_limit: 5
     full_entry_limit: 3
 
+# Optional governance documents. Skills read these in addition to the adapter's constitution set, and
+# `architecture-guard validate-setup` warns when one is gitignored, outside the repository, or missing:
+# a rule that code or specs cite must be readable by every reviewer.
+# governance:
+#   constitution: docs/constitution.md
+#   architecture: architecture_constitution.md
+#   security: docs/security_constitution.md
+
+# Optional application repositories the workspace wraps, each with its own git history and origin (for example a
+# gitignored `src/`). `init` detects standalone nested repositories and records them here; skills then run git,
+# tests, hygiene and code-host steps in the repository that owns the files (templates/repository_context.md), and
+# `detect-changed-files` / `hygiene` report workspace-relative paths such as `src/app/...`. Without this key the
+# workspace is the only repository. `repositories: []` opts out of detection.
+# repositories:
+#   - name: app
+#     path: src
+#     roles: [code]          # code and/or specs
+
+# Optional globs for security-sensitive files, relative to this workspace (with repositories, include the
+# repository path, e.g. `src/routes/auth.php`; a repository's own config may list repository-relative globs). A change to one makes pr-feedback, review-pr and
+# governed-implement require a host Security Review again (`detect-changed-files --security-sensitive`).
+# Example for a Laravel application:
+# security_sensitive_paths:
+#   - routes/auth.php
+#   - app/Http/Controllers/Auth/**
+#   - app/Http/Requests/Auth/**
+#   - app/Http/Middleware/**
+#   - app/Policies/**
+#   - app/Models/User.php
+#   - config/auth.php
+#   - config/session.php
+
 # Optional repository hygiene policy, read by `architecture-guard hygiene` from
 # `.architecture-guard/config.yml`, or from `.specify/config/repository_hygiene.yml`
 # for the Spec Kit extension (the runner does not read `.specify/config/architecture_guard.yml`).

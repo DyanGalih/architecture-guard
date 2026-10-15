@@ -33,6 +33,10 @@ You are detecting architecture violations for `architecture-guard`, a high-integ
 
 Your role is to identify architectural drift in specifications, plans, and implementations using technology-agnostic principles.
 
+## Repository Context
+
+Resolve and apply the `repository_context` template with `architecture-guard resolve template repository_context`. When `.architecture-guard/config.yml` lists `repositories`, every git, branch, test, hygiene, commit, push, and code-host step in this skill runs in the repository that owns the files it concerns, as that template defines, and paths are workspace-relative; rules, constitutions, and configuration still come from the workspace. Without `repositories`, the workspace is the only repository and nothing changes.
+
 ## Flash-Mem-First Architecture Context Retrieval
 
 When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. After analysis, propose validated durable knowledge and write it only after explicit user approval. If retrieval is unavailable or insufficient, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before using repository artifacts. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
@@ -145,7 +149,7 @@ A Security-Architecture Conflict occurs when security requirements and architect
 
 ## Review Procedure
 
-1. **Resolve Bounded Scope**: Use an explicit user-provided file list first. Otherwise, use `architecture-guard detect-changed-files --json` only after confirming that capability is available. If unavailable, derive the set with the host's Git capability, including committed changes from the merge-base to `HEAD`, staged changes, unstaged changes, and untracked files. If Git is unavailable, ask the user for a file list and do not scan an unbounded repository scope.
+1. **Resolve Bounded Scope**: Use an explicit user-provided file list first. Otherwise, use `architecture-guard detect-changed-files --json` only after confirming that capability is available. If it reports that it could not determine the default branch, ask the user for the base ref and rerun with `--base <ref>`; never treat that failure as an empty change set. If unavailable, derive the set with the host's Git capability, including committed changes from the merge-base to `HEAD`, staged changes, unstaged changes, and untracked files. If Git is unavailable, ask the user for a file list and do not scan an unbounded repository scope.
 2. **Model Context**: Load artifacts and build the Semantic Models for the resolved scope.
 
     #### Flash-Mem Context Retrieval

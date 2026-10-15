@@ -1,8 +1,9 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { listCategoryResources, resolveResource } from './resolve';
+import { configuredRepositories, isGitRepository, owningRepository } from './repositories';
 
 export interface HygieneOptions {
   target?: string;
@@ -10,6 +11,9 @@ export interface HygieneOptions {
   rules?: string;
   // Comma-separated paths relative to the target; limits findings to these files.
   files?: string;
+  // Directory whose `.architecture-guard/` supplies the policy and local rules (default: the target). A review of
+  // someone else's checkout passes the workspace so the scanned code cannot change its own rules.
+  policyRoot?: string;
 }
 
 type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'WARNING' | 'INFO';
@@ -151,7 +155,7 @@ function lineMatches(file: ProjectFile, pattern: RegExp, message: string): RawFi
   return findings;
 }
 
-function globMatches(value: string, pattern: string) {
+export function globMatches(value: string, pattern: string) {
   let expression = '^';
   const specialCharacters = '.+^$()|[]\\';
   for (let index = 0; index < pattern.length; index += 1) {
@@ -250,11 +254,21 @@ function readText(filePath: string) {
 }
 
 function projectFiles(root: string, policy: HygienePolicy) {
-  return gitFiles(root, policy) ?? (() => {
+  const own = gitFiles(root, policy) ?? (() => {
     const files: ProjectFile[] = [];
     walkFiles(root, root, files, policy);
     return files;
   })();
+  // A workspace's application repositories have their own git history (and are often gitignored by the workspace):
+  // list each with its own git and report its files under the repository path, so `src/...` is scanned too.
+  const repositories = configuredRepositories(root).filter(repository => isGitRepository(repository.absolutePath));
+  if (!repositories.length) return own;
+  const unfiltered: HygienePolicy = { ...policy, ignore: { paths: [], files: [], patterns: [] } };
+  const insideRepository = (file: string) => repositories.some(repository => file === repository.path || file.startsWith(`${repository.path}/`));
+  const nested = repositories.flatMap(repository => (gitFiles(repository.absolutePath, unfiltered) ?? [])
+    .map(file => ({ ...file, relativePath: `${repository.path}/${file.relativePath}` }))
+    .filter(file => !ignored(file.relativePath, policy)));
+  return [...own.filter(file => !insideRepository(toPosix(file.relativePath))), ...nested];
 }
 
 function stringArray(value: unknown): string[] {
@@ -462,6 +476,73 @@ SeverityDetectors['duplicate-business-logic'] = (_rule, files) => {
     })));
 };
 
+// Whether the git repository that holds a file ignores it: the nearest ancestor with `.git`, up to `root`. A
+// workspace that wraps an application repository (and ignores it) must not hide files that repository tracks.
+// Returns null outside any repository.
+export function ignoredByOwningRepository(root: string, relative: string): boolean | null {
+  const top = path.resolve(root);
+  const absolute = path.resolve(top, relative);
+  for (let dir = path.dirname(absolute); ; dir = path.dirname(dir)) {
+    if (fs.existsSync(path.join(dir, '.git'))) {
+      const result = spawnSync('git', ['-C', dir, 'check-ignore', '-q', '--', path.relative(dir, absolute)], { stdio: 'ignore' });
+      return result.status === 0 ? true : result.status === 1 ? false : null;
+    }
+    if (dir === top || path.dirname(dir) === dir) return null;
+  }
+}
+
+// A governance document a reviewer cannot open is no rule at all. A cited path containing a slash (a Markdown link
+// target or a path in prose or a comment) must resolve, from the citing file or the repository root, to a file in
+// the reviewed set: tracked or untracked but not gitignored. Bare names such as `constitution.md` are prose.
+const GOVERNANCE_CITATION = /(?:\]\(|[\s`'"(])((?:\.{1,2}\/|[\w-]+\/)[\w./-]*constitution[\w-]*\.md)(?=[#)\s`'".,;:]|$)/gi;
+
+SeverityDetectors['unresolved-governance-citations'] = (_rule, files) => {
+  const sample = files.find(file => file.absolutePath.endsWith(file.relativePath));
+  if (!sample) return [];
+  const root = sample.absolutePath.slice(0, sample.absolutePath.length - sample.relativePath.length);
+  const readable = new Set(files.map(file => toPosix(file.relativePath)));
+  const repositories = configuredRepositories(root);
+  const findings: RawFinding[] = [];
+  for (const file of files) {
+    // Hidden directories (.claude/, .codex/, .github/prompts, .architecture-guard/) hold installed tool and agent
+    // prompts whose paths are examples for any project, not this project's citations.
+    if (!readableContent(file) || toPosix(file.relativePath).split('/').slice(0, -1).some(part => part.startsWith('.'))) continue;
+    // A file inside a configured repository is reviewed in that repository's pull requests: a root-relative citation
+    // resolves within it first, and a document only another repository (or the workspace) holds is unreadable there.
+    const owner = owningRepository(repositories, file.relativePath);
+    const within = (candidate: string) => !owner || candidate === owner.path || candidate.startsWith(`${owner.path}/`);
+    file.content!.split(/\r?\n/).forEach((line, index) => {
+      for (const match of line.matchAll(GOVERNANCE_CITATION)) {
+        const cited = match[1];
+        const candidates = [path.posix.normalize(path.posix.join(path.posix.dirname(toPosix(file.relativePath)), cited))];
+        if (!cited.startsWith('.')) {
+          if (owner) candidates.push(path.posix.normalize(`${owner.path}/${cited}`));
+          candidates.push(path.posix.normalize(cited));
+        }
+        const hit = candidates.find(candidate => readable.has(candidate));
+        if (hit && within(hit)) continue;
+        if (hit && owner) {
+          findings.push({
+            relativePath: file.relativePath,
+            line: index + 1,
+            message: `Cited governance document ${cited} is outside repository "${owner.name}" (${owner.path}); reviewers of that repository cannot open it.`,
+          });
+          continue;
+        }
+        const inside = candidates.filter(candidate => !candidate.startsWith('../') && candidate !== '..');
+        if (inside.some(candidate => fs.existsSync(path.join(root, candidate)) && ignoredByOwningRepository(root, candidate) === false)) continue;
+        const message = !inside.length
+          ? `Cited governance document ${cited} is outside the repository; reviewers cannot open it.`
+          : inside.some(candidate => fs.existsSync(path.join(root, candidate)))
+            ? `Cited governance document ${cited} is gitignored or excluded; reviewers cannot open it.`
+            : `Cited governance document ${cited} does not exist.`;
+        findings.push({ relativePath: file.relativePath, line: index + 1, message });
+      }
+    });
+  }
+  return findings;
+};
+
 SeverityDetectors['deprecated-and-dangerous-code'] = (_rule, files) => {
   const patterns: Array<[RegExp, string]> = [
     [/new\s+Buffer\s*\(/, 'Deprecated Buffer constructor detected.'],
@@ -479,8 +560,9 @@ SeverityDetectors['deprecated-and-dangerous-code'] = (_rule, files) => {
 
 export function scanHygiene(options: HygieneOptions = {}): HygieneReport {
   const target = path.resolve(options.target || process.cwd());
-  const policy = loadPolicy(target);
-  const names = listCategoryResources('hygiene-rules', { target });
+  const policyRoot = path.resolve(options.policyRoot || target);
+  const policy = loadPolicy(policyRoot);
+  const names = listCategoryResources('hygiene-rules', { target: policyRoot });
   const requested = options.rules
     ? new Set(options.rules.split(',').map(value => value.trim().toLowerCase()).filter(Boolean))
     : null;
@@ -497,7 +579,7 @@ export function scanHygiene(options: HygieneOptions = {}): HygieneReport {
     ? { mode: 'files', files: scopedPaths, unmatched: scopedPaths.filter(file => !matched.has(file)) }
     : { mode: 'repository', files: [], unmatched: [] };
   const rules = selectedNames.map(name => {
-    const resource = resolveResource('hygiene-rules', name, { target });
+    const resource = resolveResource('hygiene-rules', name, { target: policyRoot });
     return parseRule(name, resource.content, resource.path, resource.source);
   });
 

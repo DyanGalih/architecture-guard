@@ -78,6 +78,8 @@ If Flash-Mem is unavailable or the context is insufficient, resolve the selected
 
 ### Step 3 — Orchestrate Spec Kit Implement
 
+**Branch safety**: before writing code, run `git branch --show-current` in the repository being changed. If it is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch, ask before creating and switching to a feature branch; if the user declines or creation fails, stop. MUST NOT implement on a protected branch. If the code lives in a separate repository nested in this workspace, run this check, the implementation's git steps, and the Security Review below in that repository.
+
 You must orchestrate the `/speckit.implement` (core implementation) workflow directly.
 
 **CRITICAL INSTRUCTION**: You must NOT just advise the user or stop here. You must perform the implementation by following the `tasks.md` breakdown:

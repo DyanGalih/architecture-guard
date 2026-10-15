@@ -348,6 +348,22 @@ test('default init removes only stale vendored copies of engine resources', () =
   assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard/config.yml')));
 });
 
+test('default init never prunes through a symlinked resource directory outside the target', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-symlink-'));
+  const repo = path.join(__dirname, '..');
+  const external = path.join(tmp, 'external');
+  const cwd = path.join(tmp, 'project');
+  fs.mkdirSync(external);
+  fs.mkdirSync(path.join(cwd, '.architecture-guard'), { recursive: true });
+  fs.copyFileSync(path.join(repo, 'templates/ponytail_core.md'), path.join(external, 'ponytail_core.md'));
+  fs.symlinkSync(external, path.join(cwd, '.architecture-guard/templates'), 'dir');
+
+  const out = runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit'], cwd);
+  assert.ok(fs.existsSync(path.join(external, 'ponytail_core.md')), 'byte-identical file outside the target is kept');
+  assert.ok(fs.lstatSync(path.join(cwd, '.architecture-guard/templates')).isSymbolicLink(), 'the symlink itself is left alone');
+  assert.match(out, /Kept local overrides[\s\S]*\.architecture-guard\/templates\//);
+});
+
 test('vendor mode runtime resources auto-replace by default and can be skipped with --overwrite skip', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   spawnSync(process.execPath, [installer, 'init', '--vendor', '--yes', '--agent', 'opencode', '--framework', 'spec-kit'], { cwd, encoding: 'utf8' });
@@ -677,6 +693,51 @@ test('detect-changed-files includes committed branch work, renames, and untracke
   const result = spawnSync(process.execPath, [installer, 'detect-changed-files', '--json'], { cwd: path.join(repo, 'src'), encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(JSON.parse(result.stdout), ['a.txt', 'renamed.txt', 'src/committed.txt', 'untracked.txt']);
+});
+
+test('detect-changed-files finds a non-standard default branch and never silently drops committed work', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-git-'));
+  const gitIn = (cwd, ...args) => {
+    const result = spawnSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args], { cwd, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+  };
+  const detect = (cwd, ...args) => spawnSync(process.execPath, [installer, 'detect-changed-files', '--json', ...args], { cwd, encoding: 'utf8' });
+
+  const source = path.join(tmp, 'source');
+  fs.mkdirSync(source);
+  gitIn(source, 'init', '-q', '-b', 'develop');
+  fs.writeFileSync(path.join(source, 'base.txt'), 'base');
+  gitIn(source, 'add', '.');
+  gitIn(source, 'commit', '-q', '-m', 'base');
+
+  // Remote named "upstream" whose default branch is "develop": no origin/main, origin/master, main, or master exists.
+  const clone = path.join(tmp, 'clone');
+  gitIn(tmp, 'clone', '-q', '-o', 'upstream', source, clone);
+  gitIn(clone, 'checkout', '-q', '-b', 'feature');
+  fs.writeFileSync(path.join(clone, 'committed.txt'), 'c');
+  gitIn(clone, 'add', '.');
+  gitIn(clone, 'commit', '-q', '-m', 'feature work');
+  const found = detect(clone);
+  assert.equal(found.status, 0, found.stderr);
+  assert.deepEqual(JSON.parse(found.stdout), ['committed.txt']);
+
+  // Without any resolvable default branch, fail loudly and ask for --base.
+  gitIn(clone, 'remote', 'remove', 'upstream');
+  const missing = detect(clone);
+  assert.notEqual(missing.status, 0);
+  assert.match(JSON.parse(missing.stderr.match(/{.*}/s)[0]).error, /pass --base <ref>/);
+  const headOnly = detect(clone, '--base', 'HEAD');
+  assert.equal(headOnly.status, 0, headOnly.stderr);
+  assert.deepEqual(JSON.parse(headOnly.stdout), []);
+
+  // A repository with no commits has nothing committed to miss.
+  const empty = path.join(tmp, 'empty');
+  fs.mkdirSync(empty);
+  gitIn(empty, 'init', '-q', '-b', 'trunk');
+  fs.writeFileSync(path.join(empty, 'new.txt'), 'n');
+  const unborn = detect(empty);
+  assert.equal(unborn.status, 0, unborn.stderr);
+  assert.deepEqual(JSON.parse(unborn.stdout), ['new.txt']);
 });
 
 test('validate-sync-config is a registered CLI command', () => {
@@ -1144,8 +1205,9 @@ test('forge tokens are materialized with the selected forge actions', () => {
   assert.doesNotMatch(out, /\{forge_command:/);
   assert.match(out, /the forge-defined "pr-diff" action/);
   assert.match(out, /## Resolved Forge Actions \(generic\)/);
-  assert.match(out, /git diff <base>\.\.\.<head>/);
+  assert.match(out, /git diff '<base>\.\.\.<head>'/);
   assert.match(out, /Placeholders in these actions:/);
+  assert.match(out, /untrusted: validate each against the forge adapter's allowlist/);
   assert.match(out, /<n>, <iid>, <id>: the pull or merge request number or id/);
   assert.match(out, /temporary file created outside the repository/);
   assert.equal(materializeForgeTokens('no tokens here', 'generic'), 'no tokens here');
@@ -1189,7 +1251,34 @@ test('forge adapters pass review and reply text through temporary files, never s
   assert.match(gitlab, /never call bulk_publish and never send reviewer_state/);
   const azure = forgeCommands(fs.readFileSync(path.join(repoRoot, 'adapters/forges/azure-devops.md'), 'utf8'));
   assert.doesNotMatch(azure.get('pr-diff'), /pr-checkout|pr checkout|git switch/, 'the Azure diff never switches the checkout');
-  assert.match(azure.get('pr-diff'), /git diff origin\/<target branch>\.\.\.origin\/<source branch>/);
+  assert.match(azure.get('pr-diff'), /git diff 'origin\/<target branch>\.\.\.origin\/<source branch>'/);
+  // Refs from pull-request metadata are validated and never reach git as bare arguments.
+  for (const name of ['azure-devops', 'bitbucket']) {
+    const content = fs.readFileSync(path.join(repoRoot, 'adapters/forges', `${name}.md`), 'utf8');
+    assert.match(content, /untrusted: before using one in any command/, `${name} validates pull-request branch names`);
+    const commands = forgeCommands(content);
+    for (const key of ['pr-diff', 'pr-checkout']) {
+      const value = commands.get(key);
+      const fetches = (value.match(/git fetch/g) ?? []).length;
+      assert.ok(fetches > 0, `${name} ${key} fetches the branch`);
+      assert.equal((value.match(/git fetch (origin|'<source remote>') '(\+|refs\/|<(source|target) ref>)/g) ?? []).length, fetches, `${name} ${key} passes only quoted full refspecs: ${value}`);
+    }
+  }
+  // Bitbucket pull requests from forks fetch the source branch from the fork, then check the commit.
+  const bitbucket = fs.readFileSync(path.join(repoRoot, 'adapters/forges/bitbucket.md'), 'utf8');
+  assert.match(bitbucket, /`<source repo>` is source\.repository\.full_name/);
+  assert.match(bitbucket, /`<source repo>` matches `\^\[A-Za-z0-9\._-\]\+\/\[A-Za-z0-9\._-\]\+\$`/);
+  for (const key of ['pr-diff', 'pr-checkout']) {
+    const value = forgeCommands(bitbucket).get(key);
+    assert.match(value, /git fetch '<source remote>' 'refs\/heads\/<source branch>'/, `bitbucket ${key} fetches the source from its own repository`);
+    assert.match(value, /git rev-parse FETCH_HEAD.*source\.commit\.hash/, `bitbucket ${key} checks the fetched commit`);
+  }
+  // Generic refs are user input: an allowlist, not just quoting.
+  const genericDoc = fs.readFileSync(path.join(repoRoot, 'adapters/forges/generic.md'), 'utf8');
+  assert.match(genericDoc, /confirm it matches `\^\[A-Za-z0-9\._\/~\^-\]\+\$`/);
+  for (const [key, value] of forgeCommands(genericDoc)) {
+    assert.doesNotMatch(value, /(^|\s)<(base|head)>/, `generic ${key} uses an unquoted ref: ${value}`);
+  }
   assert.match(fs.readFileSync(path.join(repoRoot, 'adapters/forges/azure-devops.md'), 'utf8'), /--resource 499b84ac-1321-427f-aa17-267ca6975798/);
   const generic = forgeCommands(fs.readFileSync(path.join(repoRoot, 'adapters/forges/generic.md'), 'utf8'));
   assert.match(generic.get('review-post'), /reviews\/<slug>\.md/);
@@ -1240,7 +1329,7 @@ test('review-implementation honors the caller review root and runs the scoped hy
   assert.match(prompt, /## Review Inputs/);
   assert.match(prompt, /\*\*Review root\*\*/);
   assert.match(prompt, /\*\*Base ref\*\*/);
-  assert.match(prompt, /architecture-guard hygiene --json --target <review root> --files <changed files/);
+  assert.match(prompt, /architecture-guard hygiene --json --target <review root> --policy-root <workspace> --files <changed files/);
   assert.match(prompt, /manualRules/);
   assert.match(prompt, /\| ID \| Category \| Severity \| Blocking \| Target \|/);
   assert.match(prompt, /`ag-refactor-generator` capability for findings whose Target is `code`/);
@@ -1316,6 +1405,65 @@ test('the pr alias installs both pull-request skills', () => {
     assert.match(skill, /## Resolved Forge Actions \(azure-devops\)/, name);
   }
   assert.match(fs.readFileSync(path.join(cwd, '.opencode/commands/ag-pr-feedback.md'), 'utf8'), /"status": "fixed"/);
+});
+
+test('bitbucket git fallbacks review a pull request whose source branch lives in a fork', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-fork-'));
+  const run = (cwd, ...args) => {
+    const result = spawnSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args], { cwd, encoding: 'utf8' });
+    assert.equal(result.status, 0, `git ${args.join(' ')}: ${result.stderr}`);
+    return result.stdout;
+  };
+  // Destination repository with main; the fork adds a branch that exists only in the fork.
+  const origin = path.join(root, 'origin.git');
+  run(root, 'init', '-q', '--bare', '-b', 'main', origin);
+  const author = path.join(root, 'author');
+  run(root, 'clone', '-q', origin, author);
+  run(author, 'switch', '-q', '-c', 'main');
+  fs.writeFileSync(path.join(author, 'a.txt'), 'one\n');
+  run(author, 'add', '.');
+  run(author, 'commit', '-q', '-m', 'base');
+  run(author, 'push', '-q', 'origin', 'main');
+  const fork = path.join(root, 'fork.git');
+  run(root, 'clone', '-q', '--bare', origin, fork);
+  run(author, 'remote', 'add', 'fork', fork);
+  run(author, 'switch', '-q', '-c', 'fork-feature');
+  fs.writeFileSync(path.join(author, 'b.txt'), 'from the fork\n');
+  run(author, 'add', '.');
+  run(author, 'commit', '-q', '-m', 'fork work');
+  run(author, 'push', '-q', 'fork', 'fork-feature');
+  const forkSha = run(author, 'rev-parse', 'HEAD').trim();
+  const reviewer = path.join(root, 'reviewer');
+  run(root, 'clone', '-q', origin, reviewer);
+
+  const raw = fs.readFileSync(path.join(repoRoot, 'adapters/forges/bitbucket.md'), 'utf8');
+  const cell = (key) => raw.match(new RegExp(`^\\| ${key} \\| (.*) \\|$`, 'm'))[1];
+  const gitSnippets = (key) => [...cell(key).matchAll(/`(git [^`]+)`/g)].map(match => match[1]);
+  // The fork's clone URL stands in for git@bitbucket.org:<source repo>.git.
+  const fill = (command) => command
+    .replaceAll('<destination branch>', 'main')
+    .replaceAll('<source branch>', 'fork-feature')
+    .replaceAll('<source remote>', fork);
+  const sh = (command) => {
+    const result = spawnSync('sh', ['-c', command], { cwd: reviewer, encoding: 'utf8' });
+    assert.equal(result.status, 0, `${command}: ${result.stderr}`);
+    return result.stdout;
+  };
+
+  const outputs = gitSnippets('pr-diff').map(command => sh(fill(command)));
+  assert.ok(outputs.some(out => out.trim() === forkSha), 'FETCH_HEAD is the fork commit');
+  assert.ok(outputs.some(out => /^\+from the fork$/m.test(out)), 'the diff shows the fork change');
+  assert.ok(outputs.some(out => /^A\tb\.txt$/m.test(out)), 'changed files include the fork file');
+
+  const worktree = path.join(root, 'review-worktree');
+  run(reviewer, 'worktree', 'add', '-q', '--detach', worktree);
+  for (const command of gitSnippets('pr-checkout')) {
+    const result = spawnSync('sh', ['-c', fill(command)], { cwd: worktree, encoding: 'utf8' });
+    assert.equal(result.status, 0, `${command}: ${result.stderr}`);
+  }
+  assert.equal(run(worktree, 'rev-parse', 'HEAD').trim(), forkSha, 'checkout is the fork commit');
+  assert.equal(run(reviewer, 'branch', '--show-current').trim(), 'main', "reviewer's checkout is unchanged");
+  run(reviewer, 'worktree', 'remove', worktree);
 });
 
 test('generic forge commands work end to end against a real repository', () => {
@@ -1396,7 +1544,7 @@ test('generic forge commands work end to end against a real repository', () => {
   // Installed skills carry the same commands for this forge.
   runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--forge', 'generic', '--commands', 'pr'], reviewer);
   const skill = fs.readFileSync(path.join(reviewer, '.opencode/commands/ag-review-pr.md'), 'utf8');
-  assert.match(skill, /git diff --name-status <base>\.\.\.<head>/);
+  assert.match(skill, /git diff --name-status '<base>\.\.\.<head>'/);
 });
 
 test('legacy Spec Kit prompts never run the CLI through npx', () => {
@@ -1785,4 +1933,328 @@ test('a recorded generic forge is kept but init points out a newly detected host
   const out = runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'], cwd);
   assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-forge'), 'utf8').trim(), 'generic');
   assert.match(out, /github remote detected, rerun with --forge github/);
+});
+
+// Review gaps (P1): governance documents reviewers cannot open, security re-review on sensitive paths,
+// and structured accepted risks.
+
+const git = (cwd, ...args) => spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8' });
+
+test('validate-setup warns when a governance document is gitignored, outside the repository or missing', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  git(cwd, 'init', '-q');
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit', '--commands', 'init'], cwd);
+  fs.mkdirSync(path.join(cwd, '.specify/memory'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, '.specify/memory/constitution.md'), '# Constitution');
+  fs.mkdirSync(path.join(cwd, 'docs'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, 'docs/security_constitution.md'), '# Security');
+  fs.writeFileSync(path.join(cwd, 'docs/constitution.md'), '# Governance');
+  fs.writeFileSync(path.join(cwd, '.gitignore'), 'docs/security_constitution.md\n');
+  const configPath = path.join(cwd, '.architecture-guard/config.yml');
+  fs.appendFileSync(configPath, [
+    'governance:',
+    '  constitution: docs/constitution.md',
+    '  security: docs/security_constitution.md',
+    '  architecture: ../elsewhere/architecture_constitution.md',
+    '  layout: docs/layout.md',
+    '',
+  ].join('\n'));
+
+  const out = spawnSync(process.execPath, [installer, 'validate-setup', cwd], { encoding: 'utf8' }).stdout;
+  assert.match(out, /Governance document "constitution" readable \(docs\/constitution\.md\)/);
+  assert.match(out, /Governance document "security" is gitignored \(docs\/security_constitution\.md\); reviewers cannot read it/);
+  assert.match(out, /Governance document "architecture" is outside the repository/);
+  assert.match(out, /Governance document "layout" not found \(docs\/layout\.md\)/);
+  assert.match(out, /security_sensitive_paths not configured/);
+
+  fs.writeFileSync(path.join(cwd, '.gitignore'), '.specify/memory/constitution.md\n');
+  assert.match(
+    spawnSync(process.execPath, [installer, 'validate-setup', cwd], { encoding: 'utf8' }).stdout,
+    /Governance constitution is gitignored \(\.specify\/memory\/constitution\.md\); reviewers cannot read it/,
+  );
+});
+
+test('detect-changed-files --security-sensitive lists only changed files matching security_sensitive_paths', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  git(cwd, 'init', '-q', '-b', 'main');
+  git(cwd, 'config', 'user.email', 'test@example.com');
+  git(cwd, 'config', 'user.name', 'Test');
+  fs.mkdirSync(path.join(cwd, '.architecture-guard'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/config.yml'), [
+    'security_sensitive_paths:',
+    '  - routes/auth.php',
+    '  - app/Http/Controllers/Auth/**',
+    '',
+  ].join('\n'));
+  fs.writeFileSync(path.join(cwd, 'README.md'), '# app\n');
+  git(cwd, 'add', '-A');
+  git(cwd, 'commit', '-q', '-m', 'base');
+  git(cwd, 'checkout', '-q', '-b', 'feature');
+  fs.mkdirSync(path.join(cwd, 'routes'), { recursive: true });
+  fs.mkdirSync(path.join(cwd, 'app/Http/Controllers/Auth'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, 'routes/auth.php'), '<?php');
+  fs.writeFileSync(path.join(cwd, 'app/Http/Controllers/Auth/LoginController.php'), '<?php');
+  fs.writeFileSync(path.join(cwd, 'README.md'), '# app changed\n');
+
+  const run = (...extra) => spawnSync(process.execPath, [installer, 'detect-changed-files', '--base', 'main', ...extra], { cwd, encoding: 'utf8' });
+  const sensitive = run('--json', '--security-sensitive');
+  assert.equal(sensitive.status, 0, sensitive.stderr);
+  assert.deepEqual(JSON.parse(sensitive.stdout), ['app/Http/Controllers/Auth/LoginController.php', 'routes/auth.php']);
+  assert.deepEqual(JSON.parse(run('--json').stdout), ['README.md', 'app/Http/Controllers/Auth/LoginController.php', 'routes/auth.php'], 'the default output is unchanged');
+
+  fs.rmSync(path.join(cwd, '.architecture-guard/config.yml'));
+  assert.deepEqual(JSON.parse(run('--json', '--security-sensitive').stdout), [], 'no configured globs, no sensitive files');
+});
+
+test('pull-request and implementation skills require a security re-review for security-sensitive changes', () => {
+  const prompt = file => fs.readFileSync(path.join(repoRoot, 'orchestration', file), 'utf8');
+  for (const file of ['pr-feedback.md', 'review-pr.md', 'governed-implement.md']) {
+    assert.match(prompt(file), /security_sensitive_paths/, file);
+    assert.match(prompt(file), /detect-changed-files --json --security-sensitive/, file);
+  }
+  assert.match(prompt('pr-feedback.md'), /Security Review[^\n]*before committing/);
+  assert.match(prompt('governed-implement.md'), /security re-review required/i);
+});
+
+test('constitution reading reports governance documents reviewers cannot open', () => {
+  for (const file of ['governed-implement.md', 'review-implementation.md', 'governed-plan.md', 'review-artifacts.md', 'governed-tasks.md']) {
+    const prompt = fs.readFileSync(path.join(repoRoot, 'orchestration', file), 'utf8');
+    assert.match(prompt, /gitignored or outside the repository[^\n]*hygiene WARNING/, file);
+  }
+  for (const adapter of ['generic', 'spec-kit', 'openspec']) {
+    const row = fs.readFileSync(path.join(repoRoot, 'adapters', `${adapter}.md`), 'utf8').match(/^\| constitution-set \|.*$/m)[0];
+    assert.match(row, /`governance` in `\.architecture-guard\/config\.yml`/, adapter);
+  }
+  assert.ok(fs.existsSync(path.join(repoRoot, 'hygiene-rules', 'unresolved-governance-citations.md')));
+  const config = fs.readFileSync(path.join(repoRoot, 'templates', 'architecture_guard_config.yml'), 'utf8');
+  assert.match(config, /# governance:/);
+  assert.match(config, /# security_sensitive_paths:/);
+});
+
+test('accepted risks carry owner, rationale, compensating control, trigger and gate', () => {
+  const fields = /owner[\s\S]*rationale[\s\S]*compensating control[\s\S]*trigger or expiry[\s\S]*gate/i;
+  for (const file of ['templates/constitution.md', 'templates/generic_plan.md']) {
+    assert.match(fs.readFileSync(path.join(repoRoot, file), 'utf8'), fields, file);
+  }
+  for (const file of ['review-artifacts.md', 'verify.md']) {
+    const prompt = fs.readFileSync(path.join(repoRoot, 'orchestration', file), 'utf8');
+    assert.match(prompt, /Accepted-risk completeness/, file);
+    assert.match(prompt, /only mitigation is to revisit/i, file);
+  }
+});
+
+test('governance readability is judged by the repository that holds the file (nested repositories)', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  git(cwd, 'init', '-q');
+  fs.writeFileSync(path.join(cwd, '.gitignore'), 'src/\n');
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit', '--commands', 'init'], cwd);
+  fs.mkdirSync(path.join(cwd, 'src/docs'), { recursive: true });
+  git(path.join(cwd, 'src'), 'init', '-q');
+  fs.writeFileSync(path.join(cwd, 'src/docs/constitution.md'), '# Governance');
+  fs.writeFileSync(path.join(cwd, 'src/docs/notes_constitution.md'), '# Private');
+  fs.writeFileSync(path.join(cwd, 'src/.gitignore'), 'docs/notes_constitution.md\n');
+  fs.appendFileSync(path.join(cwd, '.architecture-guard/config.yml'), 'governance:\n  constitution: src/docs/constitution.md\n  notes: src/docs/notes_constitution.md\n');
+
+  const out = spawnSync(process.execPath, [installer, 'validate-setup', cwd], { encoding: 'utf8' }).stdout;
+  assert.match(out, /Governance document "constitution" readable \(src\/docs\/constitution\.md\)/);
+  assert.match(out, /Governance document "notes" is gitignored \(src\/docs\/notes_constitution\.md\)/);
+});
+
+// Multi-repository workspaces: the governance/specs repository (where .architecture-guard/ lives) wraps one or
+// more application repositories with their own git history and origin, usually gitignored by the workspace.
+
+function multiRepoWorkspace() {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  const app = path.join(cwd, 'src');
+  for (const [dir, origin] of [[cwd, 'git@github.com:me/specs.git'], [app, 'git@gitlab.com:org/app.git']]) {
+    fs.mkdirSync(dir, { recursive: true });
+    git(dir, 'init', '-q', '-b', 'main');
+    git(dir, 'config', 'user.email', 'test@example.com');
+    git(dir, 'config', 'user.name', 'Test');
+    git(dir, 'remote', 'add', 'origin', origin);
+  }
+  fs.writeFileSync(path.join(cwd, '.gitignore'), 'src/\n');
+  fs.writeFileSync(path.join(cwd, 'README.md'), '# specs\n');
+  fs.mkdirSync(path.join(app, 'routes'), { recursive: true });
+  fs.writeFileSync(path.join(app, 'routes/web.php'), '<?php\n');
+  git(cwd, 'add', '-A');
+  git(cwd, 'commit', '-q', '-m', 'base');
+  git(app, 'add', '-A');
+  git(app, 'commit', '-q', '-m', 'base');
+  git(app, 'checkout', '-q', '-b', 'feature');
+  return { cwd, app };
+}
+
+test('init records nested application repositories and detects the forge from the code repository', () => {
+  const { cwd } = multiRepoWorkspace();
+  const out = runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'generic', '--commands', 'init'], cwd);
+  assert.match(out, /Detected repository "src" \(src\)/);
+  const config = require('yaml').parse(fs.readFileSync(path.join(cwd, '.architecture-guard/config.yml'), 'utf8'));
+  assert.deepEqual(config.repositories, [{ name: 'src', path: 'src', roles: ['code'] }]);
+  assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-forge'), 'utf8').trim(), 'gitlab', 'the forge comes from the code repository, not the workspace');
+
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/config.yml'), 'adapter: generic\nrepositories:\n  - name: app\n    path: src\n    roles: [code, specs]\n');
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'generic', '--commands', 'init'], cwd);
+  const kept = require('yaml').parse(fs.readFileSync(path.join(cwd, '.architecture-guard/config.yml'), 'utf8'));
+  assert.deepEqual(kept.repositories, [{ name: 'app', path: 'src', roles: ['code', 'specs'] }], 'a rerun keeps the user\'s repositories');
+});
+
+test('detect-changed-files covers every configured repository with workspace-relative paths', () => {
+  const { cwd, app } = multiRepoWorkspace();
+  fs.mkdirSync(path.join(cwd, '.architecture-guard'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/config.yml'), [
+    'repositories:',
+    '  - name: app',
+    '    path: src',
+    '    roles: [code]',
+    'security_sensitive_paths:',
+    '  - src/routes/auth.php',
+    '',
+  ].join('\n'));
+  fs.mkdirSync(path.join(app, '.architecture-guard'), { recursive: true });
+  fs.writeFileSync(path.join(app, '.architecture-guard/config.yml'), 'security_sensitive_paths:\n  - app/Http/Controllers/Auth/**\n');
+  git(app, 'add', '-A');
+  git(app, 'commit', '-q', '-m', 'app config');
+  fs.writeFileSync(path.join(app, 'routes/auth.php'), '<?php\n');
+  fs.mkdirSync(path.join(app, 'app/Http/Controllers/Auth'), { recursive: true });
+  fs.writeFileSync(path.join(app, 'app/Http/Controllers/Auth/Login.php'), '<?php\n');
+  fs.writeFileSync(path.join(app, 'routes/web.php'), '<?php // changed\n');
+  fs.writeFileSync(path.join(cwd, 'README.md'), '# specs changed\n');
+
+  const run = (...extra) => {
+    const result = spawnSync(process.execPath, [installer, 'detect-changed-files', '--json', ...extra], { cwd, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    return JSON.parse(result.stdout);
+  };
+  assert.deepEqual(run(), ['.architecture-guard/config.yml', 'README.md', 'src/.architecture-guard/config.yml', 'src/app/Http/Controllers/Auth/Login.php', 'src/routes/auth.php', 'src/routes/web.php']);
+  assert.deepEqual(run('--repo', 'app'), ['src/.architecture-guard/config.yml', 'src/app/Http/Controllers/Auth/Login.php', 'src/routes/auth.php', 'src/routes/web.php']);
+  assert.deepEqual(run('--security-sensitive'), ['src/app/Http/Controllers/Auth/Login.php', 'src/routes/auth.php'], 'workspace globs and the repository\'s own globs both apply');
+  const inside = spawnSync(process.execPath, [installer, 'detect-changed-files', '--json', '--security-sensitive'], { cwd: app, encoding: 'utf8' });
+  assert.deepEqual(JSON.parse(inside.stdout), ['src/app/Http/Controllers/Auth/Login.php', 'src/routes/auth.php'], 'run inside a configured repository, the workspace settings still apply');
+  const unknown = spawnSync(process.execPath, [installer, 'detect-changed-files', '--json', '--repo', 'nope'], { cwd, encoding: 'utf8' });
+  assert.notEqual(unknown.status, 0);
+  assert.match(unknown.stderr, /Unknown repository \\?"nope\\?"; configured: app/);
+});
+
+test('validate-setup checks each configured repository', () => {
+  const { cwd } = multiRepoWorkspace();
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'generic', '--commands', 'init'], cwd);
+  fs.mkdirSync(path.join(cwd, 'plain'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/config.yml'), [
+    'adapter: generic',
+    'repositories:',
+    '  - name: app',
+    '    path: src',
+    '    roles: [code]',
+    '  - name: plain',
+    '    path: plain',
+    '  - name: gone',
+    '    path: missing',
+    '  - name: sibling',
+    '    path: ../elsewhere',
+    '',
+  ].join('\n'));
+  const out = spawnSync(process.execPath, [installer, 'validate-setup', cwd], { encoding: 'utf8' }).stdout;
+  assert.match(out, /Repository "app" \(src\): git repository, origin gitlab\.com, forge gitlab/);
+  assert.match(out, /Repository "plain" \(plain\) is not a git repository/);
+  assert.match(out, /Repository "gone" \(missing\) not found/);
+  assert.match(out, /Repository "sibling" \(\.\.\/elsewhere\) must be inside the workspace/);
+});
+
+test('skills that use git, tests or the code host follow the repository context', () => {
+  const template = fs.readFileSync(path.join(repoRoot, 'templates', 'repository_context.md'), 'utf8');
+  assert.match(template, /owning repository/i);
+  assert.match(template, /detect-changed-files --json/);
+  assert.match(template, /one commit per repository/i);
+  for (const file of ['governed-implement.md', 'governed-delivery.md', 'governed-delivery-team.md', 'governed-spec.md', 'governed-archive.md', 'pr-feedback.md', 'review-pr.md', 'review-implementation.md', 'verify.md', 'apply.md']) {
+    const prompt = fs.readFileSync(path.join(repoRoot, 'orchestration', file), 'utf8');
+    assert.match(prompt, /## Repository Context[\s\S]*architecture-guard resolve template repository_context/, file);
+  }
+});
+
+test('init records only nested repositories the workspace ignores, never vendored or hidden checkouts', () => {
+  const { cwd } = multiRepoWorkspace();
+  for (const dir of ['examples/demo', '.venv/pkg', 'third_party/lib']) {
+    fs.mkdirSync(path.join(cwd, dir), { recursive: true });
+    git(path.join(cwd, dir), 'init', '-q');
+  }
+  fs.appendFileSync(path.join(cwd, '.gitignore'), '.venv/\nthird_party/\n');
+  const out = runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'generic', '--commands', 'init'], cwd);
+  const config = require('yaml').parse(fs.readFileSync(path.join(cwd, '.architecture-guard/config.yml'), 'utf8'));
+  assert.deepEqual(config.repositories.map(repository => repository.path), ['src']);
+  assert.doesNotMatch(out, /examples\/demo|third_party|\.venv/);
+});
+
+test('detect-changed-files guards the multi-repository edge cases', () => {
+  const { cwd, app } = multiRepoWorkspace();
+  fs.mkdirSync(path.join(cwd, '.architecture-guard'), { recursive: true });
+  fs.mkdirSync(path.join(cwd, 'plain'), { recursive: true });
+  const config = extra => fs.writeFileSync(path.join(cwd, '.architecture-guard/config.yml'), [
+    'repositories:',
+    '  - name: app',
+    '    path: ./src/',
+    ...extra,
+    'security_sensitive_paths:',
+    '  - src/routes/**',
+    '',
+  ].join('\n'));
+  const run = (dir, ...args) => spawnSync(process.execPath, [installer, 'detect-changed-files', '--json', ...args], { cwd: dir, encoding: 'utf8' });
+  config(['  - name: app', '    path: plain', '  - name: plain', '    path: plain']);
+  fs.writeFileSync(path.join(app, 'routes/auth.php'), '<?php\n');
+
+  assert.deepEqual(JSON.parse(run(cwd, '--security-sensitive').stdout), ['src/routes/auth.php'], 'a trailing slash and a duplicate name do not lose the first repository');
+  assert.match(run(cwd, '--repo', 'plain').stderr, /not a git repository/, '--repo on a plain directory fails instead of reporting nothing');
+  assert.match(run(cwd, '--base', 'main').stderr, /--base needs --repo/);
+
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/config.yml'), 'security_sensitive_paths:\n  - src/routes/**\n');
+  const unlisted = run(app, '--security-sensitive');
+  assert.deepEqual(JSON.parse(unlisted.stdout), []);
+  assert.match(unlisted.stderr, /not listed under repositories/, 'running inside an unlisted nested repository warns instead of staying silent');
+
+  const loose = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  fs.renameSync(app, path.join(loose, 'src'));
+  fs.mkdirSync(path.join(loose, '.architecture-guard'), { recursive: true });
+  fs.writeFileSync(path.join(loose, '.architecture-guard/config.yml'), 'repositories:\n  - name: app\n    path: src\nsecurity_sensitive_paths:\n  - src/routes/**\n');
+  const nonGit = run(loose, '--security-sensitive');
+  assert.equal(nonGit.status, 0, nonGit.stderr);
+  assert.deepEqual(JSON.parse(nonGit.stdout), ['src/routes/auth.php'], 'a workspace that is not a git repository still covers its repositories');
+});
+
+test('detect-changed-files leaves out the repository directory entry itself', () => {
+  const { cwd, app } = multiRepoWorkspace();
+  fs.writeFileSync(path.join(cwd, '.gitignore'), '');
+  fs.mkdirSync(path.join(cwd, '.architecture-guard'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/config.yml'), 'repositories:\n  - name: app\n    path: src\n');
+  fs.writeFileSync(path.join(app, 'routes/auth.php'), '<?php\n');
+  const files = JSON.parse(spawnSync(process.execPath, [installer, 'detect-changed-files', '--json'], { cwd, encoding: 'utf8' }).stdout);
+  assert.deepEqual(files, ['.architecture-guard/config.yml', '.gitignore', 'src/routes/auth.php']);
+});
+
+test('validate-setup warns about workspace security globs that miss every repository and about unlisted ignored repositories', () => {
+  const { cwd } = multiRepoWorkspace();
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'generic', '--commands', 'init'], cwd);
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/config.yml'), 'adapter: generic\nrepositories: []\nsecurity_sensitive_paths:\n  - routes/auth.php\n');
+  const out = spawnSync(process.execPath, [installer, 'validate-setup', cwd], { encoding: 'utf8' }).stdout;
+  assert.match(out, /Nested repository "src" is ignored by the workspace but not listed under repositories/);
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/config.yml'), 'adapter: generic\nrepositories:\n  - name: app\n    path: src\nsecurity_sensitive_paths:\n  - routes/auth.php\n  - src/routes/**\n');
+  const out2 = spawnSync(process.execPath, [installer, 'validate-setup', cwd], { encoding: 'utf8' }).stdout;
+  assert.match(out2, /security_sensitive_paths entry "routes\/auth\.php" matches no repository path/);
+  assert.doesNotMatch(out2, /entry "src\/routes\/\*\*" matches no repository/);
+});
+
+test('security re-reviews and branch checks are scoped to the owning repository, legacy commands included', () => {
+  const prompt = file => fs.readFileSync(path.join(repoRoot, 'orchestration', file), 'utf8');
+  for (const file of ['governed-implement.md', 'pr-feedback.md']) {
+    assert.match(prompt(file), /once per owning repository, from that repository's directory, with the explicit changed-file list/, file);
+    assert.match(prompt(file), /`Degraded`/, file);
+  }
+  for (const file of ['governed-delivery.md', 'governed-delivery-team.md', 'apply.md']) {
+    assert.match(prompt(file), /in the workspace and in every repository this phase writes to/, file);
+  }
+  assert.match(prompt('pr-feedback.md'), /Pass the workspace as its \*\*Review root\*\*/);
+  assert.match(prompt('review-implementation.md'), /--policy-root <workspace>/);
+  const legacy = file => fs.readFileSync(path.join(repoRoot, 'commands', file), 'utf8');
+  assert.match(legacy('governed-implement.md'), /MUST NOT implement on a protected branch/);
+  assert.match(legacy('governed-archive.md'), /Never force-push/);
+  assert.match(legacy('governed-archive.md'), /Refuse to commit or push on/);
 });
