@@ -29,6 +29,10 @@ Before continuing, you **MUST** resolve and apply the `ponytail_core` template w
 
 Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
 
+## Repository Context
+
+Resolve and apply the `repository_context` template with `architecture-guard resolve template repository_context`. When `.architecture-guard/config.yml` lists `repositories`, every git, branch, test, hygiene, commit, push, and code-host step in this skill runs in the repository that owns the files it concerns, as that template defines, and paths are workspace-relative; rules, constitutions, and configuration still come from the workspace. Without `repositories`, the workspace is the only repository and nothing changes.
+
 ## Budgeted Context Contract
 
 Resolve and apply the `budgeted_context_sdd` template with `architecture-guard resolve template budgeted_context_sdd`. Active adapter artifacts and applicable constitutions are mandatory and authoritative; memory and supported fallbacks may supplement but never replace them.
@@ -55,7 +59,7 @@ Before the first mutation, resolve and preview the exact target task and constra
 
 ### Constitution Inputs
 
-Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file with file-reading tools. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file, and do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`. For optional split layouts, embedded rules in `{adapter_path:constitution}` satisfy the corresponding input. Later steps refer to this set as the **Constitution Inputs**; load it once and reuse it.
+Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file with file-reading tools. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file, and do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`. Read them anyway, but report any governance file that is gitignored or outside the repository as a hygiene WARNING: reviewers and teammates cannot open a rule that code or specs cite. For optional split layouts, embedded rules in `{adapter_path:constitution}` satisfy the corresponding input. Later steps refer to this set as the **Constitution Inputs**; load it once and reuse it.
 
 ### Required Active Inputs
 
@@ -161,6 +165,7 @@ Evaluate the gate before producing the summary so the summary's **Gate Status** 
 If the analyst ({adapter_command:analyze}) finds any remaining non-blocking gaps, missing steps, or high severity issues in Step 6:
 2. **Pause and Ask for Advisory Findings**: After the Step 9 summary, conclude your response by asking the user:
    > *"The analyst found [number] gaps/severities in the tasks. Would you like me to automatically clarify and revise the tasks to address these findings?"*
+   When a governed delivery orchestrator with an Artifact Review Convergence Loop invoked this phase, skip this question and return the gaps to the caller, which repairs them in that loop.
 3. **Execute if Approved**: If the user answers "yes" (or equivalent) in their next message, you must:
    - Rewrite `{adapter_path:tasks}` to resolve the detected gaps, within the approved Write Approval Gate scope.
    - Re-run {adapter_command:analyze} after each rewrite, at most 2 repair attempts; if gaps remain after the second attempt, stop and report them.

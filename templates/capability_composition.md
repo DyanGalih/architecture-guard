@@ -19,7 +19,7 @@ Use this contract whenever one Architecture Guard command delegates to another A
 ## Preserve boundaries
 
 - Pass the active adapter, change identifier, artifact paths, user arguments, prior findings, and already-granted approvals into the delegated capability.
-- Preserve every approval, safety, severity, read-only, and verification gate in the delegated file. An approval from one capability does not satisfy a distinct gate in another.
+- Preserve every approval, safety, severity, read-only, and verification gate in the delegated file. An approval from one capability does not satisfy a distinct gate in another, unless the delegated file explicitly accepts a caller's approval for the same scope.
 - Return the delegated result to the caller, including degraded or blocked status and unresolved findings, before continuing the parent workflow.
 - Prevent recursion: if the delegated capability routes back to a capability already active in the current call chain, stop and report the cycle instead of invoking it again.
 

@@ -66,7 +66,7 @@ Instead of letting AI agents run wild, Architecture Guard provides structured en
 | Workflow Command | When To Use | What It Does |
 | :--- | :--- | :--- |
 | **`ag-governed-discover`**<br>*(or `/speckit.architecture-guard.ag-governed-discover`)* | Idea-stage | Shapes a rough request into a spec-ready direction *before* formal specification. |
-| **`ag-governed-delivery`**<br>*(or `/speckit.architecture-guard.ag-governed-delivery`)* | Delivery stage | Resumes governed delivery from an active specification through plan and task generation, with optional memory context, security and architecture gates, task reconciliation, and analysis. |
+| **`ag-governed-delivery`**<br>*(or `/speckit.architecture-guard.ag-governed-delivery`)* | Delivery stage | Resumes governed delivery from an active specification through plan and task generation, with optional memory context, security and architecture gates, task reconciliation, analysis, and an automatic artifact review loop that repairs findings until a review pass is clean. |
 | **`ag-governed-delivery-team`**<br>*(or `/speckit.architecture-guard.ag-governed-delivery-team`)* | Team delivery | Creates a stakeholder-approved User Story before the governed plan-to-tasks workflow. |
 | **`ag-governed-archive`**<br>*(or `/speckit.architecture-guard.ag-governed-archive`)* | Finalization | Archives a completed feature after verification, with explicit approval for changelog, memory, Git, and cleanup actions. |
 | **`ag-governed-implement`**<br>*(or `/speckit.architecture-guard.ag-governed-implement`)* | Implementation | Executes the generated tasks while strictly following the plan and architecture rules. |

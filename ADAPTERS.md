@@ -34,7 +34,7 @@ Each adapter file must define a `## Path Map` and a `## Command Map` table whose
 ### Required Keys
 
 - Path Map: `arch-constitution`, `constitution`, `constitution-set`, `draft`, `fallback-spec-index`, `governance-config`, `plan`, `project-config`, `security-constitution`, `security-constraints`, `spec`, `tasks`
-- Command Map: `analyze`, `architecture-apply`, `architecture-review`, `archive`, `change-scope`, `clarify-spec`, `consolidate-specs`, `create-change`, `create-plan`, `create-spec`, `create-tasks`, `hygiene`, `implement`, `list-specs`, `refactor-generator`, `security-review-implementation`, `spec-template`, `subagent-synthesize`, `validate-spec`, `verify`, `violation-detection`
+- Command Map: `analyze`, `architecture-apply`, `architecture-review`, `archive`, `change-scope`, `clarify-spec`, `consolidate-specs`, `create-change`, `create-plan`, `create-spec`, `create-tasks`, `hygiene`, `implement`, `list-specs`, `refactor-generator`, `security-review-implementation`, `security-review-plan`, `security-review-tasks`, `spec-template`, `subagent-synthesize`, `validate-spec`, `verify`, `violation-detection`
 
 What the newer keys mean:
 

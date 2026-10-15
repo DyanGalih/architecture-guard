@@ -149,6 +149,7 @@ If the analyst (`/speckit.analyze`) finds any gaps, missing steps, or high sever
 1. **Blocking Gate**: If any finding is a Constitution P0 architecture violation or independently policy-designated blocking security finding, stop progression, surface remediation tasks, and do not allow a simple proceed prompt to override it.
 2. **Pause and Ask for Advisory Findings**: For remaining non-blocking findings, conclude your response by asking the user:
    > *"The analyst found [number] gaps/severities in the tasks. Would you like me to automatically clarify and revise the tasks to address these findings?"*
+   When a governed delivery orchestrator with an Artifact Review Convergence Loop invoked this phase, skip this question and return the gaps to the caller, which repairs them in that loop.
 3. **Execute if Approved**: If the user answers "yes" (or equivalent) in their next message, you must:
    - Automatically rewrite `specs/<feature>/tasks.md` to resolve the detected gaps.
    - Present the clean result.

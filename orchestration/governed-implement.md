@@ -29,6 +29,10 @@ Before continuing, you **MUST** resolve and apply the `ponytail_core` template w
 
 Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
 
+## Repository Context
+
+Resolve and apply the `repository_context` template with `architecture-guard resolve template repository_context`. When `.architecture-guard/config.yml` lists `repositories`, every git, branch, test, hygiene, commit, push, and code-host step in this skill runs in the repository that owns the files it concerns, as that template defines, and paths are workspace-relative; rules, constitutions, and configuration still come from the workspace. Without `repositories`, the workspace is the only repository and nothing changes.
+
 ## Budgeted Context Contract
 
 Resolve and apply the `budgeted_context_sdd` template with `architecture-guard resolve template budgeted_context_sdd`. `{adapter_path:tasks}` is authoritative; load `{adapter_path:plan}`, `{adapter_path:spec}`, and security constraints when a task lacks context. Memory and supported fallbacks may supplement but never replace active artifacts.
@@ -44,6 +48,7 @@ Provide a single command that ensures:
 2. Implementation is performed ({adapter_command:implement}).
 3. The output is reviewed for security vulnerabilities (Security Review).
 4. The output is reviewed for architectural drift (Architecture Guard).
+5. Security and architecture reviews repeat automatically, fixing findings until a review pass is clean, within a bounded pass limit.
 
 ## Orchestration Flow
 
@@ -53,13 +58,13 @@ Before the first mutation, resolve and preview the working branch and the exact 
 
 ### Constitution Inputs
 
-Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file with file-reading tools. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file, and do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`. Later steps refer to this set as the **Constitution Inputs**; load it once and reuse it.
+Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file with file-reading tools. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file, and do not rely solely on workspace search or semantic indexes because these files are often in `.gitignore`. Read them anyway, but report any governance file that is gitignored or outside the repository as a hygiene WARNING: reviewers and teammates cannot open a rule that code or specs cite. Later steps refer to this set as the **Constitution Inputs**; load it once and reuse it.
 
 ### Step 0 — Preconditions
 
 Check these before the Write Approval Gate preview; stop and report if any fails.
 
-1. **Branch**: Run `git branch --show-current`. If it is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch, include `feature/<change-name>` in the Write Approval Gate preview and create and switch to it only after explicit user approval. If the user declines or creation fails, stop; MUST NOT implement on a protected branch. Preserve existing uncommitted changes; never reset or discard them.
+1. **Branch**: Run `git branch --show-current` in the workspace and in every repository whose files the tasks change (Repository Context). If any of them is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch, include `feature/<change-name>` for that repository in the Write Approval Gate preview and create and switch to it only after explicit user approval. If the user declines or creation fails, stop; MUST NOT implement on a protected branch. Preserve existing uncommitted changes; never reset or discard them.
 2. **Tasks exist**: `{adapter_path:tasks}` exists and contains unchecked tasks. Otherwise stop and recommend {adapter_command:create-tasks} or the governed tasks workflow.
 3. **Not blocked**: Stop if the latest available governed plan, tasks, or delivery summary for this feature reports a `Blocked` plan, tasks, or Gate Status, or if `{adapter_path:tasks}` contains unresolved blocking (P0 or policy-designated) remediation tasks that are not part of this run. A simple proceed prompt cannot override this.
 4. **Not stale**: If `{adapter_path:spec}` or `{adapter_path:plan}` changed materially after `{adapter_path:tasks}` was produced, stop and recommend rerunning the governed tasks workflow. If no governed tasks or delivery summary exists to show the tasks were analyzed, say so and ask the user whether to analyze first or proceed.
@@ -135,11 +140,13 @@ The SDD-tool-native implementation behavior is defined by the selected adapter a
 
 ### Step 4 — Security Review on Implementation
 
+Run `architecture-guard detect-changed-files --json --security-sensitive` from the workspace (it covers every configured repository; globs from `security_sensitive_paths` in `.architecture-guard/config.yml`). Treat any listed file, or any change to authentication, authorization, sessions, credentials, or a trust boundary when no globs are configured, as security-sensitive; re-run this step after every later fix that touches one.
+
 IF `security-review` is available as a host capability:
-1. **Execute Review**: Dispatch the detected host Security Review capability's branch/implementation operation directly. Do not execute adapter fallback prose as a command.
+1. **Execute Review**: Dispatch the detected host Security Review capability's branch/implementation operation directly. Do not execute adapter fallback prose as a command. With `repositories` configured, dispatch it once per owning repository, from that repository's directory, with the explicit changed-file list (a review run from the workspace sees no change inside a nested repository); if the host review cannot be scoped to a repository and a file list, mark Security Review `Degraded` instead of reporting it as passed.
 2. Check for: authorization bypass, missing validation, secret leakage, injection risk, and insecure data exposure.
 3. If security findings are architecture-relevant, classify them as `Security-Architecture Conflict` for the architecture review.
-4. Independently derive each finding's effective severity and blocking status from `{adapter_path:security-constitution}` or the applicable security policy in `{adapter_path:constitution}`. Stop for policy-designated blocking findings; advisory findings do not become blocking merely because they are security findings.
+4. Independently derive each finding's effective severity and blocking status from `{adapter_path:security-constitution}` or the applicable security policy in `{adapter_path:constitution}`. Surface policy-designated blocking findings immediately; Step 5.1 tries to fix them within the approved scope and Step 5.5 stops if any remain; advisory findings do not become blocking merely because they are security findings.
 
 ### Step 5 — Architecture Review on Implementation
 
@@ -149,6 +156,26 @@ Review implementation against:
 - Every declared or present governance, architecture, security, and layout Markdown file resolved from the selected configuration.
 - Plan, tasks, and `{adapter_path:security-constraints}`.
 - Accepted deviations and any available Flash-Mem context.
+
+### Step 5.1 — Implementation Review Convergence Loop
+
+Steps 4 and 5 are the first review pass. Do not hand the review back to the user to rerun by hand; repeat the review-and-fix cycle here until a stop condition is met. Blocking findings (Constitution P0 or policy-designated blocking security findings) enter this loop too: surface them in the pass report immediately and fix them within the approved scope; Step 5.5 stops the run if any remain.
+
+1. **Evaluate**: A pass is clean only when the architecture review reports no violations, every Security Review that ran reports no findings, and the hygiene runner reports no findings on changed files. An `Unavailable` hygiene runner or Security Review never makes a pass clean on its own; it only qualifies the result. Findings of every severity count, advisory ones included. Count only findings introduced or touched by this run's changes; report pre-existing findings in unchanged code without fixing them, because fixing them expands scope.
+2. **Fix**: Correct each finding in the implementation at its owning boundary, applying the Ponytail Core decision ladder and the Step 3 Pre-Completion Self-Verification Gate. Edits inside the approved Write Approval Gate scope need no per-pass confirmation; a file deletion, a new target path, or work beyond the accepted spec, plan, and task scope requires renewed approval. Record each fix in `{adapter_path:tasks}`.
+3. **Re-review**: Rerun Security Review through {adapter_command:security-review-implementation} and the architecture review through {adapter_command:architecture-review} (the registered `ag-review-implementation` capability when available) on the changed implementation. When the host can run a fresh subagent, run each review pass in a fresh context so a pass does not grade its own fixes.
+4. **Repeat** from step 1.
+
+Security Review is a separate tool, not part of Architecture Guard. Before every security dispatch in this loop, recheck that the selected Security Review command or host operation (its `security-review` or `sr-*` operations) is registered and callable; never invoke a Security Review command by name on assumption. When it is not callable, mark that pass's Security Review `Unavailable`, run the architecture review alone, and never report an unavailable security review as clean.
+
+Stop conditions:
+
+- **Converged**: a clean pass. Set **Implementation Review** to `Clean` with the pass count. Qualify `Clean` when the final pass was degraded: `architecture only` when Security Review was `Unavailable`, and `hygiene Unavailable` when the hygiene runner was `Unavailable`.
+- **Decision required**: a fix needs a material product or architecture choice, a Constitution change, a spec or plan change, or conflicts with another finding. Present the options, ask the user, and resume the loop after the answer. Record each finding the user accepts or keeps, and leave it out of later clean checks. Resuming does not reset the pass count.
+- **No progress**: a finding already fixed in an earlier pass reappears, or the total finding count does not decrease between two consecutive passes. Stop with `Not converged` and report the recurring findings.
+- **Pass limit**: at most 5 review passes per run. If findings remain after the fifth pass, stop with `Not converged`.
+
+Step 5.5 evaluates the findings that remain after this loop, and Step 6 generates refactor tasks only for those. Remaining non-blocking findings stay advisory and are reported with what each pass changed. Collect memory proposals from every pass for Step 8 instead of asking for approval per pass.
 
 ### Step 5.5 — Blocking Decision Tree
 
@@ -202,14 +229,15 @@ Produce a final `Governed Implementation Summary`.
 - Use active spec, plan, tasks, repository evidence, and any present constitutions as current authority; report that historical memory context was unavailable rather than assuming no historical constraints exist
 
 **Without Security Review**:
-- Skip Step 4 (Security Review on Implementation)
+- Skip Step 4 (Security Review on Implementation) only when no change is security-sensitive
+- When a change is security-sensitive, record `security re-review required` as an open blocking item in the summary instead of skipping silently
 - Continue to architecture review directly
 - Flag missing security implementation review in summary
 
 **Architecture Violations Found**:
 - If the Constitution marks any violation as P0 (blocking), regardless of its review severity:
-  - STOP implementation workflow
-  - Surface violations immediately
+  - Surface violations immediately; Step 5.1 tries to fix them within the approved scope
+  - STOP implementation workflow if any remain after Step 5.1
   - Return early with remediation guidance
 - If CRITICAL or HIGH but not P0:
   - Continue with warning
@@ -244,6 +272,10 @@ The command MUST return:
 - **Violations**: [Drift findings or Security-Architecture Conflicts]
 - **Refactor Tasks**: [Suggested corrections]
 - **Constitution Update Proposals**: [Proposed updates to `{adapter_path:arch-constitution}`]
+
+## Implementation Review
+- **Status**: [Clean (N passes; qualifiers) / Not converged (N passes) / Blocked]
+- **Remaining Findings**: [None or findings left after the loop]
 
 ## Implementation Status
 - [Ready to merge / Needs security fix / Needs architecture refactor / Needs constitution update]

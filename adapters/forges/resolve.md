@@ -4,7 +4,7 @@ A forge adapter tells Architecture Guard's pull-request skills how to reach the 
 
 ## Selection
 
-1. `.architecture-guard/selected-forge` names the forge chosen at `architecture-guard init` (auto-detected from the `origin` remote, or `--forge <name>`).
+1. `.architecture-guard/selected-forge` names the forge chosen at `architecture-guard init` (auto-detected from the `origin` remote of the first code repository when `repositories` is configured, otherwise of the workspace, or `--forge <name>`); run every forge action from the directory of the repository that owns the pull request.
 2. Load `.architecture-guard/forges/<name>.md`. Built-in forges are refreshed by `init`; custom forges in the same directory are never overwritten.
 3. If the file is missing, report `Unavailable: forge adapter not found at .architecture-guard/forges/<name>.md — rerun architecture-guard init` and stop before contacting the host.
 

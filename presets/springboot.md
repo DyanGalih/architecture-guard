@@ -185,6 +185,12 @@ Detect when:
 - A Service method calls another method in the same class marked with `@Transactional` (Self-invocation bypasses the proxy).
 - Heavy external calls (HTTP/Third-party) are performed inside a `@Transactional` block.
 
+### Fetch Discipline [Focus: db]
+
+Detect when:
+- Lazy associations are accessed in a loop or during serialization (N+1) instead of a fetch join, `@EntityGraph`, or a DTO projection.
+- Repository list methods return unbounded results instead of taking a `Pageable`.
+
 ### Bean Scoping and Global State
 
 Detect when:
