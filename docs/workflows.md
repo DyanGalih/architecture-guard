@@ -113,8 +113,8 @@ Best for complex features where you want manual review after every single stage.
 5. **Planning:** Run `/ag-governed-plan` to generate the technical plan.
 6. **Plan Review:** Run `ag-review-artifacts` to ensure the plan doesn't violate boundaries. Apply any fixes via `ag-apply`.
 7. **Task Generation:** Run `/ag-governed-tasks` to map the plan into actionable tasks.
-8. **Implementation:** Run `/ag-governed-implement` to execute the tasks safely.
-9. **Implementation Review:** Run `ag-review-implementation` to review your actual code changes against the architecture rules. Apply fixes if needed.
+8. **Implementation:** Run `/ag-governed-implement` to execute the tasks safely. It reruns the architecture review and, when the separate Security Review tool is installed, the security review, fixing findings until a pass is clean (at most 5 passes).
+9. **Implementation Review (Optional):** Run `ag-review-implementation` for an extra standalone check of your code changes.
 10. **Verification:** Run `/ag-verify` to ensure all tasks are delivered and no unapproved drift exists. **Ready to commit!**
 
 ### Path 2: The Streamlined Workflow (Recommended)
@@ -123,11 +123,10 @@ Best for most features. It automatically chains Spec, Plan, and Task generation 
 
 1. **Initialization:** Run `/ag-init` (Greenfield) or `/ag-init-brownfield` (Brownfield).
 2. **Discovery (Optional):** Run `/ag-governed-discover` to shape your idea.
-3. **Delivery Orchestration:** Run `/ag-governed-delivery`. This "magic button" command will automatically generate the Spec, check it, generate the Plan, check it, and generate the Tasks. 
-4. **Pre-Implementation Review:** Review the generated Spec, Plan, and Tasks. If you want a formal check, run `ag-review-artifacts` and then `ag-apply` for any refactor suggestions.
-5. **Implementation:** Run `/ag-governed-implement`.
-6. **Implementation Review:** Run `ag-review-implementation` to check your coded solution for drift or anti-patterns before finalizing.
-7. **Verification:** Run `/ag-verify` as your final gate. **Ready to commit!**
+3. **Delivery Orchestration:** Run `/ag-governed-delivery`. This "magic button" command will automatically generate the Spec, check it, generate the Plan, check it, and generate the Tasks. It then runs `ag-review-artifacts` (plus Security Review on the plan and tasks when that separate tool is installed) and applies fixes in a loop until a review pass is clean (at most 5 passes).
+4. **Pre-Implementation Review:** Read the generated Spec, Plan, and Tasks, and the **Artifact Review** status in the delivery summary. Rerun `ag-review-artifacts` only if you changed the artifacts by hand.
+5. **Implementation:** Run `/ag-governed-implement`. It loops `ag-review-implementation` and Security Review (when installed), fixing findings until a pass is clean, and reports the **Implementation Review** status.
+6. **Verification:** Run `/ag-verify` as your final gate. **Ready to commit!**
 
 ### Path 3: Interactive End-to-End Workflow with Agent Teams (`/ag-workflow`)
 

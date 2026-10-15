@@ -28,11 +28,12 @@ Produce an implementation-ready `tasks.md` from an accepted technical plan while
 2. The plan passes its architecture and applicable security gates before tasks are generated.
 3. Tasks are regenerated or reconciled whenever their source plan changes materially.
 4. Advisory findings remain non-blocking, while Constitution P0 architecture findings and findings marked blocking by Security Review policy stop progression independently.
-5. A rerun resumes safely instead of recreating valid artifacts.
+5. The final specification, plan, and tasks pass an automatic artifact review and repair loop until a review pass reports no findings, within a bounded pass limit.
+6. A rerun resumes safely instead of recreating valid artifacts.
 
 ## Write Approval Gate
 
-Before the first mutation, resolve and preview the exact branch, change container, specification or proposal, plan, and task artifacts together with all planned creation, generation, repair, and reconciliation operations. Obtain explicit user approval, then allow routine writes already previewed within this delivery phase scope without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+Before the first mutation, resolve and preview the exact branch, change container, specification or proposal, plan, and task artifacts together with all planned creation, generation, repair, reconciliation, and artifact-review repair operations. Obtain explicit user approval, then allow routine writes already previewed within this delivery phase scope without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 
 ## Mandatory Branch Preflight
 
@@ -135,7 +136,29 @@ Activate this protocol only when the Claude Code host exposes named teammate spa
 
 If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks. Allow at most 2 plan/tasks repair cycles per run (counting Plan Gate repairs and returns from analysis together); if a blocking finding or plan defect remains after the second cycle, stop with status `Blocked` and ask the user how to proceed.
 
-## Phase 8 — Durable Memory Preservation
+## Phase 8 — Artifact Review Convergence Loop
+
+Only enter this phase after tasks are accepted and no blocking finding stopped the run. This phase runs the review-and-apply cycle automatically, so the user does not run `ag-review-artifacts` by hand after delivery. When the governed task phase runs inside this delivery, do not stop at its advisory "Pause and Ask" prompt; carry those gaps into this loop instead. If `ag-review-artifacts` cannot be resolved, set **Artifact Review** to `Unavailable`, skip this phase, and report it; never report it as clean.
+
+Repeat until a stop condition is met:
+
+1. **Review**: Run `/speckit.architecture-guard.ag-review-artifacts` in `architecture` mode over the complete active artifact set: `spec.md` (plus the proposal when present), `plan.md`, and `tasks.md`. In the same pass, run Security Review on the plan through the selected security plan operation and on the tasks through the selected security tasks operation. When the host can run a fresh subagent, run each review pass in a fresh context so a pass does not grade its own repairs.
+2. **Evaluate**: A pass is clean only when its violation table is empty, **Task Synchronization** is `Synced` with no missing coverage or planning gaps, its hygiene report has no findings on the planning artifacts, and every Security Review that ran reports no findings. An `Unavailable` hygiene runner or Security Review never makes a pass clean on its own; it only qualifies the result. Findings of every severity count, advisory ones included.
+3. **Repair**: Pass architecture findings to `/speckit.architecture-guard.ag-apply`. Fix hygiene findings on the planning artifacts directly. Security findings belong to the Security Review tool, because `ag-apply` does not apply security changes: pass them to that tool's own apply operation (for example `sr-apply`) only when it is registered and callable; otherwise record them as open security findings, report them, and leave them out of the clean check. Plan/tasks edits and upstream delegations previewed and approved under the Write Approval Gate need no per-pass confirmation; a new target path or material scope requires renewed approval. When a repair materially changes the specification, rerun the Spec & Proposal Gate checks and reconcile (never regenerate) the plan through `/speckit.architecture-guard.ag-governed-plan`; when the specification or plan changed materially, reconcile tasks through `/speckit.architecture-guard.ag-governed-tasks` before the next pass.
+4. **Repeat** from step 1.
+
+Security Review is a separate tool, not part of Architecture Guard. Before every security dispatch in this loop, recheck that the selected Security Review command or host operation (its `security-review` or `sr-*` operations) is registered and callable; never invoke a Security Review command by name on assumption. When it is not callable, mark that pass's Security Review `Unavailable`, run the architecture review alone, and never report an unavailable security review as clean.
+
+Stop conditions:
+
+- **Converged**: a clean pass. Set **Artifact Review** to `Clean` with the pass count. Qualify `Clean` when the final pass was degraded: `architecture only` when Security Review was `Unavailable`, `hygiene Unavailable` when the hygiene runner was `Unavailable`, and `open security findings` when security findings were recorded but not repaired.
+- **Decision required**: a finding needs a material product or architecture choice, a Constitution change, or conflicts with another finding. Present the options, ask the user, and resume the loop after the answer. Record each finding the user accepts or keeps, and leave it out of later clean checks. Resuming does not reset the pass count.
+- **No progress**: a finding already repaired in an earlier pass reappears, or the total finding count does not decrease between two consecutive passes. Stop with `Not converged` and report the recurring findings.
+- **Pass limit**: at most 5 review passes per run. If findings remain after the fifth pass, stop with `Not converged`.
+
+This loop has its own limit and does not consume the repair cycles of the plan and task phases. On `Not converged`, remaining non-blocking findings stay advisory: report them with what each pass changed, and do not block implementation on them. Any unresolved Constitution P0 or policy-blocking security finding sets **Artifact Review** to `Blocked`. Collect memory proposals from every pass for the Durable Memory Preservation phase instead of asking for approval per pass.
+
+## Phase 9 — Durable Memory Preservation
 
 When Flash-Mem is available:
 
@@ -159,6 +182,7 @@ Return a concise `Governed Delivery Summary`:
 - **Tasks**: [Generated / Reconciled / Reused / Blocked]
 - **Task Security Review**: [Passed / Advisory / Blocked / Not Applicable / Unavailable]
 - **Analysis**: [Passed / Repaired / Blocked]
+- **Artifact Review**: [Clean (N passes; qualifiers) / Not converged (N passes) / Blocked / Unavailable]
 
 ## Findings
 - **Blocking**: [None or explicit findings]

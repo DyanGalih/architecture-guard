@@ -412,6 +412,7 @@ Activate this protocol only when the Claude Code host exposes named teammate spa
 - **HITL Gate 2**: If architecture drift or violations are detected, Code Reviewer prompts the user:
   - `[Request Fix]`: Code Reviewer sends a peer message to **Analyst Creator** to update the task and plan artifacts. Work is then routed back to the appropriate Implementor.
   - `[Accept Risk / Verify]`: For non-blocking findings only, Code Reviewer records the accepted risk and clears the implementation for verification. Blocking findings cannot be ignored, and archival remains a separately approved workflow.
+  - When a governed convergence loop invoked this review, do not prompt per pass: the loop's approved repair scope selects the fix path, and `[Accept Risk / Verify]` is offered only after the loop stops as `Not converged`.
 
 ## Framework Preset Guidance
 

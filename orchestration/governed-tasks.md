@@ -165,6 +165,7 @@ Evaluate the gate before producing the summary so the summary's **Gate Status** 
 If the analyst ({adapter_command:analyze}) finds any remaining non-blocking gaps, missing steps, or high severity issues in Step 6:
 2. **Pause and Ask for Advisory Findings**: After the Step 9 summary, conclude your response by asking the user:
    > *"The analyst found [number] gaps/severities in the tasks. Would you like me to automatically clarify and revise the tasks to address these findings?"*
+   When a governed delivery orchestrator with an Artifact Review Convergence Loop invoked this phase, skip this question and return the gaps to the caller, which repairs them in that loop.
 3. **Execute if Approved**: If the user answers "yes" (or equivalent) in their next message, you must:
    - Rewrite `{adapter_path:tasks}` to resolve the detected gaps, within the approved Write Approval Gate scope.
    - Re-run {adapter_command:analyze} after each rewrite, at most 2 repair attempts; if gaps remain after the second attempt, stop and report them.

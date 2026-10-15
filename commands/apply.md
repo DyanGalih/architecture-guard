@@ -77,7 +77,7 @@ For multi-artifact findings, resolution is performed in authoritative order (`sp
 
 ### Step 0: Confirm All Writes
 1. Present the exact findings to apply, target artifacts, and proposed write scope.
-2. Prompt the user for explicit confirmation before modifying any file or invoking any write-capable delegated capability.
+2. Prompt the user for explicit confirmation before modifying any file or invoking any write-capable delegated capability. When a governed orchestrator's convergence loop invokes this capability and its Write Approval Gate preview explicitly approved artifact-review repair of the same target paths, that approval satisfies this confirmation; a target path, upstream delegation, or file deletion outside that preview still requires confirmation here.
 3. If confirmation is not explicit or the user declines, perform no writes and report the apply as skipped.
 
 ### Step 1: Direct Apply for Plan/Tasks Group
