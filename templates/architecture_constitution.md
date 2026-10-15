@@ -46,6 +46,14 @@
 - [e.g., Events must use explicit contracts and stable payloads.]
 - [e.g., External service calls must be isolated behind gateways or clients.]
 
+## Performance Constraints
+
+> Optional. List only targets and limits the project commits to; reviews treat them as constitution rules. Write "Not applicable" if there are none, and performance findings stay advisory.
+
+- [e.g., List endpoints return at most 100 items per page.]
+- [e.g., p95 latency for checkout endpoints stays under 300 ms.]
+- [e.g., Report generation runs in a background job, never in the request.]
+
 ## Module Boundaries
 
 | Module | Owns | Public Contracts | Must Not |

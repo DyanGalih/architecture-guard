@@ -21,7 +21,7 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | proposal | `changes/{change}/proposal.md` | Or user-provided proposal path |
 | security-constraints | `changes/{change}/security-constraints.md` | Or user-provided security constraints path, if any |
 | project-config | `.architecture-guard/flow/default.md` | |
-| constitution-set | `.architecture-guard/constitution.md`, `.architecture-guard/architecture.md`, `.architecture-guard/security.md`, plus any user-provided governance paths | |
+| constitution-set | `.architecture-guard/constitution.md`, `.architecture-guard/architecture.md`, `.architecture-guard/security.md`, plus any user-provided governance paths, plus every path declared under `governance` in `.architecture-guard/config.yml` | |
 | change-root | `changes/{change}/` | |
 | flow-template | `.architecture-guard/flow/default.md` | |
 | draft | `.architecture-guard/constitution.draft.md` | |

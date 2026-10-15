@@ -206,6 +206,12 @@ Detect when:
 - Runtime validation is missing at an external boundary. Use the project's configured ValidationPipe and validation library; do not add class-validator solely because this preset mentions it.
 - The API exposes persistence-only or sensitive fields, or lacks a stable response contract. Reuse an existing response DTO or explicit mapping when needed.
 
+### Query Discipline [Focus: db]
+
+Detect when:
+- Relations are fetched per item inside a loop (N+1) instead of joined or included (TypeORM `relations` or `leftJoinAndSelect`, Prisma `include` or `select`).
+- List queries have no `take` or limit.
+
 ### Exception Handling Boundary
 
 Detect when:

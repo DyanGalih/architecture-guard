@@ -39,7 +39,7 @@
 
 - [e.g., Architectural decisions are documented before they become standards.]
 - [e.g., Public APIs and cross-team contracts must be documented.]
-- [e.g., Known deviations must include rationale and review date.]
+- Every accepted risk or deviation records its owner, rationale, compensating control, trigger or expiry (a date or an event such as "before production"), and whether it is a release gate. "Revisit later" with no trigger is not an acceptance.
 
 ## Review Process
 
@@ -59,7 +59,7 @@ Detailed architecture enforcement rules live in `.specify/memory/architecture_co
 
 > List intentional governance-level exceptions. Architecture-specific deviations belong in `.specify/memory/architecture_constitution.md`.
 
-- [e.g., The reporting module is exempt from the current documentation standard until Q3 migration.]
+- [e.g., The reporting module is exempt from the current documentation standard. Owner: [name]. Rationale: [why]. Compensating control: [what limits the impact]. Trigger or expiry: Q3 migration. Gate: no.]
 
 ## Governance and Evolution Policy
 

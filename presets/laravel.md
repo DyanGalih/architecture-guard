@@ -456,6 +456,7 @@ Detect when:
 - Models directly call external services (HTTP, queue, mail) inside lifecycle hooks
 - Models use `boot()` or observers for business workflows that should be in Actions/Services
 - Queryable business logic lives outside scopes (e.g., complex `where` chains repeated in controllers)
+- Relations are lazy-loaded inside loops or Resources (N+1) instead of eager-loaded with `with()` or `load()`
 - Models accumulate unrelated reasons to change; decompose only along an evidenced domain, query, casting, or lifecycle boundary
 
 **Acceptable in models:**

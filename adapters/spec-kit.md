@@ -20,7 +20,7 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | tasks | `specs/{feature}/tasks.md` | |
 | security-constraints | `specs/{feature}/security-constraints.md` | |
 | project-config | `.specify/memory/constitution.md` | |
-| constitution-set | `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any layout constitution under `.specify/memory/` | |
+| constitution-set | `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any layout constitution under `.specify/memory/`, plus every path declared under `governance` in `.architecture-guard/config.yml` | |
 | draft | `.architecture-guard/constitution.draft.md` | |
 | ponytail-template | `.architecture-guard/templates/ponytail_core.md` | |
 | capability-composition-template | `.architecture-guard/templates/capability_composition.md` | |
@@ -103,11 +103,12 @@ SpecKit uses separate files for governance, architecture, and security rules.
 4. Contracts & Validation
 5. Data Access Rules
 6. Async & Integration Rules
-7. Module Boundaries
-8. Application Framework-Specific Architecture Rules
-9. Blocking Architecture Violations (P0)
-10. Architecture Evolution Policy
-11. Refactor & Drift Handling
+7. Performance Constraints
+8. Module Boundaries
+9. Application Framework-Specific Architecture Rules
+10. Blocking Architecture Violations (P0)
+11. Architecture Evolution Policy
+12. Refactor & Drift Handling
 ```
 
 ### `.specify/memory/security_constitution.md`

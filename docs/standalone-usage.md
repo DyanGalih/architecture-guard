@@ -163,6 +163,26 @@ The same orchestration command `governed-spec` creates:
 
 You choose the SDD tool once; Architecture Guard adapts the rest.
 
+### Workspaces with separate application repositories
+
+The specifications and governance can live in one repository (the workspace, which holds `.architecture-guard/`) while the code lives in another, nested inside it (for example a gitignored `src/` with its own `origin`). `architecture-guard init` detects such standalone repositories and records them in `.architecture-guard/config.yml`:
+
+```yaml
+repositories:
+  - name: app
+    path: src
+    roles: [code]
+```
+
+Edit the roles (`code`, `specs`) as needed, or set `repositories: []` to opt out. The forge is detected from the first code repository. With repositories configured:
+
+- `architecture-guard detect-changed-files --json` lists the workspace's changes and every repository's, as workspace-relative paths (`src/app/...`); `--repo <name>` limits it to one repository. Run inside a configured repository, it still uses the workspace's settings.
+- `architecture-guard hygiene --target .` scans the workspace and every configured repository.
+- `architecture-guard validate-setup` checks each repository.
+- The skills run git, branch checks, tests, commits, pushes and code-host actions in the repository that owns the files, and propose one commit per repository (`templates/repository_context.md`).
+
+A project whose specifications and code share one repository needs none of this.
+
 ## 9. Cross-Tool Upgrade
 
 SpecKit user switching to OpenSpec:
