@@ -123,7 +123,7 @@ This pattern ensures that lower-tier models follow strict execution paths instea
 
 ## Input & Context Loading
 
-Review any available artifacts from these common locations. **IMPORTANT**: You MUST read these files explicitly using your file-reading tools (absolute or relative paths). Do not rely solely on workspace search or semantic indexers, as these files are often in `.gitignore` and may be excluded from default context:
+Review any available artifacts from these common locations. **IMPORTANT**: You MUST read these files explicitly using your file-reading tools (absolute or relative paths). Do not rely solely on workspace search or semantic indexers, as these files are often in `.gitignore` and may be excluded from default context. Read them anyway, but report any governance file that is gitignored or outside the repository as a hygiene WARNING: reviewers and teammates cannot open a rule that code or specs cite. The locations are:
 
 1. **Manifest & Configuration**:
     - Resolve `{adapter_path:governance-config}` or the adapter-native project configuration first (`{adapter_path:project-config}`). Inspect its `context` block for every referenced governance and constitution Markdown file. Never rely on a hardcoded partial list.

@@ -20,7 +20,7 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | tasks | `specs/{feature}/tasks.md` | |
 | security-constraints | `specs/{feature}/security-constraints.md` | |
 | project-config | `.specify/memory/constitution.md` | |
-| constitution-set | `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any layout constitution under `.specify/memory/` | |
+| constitution-set | `.specify/memory/constitution.md`, `.specify/memory/architecture_constitution.md`, `.specify/memory/security_constitution.md`, and any layout constitution under `.specify/memory/`, plus every path declared under `governance` in `.architecture-guard/config.yml` | |
 | draft | `.architecture-guard/constitution.draft.md` | |
 | ponytail-template | `.architecture-guard/templates/ponytail_core.md` | |
 | capability-composition-template | `.architecture-guard/templates/capability_composition.md` | |

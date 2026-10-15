@@ -127,6 +127,8 @@ Build internal representations:
 - **Rule Check**: Does the implementation violate any "MUST" rules in the authoritative constitution set?
 - **Pattern Match**: Does the code follow the mandated architectural patterns (e.g., DTOs, Repositories, Events)?
 
+- **Accepted-risk completeness**: every accepted risk or deviation in the active artifacts names an owner, rationale, compensating control, trigger or expiry, and gate. A risk whose trigger has been reached (for example "before production" at a production release) is reported as open. A security-relevant risk whose only mitigation is to revisit it later, with no trigger or gate, is MEDIUM; it is non-blocking unless the security policy says otherwise.
+
 #### D. Security Review on Implementation
 - Apply {adapter_command:security-review-implementation} as the adapter policy for this phase.
 - A callable host registration MUST identify a Security Review capability, advertise an implementation-scoped operation, and expose a dispatch API or an exact registered skill body. The canonical operation is `sr-verify`. Accept `sr-branch` only when its registration explicitly declares implementation/branch scope. `sr-changes` is reserved for multi-change review and MUST NOT be selected here.

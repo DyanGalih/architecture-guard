@@ -56,6 +56,7 @@ program
   .description('Detect files changed since the merge-base with the default branch, plus staged, unstaged, and untracked files')
   .option('--json', 'Output results in JSON format')
   .option('--base <ref>', 'Compare against this ref instead of the default branch')
+  .option('--security-sensitive', 'List only changed files matching security_sensitive_paths in .architecture-guard/config.yml')
   .action(runDetectChangedFiles);
 
 program

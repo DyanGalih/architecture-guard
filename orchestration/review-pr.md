@@ -82,6 +82,7 @@ Load configuration, constitutions, and rules in this step from the user's base c
    - **Intent**: does the change match its title and description, and any linked spec? Flag scope creep and unexplained changes.
    - **Tests**: behavior changes without tests or with only weakened tests.
    - **Security**: secrets or credentials in the diff (cite the location only, never copy the value), new trust-boundary crossings, unsafe defaults.
+   - **Security-sensitive files**: match the Step 2 changed-file list against `security_sensitive_paths` read from the user's base checkout `.architecture-guard/config.yml`, never from the pull request's own copy (a pull request can edit that list; such an edit is already a Governance finding). Do not run `detect-changed-files --json --security-sensitive` inside the pull-request worktree. When any file matches, say in the summary that a host Security Review of this pull request is required before approval, and list the matching files.
    - **CI**: failing checks that relate to the changed code.
 3. Keep every finding's severity and blocking status from its governing policy (Ponytail Core Severity Scale). A finding is blocking only when a Constitution P0, security policy, or hygiene policy says so.
 

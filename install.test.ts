@@ -1918,3 +1918,128 @@ test('a recorded generic forge is kept but init points out a newly detected host
   assert.equal(fs.readFileSync(path.join(cwd, '.architecture-guard/selected-forge'), 'utf8').trim(), 'generic');
   assert.match(out, /github remote detected, rerun with --forge github/);
 });
+
+// Review gaps (P1): governance documents reviewers cannot open, security re-review on sensitive paths,
+// and structured accepted risks.
+
+const git = (cwd, ...args) => spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8' });
+
+test('validate-setup warns when a governance document is gitignored, outside the repository or missing', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  git(cwd, 'init', '-q');
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit', '--commands', 'init'], cwd);
+  fs.mkdirSync(path.join(cwd, '.specify/memory'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, '.specify/memory/constitution.md'), '# Constitution');
+  fs.mkdirSync(path.join(cwd, 'docs'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, 'docs/security_constitution.md'), '# Security');
+  fs.writeFileSync(path.join(cwd, 'docs/constitution.md'), '# Governance');
+  fs.writeFileSync(path.join(cwd, '.gitignore'), 'docs/security_constitution.md\n');
+  const configPath = path.join(cwd, '.architecture-guard/config.yml');
+  fs.appendFileSync(configPath, [
+    'governance:',
+    '  constitution: docs/constitution.md',
+    '  security: docs/security_constitution.md',
+    '  architecture: ../elsewhere/architecture_constitution.md',
+    '  layout: docs/layout.md',
+    '',
+  ].join('\n'));
+
+  const out = spawnSync(process.execPath, [installer, 'validate-setup', cwd], { encoding: 'utf8' }).stdout;
+  assert.match(out, /Governance document "constitution" readable \(docs\/constitution\.md\)/);
+  assert.match(out, /Governance document "security" is gitignored \(docs\/security_constitution\.md\); reviewers cannot read it/);
+  assert.match(out, /Governance document "architecture" is outside the repository/);
+  assert.match(out, /Governance document "layout" not found \(docs\/layout\.md\)/);
+  assert.match(out, /security_sensitive_paths not configured/);
+
+  fs.writeFileSync(path.join(cwd, '.gitignore'), '.specify/memory/constitution.md\n');
+  assert.match(
+    spawnSync(process.execPath, [installer, 'validate-setup', cwd], { encoding: 'utf8' }).stdout,
+    /Governance constitution is gitignored \(\.specify\/memory\/constitution\.md\); reviewers cannot read it/,
+  );
+});
+
+test('detect-changed-files --security-sensitive lists only changed files matching security_sensitive_paths', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  git(cwd, 'init', '-q', '-b', 'main');
+  git(cwd, 'config', 'user.email', 'test@example.com');
+  git(cwd, 'config', 'user.name', 'Test');
+  fs.mkdirSync(path.join(cwd, '.architecture-guard'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/config.yml'), [
+    'security_sensitive_paths:',
+    '  - routes/auth.php',
+    '  - app/Http/Controllers/Auth/**',
+    '',
+  ].join('\n'));
+  fs.writeFileSync(path.join(cwd, 'README.md'), '# app\n');
+  git(cwd, 'add', '-A');
+  git(cwd, 'commit', '-q', '-m', 'base');
+  git(cwd, 'checkout', '-q', '-b', 'feature');
+  fs.mkdirSync(path.join(cwd, 'routes'), { recursive: true });
+  fs.mkdirSync(path.join(cwd, 'app/Http/Controllers/Auth'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, 'routes/auth.php'), '<?php');
+  fs.writeFileSync(path.join(cwd, 'app/Http/Controllers/Auth/LoginController.php'), '<?php');
+  fs.writeFileSync(path.join(cwd, 'README.md'), '# app changed\n');
+
+  const run = (...extra) => spawnSync(process.execPath, [installer, 'detect-changed-files', '--base', 'main', ...extra], { cwd, encoding: 'utf8' });
+  const sensitive = run('--json', '--security-sensitive');
+  assert.equal(sensitive.status, 0, sensitive.stderr);
+  assert.deepEqual(JSON.parse(sensitive.stdout), ['app/Http/Controllers/Auth/LoginController.php', 'routes/auth.php']);
+  assert.deepEqual(JSON.parse(run('--json').stdout), ['README.md', 'app/Http/Controllers/Auth/LoginController.php', 'routes/auth.php'], 'the default output is unchanged');
+
+  fs.rmSync(path.join(cwd, '.architecture-guard/config.yml'));
+  assert.deepEqual(JSON.parse(run('--json', '--security-sensitive').stdout), [], 'no configured globs, no sensitive files');
+});
+
+test('pull-request and implementation skills require a security re-review for security-sensitive changes', () => {
+  const prompt = file => fs.readFileSync(path.join(repoRoot, 'orchestration', file), 'utf8');
+  for (const file of ['pr-feedback.md', 'review-pr.md', 'governed-implement.md']) {
+    assert.match(prompt(file), /security_sensitive_paths/, file);
+    assert.match(prompt(file), /detect-changed-files --json --security-sensitive/, file);
+  }
+  assert.match(prompt('pr-feedback.md'), /Security Review[^\n]*before committing/);
+  assert.match(prompt('governed-implement.md'), /security re-review required/i);
+});
+
+test('constitution reading reports governance documents reviewers cannot open', () => {
+  for (const file of ['governed-implement.md', 'review-implementation.md', 'governed-plan.md', 'review-artifacts.md', 'governed-tasks.md']) {
+    const prompt = fs.readFileSync(path.join(repoRoot, 'orchestration', file), 'utf8');
+    assert.match(prompt, /gitignored or outside the repository[^\n]*hygiene WARNING/, file);
+  }
+  for (const adapter of ['generic', 'spec-kit', 'openspec']) {
+    const row = fs.readFileSync(path.join(repoRoot, 'adapters', `${adapter}.md`), 'utf8').match(/^\| constitution-set \|.*$/m)[0];
+    assert.match(row, /`governance` in `\.architecture-guard\/config\.yml`/, adapter);
+  }
+  assert.ok(fs.existsSync(path.join(repoRoot, 'hygiene-rules', 'unresolved-governance-citations.md')));
+  const config = fs.readFileSync(path.join(repoRoot, 'templates', 'architecture_guard_config.yml'), 'utf8');
+  assert.match(config, /# governance:/);
+  assert.match(config, /# security_sensitive_paths:/);
+});
+
+test('accepted risks carry owner, rationale, compensating control, trigger and gate', () => {
+  const fields = /owner[\s\S]*rationale[\s\S]*compensating control[\s\S]*trigger or expiry[\s\S]*gate/i;
+  for (const file of ['templates/constitution.md', 'templates/generic_plan.md']) {
+    assert.match(fs.readFileSync(path.join(repoRoot, file), 'utf8'), fields, file);
+  }
+  for (const file of ['review-artifacts.md', 'verify.md']) {
+    const prompt = fs.readFileSync(path.join(repoRoot, 'orchestration', file), 'utf8');
+    assert.match(prompt, /Accepted-risk completeness/, file);
+    assert.match(prompt, /only mitigation is to revisit/i, file);
+  }
+});
+
+test('governance readability is judged by the repository that holds the file (nested repositories)', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  git(cwd, 'init', '-q');
+  fs.writeFileSync(path.join(cwd, '.gitignore'), 'src/\n');
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'spec-kit', '--commands', 'init'], cwd);
+  fs.mkdirSync(path.join(cwd, 'src/docs'), { recursive: true });
+  git(path.join(cwd, 'src'), 'init', '-q');
+  fs.writeFileSync(path.join(cwd, 'src/docs/constitution.md'), '# Governance');
+  fs.writeFileSync(path.join(cwd, 'src/docs/notes_constitution.md'), '# Private');
+  fs.writeFileSync(path.join(cwd, 'src/.gitignore'), 'docs/notes_constitution.md\n');
+  fs.appendFileSync(path.join(cwd, '.architecture-guard/config.yml'), 'governance:\n  constitution: src/docs/constitution.md\n  notes: src/docs/notes_constitution.md\n');
+
+  const out = spawnSync(process.execPath, [installer, 'validate-setup', cwd], { encoding: 'utf8' }).stdout;
+  assert.match(out, /Governance document "constitution" readable \(src\/docs\/constitution\.md\)/);
+  assert.match(out, /Governance document "notes" is gitignored \(src\/docs\/notes_constitution\.md\)/);
+});

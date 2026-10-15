@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
@@ -151,7 +151,7 @@ function lineMatches(file: ProjectFile, pattern: RegExp, message: string): RawFi
   return findings;
 }
 
-function globMatches(value: string, pattern: string) {
+export function globMatches(value: string, pattern: string) {
   let expression = '^';
   const specialCharacters = '.+^$()|[]\\';
   for (let index = 0; index < pattern.length; index += 1) {
@@ -460,6 +460,54 @@ SeverityDetectors['duplicate-business-logic'] = (_rule, files) => {
       relativePath: file.relativePath,
       message: 'Identical normalized source logic appears in multiple files.',
     })));
+};
+
+// Whether the git repository that holds a file ignores it: the nearest ancestor with `.git`, up to `root`. A
+// workspace that wraps an application repository (and ignores it) must not hide files that repository tracks.
+// Returns null outside any repository.
+export function ignoredByOwningRepository(root: string, relative: string): boolean | null {
+  const top = path.resolve(root);
+  const absolute = path.resolve(top, relative);
+  for (let dir = path.dirname(absolute); ; dir = path.dirname(dir)) {
+    if (fs.existsSync(path.join(dir, '.git'))) {
+      const result = spawnSync('git', ['-C', dir, 'check-ignore', '-q', '--', path.relative(dir, absolute)], { stdio: 'ignore' });
+      return result.status === 0 ? true : result.status === 1 ? false : null;
+    }
+    if (dir === top || path.dirname(dir) === dir) return null;
+  }
+}
+
+// A governance document a reviewer cannot open is no rule at all. A cited path containing a slash (a Markdown link
+// target or a path in prose or a comment) must resolve, from the citing file or the repository root, to a file in
+// the reviewed set: tracked or untracked but not gitignored. Bare names such as `constitution.md` are prose.
+const GOVERNANCE_CITATION = /(?:\]\(|[\s`'"(])((?:\.{1,2}\/|[\w-]+\/)[\w./-]*constitution[\w-]*\.md)(?=[#)\s`'".,;:]|$)/gi;
+
+SeverityDetectors['unresolved-governance-citations'] = (_rule, files) => {
+  const sample = files.find(file => file.absolutePath.endsWith(file.relativePath));
+  if (!sample) return [];
+  const root = sample.absolutePath.slice(0, sample.absolutePath.length - sample.relativePath.length);
+  const readable = new Set(files.map(file => toPosix(file.relativePath)));
+  const findings: RawFinding[] = [];
+  for (const file of files) {
+    if (!readableContent(file)) continue;
+    file.content!.split(/\r?\n/).forEach((line, index) => {
+      for (const match of line.matchAll(GOVERNANCE_CITATION)) {
+        const cited = match[1];
+        const candidates = [path.posix.normalize(path.posix.join(path.posix.dirname(toPosix(file.relativePath)), cited))];
+        if (!cited.startsWith('.')) candidates.push(path.posix.normalize(cited));
+        if (candidates.some(candidate => readable.has(candidate))) continue;
+        const inside = candidates.filter(candidate => !candidate.startsWith('../') && candidate !== '..');
+        if (inside.some(candidate => fs.existsSync(path.join(root, candidate)) && ignoredByOwningRepository(root, candidate) === false)) continue;
+        const message = !inside.length
+          ? `Cited governance document ${cited} is outside the repository; reviewers cannot open it.`
+          : inside.some(candidate => fs.existsSync(path.join(root, candidate)))
+            ? `Cited governance document ${cited} is gitignored or excluded; reviewers cannot open it.`
+            : `Cited governance document ${cited} does not exist.`;
+        findings.push({ relativePath: file.relativePath, line: index + 1, message });
+      }
+    });
+  }
+  return findings;
 };
 
 SeverityDetectors['deprecated-and-dangerous-code'] = (_rule, files) => {
