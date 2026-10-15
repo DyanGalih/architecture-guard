@@ -64,7 +64,7 @@ Override the persisted adapter for one installed command with its `--adapter` in
 
 ## 4. Choose Your Commands
 
-Pick from 20 governance commands:
+Pick from 21 governance commands:
 
 | Command | When |
 | :--- | :--- |
@@ -82,6 +82,7 @@ Pick from 20 governance commands:
 | `review-pr` | Review someone else's pull request on any code host — drafts the review, posts only when you choose |
 | `pr-feedback` | Work through review feedback on your own pull request — triage, fix, reply, and optionally resolve, with approval at each step |
 | `verify` | Final validation — tasks vs code evidence |
+| `e2e-testing` | Decide whether a feature needs end-to-end tests, then write them with Playwright (UI or API-only), or skip when the spec is not end-to-end |
 | `apply` | Apply approved refactors into plans/tasks |
 | `workflow` | End-to-end review across all workflow phases |
 | `violation-detection` | Detect architecture drift invariants |
