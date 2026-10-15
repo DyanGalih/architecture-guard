@@ -64,6 +64,23 @@ export function insideWorkspace(workspace: string, repositoryPath: string) {
   return contains(root, target) && contains(canonicalPath(root), canonicalPath(target));
 }
 
+// The git repository that holds a workspace-relative path: the nearest ancestor with `.git`, up to `root`, or null
+// outside any repository.
+export function owningGitRoot(root: string, relative: string): string | null {
+  const top = path.resolve(root);
+  for (let dir = path.dirname(path.resolve(top, relative)); ; dir = path.dirname(dir)) {
+    if (fs.existsSync(path.join(dir, '.git'))) return dir;
+    if (dir === top || path.dirname(dir) === dir) return null;
+  }
+}
+
+// Whether an existing file stays inside the repository that holds it once symlinks are resolved. Git stores a
+// symlink as its target path, so a reviewer of that repository cannot open a file it points to elsewhere.
+export function resolvesInsideOwningRepository(root: string, relative: string) {
+  const owner = owningGitRoot(root, relative) ?? path.resolve(root);
+  return contains(canonicalPath(owner), canonicalPath(path.resolve(root, relative)));
+}
+
 // Usable entries: a valid name and a path inside the workspace; the first entry wins on a duplicate name or path
 // (validate-setup reports duplicates).
 export function configuredRepositories(workspace: string): Repository[] {

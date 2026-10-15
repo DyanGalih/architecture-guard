@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { listCategoryResources, resolveResource } from './resolve';
-import { configuredRepositories, isGitRepository, owningRepository } from './repositories';
+import { configuredRepositories, isGitRepository, owningGitRoot, owningRepository, resolvesInsideOwningRepository } from './repositories';
 
 export interface HygieneOptions {
   target?: string;
@@ -480,15 +480,10 @@ SeverityDetectors['duplicate-business-logic'] = (_rule, files) => {
 // workspace that wraps an application repository (and ignores it) must not hide files that repository tracks.
 // Returns null outside any repository.
 export function ignoredByOwningRepository(root: string, relative: string): boolean | null {
-  const top = path.resolve(root);
-  const absolute = path.resolve(top, relative);
-  for (let dir = path.dirname(absolute); ; dir = path.dirname(dir)) {
-    if (fs.existsSync(path.join(dir, '.git'))) {
-      const result = spawnSync('git', ['-C', dir, 'check-ignore', '-q', '--', path.relative(dir, absolute)], { stdio: 'ignore' });
-      return result.status === 0 ? true : result.status === 1 ? false : null;
-    }
-    if (dir === top || path.dirname(dir) === dir) return null;
-  }
+  const dir = owningGitRoot(root, relative);
+  if (!dir) return null;
+  const result = spawnSync('git', ['-C', dir, 'check-ignore', '-q', '--', path.relative(dir, path.resolve(root, relative))], { stdio: 'ignore' });
+  return result.status === 0 ? true : result.status === 1 ? false : null;
 }
 
 // A governance document a reviewer cannot open is no rule at all. A cited path containing a slash (a Markdown link
@@ -519,7 +514,7 @@ SeverityDetectors['unresolved-governance-citations'] = (_rule, files) => {
           if (owner) candidates.push(path.posix.normalize(`${owner.path}/${cited}`));
           candidates.push(path.posix.normalize(cited));
         }
-        const hit = candidates.find(candidate => readable.has(candidate));
+        const hit = candidates.find(candidate => readable.has(candidate) && resolvesInsideOwningRepository(root, candidate));
         if (hit && within(hit)) continue;
         if (hit && owner) {
           findings.push({
@@ -530,9 +525,13 @@ SeverityDetectors['unresolved-governance-citations'] = (_rule, files) => {
           continue;
         }
         const inside = candidates.filter(candidate => !candidate.startsWith('../') && candidate !== '..');
-        if (inside.some(candidate => fs.existsSync(path.join(root, candidate)) && ignoredByOwningRepository(root, candidate) === false)) continue;
+        const present = inside.filter(candidate => fs.existsSync(path.join(root, candidate)));
+        const contained = present.filter(candidate => resolvesInsideOwningRepository(root, candidate));
+        if (contained.some(candidate => ignoredByOwningRepository(root, candidate) === false)) continue;
         const message = !inside.length
           ? `Cited governance document ${cited} is outside the repository; reviewers cannot open it.`
+          : present.length && !contained.length
+            ? `Cited governance document ${cited} resolves outside the repository through a symlink; reviewers cannot open it.`
           : inside.some(candidate => fs.existsSync(path.join(root, candidate)))
             ? `Cited governance document ${cited} is gitignored or excluded; reviewers cannot open it.`
             : `Cited governance document ${cited} does not exist.`;
