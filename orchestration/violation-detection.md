@@ -149,7 +149,7 @@ A Security-Architecture Conflict occurs when security requirements and architect
 
 ## Review Procedure
 
-1. **Resolve Bounded Scope**: Use an explicit user-provided file list first. Otherwise, use `architecture-guard detect-changed-files --json` only after confirming that capability is available. If unavailable, derive the set with the host's Git capability, including committed changes from the merge-base to `HEAD`, staged changes, unstaged changes, and untracked files. If Git is unavailable, ask the user for a file list and do not scan an unbounded repository scope.
+1. **Resolve Bounded Scope**: Use an explicit user-provided file list first. Otherwise, use `architecture-guard detect-changed-files --json` only after confirming that capability is available. If it reports that it could not determine the default branch, ask the user for the base ref and rerun with `--base <ref>`; never treat that failure as an empty change set. If unavailable, derive the set with the host's Git capability, including committed changes from the merge-base to `HEAD`, staged changes, unstaged changes, and untracked files. If Git is unavailable, ask the user for a file list and do not scan an unbounded repository scope.
 2. **Model Context**: Load artifacts and build the Semantic Models for the resolved scope.
 
     #### Flash-Mem Context Retrieval

@@ -751,8 +751,16 @@ function resolveSelectedForge(requested, targetDir, detectDirectory = targetDir)
 // Lean installs resolve engine resources from the CLI bundle, and cli/resolve.ts treats any
 // file under .architecture-guard/{templates,presets,sonar-rules} as a local override. Only
 // byte-identical copies left by an older vendored install are removed; user content is kept.
+// Symlinks are never followed (readdir Dirents and lstat do not resolve them), and only
+// directories whose real path stays inside the target are pruned, so cleanup cannot delete
+// files outside the project.
 function pruneVendoredCopies(runtimeDir, overwrite) {
   if (overwrite === 'skip' || overwrite === 'keep-both') return;
+  const targetRoot = fs.realpathSync(path.dirname(runtimeDir));
+  const insideTarget = dir => {
+    const relative = path.relative(targetRoot, fs.realpathSync(dir));
+    return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
+  };
   const kept = [];
   const prune = (localDir, bundledDir) => {
     for (const entry of fs.readdirSync(localDir, { withFileTypes: true })) {
@@ -771,7 +779,13 @@ function pruneVendoredCopies(runtimeDir, overwrite) {
   };
   for (const dir of ['templates', 'presets', 'sonar-rules']) {
     const localDir = path.join(runtimeDir, dir);
-    if (!fs.existsSync(localDir) || !fs.statSync(localDir).isDirectory()) continue;
+    const stat = fs.lstatSync(localDir, { throwIfNoEntry: false });
+    if (!stat) continue;
+    if (stat.isSymbolicLink() || (stat.isDirectory() && !insideTarget(localDir))) {
+      kept.push(`${dir}/`);
+      continue;
+    }
+    if (!stat.isDirectory()) continue;
     prune(localDir, path.join(ROOT_DIR, dir));
     if (fs.readdirSync(localDir).length === 0) fs.rmdirSync(localDir);
   }

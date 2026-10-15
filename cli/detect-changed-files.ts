@@ -16,18 +16,31 @@ function tryGit(args: string[]) {
   }
 }
 
+// Default-branch candidates in order: origin's HEAD, any other remote's HEAD, the configured init.defaultBranch, then common names.
+function defaultBranchCandidates() {
+  const remoteHeads = (tryGit(['for-each-ref', '--format=%(refname) %(symref:short)', 'refs/remotes']) ?? '')
+    .split('\n')
+    .map(line => line.split(' '))
+    .filter(([ref, target]) => ref.endsWith('/HEAD') && target)
+    .sort(([a], [b]) => Number(b === 'refs/remotes/origin/HEAD') - Number(a === 'refs/remotes/origin/HEAD'))
+    .map(([, target]) => target);
+  const configured = tryGit(['config', '--get', 'init.defaultBranch']);
+  const names = [...(configured ? [configured] : []), 'main', 'master'];
+  return [...remoteHeads, ...names.flatMap(name => [`origin/${name}`, name])];
+}
+
 // The review base is the merge-base with the default branch, so committed work on a feature branch is included.
 function resolveBase(explicitBase?: string) {
-  const candidates = explicitBase
-    ? [explicitBase]
-    : [tryGit(['symbolic-ref', '--quiet', '--short', 'refs/remotes/origin/HEAD']), 'origin/main', 'origin/master', 'main', 'master'];
+  const candidates = explicitBase ? [explicitBase] : defaultBranchCandidates();
   for (const candidate of candidates) {
     if (!candidate || tryGit(['rev-parse', '--verify', '--quiet', `${candidate}^{commit}`]) === null) continue;
     const mergeBase = tryGit(['merge-base', candidate, 'HEAD']);
     if (mergeBase) return mergeBase;
   }
   if (explicitBase) throw new Error(`base ref not found or unrelated to HEAD: ${explicitBase}`);
-  return null;
+  // A repository without commits has no committed changes to miss.
+  if (tryGit(['rev-parse', '--verify', '--quiet', 'HEAD^{commit}']) === null) return null;
+  throw new Error('could not determine the default branch to compare against; pass --base <ref> (use --base HEAD to list only uncommitted changes)');
 }
 
 function committedFiles(base: string | null) {

@@ -121,7 +121,7 @@ This pattern ensures that lower-tier models follow strict execution paths instea
 1. **Normalize Arguments**: Parse "$ARGUMENTS" to identify the `mode` (`architecture` or `performance`) and `focus` aspects (`general`, `db`, `api`, or `async`).
 2. **Identify Changed Files**:
    - If the user or a calling skill provided a file list or explicit instructions, follow them.
-   - Otherwise, use `architecture-guard detect-changed-files --json` only after confirming that capability is available, run from the review root and with `--base <ref>` when a base ref was given.
+   - Otherwise, use `architecture-guard detect-changed-files --json` only after confirming that capability is available, run from the review root and with `--base <ref>` when a base ref was given. If it reports that it could not determine the default branch, ask the user for the base ref and rerun with `--base <ref>`; never treat that failure as an empty change set.
    - If unavailable, derive the set with the host's Git capability: include committed changes from the merge-base to `HEAD`, staged changes, unstaged changes, and untracked files. If Git is unavailable, ask the user for a file list and report that automatic detection could not run.
    - Use the `changed_files` list as the primary review set.
 

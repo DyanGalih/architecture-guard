@@ -145,8 +145,12 @@ async function finalizeSpecKitFeature(changeName: string, root: string, json: bo
         await mkdir(path.dirname(indexPath), { recursive: true });
         const current = await exists(indexPath) ? await readFile(indexPath, 'utf8') : '# System Context\n\n';
         const markerStart = current.indexOf(marker);
-        const updated = markerStart >= 0
-            ? current.slice(0, markerStart) + entry + current.slice(managedEntryEnd(current, markerStart + marker.length))
+        const entryEnd = markerStart >= 0 ? managedEntryEnd(current, markerStart + marker.length) : null;
+        if (markerStart >= 0 && entryEnd === null) {
+            return finalizeIncomplete('failed', normalizedFeature, `managed entry for ${normalizedFeature} in ${indexPath} has no "- Feature spec:" line; restore that line or remove the entry, then finalize again`, json);
+        }
+        const updated = entryEnd !== null
+            ? current.slice(0, markerStart) + entry + current.slice(entryEnd)
             : `${current.trimEnd()}\n\n${entry}`;
         await writeFile(indexPath, `${updated.trimEnd()}\n`);
     } catch (error) {
@@ -159,14 +163,15 @@ async function finalizeSpecKitFeature(changeName: string, root: string, json: bo
 
 // A managed entry is its marker, its own "## title" line, and the body up to its "- Feature spec:"
 // line. It never extends past the next level-2 heading or managed marker, so hand-written text
-// after an entry survives re-finalizing.
-function managedEntryEnd(current: string, start: number) {
+// after an entry survives re-finalizing. Without that line the entry's end is unknown: return null
+// rather than guess a boundary that could swallow hand-written text.
+function managedEntryEnd(current: string, start: number): number | null {
     const rest = current.slice(start);
     const ownHeading = rest.match(/^\r?\n## [^\n]*/)?.[0].length ?? 0;
     const nextBoundary = rest.slice(ownHeading).search(/^(?:## |<!-- architecture-guard:feature=)/m);
     const limit = nextBoundary >= 0 ? ownHeading + nextBoundary : rest.length;
     const specLine = /^- Feature spec: [^\n]*/m.exec(rest.slice(0, limit));
-    return start + (specLine ? specLine.index + specLine[0].length : limit);
+    return specLine ? start + specLine.index + specLine[0].length : null;
 }
 
 // Finalize did not update the index: say so explicitly and exit non-zero.
