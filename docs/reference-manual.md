@@ -178,6 +178,7 @@ This injects refactor tasks into the technical design and task artifacts so the 
 | `refactor-generator` | Planning | Refactor task generation | After review; convert violations to non-blocking refactor tasks |
 | `ag-apply` | Implementation | After refactor decisions | Inject refactor tasks into `tasks.md` and the technical design artifact using the approved review context |
 | `ag-verify` | Verification | Implementation verification report with task fulfillment, architecture, and hygiene findings | Final gate after implementation to ensure all tasks are delivered, with cached memory context if available |
+| `ag-e2e-testing` | Testing | E2E decision (UI, API, both, or Skip) with Playwright scenarios traced to acceptance criteria | After the spec is accepted, to plan e2e coverage, or after implementation to write and run the tests |
 
 ### Ponytail Core
 

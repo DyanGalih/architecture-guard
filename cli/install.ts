@@ -121,6 +121,7 @@ const COMMANDS = [
   'review-pr',
   'pr-feedback',
   'verify',
+  'e2e-testing',
   'apply',
   'workflow',
   'violation-detection',
