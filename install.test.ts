@@ -812,6 +812,40 @@ test('governed delivery caps plan-repair cycles', () => {
   }
 });
 
+test('governed delivery loops artifact review until a clean pass, within a pass limit', () => {
+  for (const dir of ['orchestration', 'commands']) {
+    for (const file of ['governed-delivery.md', 'governed-delivery-team.md']) {
+      const prompt = fs.readFileSync(path.join(__dirname, '..', dir, file), 'utf8');
+      const loop = prompt.indexOf('— Artifact Review Convergence Loop');
+      assert.ok(loop !== -1, `${dir}/${file} missing loop`);
+      assert.ok(loop > prompt.indexOf('— Task Generation and Analysis'), `${dir}/${file} loop before tasks`);
+      assert.ok(loop < prompt.indexOf('— Durable Memory Preservation'), `${dir}/${file} loop after memory`);
+      assert.match(prompt, /ag-review-artifacts/, `${dir}/${file}`);
+      assert.match(prompt, /Findings of every severity count/, `${dir}/${file}`);
+      assert.match(prompt, /at most 5 review passes per run/, `${dir}/${file}`);
+      assert.match(prompt, /\*\*No progress\*\*/, `${dir}/${file}`);
+      assert.match(prompt, /\*\*Artifact Review\*\*: \[Clean/, `${dir}/${file}`);
+      assert.match(prompt, /recheck that the selected Security Review command or host operation \(its `security-review` or `sr-\*` operations\) is registered and callable/, `${dir}/${file}`);
+      assert.match(prompt, /never report an unavailable security review as clean/, `${dir}/${file}`);
+    }
+  }
+});
+
+test('governed implement loops security and architecture review until a clean pass, within a pass limit', () => {
+  for (const dir of ['orchestration', 'commands']) {
+    const prompt = fs.readFileSync(path.join(__dirname, '..', dir, 'governed-implement.md'), 'utf8');
+    const loop = prompt.indexOf('### Step 5.1 — Implementation Review Convergence Loop');
+    assert.ok(loop > prompt.indexOf('### Step 5 — Architecture Review on Implementation'), dir);
+    assert.ok(loop < prompt.indexOf('### Step 5.5 — Blocking Decision Tree'), dir);
+    assert.match(prompt, /ag-review-implementation/, dir);
+    assert.match(prompt, /Findings of every severity count/, dir);
+    assert.match(prompt, /at most 5 review passes per run/, dir);
+    assert.match(prompt, /\*\*No progress\*\*/, dir);
+    assert.match(prompt, /recheck that the selected Security Review command or host operation .* is registered and callable/, dir);
+    assert.match(prompt, /never report an unavailable security review as clean/, dir);
+  }
+});
+
 test('consolidate-specs confirms before writing the fallback', () => {
   const prompt = orchestrationPrompt('consolidate-specs.md');
   const confirm = prompt.indexOf('**Confirm before writing**');

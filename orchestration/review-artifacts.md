@@ -250,6 +250,7 @@ Activate this protocol only when the Claude Code host exposes named teammate spa
 - **HITL Gate 1**: If gaps are found, Analyst Reviewer prompts the user:
   - `[Apply Fix]`: Analyst Reviewer sends a peer message to **Analyst Creator** detailing the needed corrections. Analyst Creator fixes the artifacts and requests a re-review.
   - `[Accept Risk / Proceed]`: For non-blocking findings only, Analyst Reviewer records the accepted risk before dispatching the artifacts to the **Implementor teammates** (`BE`, `FE`, `TEST`). Blocking findings cannot use this option.
+  - When a governed convergence loop invoked this review, do not prompt per pass: the loop's approved repair scope selects `[Apply Fix]`, and `[Accept Risk / Proceed]` is offered only after the loop stops as `Not converged`.
 
 ## Framework Preset Guidance
 

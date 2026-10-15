@@ -44,6 +44,7 @@ Provide a single command that ensures:
 2. Implementation is performed ({adapter_command:implement}).
 3. The output is reviewed for security vulnerabilities (Security Review).
 4. The output is reviewed for architectural drift (Architecture Guard).
+5. Security and architecture reviews repeat automatically, fixing findings until a review pass is clean, within a bounded pass limit.
 
 ## Orchestration Flow
 
@@ -139,7 +140,7 @@ IF `security-review` is available as a host capability:
 1. **Execute Review**: Dispatch the detected host Security Review capability's branch/implementation operation directly. Do not execute adapter fallback prose as a command.
 2. Check for: authorization bypass, missing validation, secret leakage, injection risk, and insecure data exposure.
 3. If security findings are architecture-relevant, classify them as `Security-Architecture Conflict` for the architecture review.
-4. Independently derive each finding's effective severity and blocking status from `{adapter_path:security-constitution}` or the applicable security policy in `{adapter_path:constitution}`. Stop for policy-designated blocking findings; advisory findings do not become blocking merely because they are security findings.
+4. Independently derive each finding's effective severity and blocking status from `{adapter_path:security-constitution}` or the applicable security policy in `{adapter_path:constitution}`. Surface policy-designated blocking findings immediately; Step 5.1 tries to fix them within the approved scope and Step 5.5 stops if any remain; advisory findings do not become blocking merely because they are security findings.
 
 ### Step 5 — Architecture Review on Implementation
 
@@ -149,6 +150,26 @@ Review implementation against:
 - Every declared or present governance, architecture, security, and layout Markdown file resolved from the selected configuration.
 - Plan, tasks, and `{adapter_path:security-constraints}`.
 - Accepted deviations and any available Flash-Mem context.
+
+### Step 5.1 — Implementation Review Convergence Loop
+
+Steps 4 and 5 are the first review pass. Do not hand the review back to the user to rerun by hand; repeat the review-and-fix cycle here until a stop condition is met. Blocking findings (Constitution P0 or policy-designated blocking security findings) enter this loop too: surface them in the pass report immediately and fix them within the approved scope; Step 5.5 stops the run if any remain.
+
+1. **Evaluate**: A pass is clean only when the architecture review reports no violations, every Security Review that ran reports no findings, and the hygiene runner reports no findings on changed files. An `Unavailable` hygiene runner or Security Review never makes a pass clean on its own; it only qualifies the result. Findings of every severity count, advisory ones included. Count only findings introduced or touched by this run's changes; report pre-existing findings in unchanged code without fixing them, because fixing them expands scope.
+2. **Fix**: Correct each finding in the implementation at its owning boundary, applying the Ponytail Core decision ladder and the Step 3 Pre-Completion Self-Verification Gate. Edits inside the approved Write Approval Gate scope need no per-pass confirmation; a file deletion, a new target path, or work beyond the accepted spec, plan, and task scope requires renewed approval. Record each fix in `{adapter_path:tasks}`.
+3. **Re-review**: Rerun Security Review through {adapter_command:security-review-implementation} and the architecture review through {adapter_command:architecture-review} (the registered `ag-review-implementation` capability when available) on the changed implementation. When the host can run a fresh subagent, run each review pass in a fresh context so a pass does not grade its own fixes.
+4. **Repeat** from step 1.
+
+Security Review is a separate tool, not part of Architecture Guard. Before every security dispatch in this loop, recheck that the selected Security Review command or host operation (its `security-review` or `sr-*` operations) is registered and callable; never invoke a Security Review command by name on assumption. When it is not callable, mark that pass's Security Review `Unavailable`, run the architecture review alone, and never report an unavailable security review as clean.
+
+Stop conditions:
+
+- **Converged**: a clean pass. Set **Implementation Review** to `Clean` with the pass count. Qualify `Clean` when the final pass was degraded: `architecture only` when Security Review was `Unavailable`, and `hygiene Unavailable` when the hygiene runner was `Unavailable`.
+- **Decision required**: a fix needs a material product or architecture choice, a Constitution change, a spec or plan change, or conflicts with another finding. Present the options, ask the user, and resume the loop after the answer. Record each finding the user accepts or keeps, and leave it out of later clean checks. Resuming does not reset the pass count.
+- **No progress**: a finding already fixed in an earlier pass reappears, or the total finding count does not decrease between two consecutive passes. Stop with `Not converged` and report the recurring findings.
+- **Pass limit**: at most 5 review passes per run. If findings remain after the fifth pass, stop with `Not converged`.
+
+Step 5.5 evaluates the findings that remain after this loop, and Step 6 generates refactor tasks only for those. Remaining non-blocking findings stay advisory and are reported with what each pass changed. Collect memory proposals from every pass for Step 8 instead of asking for approval per pass.
 
 ### Step 5.5 — Blocking Decision Tree
 
@@ -208,8 +229,8 @@ Produce a final `Governed Implementation Summary`.
 
 **Architecture Violations Found**:
 - If the Constitution marks any violation as P0 (blocking), regardless of its review severity:
-  - STOP implementation workflow
-  - Surface violations immediately
+  - Surface violations immediately; Step 5.1 tries to fix them within the approved scope
+  - STOP implementation workflow if any remain after Step 5.1
   - Return early with remediation guidance
 - If CRITICAL or HIGH but not P0:
   - Continue with warning
@@ -244,6 +265,10 @@ The command MUST return:
 - **Violations**: [Drift findings or Security-Architecture Conflicts]
 - **Refactor Tasks**: [Suggested corrections]
 - **Constitution Update Proposals**: [Proposed updates to `{adapter_path:arch-constitution}`]
+
+## Implementation Review
+- **Status**: [Clean (N passes; qualifiers) / Not converged (N passes) / Blocked]
+- **Remaining Findings**: [None or findings left after the loop]
 
 ## Implementation Status
 - [Ready to merge / Needs security fix / Needs architecture refactor / Needs constitution update]
