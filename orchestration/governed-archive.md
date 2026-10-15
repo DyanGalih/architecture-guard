@@ -29,6 +29,10 @@ Before continuing, you **MUST** resolve and apply the `ponytail_core` template w
 
 Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
 
+## Repository Context
+
+Resolve and apply the `repository_context` template with `architecture-guard resolve template repository_context`. When `.architecture-guard/config.yml` lists `repositories`, every git, branch, test, hygiene, commit, push, and code-host step in this skill runs in the repository that owns the files it concerns, as that template defines, and paths are workspace-relative; rules, constitutions, and configuration still come from the workspace. Without `repositories`, the workspace is the only repository and nothing changes.
+
 ## Input & Context Loading
 
 Before making decisions or delegating work, read these inputs explicitly with file-reading tools:
@@ -68,9 +72,9 @@ Prompt the user to execute final Git operations:
 Prepare semantic commit messages and PR descriptions from the SDD artifacts, but execute Git operations only after the user selects an action and confirms the target branch and files.
 
 **Protected-branch guard** (applies to every option):
-- Run `git branch --show-current` first. Refuse to commit or push on `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch; report the branch and stop the Git step (offer "Do nothing" or ask the user to switch to a feature branch).
+- Run `git branch --show-current` first, in each repository that has files to commit (Repository Context), and commit each repository separately. Refuse to commit or push on `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch, in any of those repositories; report the branch and stop the Git step (offer "Do nothing" or ask the user to switch to a feature branch).
 - Commit only the files listed in the confirmed preview; never stage unrelated changes.
-- Push only after a separate explicit approval that names the remote and branch, even when "Commit & Push" was selected. Never force-push (`--force`, `--force-with-lease`, or a `+` refspec).
+- Push only after a separate explicit approval that names the repository, remote, and branch, even when "Commit & Push" was selected. Never force-push (`--force`, `--force-with-lease`, or a `+` refspec).
 - Create a PR only after its own approval of the title, description, and base branch.
 
 ### Step 5 — Workspace Cleanup

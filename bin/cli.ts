@@ -57,6 +57,7 @@ program
   .option('--json', 'Output results in JSON format')
   .option('--base <ref>', 'Compare against this ref instead of the default branch')
   .option('--security-sensitive', 'List only changed files matching security_sensitive_paths in .architecture-guard/config.yml')
+  .option('--repo <name>', 'Limit to one repository listed under repositories in .architecture-guard/config.yml')
   .action(runDetectChangedFiles);
 
 program
@@ -109,6 +110,7 @@ program
   .option('--target <dir>', 'Target workspace directory (default: current working directory)')
   .option('--rules <ids>', 'Comma-separated rule identifiers to run')
   .option('--files <paths>', 'Comma-separated file paths relative to the target; report findings only for these files (for example, a pull request\'s changed files)')
+  .option('--policy-root <dir>', 'Take the policy and local rules from this directory\'s .architecture-guard/ instead of the target\'s (for reviewing a checkout you do not trust)')
   .action(async (options) => {
     await runHygiene(options);
   });

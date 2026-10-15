@@ -49,7 +49,7 @@ Prompt the user to execute final Git operations:
 3. "Commit, Push, and Create PR"
 4. "Do nothing"
 
-Prepare semantic commit messages and PR descriptions from the SDD artifacts, but execute Git operations only after the user selects an action and confirms the target branch and files.
+Prepare semantic commit messages and PR descriptions from the SDD artifacts, but execute Git operations only after the user selects an action and confirms the target branch and files. Refuse to commit or push on `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch. Push only after a separate explicit approval that names the repository, remote, and branch. Never force-push (`--force`, `--force-with-lease`, or a `+` refspec). When the code lives in a separate repository nested in this workspace, commit and push each repository separately.
 
 ### Step 5 — Workspace Cleanup
 If Git operations were successful, enumerate each proposed cleanup action and affected path or branch, then require explicit approval for that exact list. Cleanup may include only the approved actions, such as removing confirmed temporary files, checking out a named branch, deleting a named local feature branch, or deleting a named remote feature branch. Never infer blanket approval, delete untracked work, check out another branch, or delete any branch without explicit approval.

@@ -252,3 +252,80 @@ test('unresolved-governance-citations accepts a citation into a nested repositor
     fs.rmSync(target, { recursive: true, force: true });
   }
 });
+
+test('a workspace target also scans the application repositories it configures', () => {
+  const target = temporaryProject();
+  try {
+    execFileSync('git', ['init', '-q', target]);
+    fs.writeFileSync(path.join(target, '.gitignore'), 'src/\n');
+    fs.mkdirSync(path.join(target, '.architecture-guard'), { recursive: true });
+    fs.writeFileSync(path.join(target, '.architecture-guard', 'config.yml'), 'repositories:\n  - name: app\n    path: src\n');
+    fs.mkdirSync(path.join(target, 'src', 'lib'), { recursive: true });
+    execFileSync('git', ['init', '-q', path.join(target, 'src')]);
+    fs.writeFileSync(path.join(target, 'src', 'lib', 'a.ts'), '// TODO: finish\n');
+    fs.writeFileSync(path.join(target, 'notes.md'), 'TODO: write\n');
+
+    const report = scanHygiene({ target, rules: 'todo-comments' });
+    assert.deepEqual(report.findings.map(finding => finding.relativePath).sort(), ['notes.md', 'src/lib/a.ts']);
+    const scoped = scanHygiene({ target, rules: 'todo-comments', files: 'src/lib/a.ts' });
+    assert.deepEqual(scoped.findings.map(finding => finding.relativePath), ['src/lib/a.ts']);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test('--policy-root takes the policy and local rules from the workspace, not the scanned target', () => {
+  const workspace = temporaryProject();
+  const target = temporaryProject();
+  try {
+    fs.mkdirSync(path.join(workspace, '.architecture-guard'), { recursive: true });
+    fs.writeFileSync(path.join(workspace, '.architecture-guard', 'config.yml'), 'repository_hygiene:\n  fail_on:\n    - todo-comments\n');
+    fs.mkdirSync(path.join(target, '.architecture-guard'), { recursive: true });
+    fs.writeFileSync(path.join(target, '.architecture-guard', 'config.yml'), 'repository_hygiene:\n  enabled: false\n');
+    fs.writeFileSync(path.join(target, 'a.ts'), '// TODO: finish\n');
+    const report = scanHygiene({ target, policyRoot: workspace, rules: 'todo-comments' });
+    assert.equal(report.counts.findings, 1, 'the target\'s own config cannot switch hygiene off');
+    assert.equal(report.findings[0].blocking, true, 'the workspace policy applies');
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test('unresolved-governance-citations flags a repository file citing a document only the workspace holds', () => {
+  const target = temporaryProject();
+  try {
+    execFileSync('git', ['init', '-q', target]);
+    fs.writeFileSync(path.join(target, '.gitignore'), 'src/\n');
+    fs.mkdirSync(path.join(target, '.architecture-guard'), { recursive: true });
+    fs.writeFileSync(path.join(target, '.architecture-guard', 'config.yml'), 'repositories:\n  - name: app\n    path: src\n');
+    fs.mkdirSync(path.join(target, 'docs'), { recursive: true });
+    fs.writeFileSync(path.join(target, 'docs', 'security_constitution.md'), '# Workspace only\n');
+    fs.mkdirSync(path.join(target, 'src', 'docs'), { recursive: true });
+    fs.mkdirSync(path.join(target, 'src', 'config'), { recursive: true });
+    execFileSync('git', ['init', '-q', path.join(target, 'src')]);
+    fs.writeFileSync(path.join(target, 'src', 'docs', 'constitution.md'), '# App\n');
+    fs.writeFileSync(path.join(target, 'src', 'config', 'audit.php'), '<?php // see docs/constitution.md and docs/security_constitution.md\n');
+
+    const report = scanHygiene({ target, rules: 'unresolved-governance-citations' });
+    assert.deepEqual(report.findings.map(finding => `${finding.relativePath} ${finding.message}`), [
+      'src/config/audit.php Cited governance document docs/security_constitution.md is outside repository "app" (src); reviewers of that repository cannot open it.',
+    ]);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test('unresolved-governance-citations skips hidden tool and agent directories', () => {
+  const target = temporaryProject();
+  try {
+    execFileSync('git', ['init', '-q', target]);
+    fs.mkdirSync(path.join(target, '.claude', 'skills', 'ag-apply'), { recursive: true });
+    fs.writeFileSync(path.join(target, '.claude', 'skills', 'ag-apply', 'SKILL.md'), 'For OpenSpec, check `openspec/constitution.md`.\n');
+    fs.writeFileSync(path.join(target, 'notes.md'), 'See [rules](docs/missing_constitution.md).\n');
+    const report = scanHygiene({ target, rules: 'unresolved-governance-citations' });
+    assert.deepEqual(report.findings.map(finding => finding.relativePath), ['notes.md']);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});

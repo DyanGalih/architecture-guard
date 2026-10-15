@@ -3,7 +3,9 @@ import path from 'node:path';
 import { parse } from 'yaml';
 import { missingAdapterKeys } from './install';
 import { listCategoryResources, resolveResource } from './resolve';
-import { missingForgeKeys } from './forge';
+import { detectForge, missingForgeKeys } from './forge';
+import { REPOSITORY_NAME, configuredRepositories, detectNestedRepositories, insideWorkspace, isGitRepository, rawRepositoryEntries } from './repositories';
+import { spawnSync } from 'node:child_process';
 import { ignoredByOwningRepository } from './hygiene';
 
 type Level = 'pass' | 'warn' | 'fail' | 'info';
@@ -102,6 +104,58 @@ export function validateSetup(projectRoot: string): Check[] {
         if (state === 'readable') add('pass', `Governance document "${name}" readable (${file})`);
         else if (state === 'missing') add('warn', `Governance document "${name}" not found (${file})`);
         else add('warn', `Governance document "${name}" is ${state === 'outside' ? 'outside the repository' : 'gitignored'} (${file}); reviewers cannot read it`);
+      }
+    }
+    // Application repositories the workspace wraps: each must be a git repository inside the workspace, and the
+    // pull-request skills (installed for one code host) must match its origin.
+    const selectedForgePath = path.join(runtimeDir, 'selected-forge');
+    const installedForge = fs.existsSync(selectedForgePath) ? fs.readFileSync(selectedForgePath, 'utf8').trim() : '';
+    const seen = new Set<string>();
+    for (const entry of rawRepositoryEntries(projectRoot)) {
+      const name = entry?.name;
+      const location = entry?.path;
+      if (typeof name !== 'string' || !REPOSITORY_NAME.test(name)) {
+        add('fail', `Repository entry needs a name (letters, digits, dots, hyphens, underscores): ${JSON.stringify(entry)}`);
+        continue;
+      }
+      if (seen.has(name)) add('fail', `Repository name "${name}" is listed twice`);
+      seen.add(name);
+      if (typeof location !== 'string' || !location.trim()) {
+        add('fail', `Repository "${name}" has no path`);
+      } else if (!insideWorkspace(projectRoot, location)) {
+        add('fail', `Repository "${name}" (${location}) must be inside the workspace`);
+      } else if (!fs.existsSync(path.join(projectRoot, location))) {
+        add('fail', `Repository "${name}" (${location}) not found`);
+      } else if (!isGitRepository(path.join(projectRoot, location))) {
+        add('fail', `Repository "${name}" (${location}) is not a git repository`);
+      } else {
+        const detected = detectForge(path.join(projectRoot, location));
+        const forge = typeof entry.forge === 'string' ? entry.forge : detected.forge;
+        const origin = detected.reason === 'no origin remote' ? 'no origin remote' : `origin ${detected.reason}`;
+        add('pass', `Repository "${name}" (${location}): git repository, ${origin}, forge ${forge}`);
+        if (installedForge && forge !== installedForge && detected.reason !== 'no origin remote') {
+          add('warn', `Repository "${name}" uses forge ${forge}, but the installed skills use ${installedForge}; pull-request skills support one code host per workspace (rerun init with --forge ${forge} if this is the code host you review)`);
+        }
+      }
+    }
+    // A nested repository the workspace ignores is invisible to every check until it is listed.
+    const listed = new Set(configuredRepositories(projectRoot).map(repository => repository.path));
+    for (const location of detectNestedRepositories(projectRoot)) {
+      if (listed.has(location)) continue;
+      const ignoredHere = spawnSync('git', ['-C', projectRoot, 'check-ignore', '-q', '--', location], { stdio: 'ignore' }).status === 0;
+      if (ignoredHere) add('warn', `Nested repository "${location}" is ignored by the workspace but not listed under repositories; change detection, hygiene and security re-reviews do not see it`);
+    }
+    // With repositories, workspace globs are workspace-relative: one that names no repository path and no existing
+    // workspace path silently matches nothing.
+    const repositoryPaths = [...listed];
+    if (repositoryPaths.length && Array.isArray(settings?.security_sensitive_paths)) {
+      for (const pattern of settings.security_sensitive_paths) {
+        if (typeof pattern !== 'string') continue;
+        const staticPart = pattern.split(/[*?[]/)[0].replace(/\/+$/, '');
+        const namesRepository = repositoryPaths.some(location => pattern === location || pattern.startsWith(`${location}/`));
+        if (!namesRepository && !pattern.startsWith('**') && !(staticPart && fs.existsSync(path.join(projectRoot, staticPart)))) {
+          add('warn', `security_sensitive_paths entry "${pattern}" matches no repository path; with repositories configured, workspace globs need the repository path (for example ${repositoryPaths[0]}/${pattern})`);
+        }
       }
     }
     const sensitive = settings?.security_sensitive_paths;

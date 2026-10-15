@@ -26,6 +26,10 @@ Before continuing, you **MUST** resolve and apply the `ponytail_core` template w
 
 Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
 
+## Repository Context
+
+Resolve and apply the `repository_context` template with `architecture-guard resolve template repository_context`. When `.architecture-guard/config.yml` lists `repositories`, every git, branch, test, hygiene, commit, push, and code-host step in this skill runs in the repository that owns the files it concerns, as that template defines, and paths are workspace-relative; rules, constitutions, and configuration still come from the workspace. Without `repositories`, the workspace is the only repository and nothing changes.
+
 ## Change Scope
 
 Before any SDD artifact lookup or command, establish the active change scope with {adapter_command:change-scope}. If no unambiguous scope can be resolved, stop and ask the user rather than continuing without one.
@@ -56,7 +60,7 @@ Before the first mutation, resolve and preview the exact branch, change containe
 
 Before creating, planning, or modifying any active change:
 
-1. Run `git branch --show-current`.
+1. Run `git branch --show-current` in the workspace and in every repository this phase writes to (Repository Context); apply the steps below to each.
 2. If the branch is `main`, `master`, `dev`, `develop`, `development`, `staging`, or another protected branch:
    - Include `feature/<change-name>` in the Write Approval Gate preview, and create and switch to it only after explicit user approval.
    - If the user declines or branch creation fails, stop. MUST NOT continue on the protected branch.
