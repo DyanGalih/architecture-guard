@@ -130,6 +130,7 @@ Build internal representations:
 #### C. Constitution Compliance
 - **Rule Check**: Does the implementation violate any "MUST" rules in the authoritative constitution set?
 - **Pattern Match**: Does the code follow the mandated architectural patterns (e.g., DTOs, Repositories, Events)?
+- **Performance Constraints**: For each constraint in the constitution's `Performance Constraints` section that applies to the change, cite code evidence and mark it `Verified`, `Partial`, `Missing`, or `Not Applicable`, applying the `performance_review` template (`architecture-guard resolve template performance_review`) for evidence rules. This is static evidence, not measurement. If none are declared, report `None declared`.
 
 - **Accepted-risk completeness**: every accepted risk or deviation in the active artifacts names an owner, rationale, compensating control, trigger or expiry, and gate. A risk whose trigger has been reached (for example "before production" at a production release) is reported as open. A security-relevant risk whose only mitigation is to revisit it later, with no trigger or gate, is MEDIUM; it is non-blocking unless the security policy says otherwise.
 
@@ -207,6 +208,7 @@ For each task in `{adapter_path:tasks}`:
 - **Requirement Coverage**: [e.g. 100%]
 - **Boundary Integrity**: [Strong / Eroded / Breached]
 - **Constitution Score**: [e.g. 100%]
+- **Performance Constraints**: [Verified / Total applicable, or None declared]
 
 ### Action Plan
 1. **Critical Gaps**: Address missing implementation for tasks [IDs] immediately.

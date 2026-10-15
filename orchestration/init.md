@@ -697,6 +697,7 @@ Determine:
 * query ownership
 * async boundaries
 * background processing rules
+* performance constraints (optional)
 
 ---
 
@@ -729,6 +730,22 @@ Ask:
 ```text
 Which operations must never block requests?
 ```
+
+---
+
+Ask:
+
+```text
+Are there performance constraints the project must meet? (Optional; answer "none" to skip.)
+
+Examples:
+- latency target for key endpoints (e.g. p95 under 300 ms)
+- maximum page size for list endpoints
+- expected data volume (rows per table, items per request)
+- caching rules (what may be cached, and for how long)
+```
+
+Record only constraints the user states, under `Performance Constraints` in `{adapter_path:arch-constitution}`. Do not suggest targets the user has not asked for. If the answer is "none", write `Not applicable`; reviews then treat performance as advisory.
 
 ---
 
@@ -896,6 +913,7 @@ Examples:
 * authorization strategy and its framework implementation, when selected
 * validation placement
 * async boundaries
+* performance constraints the user declared (targets and limits only)
 * response contracts and REST/API conventions
 * module ownership rules
 * module and feature subfolder shapes
@@ -1000,14 +1018,15 @@ When the selected adapter's Constitution Layout section defines the section list
 4. Contracts & Validation
 5. Data Access Rules
 6. Async & Integration Rules
-7. Module Boundaries
-8. Code Style & Tooling Rules
-9. Framework-Specific Architecture Rules
-10. Blocking Architecture Violations (P0)
-11. Architecture Evolution Policy
-12. Refactor & Drift Handling
-13. Useful File References (optional)
-14. Per-Artifact Rules (only when the adapter's Constitution Layout supports them)
+7. Performance Constraints
+8. Module Boundaries
+9. Code Style & Tooling Rules
+10. Framework-Specific Architecture Rules
+11. Blocking Architecture Violations (P0)
+12. Architecture Evolution Policy
+13. Refactor & Drift Handling
+14. Useful File References (optional)
+15. Per-Artifact Rules (only when the adapter's Constitution Layout supports them)
 ```
 
 ---

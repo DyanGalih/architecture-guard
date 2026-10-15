@@ -187,6 +187,7 @@ Detect violations such as:
 - **Ponytail Violation (Unsafe Simplification)**: A small diff removes required validation, authorization, data-loss prevention, accessibility, external-system safeguards, or verification.
 - **Root-Cause Miss**: A symptom is patched in one caller while sibling callers remain exposed to the same shared defect.
 - **Constitution Breach**: Any conflict with a "MUST" principle in the Constitution.
+- **Performance Constraint Breach**: Code breaks a constraint declared in the constitution's `Performance Constraints` section (for example an unbounded list read where a page-size limit is declared). Report only declared constraints here; other performance concerns belong to `mode=performance`.
 
 **Duplication Drift Example**
 - Finding: Both `checkout/controller.ts` and `checkout/service.ts` calculate the same tax rule.
@@ -210,7 +211,7 @@ Detect violations such as:
   - If a finding is primarily security-related and Security Review is available, dispatch the detected host capability's branch/implementation operation directly instead of duplicating it here.
   - Cross-reference architecture decisions with security trust boundaries.
 7. **Ponytail Audit**: Apply both sides of the shared contract. Check for bloat and unsafe under-building; trace changed shared behavior to its callers; verify the earliest viable ladder rung was used; and confirm non-trivial logic has a runnable check.
-8. **Performance Scan (if mode=performance)**: Skip violations; focus on optimizations.
+8. **Performance Scan (if mode=performance)**: Resolve and apply the `performance_review` template with `architecture-guard resolve template performance_review` for the selected `focus`. Skip architecture violations other than breaches of declared performance constraints.
 8b. **Code Quality Scan (SonarLint)**: If `mode=architecture`, optionally scan for coupling/complexity violations.
 8c. **Repository Hygiene Scan**: Run the hygiene runner on the review scope: `architecture-guard hygiene --json --target <review root> --policy-root <workspace> --files <changed files, comma-separated>` (the policy and local rules always come from the workspace, never from a checkout under review) (or the adapter's {adapter_command:hygiene} with the same `--files` scope, when it maps to the same runner). Omit `--files` only for a whole-repository review. Report each finding's severity and blocking status exactly as the runner returns them, after the exclusions and `fail_on` / `warn_on` overrides it applies; do not re-judge them. List every rule the runner reports under `manualRules` as `Degraded: manual rule not executed`, and check those rules by hand on the changed files only. If the runner is unavailable, say so and mark the hygiene report `Unavailable`; do not present hand-checked results as runner output.
 9. **Generate Refactors**: Produce structured tasks for each confirmed violation.
@@ -354,8 +355,12 @@ Return only this structure:
 
 (Only if `mode=performance`)
 ### Performance Insights
-- **Suggestion**: 
-- **Trade-off**: 
+- **Constraints**: [Declared constraints applied, or `none declared`]
+- **Focus**: [general / db / api / async]
+
+| Location | Growth Driver | Constraint | Suggestion | Trade-off | Evidence |
+|:---|:---|:---|:---|:---|:---|
+| [File:Line or artifact section] | [What grows: rows, items, users, payload] | [Declared constraint, or `Advisory`] | [Smallest fix] | [Cost of the fix] | [Static analysis; not measured / measured: source] |
 
 (Only if `mode=architecture` and code-quality findings were produced)
 ### Code Quality Findings ([SonarLint / Heuristic Sonar Rules Analysis])
