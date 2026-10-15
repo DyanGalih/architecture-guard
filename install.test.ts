@@ -2195,6 +2195,37 @@ test('validate-setup checks each configured repository', () => {
   assert.match(out, /Repository "sibling" \(\.\.\/elsewhere\) must be inside the workspace/);
 });
 
+test('repository paths that resolve through a symlink to outside the workspace are rejected', () => {
+  const { cwd } = multiRepoWorkspace();
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-outside-'));
+  fs.mkdirSync(path.join(outside, 'app'), { recursive: true });
+  git(path.join(outside, 'app'), 'init', '-q', '-b', 'main');
+  fs.symlinkSync(path.join(outside, 'app'), path.join(cwd, 'linked'), 'dir');
+  fs.symlinkSync(outside, path.join(cwd, 'parent'), 'dir');
+  fs.symlinkSync(path.join(cwd, 'src'), path.join(cwd, 'alias'), 'dir');
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'generic', '--commands', 'init'], cwd);
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/config.yml'), [
+    'adapter: generic',
+    'repositories:',
+    '  - name: linked',
+    '    path: linked',
+    '  - name: nested',
+    '    path: parent/app',
+    '  - name: alias',
+    '    path: alias',
+    '',
+  ].join('\n'));
+  const { configuredRepositories, insideWorkspace } = require('./cli/repositories');
+  assert.equal(insideWorkspace(cwd, 'linked'), false);
+  assert.equal(insideWorkspace(cwd, 'parent/app'), false);
+  assert.equal(insideWorkspace(cwd, 'alias'), true);
+  assert.equal(insideWorkspace(cwd, 'not-created-yet'), true);
+  assert.deepEqual(configuredRepositories(cwd).map(repository => repository.name), ['alias']);
+  const out = spawnSync(process.execPath, [installer, 'validate-setup', cwd], { encoding: 'utf8' }).stdout;
+  assert.match(out, /Repository "linked" \(linked\) must be inside the workspace/);
+  assert.match(out, /Repository "nested" \(parent\/app\) must be inside the workspace/);
+});
+
 test('skills that use git, tests or the code host follow the repository context', () => {
   const template = fs.readFileSync(path.join(repoRoot, 'templates', 'repository_context.md'), 'utf8');
   assert.match(template, /owning repository/i);
