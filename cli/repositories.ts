@@ -39,9 +39,29 @@ export function rawRepositoryEntries(workspace: string): any[] {
   return Array.isArray(value) ? value : [];
 }
 
-export function insideWorkspace(workspace: string, repositoryPath: string) {
-  const relative = path.relative(path.resolve(workspace), path.resolve(workspace, repositoryPath));
+// The real path with symlinks resolved; for a path that does not exist yet, the nearest existing ancestor is resolved
+// and the remaining segments are appended, so a symlinked parent cannot escape either.
+function canonicalPath(target: string) {
+  const missing: string[] = [];
+  let current = path.resolve(target);
+  while (!fs.existsSync(current) && path.dirname(current) !== current) {
+    missing.unshift(path.basename(current));
+    current = path.dirname(current);
+  }
+  return path.join(fs.realpathSync(current), ...missing);
+}
+
+function contains(parent: string, child: string) {
+  const relative = path.relative(parent, child);
   return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
+}
+
+// Inside both lexically and after resolving symlinks: a configured path such as `src` may be a symlink to a
+// repository elsewhere, which git, hygiene and forge operations would otherwise follow outside the workspace.
+export function insideWorkspace(workspace: string, repositoryPath: string) {
+  const root = path.resolve(workspace);
+  const target = path.resolve(root, repositoryPath);
+  return contains(root, target) && contains(canonicalPath(root), canonicalPath(target));
 }
 
 // Usable entries: a valid name and a path inside the workspace; the first entry wins on a duplicate name or path
