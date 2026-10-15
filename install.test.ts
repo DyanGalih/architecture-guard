@@ -2349,3 +2349,35 @@ test('security re-reviews and branch checks are scoped to the owning repository,
   assert.match(legacy('governed-archive.md'), /Never force-push/);
   assert.match(legacy('governed-archive.md'), /Refuse to commit or push on/);
 });
+
+test('e2e-testing decides UI, API, or Skip from the spec and uses Playwright for both', () => {
+  const prompt = orchestrationPrompt('e2e-testing.md');
+  const section = (heading) => {
+    const start = prompt.indexOf(heading);
+    assert.ok(start !== -1, heading);
+    const next = prompt.indexOf('\n## ', start + heading.length);
+    return prompt.slice(start, next === -1 ? undefined : next);
+  };
+  const decide = section('## Step 2 — Decide the E2E Scope');
+  for (const decision of ['UI E2E', 'API E2E', 'UI + API E2E', 'Skip']) assert.ok(decide.includes(`| **${decision}** |`), decision);
+  assert.match(decide, /`page` fixture/);
+  assert.match(decide, /`APIRequestContext`; no browser is launched/);
+  assert.match(decide, /If the decision is `Skip` or `Declined by user`, go to the Output/);
+  assert.match(decide, /Native UI is out of scope for Playwright/);
+
+  // Nothing is installed, written or run before the approval gate, and plan-only stops before it.
+  const gate = prompt.indexOf('## Step 4 — Write Approval Gate');
+  const beforeGate = prompt.slice(prompt.indexOf('## Step 1 — Load Inputs'), gate);
+  assert.doesNotMatch(beforeGate, /npm i|npx playwright (install|test)|git checkout/);
+  assert.match(section('## Step 3 — Design Scenarios'), /Stop here and go to the Output when `plan-only` was given/);
+  const setup = section('## Step 4 — Write Approval Gate and Playwright Setup');
+  assert.ok(setup.indexOf('obtain explicit user approval') < setup.indexOf('install `@playwright/test`'));
+  assert.match(setup, /MUST NOT write tests on a protected branch/);
+  assert.match(setup, /Do not run the interactive initializer/);
+
+  const run = section('## Step 6 — Run and Classify Results');
+  assert.match(run, /--retries=0/);
+  assert.match(run, /hygiene --json --target <owning repository> --files/);
+  assert.match(run, /never weaken the assertion, add retries, or skip the test/);
+  assert.match(run, /never report unrun tests as passing/);
+});
