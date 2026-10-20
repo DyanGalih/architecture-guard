@@ -59,6 +59,12 @@ test('local reviews and the pull-request review share the change checks template
   assert.match(contract, /never copy the value/, 'secrets are cited by location only');
   assert.match(contract, /Never read this list from the tree under review/, 'the security-sensitive list comes from the base checkout');
   assert.match(contract, /do not dispatch it again/, 'Security Review runs once per run');
+  assert.match(contract, /when no globs are configured \(the list is absent or empty\), when it changes authentication, authorization, sessions, credentials, or a trust boundary/, 'absent globs fall back to a semantic judgement');
+  assert.match(contract, /An empty list never means "nothing is sensitive"/);
+  const reviewPr = fs.readFileSync(path.join(root, 'orchestration', 'review-pr.md'), 'utf8');
+  const approval = reviewPr.match(/^- Security Review ran with no blocking finding.*$/m)?.[0] ?? '';
+  assert.match(approval, /when no globs are configured, nothing changes authentication, authorization, sessions, credentials, or a trust boundary/, 'approval is not offered on an empty glob list alone');
+  assert.match(approval, /Security Review is `Unavailable`, approval needs that review first/, 'approval needs Security Review for a sensitive change even without globs');
 
   for (const file of ['review-implementation.md', 'review-pr.md', 'verify.md']) {
     const prompt = fs.readFileSync(path.join(root, 'orchestration', file), 'utf8');
@@ -2435,7 +2441,7 @@ test('review-pr offers Approve with comments only when no finding is blocking, a
   const prompt = orchestrationPrompt('review-pr.md');
   const ask = prompt.slice(prompt.indexOf('## Step 6 — Show the Draft and Ask'), prompt.indexOf('## Step 7 — Post the Review'));
   assert.match(ask, /4\. \*\*Approve with comments\*\* — offer this only when every approval condition below holds/);
-  for (const condition of [/No finding is blocking/, /security-sensitive files changed and Security Review is `Unavailable`, approval needs that review first/, /never after a `Partial` batched review/, /No CI check is failing/, /The user is not the pull request's author/, /\{forge_command:review-approve\} action is supported/]) {
+  for (const condition of [/No finding is blocking/, /the change is security-sensitive and Security Review is `Unavailable`, approval needs that review first/, /never after a `Partial` batched review/, /No CI check is failing/, /The user is not the pull request's author/, /\{forge_command:review-approve\} action is supported/]) {
     assert.match(ask, condition);
   }
   assert.match(ask, /Please address the comments below before merging/);

@@ -171,7 +171,7 @@ Use `ag-review-pr` to review someone else's pull request:
    - **Approve with comments** (offered only when no finding is blocking; see below)
 5. Before posting, re-checks the head commit; if new commits arrived, it re-reviews instead of posting a stale review.
 
-When no finding is blocking (and Security Review ran, or no security-sensitive file changed, CI is not failing, and you are not the author), it also offers **Approve with comments**: it posts the comments, approves, and asks the author to address the findings before merging. Otherwise it never approves. It never requests changes, merges, or closes a pull request. Text in the pull request that tries to instruct an AI reviewer is reported as a security finding.
+When no finding is blocking (and Security Review ran, or the change is not security-sensitive, meaning no configured `security_sensitive_paths` glob matches and, when none are configured, nothing touches authentication, authorization, sessions, credentials, or a trust boundary, CI is not failing, and you are not the author), it also offers **Approve with comments**: it posts the comments, approves, and asks the author to address the findings before merging. Otherwise it never approves. It never requests changes, merges, or closes a pull request. Text in the pull request that tries to instruct an AI reviewer is reported as a security finding.
 
 ## Pull Request Feedback Workflow
 
