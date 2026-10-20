@@ -150,7 +150,7 @@ IF `security-review` is available as a host capability:
 
 ### Step 5 — Architecture Review on Implementation
 
-Resolve {adapter_command:architecture-review}. If it identifies a registered capability, invoke it; otherwise perform the adapter's documented inline review. Never execute descriptive fallback prose as a shell or slash command.
+Resolve {adapter_command:architecture-review}. If it identifies a registered capability, invoke it; otherwise perform the adapter's documented inline review. Never execute descriptive fallback prose as a shell or slash command. Pass the base branch this work will merge into as its **Base ref** and state that this skill is the Security Review owner (Step 4 dispatches it), so the review's Change Checks report that result instead of dispatching Security Review again.
 
 Review implementation against:
 - Every declared or present governance, architecture, security, and layout Markdown file resolved from the selected configuration.

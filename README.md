@@ -71,7 +71,7 @@ Instead of letting AI agents run wild, Architecture Guard provides structured en
 | **`ag-governed-archive`**<br>*(or `/speckit.architecture-guard.ag-governed-archive`)* | Finalization | Archives a completed feature after verification, with explicit approval for changelog, memory, Git, and cleanup actions. |
 | **`ag-governed-implement`**<br>*(or `/speckit.architecture-guard.ag-governed-implement`)* | Implementation | Executes the generated tasks while strictly following the plan and architecture rules. |
 | **`ag-e2e-testing`** | Testing a feature end to end | Decides from the spec whether the feature needs end-to-end tests. If it does, it designs scenarios from the acceptance criteria and writes them with Playwright: browser tests for UI journeys, API-only tests for API scope. If the spec isn't end-to-end, it skips them and names the lower-level tests to write instead. |
-| **`ag-review-pr`** | Reviewing someone else's pull request | Fetches the pull request from your code host (GitHub, GitLab, Bitbucket, Azure DevOps, or plain git), reviews it against your architecture, security, and hygiene rules, and drafts a comment-only review that is posted only when you choose. |
+| **`ag-review-pr`** | Reviewing someone else's pull request | Fetches the pull request from your code host (GitHub, GitLab, Bitbucket, Azure DevOps, or plain git), reviews it against your architecture, security, and hygiene rules, runs Security Review (`sr-branch`) when that separate tool is installed, and drafts a comment-only review that is posted only when you choose. When no finding is blocking, you can instead approve it with comments asking the author to address the findings before merging. |
 | **`ag-pr-feedback`** | Feedback on your own pull request | Triages unresolved review threads and failing checks, applies the fixes you approve, drafts replies, and lets you choose to reply only or reply and resolve. |
 
 *(Note: Granular commands like `ag-governed-spec`, `ag-governed-plan`, and `ag-governed-tasks` are still available if you want manual control. See the [Manual Workflow Guide](docs/manual-workflow-guide.md).)*
@@ -82,7 +82,7 @@ Instead of letting AI agents run wild, Architecture Guard provides structured en
 /ag-governed-discover (optional, to brainstorm an idea)
   → /ag-governed-delivery (generates or reconciles the plan and tasks)
   → /ag-governed-implement (writes the code)
-  → /ag-verify (checks for unapproved drift)
+  → /ag-verify base=main (checks for unapproved drift and runs the same change checks as the pull-request review)
 ```
 
 ### Suggested Pull Request Flow

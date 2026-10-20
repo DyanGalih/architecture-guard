@@ -22,6 +22,11 @@ export const FORGE_KEYS = [
   'checks-status',
 ];
 
+// Optional actions: built-in forges define them, but a custom forge may leave them out. A skill that uses one must
+// handle the `Unsupported` value it then receives.
+export const OPTIONAL_FORGE_KEYS = ['review-approve'];
+const UNSUPPORTED_OPTIONAL_ACTION = 'Unsupported by this forge adapter; do not offer or attempt this action';
+
 const FORGE_NAME = /^[a-z0-9][a-z0-9-]*$/;
 const FORGE_TOKEN = /\{forge_command:([a-z0-9-]+)\}/g;
 
@@ -133,7 +138,7 @@ export function materializeForgeTokens(content: string, forgeName: string, targe
   const commands = forgeCommands(fs.readFileSync(forgePath, 'utf8'));
   const resolved = new Map<string, string>();
   const materialized = content.replace(FORGE_TOKEN, (token, key) => {
-    const value = commands.get(key);
+    const value = commands.get(key) || (OPTIONAL_FORGE_KEYS.includes(key) ? UNSUPPORTED_OPTIONAL_ACTION : '');
     if (!value) throw new Error(`ForgeMissingKey: forge_command:${key}`);
     resolved.set(key, value);
     return `the forge-defined "${key}" action`;
