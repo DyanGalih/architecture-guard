@@ -17,6 +17,7 @@ Files are named after the refs: `<slug>` is `<base>..<head>` with every `/` repl
 | pr-checkout | Inside a review worktree `git switch --detach '<head>'`, or create one with `git worktree add --detach '<dir>' '<head>'` to keep the current checkout; never discard local changes |
 | pr-threads | No hosted threads; ask the user to paste or export the review comments, then treat each comment as a thread keyed by file and line |
 | review-post | Unsupported; write the approved review to `.architecture-guard/reviews/<slug>.md` (summary plus `path:line` comments) for the user to post |
+| review-approve | Unsupported; after the review file is written, tell the user to approve on the host |
 | thread-reply | Unsupported; write the approved replies to `.architecture-guard/reviews/<slug>-replies.md`, one section per thread, for the user to post |
 | thread-resolve | Unsupported; list the threads the user chose to resolve in the replies file so they can resolve them on the host |
 | checks-status | Unsupported; ask the user for CI status. Running tests executes the change's code: only for your own change and only after the user approves; never when reviewing someone else's change |

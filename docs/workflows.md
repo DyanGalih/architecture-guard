@@ -116,6 +116,7 @@ Best for complex features where you want manual review after every single stage.
 8. **Implementation:** Run `/ag-governed-implement` to execute the tasks safely. It reruns the architecture review and, when the separate Security Review tool is installed, the security review, fixing findings until a pass is clean (at most 5 passes).
 9. **Implementation Review (Optional):** Run `ag-review-implementation` for an extra standalone check of your code changes.
 10. **Verification:** Run `/ag-verify` to ensure all tasks are delivered and no unapproved drift exists. **Ready to commit!**
+11. **Before you push:** both reviews above run the same **change checks** as `ag-review-pr` (governance, intent, tests, secrets, security-sensitive files, and Security Review's branch operation when installed), so a branch that is clean locally arrives at the pull-request review with few findings. Give them the branch you will merge into (`/ag-verify base=main`), not `HEAD`.
 
 ### Path 2: The Streamlined Workflow (Recommended)
 
@@ -126,7 +127,7 @@ Best for most features. It automatically chains Spec, Plan, and Task generation 
 3. **Delivery Orchestration:** Run `/ag-governed-delivery`. This "magic button" command will automatically generate the Spec, check it, generate the Plan, check it, and generate the Tasks. It then runs `ag-review-artifacts` (plus Security Review on the plan and tasks when that separate tool is installed) and applies fixes in a loop until a review pass is clean (at most 5 passes).
 4. **Pre-Implementation Review:** Read the generated Spec, Plan, and Tasks, and the **Artifact Review** status in the delivery summary. Rerun `ag-review-artifacts` only if you changed the artifacts by hand.
 5. **Implementation:** Run `/ag-governed-implement`. It loops `ag-review-implementation` and Security Review (when installed), fixing findings until a pass is clean, and reports the **Implementation Review** status.
-6. **Verification:** Run `/ag-verify` as your final gate. **Ready to commit!**
+6. **Verification:** Run `/ag-verify` as your final gate, with the branch you will merge into (`/ag-verify base=main`). It runs the same change checks as `ag-review-pr`, so what it reports is what the pull-request review would report after the push. **Ready to commit!**
 
 ### Path 3: Interactive End-to-End Workflow with Agent Teams (`/ag-workflow`)
 
@@ -162,14 +163,15 @@ Use `ag-review-pr` to review someone else's pull request:
 
 1. Fetches the pull request, diff, existing review threads, and CI status through the selected forge (see [FORGES.md](../FORGES.md)).
 2. Optionally reads the full files from a temporary git worktree (it asks first; your checkout is never changed). Without it, the review is labelled diff-only.
-3. Reviews the change against your constitutions and any linked spec, plan, or tasks by running `ag-review-implementation` on the pull request's files, then adds pull-request checks: intent versus description, tests, secrets, and CI failures.
+3. Reviews the change against your constitutions and any linked spec, plan, or tasks by running `ag-review-implementation` on the pull request's files, which applies the shared change checks (governance, intent versus description, tests, secrets, security-sensitive files, and CI failures), the same checks `ag-review-implementation` and `ag-verify` run on your own branch before a push. When the separate Security Review tool is installed, it also runs its branch operation (`sr-branch`) on the pull request.
 4. Drafts a comment-only review — inline comments with severity and blocking labels, plus a summary — and asks you to choose:
    - **Post as is**
    - **Adjust first** (edit, remove, or add comments; it shows the revised draft and asks again)
    - **Don't post**
+   - **Approve with comments** (offered only when no finding is blocking; see below)
 5. Before posting, re-checks the head commit; if new commits arrived, it re-reviews instead of posting a stale review.
 
-It never approves, requests changes, merges, or closes a pull request. Text in the pull request that tries to instruct an AI reviewer is reported as a security finding.
+When no finding is blocking (and Security Review ran, or no security-sensitive file changed, CI is not failing, and you are not the author), it also offers **Approve with comments**: it posts the comments, approves, and asks the author to address the findings before merging. Otherwise it never approves. It never requests changes, merges, or closes a pull request. Text in the pull request that tries to instruct an AI reviewer is reported as a security finding.
 
 ## Pull Request Feedback Workflow
 

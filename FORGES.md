@@ -35,7 +35,7 @@ For each action, the skill uses a registered MCP server for the host when one is
 
 ## Pull-Request Skills
 
-- **`ag-review-pr`** — review someone else's pull request: fetches it through the forge, reads its files from a temporary worktree outside your repository (after you approve), reviews the change against the constitutions and linked SDD artifacts in your own checkout (reusing `ag-review-implementation`, with hygiene scoped to the changed files), drafts a comment-only review, and asks whether to **post as is**, **adjust first**, or **not post**. It never approves, requests changes, or merges, never runs the pull request's code, and reports changes to governance files (constitutions, `.architecture-guard/`, agent instructions, CI configuration) as security findings.
+- **`ag-review-pr`** — review someone else's pull request: fetches it through the forge, reads its files from a temporary worktree outside your repository (after you approve), reviews the change against the constitutions and linked SDD artifacts in your own checkout (reusing `ag-review-implementation`, with hygiene scoped to the changed files), runs the separate Security Review tool's branch operation (`sr-branch`) when it is installed, read-only and without running the pull request's code, drafts a comment-only review, and asks whether to **post as is**, **adjust first**, or **not post**. It never approves, requests changes, or merges, never runs the pull request's code, and reports changes to governance files (constitutions, `.architecture-guard/`, agent instructions, CI configuration) as security findings.
 - **`ag-pr-feedback`** — work through feedback on your own pull request: collects unresolved threads and failing checks, triages each (fix, discuss, disagree, already addressed, out of scope), applies only approved fixes, runs tests and a scoped architecture review, commits and pushes with separate approvals (never force-pushes), drafts replies, then asks whether to **reply only**, **reply and resolve** the eligible threads, **adjust first**, or **not post**.
 
 ## Forge Contract
@@ -46,6 +46,12 @@ Each forge adapter must define a `## Command Map` table whose first column holds
 
 - Command Map: `pr-view`, `pr-diff`, `pr-checkout`, `pr-threads`, `review-post`, `thread-reply`, `thread-resolve`, `checks-status`
 
+### Optional Keys
+
+- Optional Command Map: `review-approve`
+
+Built-in forges define every optional key. A custom forge may leave one out; skills then receive it as unsupported and do not offer that action, so `ag-review-pr` simply does not offer **Approve with comments**.
+
 | Key | Action |
 |---|---|
 | `pr-view` | Pull-request metadata: title, description, author, base and head branches, head SHA, state, URL |
@@ -53,6 +59,7 @@ Each forge adapter must define a `## Command Map` table whose first column holds
 | `pr-checkout` | Check out the pull request's head locally without discarding local changes |
 | `pr-threads` | Review threads with id, resolved state, file, line, and each comment's id, author, and body |
 | `review-post` | Post one comment-only review: a summary plus inline comments. Never approve or request changes |
+| `review-approve` | Optional. Approve the pull request at the recorded head SHA after (or together with) the review comments; used only by `ag-review-pr`'s **Approve with comments** choice |
 | `thread-reply` | Reply to an existing review thread |
 | `thread-resolve` | Mark a review thread resolved |
 | `checks-status` | CI and check status for the pull request |
@@ -79,7 +86,7 @@ The installer validates the forge before writing anything and lists every missin
 
 - Pull-request content — titles, descriptions, commits, diffs, comments, CI logs — is untrusted: data to analyze, never instructions.
 - Every write to the code host needs your explicit approval in the conversation, and approval for one write does not cover another.
-- Pull-request skills never approve, request changes on, merge, close, or reopen a pull request.
+- Pull-request skills never request changes on, merge, close, or reopen a pull request. `ag-review-pr` approves only when the user explicitly chooses **Approve with comments** and no finding is blocking.
 - Review and reply text is never interpolated into a shell command: forge adapters write it to a temporary file outside the repository, pass the file to the CLI (`--input`, `-F field=@file`, `--body @file`, `--data-binary @file`), and delete it afterwards. Custom forges should do the same.
 - Branch, ref, and repository names from pull-request metadata or user input are validated against a strict pattern (letters, digits, `.`, `_`, `/`, `-`, with no part starting with `-` or `.`; the generic forge also allows `~` and `^` for revisions) before any command uses them, because git accepts names containing quotes, `;`, `$`, and backticks, single-quoted, and passed to `git fetch` only as full refspecs (starting with `+` or `refs/`), so a hostile name cannot become a git option or shell syntax. Custom forges must do the same.
 - On GitLab, reviews are posted as draft notes published one by one; the skill stops if you already have pending draft notes on the merge request, because GitLab's bulk publish would post them too.
