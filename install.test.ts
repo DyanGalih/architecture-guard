@@ -67,7 +67,9 @@ test('local reviews and the pull-request review share the change checks template
   }
   const verify = fs.readFileSync(path.join(root, 'orchestration', 'verify.md'), 'utf8');
   assert.match(verify, /`base=<ref>`/, 'ag-verify accepts the target branch');
-  assert.match(verify, /dispatch `sr-branch` with that base ref/, 'ag-verify reviews the whole branch diff when there is no active change');
+  assert.match(verify, /The operation for this phase is always `sr-branch`/, 'ag-verify always reviews the whole branch diff');
+  assert.match(verify, /Never substitute `sr-verify`/, 'ag-verify never falls back to the code-executing operation');
+  assert.match(verify, /in every scope, including when an active change exists/, 'ag-verify uses sr-branch with an active change');
   for (const file of ['review-pr.md', 'governed-implement.md', 'pr-feedback.md']) {
     const prompt = fs.readFileSync(path.join(root, 'orchestration', file), 'utf8');
     assert.match(prompt, /Security Review owner/, `${file} must tell the review it dispatches Security Review itself`);

@@ -135,16 +135,17 @@ Build internal representations:
 - **Accepted-risk completeness**: every accepted risk or deviation in the active artifacts names an owner, rationale, compensating control, trigger or expiry, and gate. A risk whose trigger has been reached (for example "before production" at a production release) is reported as open. A security-relevant risk whose only mitigation is to revisit it later, with no trigger or gate, is MEDIUM; it is non-blocking unless the security policy says otherwise.
 
 #### D. Security Review on Implementation
-- Apply {adapter_command:security-review-implementation} as the adapter policy for this phase.
-- A callable host registration MUST identify a Security Review capability, advertise an implementation-scoped operation, and expose a dispatch API or an exact registered skill body. The canonical operation is `sr-verify`. Accept `sr-branch` only when its registration explicitly declares implementation/branch scope. `sr-changes` is reserved for multi-change review and MUST NOT be selected here.
+- Apply {adapter_command:security-review-implementation} for the dispatch mechanics only. The operation for this phase is always `sr-branch`, scoped to the whole branch diff against the base ref, the same scope a pull-request review uses.
+- A callable host registration MUST identify a Security Review capability, advertise `sr-branch` (branch or pull-request scope), and expose a dispatch API or an exact registered skill body. Never substitute `sr-verify` (it can execute code), `sr-staged`, `sr-audit`, or `sr-changes` (reserved for multi-change review). When `sr-branch` is not callable, do not fall back to another operation: follow the unavailable rule below.
+- **Base ref**: `base=<ref>` when given, otherwise the target branch that `architecture-guard detect-changed-files --json` resolves; never `HEAD`. If it cannot resolve one, ask the user for the base ref. Resolve it once and reuse it for the diff, the Change Checks, and this dispatch.
 - Pass the selected change or explicit artifact paths, changed files, adapter, constitutions, security constraints, and prior findings to the operation. Do not invoke a slash-command name or Markdown path as if it were executable.
 - The independent operation MUST be read-only with respect to the repository. If it writes a report inside the repository or cannot declare its write behavior, mark Security Review `Unavailable` rather than silently allowing the write.
-- When the scope is **Git Diff Only** or the user supplied `base=<ref>`, there is no active change to scope `sr-verify` to: dispatch `sr-branch` with that base ref so the review covers the whole branch diff, the same scope a pull-request review uses, and record the operation used. Do not dispatch Security Review twice in one run; the Change Checks in step F report this step's result.
+- Dispatch `sr-branch` with the base ref above in every scope, including when an active change exists, and record the operation used. Do not dispatch Security Review twice in one run; the Change Checks in step F report this step's result.
 - If no callable operation is registered, perform only architecture-visible security checks required by loaded constitutions, mark the independent security review `Unavailable`, and report degraded coverage without claiming a pass.
 - If security findings are architecture-relevant, classify them as `Security-Architecture Conflict` and preserve the Security Review operation's own severity and blocking decision.
 
 #### F. Change Checks
-- Resolve and apply the `change_checks` template with `architecture-guard resolve template change_checks` to the verification scope: governance, intent, tests, secrets and trust boundaries, security-sensitive files, and CI (`Not Applicable` locally). The base ref is `base=<ref>` when given, otherwise the target branch from `architecture-guard detect-changed-files --json`; never `HEAD`. The intent source is the active change's spec, plan, and tasks plus the commit messages from the merge-base to `HEAD`. Step D is the Security Review owner. These are the checks `ag-review-pr` runs on the pull request, so findings here are findings the pull-request review would otherwise raise after the push.
+- Resolve and apply the `change_checks` template with `architecture-guard resolve template change_checks` to the verification scope: governance, intent, tests, secrets and trust boundaries, security-sensitive files, and CI (`Not Applicable` locally). The base ref is the one resolved in step D. The intent source is the active change's spec, plan, and tasks plus the commit messages from the merge-base to `HEAD`. Step D is the Security Review owner. These are the checks `ag-review-pr` runs on the pull request, so findings here are findings the pull-request review would otherwise raise after the push.
 - Report each finding with the severity and blocking status of its governing policy, and list each one in the Action Plan with its remediation.
 
 #### E. Repository Hygiene Validation
@@ -204,7 +205,7 @@ For each task in `{adapter_path:tasks}`:
 
 ### Security Review Status
 - **Capability**: [Available / Unavailable]
-- **Operation**: [sr-verify / sr-branch (Git Diff scope or `base=<ref>`) / None]
+- **Operation**: [sr-branch / None]
 - **Coverage**: [Independent / Degraded]
 - **Blocking Findings**: [Policy-derived findings or None]
 
