@@ -1,5 +1,11 @@
 ## Unreleased
 
+## 3.2.0
+
+- **Claude Code teammate roles**: Agent Teams setup generates `.claude/agents/agteam-<role>.md` files from the configured roster, with tools restricted to each role. Existing permissions and hooks are preserved when Claude settings need manual repair.
+- **Roster interview and synchronization**: `ag-init` recommends roles from repository evidence and lets users keep, drop, or add implementors. The new `sync-team-roles` command refreshes generated roles and removes obsolete generated files while preserving user-authored files. Task tagging and dispatch follow the configured roster.
+- **Safer Agent Teams setup**: setup is offered only in Claude Code. Role profiles are validated before any files are written or removed; invalid tools, malformed profiles, and conflicting role names fail without changing role files.
+
 ## 3.1.0
 
 - **Change checks run locally, not only on the pull request**: the checks `ag-review-pr` adds on top of the architecture review (governance file changes, intent versus the stated purpose, missing or weakened tests, secrets and trust-boundary changes, security-sensitive files, CI) now live in a shared `change_checks` template, and `ag-review-implementation` and `ag-verify` apply it to your own branch against its target (`/ag-verify base=main`). Locally the intent source is the active change's spec, plan, and tasks plus the commit messages, CI is `Not Applicable`, and each finding becomes a refactor task for `ag-refactor-generator` or `ag-apply`. `ag-verify` always dispatches Security Review's `sr-branch` on the whole branch diff against the base (`base=<ref>`, or the target branch it detects), the same scope the pull-request review uses, and never falls back to `sr-verify`; without `sr-branch` it reports Security Review `Unavailable`. Security Review runs once per run: `ag-review-pr`, `ag-governed-implement`, and `ag-pr-feedback` tell the review they own it. A branch that is clean locally should reach the pull-request review with few findings.
