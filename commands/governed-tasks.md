@@ -90,7 +90,7 @@ You must orchestrate the `/speckit.tasks` workflow directly.
      - Localized verification: runnable unit/integration tests and lint/typecheck command execution.
      - Hygiene confirmation: clean workspace with no leftover `.tmp`, `.new`, or commented-out code.
    - If the same logic appears in multiple modules, create a single extraction task instead of parallel copy-paste tasks.
-   - **Claude Code Agent Teams Role Tagging**: When Agent Teams mode is active for the current run or configured in `.architecture-guard/agents.yml`, the **Analyst Creator** MUST tag every task with its assigned teammate role: `[BE]` (Backend), `[FE]` (Frontend), `[TEST]` (Unit/Integration Test), or `[ORCHESTRATION]`. `[ORCHESTRATION]` tasks are lead-session tasks and MUST NOT be assigned concurrently to an implementor.
+   - **Claude Code Agent Teams Role Tagging**: When Agent Teams mode is active for the current run or configured in `.architecture-guard/agents.yml`, the **Analyst Creator** MUST tag every task with the `task_tag` of an implementor role in that profile (by default `[BE]` Backend, `[FE]` Frontend, `[TEST]` Unit/Integration Test, plus any custom tag such as `[MOBILE]`) or with `[ORCHESTRATION]`. Use only tags of roles the profile contains: a backend-only roster has no `[FE]` tasks, and work with no matching implementor is tagged `[ORCHESTRATION]`. `[ORCHESTRATION]` tasks are lead-session tasks and MUST NOT be assigned concurrently to an implementor.
 2. **Execute Tasks**: Run `/speckit.tasks` to generate and save `specs/<feature>/tasks.md`.
 
    **If `/speckit.tasks` is not available as a registered command** (i.e., the AI agent does not recognize it as a slash command), fall back to inline task generation:

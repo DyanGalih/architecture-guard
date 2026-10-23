@@ -467,8 +467,10 @@ How will development be delivered on this project?
 
 - Solo Development (Single developer / AI pair)
 - Team Development (Human team with Issue Tracker sync)
-- Claude Code Agent Teams (Autonomous 6-role agent team: Analyst Creator, Analyst Reviewer, BE, FE, Unit Test, Code Reviewer)
+- Claude Code Agent Teams (a lead session plus teammate roles sized to this project: analysts, one implementor per stack layer, and a code reviewer)
 ```
+
+Offer the Claude Code Agent Teams option only when this session runs in Claude Code. On any other host, ask with the first two options only and do not create `.architecture-guard/agents.yml` or `.claude/agents/` files; the governed skills run there in their normal single-agent flow.
 
 If the user selects Team Development:
 1. Record `Mode: Team` for the proposed governance changes.
@@ -477,11 +479,36 @@ If the user selects Team Development:
 4. If an issue tracker is selected (not "none"), ask for the required provider configuration (e.g., `repo` string for GitHub or `project` string for Jira). Propose `.architecture-guard/sync.yml` with the chosen provider, project/repo string, and `enabled: true`; obtain explicit approval before creating it.
 
 If the user selects Claude Code Agent Teams:
-1. Preview the proposed Architecture Guard role profile by resolving `agents_template` with `architecture-guard resolve template agents_template`. A local `.architecture-guard/templates/agents_template.yml` override is used automatically when present; do not assume vendor files exist.
-2. Explain that the profile is not a native Claude Code configuration file; current Claude Code uses an implicit team and named teammate spawning.
-3. Include creation of `.architecture-guard/agents.yml` and the exact `{adapter_path:constitution}` changes in the write preview, then require explicit approval before either write.
-4. After approval, set `topology: claude-code-agent-teams`, record role boundaries in `{adapter_path:constitution}`, and write the profile.
-5. Note that Agent Teams also requires host support and `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Fall back to single-agent execution when either is absent.
+1. Read the proposed Architecture Guard role profile by resolving `agents_template` with `architecture-guard resolve template agents_template`. A local `.architecture-guard/templates/agents_template.yml` override is used automatically when present; do not assume vendor files exist. It is the full catalog of roles; the project keeps only the roles it needs.
+2. Explain that the profile is not a native Claude Code configuration file. Each kept role becomes a Claude Code agent type at `.claude/agents/agteam-<role>.md`, which limits that teammate to the role's `allowed_tools`.
+3. **Team Roster Interview.** Recommend a roster from evidence before asking, then let the user confirm or adjust:
+   - Inspect the repository (each repository listed under `repositories` in `.architecture-guard/config.yml`, when present) and reuse the Technology Stack and Application Type answers:
+     - Frontend evidence: UI framework dependencies (for example React, Vue, Angular, Svelte, Next.js, Nuxt, React Native), view or component directories, server-rendered templates.
+     - Backend evidence: server framework, API routes or controllers, database migrations, queue workers or jobs.
+     - Test evidence: a test runner configuration, test directories, or a constitution rule that requires tests.
+   - Always keep **Analyst Creator**, **Analyst Reviewer**, and **Code Reviewer**: they review each other's work and are not tied to a stack layer.
+   - Keep **Implementor - BE** only with backend evidence, **Implementor - FE** only with frontend evidence (web or mobile UI), and **Implementor - Unit Test** when tests exist or are required. A backend-only API has no FE implementor; a static or UI-only project has no BE implementor.
+   - When the evidence for a role is missing or contradictory, say so and recommend leaving the role out. Work for a role that is not in the roster stays in the lead session, and the role can be added later.
+   - Ask:
+
+   ```text
+   Recommended Agent Teams roster for this project:
+   - Analyst Creator, Analyst Reviewer, Code Reviewer (always)
+   - Implementor - BE: [keep / leave out] — [evidence]
+   - Implementor - FE: [keep / leave out] — [evidence]
+   - Implementor - Unit Test: [keep / leave out] — [evidence]
+   Teammates: [N]. Claude Code suggests 3-5; each teammate is a separate session with its own token cost.
+
+   Accept this roster, or adjust it (keep or leave out a role, or add a custom implementor such as Mobile or Data)?
+   ```
+
+   - A custom implementor needs a role key, name, description, system prompt, a unique uppercase `task_tag` (for example `MOBILE`), and `allowed_tools` of `Read`, `Write`, `Edit`, `Bash`.
+   - Then ask: "Run every teammate on the lead session's model (default), or a smaller model for implementors to reduce cost?" Record the answer as each role's `model` (`inherit` by default).
+4. Build `.architecture-guard/agents.yml` from the catalog with only the confirmed roles. Remove `can_message` entries that name a removed role.
+5. Include `.architecture-guard/agents.yml`, the exact `{adapter_path:constitution}` changes, and the role files that will be generated or removed in the write preview, then require explicit approval before any write.
+6. After approval, set `topology: claude-code-agent-teams`, record the roster and role boundaries in `{adapter_path:constitution}`, and write the profile.
+7. Run `architecture-guard sync-team-roles` to generate `.claude/agents/agteam-<role>.md` for each kept role and remove generated files for roles left out. It never touches agent files it did not generate. The command validates the whole profile first: every role needs at least one of `Read`, `Write`, `Edit`, `Grep`, `Glob`, `Bash` in `allowed_tools` (otherwise the teammate would inherit every tool), role keys must map to distinct file names (`mobile_ui` and `mobile-ui` collide), and `roles` must be a mapping (`roles: {}` for an empty roster). If any check fails it changes no files, lists the problems, and exits non-zero; fix the profile and run it again. If the CLI is unavailable, report the command for the user to run.
+8. Note that Agent Teams also requires host support and `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Fall back to single-agent execution when either is absent.
 
 ---
 

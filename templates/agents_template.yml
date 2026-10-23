@@ -1,5 +1,10 @@
 # Architecture Guard role profile for Claude Code Agent Teams
-# This is consumed as prompt context by Architecture Guard; it is not a native Claude Code config schema.
+# This is not a native Claude Code config schema. `architecture-guard init --claude-agent-teams` generates one
+# Claude Code subagent definition per role (.claude/agents/agteam-<role>.md) from it; teammates spawned from those
+# agent types are limited to `allowed_tools` (Claude Code tool names). `can_message` is guidance only.
+# Every role needs a non-empty `allowed_tools`; sync-team-roles rejects the profile otherwise.
+# Implementor roles carry a `task_tag`; tasks are tagged only with tags of roles in the active profile.
+# ag-init recommends which roles a project needs and removes the rest (for example no FE on a backend-only API).
 version: 1
 topology: claude-code-agent-teams
 runtime_env_flag: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS
@@ -17,11 +22,11 @@ roles:
     can_message:
       - analyst_reviewer
     allowed_tools:
-      - read_file
-      - write_to_file
-      - replace_file_content
-      - grep_search
-      - find_by_name
+      - Read
+      - Write
+      - Edit
+      - Grep
+      - Glob
 
   analyst_reviewer:
     name: "Analyst Reviewer"
@@ -37,9 +42,9 @@ roles:
       - implementor_fe
       - implementor_test
     allowed_tools:
-      - read_file
-      - grep_search
-      - find_by_name
+      - Read
+      - Grep
+      - Glob
 
   implementor_be:
     name: "Implementor - BE"
@@ -47,16 +52,17 @@ roles:
     system_prompt: |
       You are the Backend Implementor teammate. You implement backend services, models, DTOs, and API endpoints.
       Communicate with the Frontend and Test implementors to clarify contracts and notify them when API schemas are ready.
+    task_tag: BE
     model: inherit
     can_message:
       - implementor_fe
       - implementor_test
       - code_reviewer
     allowed_tools:
-      - read_file
-      - write_to_file
-      - replace_file_content
-      - run_command
+      - Read
+      - Write
+      - Edit
+      - Bash
 
   implementor_fe:
     name: "Implementor - FE"
@@ -64,15 +70,16 @@ roles:
     system_prompt: |
       You are the Frontend Implementor teammate. You implement UI views, client components, and state management.
       Query the Backend Implementor to ensure backend endpoint structures and DTOs are ready before finalizing bindings.
+    task_tag: FE
     model: inherit
     can_message:
       - implementor_be
       - code_reviewer
     allowed_tools:
-      - read_file
-      - write_to_file
-      - replace_file_content
-      - run_command
+      - Read
+      - Write
+      - Edit
+      - Bash
 
   implementor_test:
     name: "Implementor - Unit Test"
@@ -80,15 +87,16 @@ roles:
     system_prompt: |
       You are the Test Implementor teammate. You write comprehensive unit and integration tests for new and modified modules.
       Validate that tests execute cleanly and cover edge cases.
+    task_tag: TEST
     model: inherit
     can_message:
       - implementor_be
       - code_reviewer
     allowed_tools:
-      - read_file
-      - write_to_file
-      - replace_file_content
-      - run_command
+      - Read
+      - Write
+      - Edit
+      - Bash
 
   code_reviewer:
     name: "Code Reviewer"
@@ -100,7 +108,7 @@ roles:
     can_message:
       - analyst_creator
     allowed_tools:
-      - read_file
-      - grep_search
-      - find_by_name
-      - run_command
+      - Read
+      - Grep
+      - Glob
+      - Bash

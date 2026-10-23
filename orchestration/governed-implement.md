@@ -129,7 +129,7 @@ You must orchestrate {adapter_command:implement} (core implementation) workflow 
 #### Claude Code Agent Teams Coordination (When Active)
 
 Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
-- **Implementors (BE, FE, TEST)**:
+- **Implementors (the profile's implementor roles, for example BE, FE, TEST)**:
   - Map role-tagged tasks to the matching named implementor; keep `[ORCHESTRATION]` work in the lead session.
   - Before spawning, the lead assigns non-overlapping tasks and explicit file ownership. If overlap is discovered, pause one owner and coordinate a handoff; never edit the same file concurrently.
 - **Code Reviewer** audits code changes across boundaries, reviews security constraints, and verifies tests before handoff.

@@ -16,7 +16,7 @@ program
   .description('SDD-tool-agnostic architecture governance orchestrator for Spec Kit, OpenSpec, and generic Markdown workflows')
   .version(packageVersion);
 
-import { runInstallCommand } from '../cli/install';
+import { runInstallCommand, runSyncTeamRoles } from '../cli/install';
 import { runDetectChangedFiles } from '../cli/detect-changed-files';
 import { runValidateSyncConfig } from '../cli/validate-sync-config';
 import { runValidateSetup } from '../cli/validate-setup';
@@ -69,6 +69,11 @@ program
   .command('validate-setup [target]')
   .description('Check the selected adapter, resolvable resources, constitutions, and governance config (exits non-zero on errors)')
   .action(runValidateSetup);
+
+program
+  .command('sync-team-roles [target]')
+  .description('Regenerate Claude Code teammate agent types (.claude/agents/agteam-*.md) from the Agent Teams role profile')
+  .action((target) => { runSyncTeamRoles(target); });
 
 program
   .command('create-fixtures <target>')
