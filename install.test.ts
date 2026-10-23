@@ -601,6 +601,16 @@ test('agent teams roles come from the workspace profile, map legacy tool names, 
   assert.equal(kept.status, 0, kept.stderr);
   assert.equal(fs.readFileSync(auditorFile, 'utf8'), 'customized');
   assert.match(kept.stderr, /Kept agteam-security-auditor\.md: it was not generated/);
+
+  // A directory where a role file would go is kept, not read as a file or removed.
+  fs.rmSync(auditorFile);
+  fs.mkdirSync(auditorFile);
+  fs.mkdirSync(path.join(agentsDir, 'agteam-stale.md'));
+  const dirs = spawnSync(process.execPath, [installer, 'sync-team-roles'], { cwd, encoding: 'utf8' });
+  assert.equal(dirs.status, 0, dirs.stderr);
+  assert.ok(fs.statSync(auditorFile).isDirectory());
+  assert.ok(fs.statSync(path.join(agentsDir, 'agteam-stale.md')).isDirectory());
+  assert.match(dirs.stderr, /Kept agteam-security-auditor\.md: it was not generated/);
 });
 
 test('sync-team-roles applies a backend-only roster and removes only generated roles that were left out', () => {
@@ -641,6 +651,11 @@ test('agent teams setup never touches a workspace without the Claude skills', ()
   const output = runArgs(['sync-team-roles'], cwd);
   assert.match(output, /No Claude Code skills are installed/);
   assert.ok(!fs.existsSync(path.join(cwd, '.claude')));
+
+  // A file where the skills directory would be is treated as no skills installed.
+  fs.mkdirSync(path.join(cwd, '.claude'));
+  fs.writeFileSync(path.join(cwd, '.claude', 'skills'), 'not a directory');
+  assert.match(runArgs(['sync-team-roles'], cwd), /No Claude Code skills are installed/);
 });
 
 test('installs Claude Code Agent Teams templates in vendor mode and resolves dynamically', () => {

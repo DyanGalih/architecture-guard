@@ -759,7 +759,14 @@ function installClaudeRoleAgents(targetDir: string, overwrite?: string) {
   const roles = loaded.profile && typeof loaded.profile.roles === 'object' && !Array.isArray(loaded.profile.roles) ? loaded.profile.roles : {};
   const roleKeys = Object.keys(roles).filter(key => roles[key] && typeof roles[key] === 'object');
   const agentsDir = path.join(targetDir, '.claude', 'agents');
-  const isGenerated = (file: string) => fs.readFileSync(file, 'utf8').includes(ROLE_AGENT_MARKER);
+  // A directory or unreadable entry is never treated as ours, so it is kept rather than overwritten or removed.
+  const isGenerated = (file: string) => {
+    try {
+      return fs.statSync(file).isFile() && fs.readFileSync(file, 'utf8').includes(ROLE_AGENT_MARKER);
+    } catch {
+      return false;
+    }
+  };
   const written = [];
   for (const roleKey of roleKeys) {
     const name = roleAgentName(roleKey);
@@ -782,7 +789,7 @@ function installClaudeRoleAgents(targetDir: string, overwrite?: string) {
   if (fs.existsSync(agentsDir)) {
     for (const entry of fs.readdirSync(agentsDir)) {
       const file = path.join(agentsDir, entry);
-      if (!entry.startsWith('agteam-') || !entry.endsWith('.md') || wanted.has(entry) || !fs.statSync(file).isFile() || !isGenerated(file)) continue;
+      if (!entry.startsWith('agteam-') || !entry.endsWith('.md') || wanted.has(entry) || !isGenerated(file)) continue;
       fs.rmSync(file);
       removed.push(entry.replace(/\.md$/, ''));
     }
@@ -796,7 +803,11 @@ function installClaudeRoleAgents(targetDir: string, overwrite?: string) {
 // Role files are Claude Code agent types, so they are only written where the Claude skills are installed.
 function hasClaudeSkills(targetDir: string) {
   const skillsDir = path.join(targetDir, AGENT_CONFIGS.claude.dir);
-  return fs.existsSync(skillsDir) && fs.readdirSync(skillsDir).some(entry => entry.startsWith('ag-'));
+  try {
+    return fs.statSync(skillsDir).isDirectory() && fs.readdirSync(skillsDir).some(entry => entry.startsWith('ag-'));
+  } catch {
+    return false;
+  }
 }
 
 export function runSyncTeamRoles(target?: string) {
