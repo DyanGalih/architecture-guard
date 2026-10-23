@@ -407,6 +407,8 @@ How will development be delivered on this project?
 - Claude Code Agent Teams (a lead session plus teammate roles sized to this project: analysts, one implementor per stack layer, and a code reviewer)
 ```
 
+Offer the Claude Code Agent Teams option only when this session runs in Claude Code. On any other host, ask with the first two options only and do not create `.architecture-guard/agents.yml` or `.claude/agents/` files; the governed skills run there in their normal single-agent flow.
+
 If the user selects Team Development:
 1. Ask: "Which issue tracker MCP server should be used to sync User Stories? (e.g., github-mcp-server, jira, none)".
 2. If an issue tracker is selected (not "none"), ask for the required provider configuration (e.g., `repo` string for GitHub or `project` string for Jira).

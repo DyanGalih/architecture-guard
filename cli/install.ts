@@ -793,8 +793,18 @@ function installClaudeRoleAgents(targetDir: string, overwrite?: string) {
   return { written, removed };
 }
 
+// Role files are Claude Code agent types, so they are only written where the Claude skills are installed.
+function hasClaudeSkills(targetDir: string) {
+  const skillsDir = path.join(targetDir, AGENT_CONFIGS.claude.dir);
+  return fs.existsSync(skillsDir) && fs.readdirSync(skillsDir).some(entry => entry.startsWith('ag-'));
+}
+
 export function runSyncTeamRoles(target?: string) {
   const targetDir = target ? path.resolve(target) : process.cwd();
+  if (!hasClaudeSkills(targetDir)) {
+    console.log(`No Claude Code skills are installed in ${path.relative(process.cwd(), targetDir) || '.'}; teammate roles are Claude Code agent types, so nothing was written.`);
+    return { written: [], removed: [] };
+  }
   return installClaudeRoleAgents(targetDir);
 }
 

@@ -631,6 +631,18 @@ test('sync-team-roles applies a backend-only roster and removes only generated r
   assert.match(be, /`agteam-implementor-test`, `agteam-code-reviewer`/);
 });
 
+test('agent teams setup never touches a workspace without the Claude skills', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  runArgs(['init', '--yes', '--agent', 'codex', '--framework', 'openspec', '--claude-agent-teams'], cwd);
+  assert.ok(!fs.existsSync(path.join(cwd, '.claude')));
+
+  // Even with a role profile present, syncing in a Codex-only workspace writes nothing.
+  fs.copyFileSync(path.join(__dirname, '..', 'templates', 'agents_template.yml'), path.join(cwd, '.architecture-guard', 'agents.yml'));
+  const output = runArgs(['sync-team-roles'], cwd);
+  assert.match(output, /No Claude Code skills are installed/);
+  assert.ok(!fs.existsSync(path.join(cwd, '.claude')));
+});
+
 test('installs Claude Code Agent Teams templates in vendor mode and resolves dynamically', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   spawnSync(process.execPath, [installer, 'init', '--vendor', '--yes', '--agent', 'claude', '--framework', 'openspec'], { cwd, encoding: 'utf8' });
