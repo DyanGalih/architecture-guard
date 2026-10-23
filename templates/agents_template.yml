@@ -2,6 +2,7 @@
 # This is not a native Claude Code config schema. `architecture-guard init --claude-agent-teams` generates one
 # Claude Code subagent definition per role (.claude/agents/agteam-<role>.md) from it; teammates spawned from those
 # agent types are limited to `allowed_tools` (Claude Code tool names). `can_message` is guidance only.
+# Every role needs a non-empty `allowed_tools`; sync-team-roles rejects the profile otherwise.
 # Implementor roles carry a `task_tag`; tasks are tagged only with tags of roles in the active profile.
 # ag-init recommends which roles a project needs and removes the rest (for example no FE on a backend-only API).
 version: 1

@@ -641,6 +641,51 @@ test('sync-team-roles applies a backend-only roster and removes only generated r
   assert.match(be, /`agteam-implementor-test`, `agteam-code-reviewer`/);
 });
 
+test('sync-team-roles leaves role files unchanged when the profile is invalid', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  runArgs(['init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init', '--claude-agent-teams'], cwd);
+  const agentsDir = path.join(cwd, '.claude', 'agents');
+  const profile = path.join(cwd, '.architecture-guard', 'agents.yml');
+  const snapshot = () => Object.fromEntries(fs.readdirSync(agentsDir).sort().map(f => [f, fs.readFileSync(path.join(agentsDir, f), 'utf8')]));
+  const before = snapshot();
+  assert.equal(Object.keys(before).length, 6);
+
+  const role = (tools: string) => `    name: "Mobile"\n    system_prompt: "Build mobile UI."\n    allowed_tools: ${tools}\n`;
+  const cases: [string, RegExp][] = [
+    ['version: 1\n', /"roles" must be a mapping .*found missing/],
+    ['roles: []\n', /found a list/],
+    ['roles: frontend\n', /found a string/],
+    ['roles:\n', /found null/],
+    ['', /empty or not a YAML mapping/],
+    ['roles:\n  reviewer: yes\n', /role "reviewer" must be a mapping/],
+    ['roles:\n  "--": {allowed_tools: [Read]}\n', /role key "--" has no letters or digits/],
+    [`roles:\n  restricted:\n${role('[]')}`, /role "restricted" has no Claude Code tools.*inherit every tool/],
+    [`roles:\n  restricted:\n${role('[browser_preview]')}`, /role "restricted" has no Claude Code tools/],
+    ['roles:\n  restricted:\n    name: "No tools"\n', /role "restricted" has no Claude Code tools/],
+    [`roles:\n  restricted:\n${role('Read')}`, /role "restricted": allowed_tools must be a list/],
+    [`roles:\n  mobile_ui:\n${role('[Read]')}  mobile-ui:\n${role('[Read, Write, Bash]')}`, /role keys "mobile_ui" and "mobile-ui" both generate agteam-mobile-ui\.md/],
+  ];
+  for (const [yaml, message] of cases) {
+    fs.writeFileSync(profile, yaml);
+    const result = spawnSync(process.execPath, [installer, 'sync-team-roles'], { cwd, encoding: 'utf8' });
+    assert.equal(result.status, 1, `expected failure for ${JSON.stringify(yaml)}`);
+    assert.match(result.stderr, /Left Claude Code teammate roles unchanged: .*agents\.yml is invalid/);
+    assert.match(result.stderr, message);
+    assert.deepEqual(snapshot(), before, `role files changed for ${JSON.stringify(yaml)}`);
+  }
+
+  // init reports the same problem without failing the rest of the install.
+  const init = spawnSync(process.execPath, [installer, 'init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init', '--claude-agent-teams'], { cwd, encoding: 'utf8' });
+  assert.equal(init.status, 0, init.stderr);
+  assert.match(init.stderr, /both generate agteam-mobile-ui\.md/);
+  assert.deepEqual(snapshot(), before);
+
+  // An explicit empty roster is intentional: generated roles are removed.
+  fs.writeFileSync(profile, 'roles: {}\n');
+  assert.match(runArgs(['sync-team-roles'], cwd), /Removed teammate roles no longer in the profile/);
+  assert.deepEqual(fs.readdirSync(agentsDir), []);
+});
+
 test('agent teams setup never touches a workspace without the Claude skills', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   runArgs(['init', '--yes', '--agent', 'codex', '--framework', 'openspec', '--claude-agent-teams'], cwd);

@@ -507,7 +507,7 @@ If the user selects Claude Code Agent Teams:
 4. Build `.architecture-guard/agents.yml` from the catalog with only the confirmed roles. Remove `can_message` entries that name a removed role.
 5. Include `.architecture-guard/agents.yml`, the exact `{adapter_path:constitution}` changes, and the role files that will be generated or removed in the write preview, then require explicit approval before any write.
 6. After approval, set `topology: claude-code-agent-teams`, record the roster and role boundaries in `{adapter_path:constitution}`, and write the profile.
-7. Run `architecture-guard sync-team-roles` to generate `.claude/agents/agteam-<role>.md` for each kept role and remove generated files for roles left out. It never touches agent files it did not generate. If the CLI is unavailable, report the command for the user to run.
+7. Run `architecture-guard sync-team-roles` to generate `.claude/agents/agteam-<role>.md` for each kept role and remove generated files for roles left out. It never touches agent files it did not generate. The command validates the whole profile first: every role needs at least one of `Read`, `Write`, `Edit`, `Grep`, `Glob`, `Bash` in `allowed_tools` (otherwise the teammate would inherit every tool), role keys must map to distinct file names (`mobile_ui` and `mobile-ui` collide), and `roles` must be a mapping (`roles: {}` for an empty roster). If any check fails it changes no files, lists the problems, and exits non-zero; fix the profile and run it again. If the CLI is unavailable, report the command for the user to run.
 8. Note that Agent Teams also requires host support and `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Fall back to single-agent execution when either is absent.
 
 ---
