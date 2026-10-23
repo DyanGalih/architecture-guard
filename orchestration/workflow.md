@@ -39,7 +39,7 @@ Agent Teams mode is active only when all of the following are true:
 2. `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled in the active environment or `.claude/settings.json`.
 3. The user explicitly selects Agent Teams for this run, or the native command arguments explicitly request it.
 
-When the environment flag is present, explain that `.architecture-guard/agents.yml` is an Architecture Guard role profile, not a native Claude Code configuration file. Use it to shape named teammate prompts when present. If any activation condition is absent, run in single-agent mode without simulating teammates or claiming parallel execution.
+When the environment flag is present, explain that `.architecture-guard/agents.yml` is an Architecture Guard role profile, not a native Claude Code configuration file. Spawn each teammate from its generated Claude Code agent type (`agteam-<role>`, for example `agteam-code-reviewer`) when `.claude/agents/agteam-<role>.md` exists, so the role's tool limits apply; otherwise use the profile to shape named teammate prompts. Give every teammate the skill, artifact paths, change identifier, and constitutions in its spawn prompt, because teammates do not inherit the lead's conversation. If any activation condition is absent, run in single-agent mode without simulating teammates or claiming parallel execution.
 
 ## Lifecycle
 

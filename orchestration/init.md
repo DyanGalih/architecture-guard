@@ -478,7 +478,7 @@ If the user selects Team Development:
 
 If the user selects Claude Code Agent Teams:
 1. Preview the proposed Architecture Guard role profile by resolving `agents_template` with `architecture-guard resolve template agents_template`. A local `.architecture-guard/templates/agents_template.yml` override is used automatically when present; do not assume vendor files exist.
-2. Explain that the profile is not a native Claude Code configuration file; current Claude Code uses an implicit team and named teammate spawning.
+2. Explain that the profile is not a native Claude Code configuration file. `architecture-guard init --claude-agent-teams` turns each role into a Claude Code agent type at `.claude/agents/agteam-<role>.md`, which limits that teammate to the role's `allowed_tools`; rerun it after editing `.architecture-guard/agents.yml` to regenerate them.
 3. Include creation of `.architecture-guard/agents.yml` and the exact `{adapter_path:constitution}` changes in the write preview, then require explicit approval before either write.
 4. After approval, set `topology: claude-code-agent-teams`, record role boundaries in `{adapter_path:constitution}`, and write the profile.
 5. Note that Agent Teams also requires host support and `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Fall back to single-agent execution when either is absent.

@@ -138,7 +138,7 @@ Flags:
 | `--framework` | `spec-kit \| openspec \| none` | Framework to target |
 | `--commands` | `all`, `review`, or `init,governed-plan` | Comma-separated canonical names, indices, or aliases |
 | `--overwrite` | `replace` (default) / `skip` / `keep-both` | Existing file policy with `--yes` |
-| `--claude-agent-teams` | (none) | Enable Claude Code Agent Teams (Beta / Experimental) |
+| `--claude-agent-teams` | (none) | Enable Claude Code Agent Teams (Beta / Experimental): sets `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `.claude/settings.json` (an unreadable settings file is left unchanged) and generates one agent type per role in `.claude/agents/agteam-<role>.md` from `.architecture-guard/agents.yml` or the bundled role profile. |
 
 Positional target:
 

@@ -525,6 +525,76 @@ test('configures claude agent teams in .claude/settings.json when enabled via fl
   assert.ok(!fs.existsSync(path.join(cwdNoFlag, '.claude', 'settings.json')));
 });
 
+test('agent teams keeps existing Claude settings and never replaces an unreadable settings file', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  const settingsFile = path.join(cwd, '.claude', 'settings.json');
+  fs.mkdirSync(path.dirname(settingsFile), { recursive: true });
+  fs.writeFileSync(settingsFile, JSON.stringify({ permissions: { allow: ['Bash(npm test)'] }, env: { KEEP: 'yes' } }));
+  runArgs(['init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init', '--claude-agent-teams'], cwd);
+  const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
+  assert.deepEqual(settings.permissions.allow, ['Bash(npm test)']);
+  assert.deepEqual(settings.env, { KEEP: 'yes', CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1' });
+
+  for (const broken of ['{ "permissions": ', '[]', '{ "env": "x" }']) {
+    fs.writeFileSync(settingsFile, broken);
+    const result = spawnSync(process.execPath, [installer, 'init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init', '--claude-agent-teams'], { cwd, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(fs.readFileSync(settingsFile, 'utf8'), broken);
+    assert.match(result.stderr, /Left .*settings\.json unchanged/);
+  }
+});
+
+test('agent teams generates a Claude Code agent type per role with Claude tool names', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  runArgs(['init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init', '--claude-agent-teams'], cwd);
+  const agentsDir = path.join(cwd, '.claude', 'agents');
+  assert.deepEqual(fs.readdirSync(agentsDir).sort(), [
+    'agteam-analyst-creator.md', 'agteam-analyst-reviewer.md', 'agteam-code-reviewer.md',
+    'agteam-implementor-be.md', 'agteam-implementor-fe.md', 'agteam-implementor-test.md',
+  ]);
+  const reviewer = fs.readFileSync(path.join(agentsDir, 'agteam-analyst-reviewer.md'), 'utf8');
+  assert.match(reviewer, /^---\nname: agteam-analyst-reviewer\ndescription: ".*Agent Teams.*"\ntools: Read, Grep, Glob\nmodel: inherit\n---\n/);
+  assert.match(reviewer, /You are the Analyst Reviewer teammate/);
+  assert.match(reviewer, /never count as user approval/);
+  assert.match(reviewer, /`agteam-analyst-creator`/);
+  assert.match(fs.readFileSync(path.join(agentsDir, 'agteam-implementor-be.md'), 'utf8'), /\ntools: Read, Write, Edit, Bash\n/);
+
+  // Without the flag, no role files are generated.
+  const plain = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  runArgs(['init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init'], plain);
+  assert.ok(!fs.existsSync(path.join(plain, '.claude', 'agents')));
+});
+
+test('agent teams roles come from the workspace profile, map legacy tool names, and respect --overwrite skip', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  fs.mkdirSync(path.join(cwd, '.architecture-guard'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, '.architecture-guard', 'agents.yml'), [
+    'version: 1',
+    'roles:',
+    '  security_auditor:',
+    '    name: "Security Auditor"',
+    '    description: "Audits trust boundaries."',
+    '    system_prompt: "You audit security."',
+    '    model: sonnet',
+    '    allowed_tools: [read_file, grep_search, run_command, browser_preview]',
+    '',
+  ].join('\n'));
+  const result = spawnSync(process.execPath, [installer, 'init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init', '--claude-agent-teams'], { cwd, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  const agentsDir = path.join(cwd, '.claude', 'agents');
+  assert.deepEqual(fs.readdirSync(agentsDir), ['agteam-security-auditor.md']);
+  const auditor = fs.readFileSync(path.join(agentsDir, 'agteam-security-auditor.md'), 'utf8');
+  assert.match(auditor, /\ntools: Read, Grep, Bash\nmodel: sonnet\n/);
+  assert.match(auditor, /from agents\.yml/);
+  assert.match(result.stderr, /agteam-security-auditor: ignored tools Claude Code does not recognize: browser_preview/);
+
+  fs.writeFileSync(path.join(agentsDir, 'agteam-security-auditor.md'), 'customized');
+  runArgs(['init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init', '--claude-agent-teams', '--overwrite', 'skip'], cwd);
+  assert.equal(fs.readFileSync(path.join(agentsDir, 'agteam-security-auditor.md'), 'utf8'), 'customized');
+  runArgs(['init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init', '--claude-agent-teams'], cwd);
+  assert.match(fs.readFileSync(path.join(agentsDir, 'agteam-security-auditor.md'), 'utf8'), /name: agteam-security-auditor/);
+});
+
 test('installs Claude Code Agent Teams templates in vendor mode and resolves dynamically', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   spawnSync(process.execPath, [installer, 'init', '--vendor', '--yes', '--agent', 'claude', '--framework', 'openspec'], { cwd, encoding: 'utf8' });
