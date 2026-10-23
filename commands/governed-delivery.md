@@ -129,9 +129,9 @@ The governed task phase must:
 #### Claude Code Agent Teams Coordination (When Active)
 
 Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
-- **Analyst Creator** drafts the plan and role-annotated task breakdown (`[BE]`, `[FE]`, `[TEST]`, `[ORCHESTRATION]`).
+- **Analyst Creator** drafts the plan and role-annotated task breakdown, using only the `task_tag` values of implementor roles in the profile plus `[ORCHESTRATION]`.
 - **Analyst Reviewer** evaluates the generated artifacts against constitutions via peer messaging and triggers HITL Gate 1 if gaps are identified.
-- **Implementor Dispatch**: Upon approval, tasks are handed off to the Implementor teammates (`BE`, `FE`, `TEST`) for concurrent execution.
+- **Implementor Dispatch**: Upon approval, tasks are handed off to the implementor teammates in the profile (for example `BE`, `FE`, `TEST`) for concurrent execution.
 - **Fallback**: If not running in Claude Code Agent Teams mode, execute standard single-agent plan-to-task delivery.
 
 If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks. Allow at most 2 plan/tasks repair cycles per run (counting Plan Gate repairs and returns from analysis together); if a blocking finding or plan defect remains after the second cycle, stop with status `Blocked` and ask the user how to proceed.

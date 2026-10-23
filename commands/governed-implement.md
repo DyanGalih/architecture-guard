@@ -96,7 +96,7 @@ You must orchestrate the `/speckit.implement` (core implementation) workflow dir
 #### Claude Code Agent Teams Coordination (When Active)
 
 Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
-- The lead maps `[BE]`, `[FE]`, and `[TEST]` tasks to named implementors and keeps `[ORCHESTRATION]` tasks in the lead session.
+- The lead maps each tagged task (`[BE]`, `[FE]`, `[TEST]`, or a custom tag) to the implementor in the profile with that `task_tag` and keeps `[ORCHESTRATION]` tasks in the lead session.
 - Before spawning, the lead assigns non-overlapping tasks and explicit file ownership. If overlap is discovered, pause one owner and coordinate a handoff; never edit the same file concurrently.
 - The Code Reviewer audits boundary compliance, security constraints, and runnable checks before handoff.
 - The lead presents implementation evidence and requires explicit user confirmation before advancing to `/speckit.architecture-guard.ag-verify`.

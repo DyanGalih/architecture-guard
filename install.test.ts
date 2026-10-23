@@ -588,11 +588,47 @@ test('agent teams roles come from the workspace profile, map legacy tool names, 
   assert.match(auditor, /from agents\.yml/);
   assert.match(result.stderr, /agteam-security-auditor: ignored tools Claude Code does not recognize: browser_preview/);
 
-  fs.writeFileSync(path.join(agentsDir, 'agteam-security-auditor.md'), 'customized');
+  const auditorFile = path.join(agentsDir, 'agteam-security-auditor.md');
+  fs.writeFileSync(auditorFile, auditor.replace('You audit security.', 'Edited by hand.'));
   runArgs(['init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init', '--claude-agent-teams', '--overwrite', 'skip'], cwd);
-  assert.equal(fs.readFileSync(path.join(agentsDir, 'agteam-security-auditor.md'), 'utf8'), 'customized');
+  assert.match(fs.readFileSync(auditorFile, 'utf8'), /Edited by hand\./);
   runArgs(['init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init', '--claude-agent-teams'], cwd);
-  assert.match(fs.readFileSync(path.join(agentsDir, 'agteam-security-auditor.md'), 'utf8'), /name: agteam-security-auditor/);
+  assert.match(fs.readFileSync(auditorFile, 'utf8'), /You audit security\./);
+
+  // A file the user wrote (no generated marker) is never replaced.
+  fs.writeFileSync(auditorFile, 'customized');
+  const kept = spawnSync(process.execPath, [installer, 'init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init', '--claude-agent-teams'], { cwd, encoding: 'utf8' });
+  assert.equal(kept.status, 0, kept.stderr);
+  assert.equal(fs.readFileSync(auditorFile, 'utf8'), 'customized');
+  assert.match(kept.stderr, /Kept agteam-security-auditor\.md: it was not generated/);
+});
+
+test('sync-team-roles applies a backend-only roster and removes only generated roles that were left out', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  runArgs(['init', '--yes', '--agent', 'claude', '--framework', 'openspec', '--commands', 'init', '--claude-agent-teams'], cwd);
+  const agentsDir = path.join(cwd, '.claude', 'agents');
+  assert.ok(fs.existsSync(path.join(agentsDir, 'agteam-implementor-fe.md')));
+  fs.writeFileSync(path.join(agentsDir, 'agteam-my-helper.md'), '---\nname: agteam-my-helper\n---\nMine.\n');
+  fs.writeFileSync(path.join(agentsDir, 'other-agent.md'), 'Not ours.\n');
+
+  // ag-init writes the confirmed roster: the bundled catalog without the FE implementor.
+  const YAML = require('yaml');
+  const catalog = YAML.parse(fs.readFileSync(path.join(__dirname, '..', 'templates', 'agents_template.yml'), 'utf8'));
+  delete catalog.roles.implementor_fe;
+  fs.writeFileSync(path.join(cwd, '.architecture-guard', 'agents.yml'), YAML.stringify(catalog));
+
+  const output = runArgs(['sync-team-roles'], cwd);
+  assert.match(output, /Removed teammate roles no longer in the profile: agteam-implementor-fe/);
+  assert.deepEqual(fs.readdirSync(agentsDir).sort(), [
+    'agteam-analyst-creator.md', 'agteam-analyst-reviewer.md', 'agteam-code-reviewer.md',
+    'agteam-implementor-be.md', 'agteam-implementor-test.md', 'agteam-my-helper.md', 'other-agent.md',
+  ]);
+  const be = fs.readFileSync(path.join(agentsDir, 'agteam-implementor-be.md'), 'utf8');
+  assert.match(be, /You own tasks tagged `\[BE\]`/);
+  assert.match(be, /from agents\.yml/);
+  // Peers that left the roster are not mentioned.
+  assert.doesNotMatch(be, /agteam-implementor-fe/);
+  assert.match(be, /`agteam-implementor-test`, `agteam-code-reviewer`/);
 });
 
 test('installs Claude Code Agent Teams templates in vendor mode and resolves dynamically', () => {

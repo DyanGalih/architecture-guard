@@ -2,6 +2,8 @@
 # This is not a native Claude Code config schema. `architecture-guard init --claude-agent-teams` generates one
 # Claude Code subagent definition per role (.claude/agents/agteam-<role>.md) from it; teammates spawned from those
 # agent types are limited to `allowed_tools` (Claude Code tool names). `can_message` is guidance only.
+# Implementor roles carry a `task_tag`; tasks are tagged only with tags of roles in the active profile.
+# ag-init recommends which roles a project needs and removes the rest (for example no FE on a backend-only API).
 version: 1
 topology: claude-code-agent-teams
 runtime_env_flag: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS
@@ -49,6 +51,7 @@ roles:
     system_prompt: |
       You are the Backend Implementor teammate. You implement backend services, models, DTOs, and API endpoints.
       Communicate with the Frontend and Test implementors to clarify contracts and notify them when API schemas are ready.
+    task_tag: BE
     model: inherit
     can_message:
       - implementor_fe
@@ -66,6 +69,7 @@ roles:
     system_prompt: |
       You are the Frontend Implementor teammate. You implement UI views, client components, and state management.
       Query the Backend Implementor to ensure backend endpoint structures and DTOs are ready before finalizing bindings.
+    task_tag: FE
     model: inherit
     can_message:
       - implementor_be
@@ -82,6 +86,7 @@ roles:
     system_prompt: |
       You are the Test Implementor teammate. You write comprehensive unit and integration tests for new and modified modules.
       Validate that tests execute cleanly and cover edge cases.
+    task_tag: TEST
     model: inherit
     can_message:
       - implementor_be
