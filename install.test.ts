@@ -2797,8 +2797,17 @@ test('review-pr drafts and posts re-review thread replies with the review', () =
   assert.match(prompt, /or in the new review's summary when it was a summary point, which has no thread/);
   const post = prompt.slice(prompt.indexOf('## Step 7 — Post the Review'));
   assert.match(post, /post each drafted thread reply with \{forge_command:thread-reply\}/);
-  assert.match(post, /if the author has replied again since the draft, do not post that reply/);
-  assert.match(post, /post the replies before approving, and do not approve if any reply fails/);
+  assert.match(post, /if the author has replied again since the draft, hold that reply back \(do not post it\)/);
+  const approve = post.slice(post.indexOf('3. For **Approve with comments**'), post.indexOf('4. **Posting thread replies**'));
+  const replies = approve.indexOf('Post the drafted thread replies (item 4)');
+  const headCheck = approve.indexOf('Re-read the head SHA with {forge_command:pr-view}');
+  const approval = approve.indexOf('Approve with {forge_command:review-approve}');
+  assert.ok(replies !== -1 && headCheck !== -1 && approval !== -1, 'approve path names replies, head check, and approval');
+  assert.ok(replies < headCheck && headCheck < approval, 'replies post first, then the head is rechecked, then approval');
+  assert.match(approve, /If any reply fails or is held back, do not approve/);
+  assert.doesNotMatch(post.slice(post.indexOf('4. **Posting thread replies**')), /review-approve/, 'the reply procedure never approves');
+  const postAsIs = post.slice(post.indexOf('2. For **Post as is**'), post.indexOf('3. For **Approve with comments**'));
+  assert.ok(postAsIs.indexOf('{forge_command:review-post}') < postAsIs.indexOf('thread replies (item 4)'), 'Post as is posts the review, then the replies');
 });
 
 test('optional forge keys materialize as unsupported for a custom forge that omits them', () => {
