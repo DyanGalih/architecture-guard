@@ -2075,6 +2075,9 @@ test('discovery proposes a story set that the spec records and later scope check
   assert.match(contract, /Never add a ticket to the set without the user's choice/);
   assert.match(contract, /when in doubt, classify as \*\*Do next\*\*/, 'bundling stays strict');
   assert.match(contract, /Several keys from the set are not ambiguous/, 'scope checks read the approved set');
+  assert.match(contract, /keep it as the main story and run only Step 3 items 1 and 2/, 'planning mode never replaces a selected main story');
+  assert.match(contract, /never selected as the story/);
+  assert.match(contract, /Story set widened by this change/, 'a pull request cannot approve its own wider scope');
   const discover = fs.readFileSync(path.join(root, 'orchestration', 'governed-discover.md'), 'utf8');
   assert.match(discover, /architecture-guard resolve template story_scope` in its \*\*Planning Mode\*\*/);
   assert.match(discover, /^## Story Set$/m);
@@ -2084,6 +2087,7 @@ test('discovery proposes a story set that the spec records and later scope check
   const spec = fs.readFileSync(path.join(root, 'orchestration', 'governed-spec.md'), 'utf8');
   assert.match(spec, /record it in a `## Stories` section/);
   assert.match(spec, /cover the acceptance criteria of every story in the set and nothing beyond them/);
+  assert.match(spec, /\*\*Do next\*\*, \*\*Conflicts\*\*, and \*\*Owned elsewhere\*\* tickets never do/);
 });
 
 test('workflow picks the delivery skill by story approval and verifies once', () => {
