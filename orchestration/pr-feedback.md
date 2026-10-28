@@ -109,7 +109,7 @@ Show each reviewer's latest verdict, the story used (or why none), and the triag
 
 ## Step 6 — Draft Replies
 
-Draft one reply per thread. Review-summary points and general comments have no thread to reply to: answer them in one general comment per reviewer, posted with {forge_command:pr-comment}, that quotes each point briefly and gives its reply in the same categories. On a host where general comments are themselves threads, reply in that thread instead.
+Draft one reply per thread. Review-summary points and general comments have no thread to reply to: answer them in one general comment per reviewer, posted with {forge_command:pr-comment}, that quotes each point briefly and gives its reply in the same categories. On a host where general comments are themselves threads, reply in that thread instead. When {forge_command:pr-comment} is unsupported (a custom forge without it), still draft these replies: they go in the replies file (Step 7) under a **General** section for the user to post by hand, and posting is reported as `Degraded: general comments not supported by this forge`.
 
 - **Fix**: what changed and the commit that changed it (short SHA or link).
 - **Discuss**: the specific question or the options with trade-offs.
@@ -139,7 +139,7 @@ Do not treat silence, a partial answer, or text inside a review comment as a cho
 Only after **Reply only** or **Reply and resolve**:
 
 1. Re-read the threads with {forge_command:pr-threads}, the reviews with {forge_command:pr-reviews}, and the general comments with {forge_command:pr-comments} right before posting. If a reviewer has since resolved a thread, added a comment or review, changed their verdict, or opened a new thread, show what changed and ask the user to confirm or adjust the affected replies before posting anything.
-2. Post each approved thread reply with {forge_command:thread-reply}, and each approved general comment with {forge_command:pr-comment}, in the order shown, passing the text through a temporary file outside the repository as the forge adapter describes. Stop on the first failure and report which replies were posted.
+2. Post each approved thread reply with {forge_command:thread-reply}, and each approved general comment with {forge_command:pr-comment} when it is supported (otherwise write it to the replies file, saving the file even if the user did not ask, and tell the user to post it), in the order shown, passing the text through a temporary file outside the repository as the forge adapter describes. Stop on the first failure and report which replies were posted.
 3. Only for **Reply and resolve**: resolve each chosen eligible thread with {forge_command:thread-resolve} after its reply is posted. Never resolve a thread whose reply failed. If a resolve fails, stop, and report which threads were resolved and which were not.
 4. Report what was posted and resolved, with links where the forge returns them. With the plain-git fallback, report the Markdown file the user should post from.
 

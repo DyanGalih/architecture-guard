@@ -68,7 +68,7 @@ Resolve and apply the `repository_context` template with `architecture-guard res
 3. Read existing feedback so the draft does not repeat points already raised: review threads with {forge_command:pr-threads}, submitted reviews with their summaries and verdicts with {forge_command:pr-reviews}, and general comments with {forge_command:pr-comments}. When either of the last two is unsupported, review from the threads and say in the summary that earlier review summaries were not read.
    - **Your earlier reviews**: when the user has reviewed this pull request before, this is a re-review. Take each finding from the user's earlier reviews (inline threads and summary points) and classify it against the current head:
      - **Addressed**: commits after that review changed the code the finding is about so that it no longer applies. Confirm it from the diff; do not repeat it.
-     - **Answered**: the author replied with reasoning or evidence and did not change the code. Re-check the finding against that evidence. If the author is right, drop the finding and say so in the summary. If not, keep it and answer the author's argument in that same thread; do not open a new comment for it.
+     - **Answered**: the author replied with reasoning or evidence and did not change the code. Re-check the finding against that evidence. If the author is right, drop the finding and say so in the summary. If not, keep it and answer the author's argument: in that same thread when the finding was an inline thread (a thread reply, drafted in Step 5), or in the new review's summary when it was a summary point, which has no thread. Do not open a new inline comment for it.
      - **Open**: neither changed nor answered. Keep it, refer to the existing thread or summary point, and do not post a duplicate inline comment.
    - Review the whole pull request at the current head, and say in the summary which commits arrived since the user's last review.
 4. Read CI status with {forge_command:checks-status}. Report failing or pending checks; do not re-run them, and never run the pull request's tests locally instead.
@@ -110,12 +110,13 @@ Security Review is a separate tool, not part of Architecture Guard. When it is i
    - Lead with the problem and its impact, cite the rule or evidence, and give a concrete suggestion (a short code suggestion when it helps).
    - Label it, for example `[HIGH, blocking per Constitution P0]` or `[LOW, suggestion]`.
    - Skip points already raised in an existing thread, a review summary, or a general comment, by anyone; mention them in the summary instead. Earlier findings of the user's own follow their Step 2 classification: never repost an **Addressed** finding, answer an **Answered** one only in its thread, and list **Open** ones in the summary with a link to the existing comment.
-2. Write a summary: what the pull request does, overall assessment, blocking findings first, then other findings, then what was not reviewed (diff-only mode, skipped batches, unavailable checks).
-3. Keep the tone specific and respectful; review the code, not the author.
+2. Write a summary: what the pull request does, overall assessment, blocking findings first, then other findings, then what was not reviewed (diff-only mode, skipped batches, unavailable checks). On a re-review, add the earlier findings: the **Addressed** ones (one line each), the **Answered** ones you dropped with the reason, the **Answered** summary points you keep with your answer to the author, and the **Open** ones with a link to their existing comment.
+3. **Thread replies (re-review only)**: for each kept **Answered** finding that was an inline thread, draft one reply to that thread that answers the author's argument with evidence. These replies are part of the draft and are posted only with it.
+4. Keep the tone specific and respectful; review the code, not the author.
 
 ## Step 6 — Show the Draft and Ask
 
-Show the full draft: the summary, then a table of comments (`#`, file:line, label, comment). Offer to save it to `.architecture-guard/reviews/<pull request id>.md` for editing; save only if the user agrees.
+Show the full draft: the summary, then a table of comments (`#`, file:line, label, comment), then a table of thread replies (`#`, existing thread, reply) when Step 5 drafted any. **Post as is** and **Approve with comments** cover the review and these replies together. Offer to save it to `.architecture-guard/reviews/<pull request id>.md` for editing; save only if the user agrees.
 
 Then ask the user to choose one:
 
@@ -144,7 +145,8 @@ Only after **Post as is** or **Approve with comments**:
 1. Re-read the head SHA with {forge_command:pr-view}. If it changed, do not post: review the new commits, update the draft, and return to Step 6. Also re-read the threads, reviews, and general comments (Step 2); if new feedback raises a point the draft repeats, or answers one of its findings, update the draft and return to Step 6.
 2. For **Post as is**, post the review with {forge_command:review-post} as a comment-only review. When the forge posts comments one by one, post them in the order shown and stop on the first failure.
 3. For **Approve with comments**, approve with {forge_command:review-approve} at the recorded head SHA. Where the forge posts the comments and the approval as one review, send them together. Otherwise post the comments with {forge_command:review-post} first, and approve only after every comment posted; if any comment fails, do not approve, and report the failure. If the host rejects the approval (for example, your own pull request or a missing permission), report that the comments were posted without an approval.
-4. Report the review URL (or the written Markdown file for the plain-git fallback), and list any comments that failed to post with the error.
+4. After the review is posted, post each drafted thread reply with {forge_command:thread-reply}, in the order shown, passing the text through a temporary file outside the repository as the forge adapter describes. Right before, re-read that thread; if the author has replied again since the draft, do not post that reply: report it and offer to update the draft. Stop on the first failure and report which replies were posted. For **Approve with comments**, post the replies before approving, and do not approve if any reply fails.
+5. Report the review URL (or the written Markdown file for the plain-git fallback), and list any comments or replies that failed to post with the error.
 
 ## Step 8 — Clean Up
 
