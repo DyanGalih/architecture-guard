@@ -2075,6 +2075,10 @@ test('pull-request feedback and review keep archived changes read-only', () => {
   const reviewPr = fs.readFileSync(path.join(root, 'orchestration', 'review-pr.md'), 'utf8');
   assert.match(reviewPr, /never ask the author to restore or reopen it/);
   assert.match(reviewPr, /request for a follow-up change, not a fix/);
+  for (const prompt of [feedback, reviewPr]) {
+    assert.match(prompt, /artifacts retained in place/, 'adapters that archive in place are covered');
+    assert.match(prompt, /\{adapter_path:fallback-spec-index\}`\) only to locate it/, 'the index is never the requirement text');
+  }
 });
 
 test('workflow picks the delivery skill by story approval and verifies once', () => {
