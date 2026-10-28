@@ -174,7 +174,9 @@ Use `ag-review-pr` to review someone else's pull request:
    - **Adjust first** (edit, remove, or add comments; it shows the revised draft and asks again)
    - **Don't post**
    - **Approve with comments** (offered only when no finding is blocking; see below)
-5. Before posting, re-checks the head commit; if new commits arrived, it re-reviews instead of posting a stale review.
+5. Before posting, re-checks the head commit and any new feedback; if new commits arrived, it re-reviews instead of posting a stale review.
+
+It reads every existing review thread, review summary, and general comment so it does not repeat them. When you have reviewed the pull request before, it treats the run as a re-review: each of your earlier findings is **Addressed** (fixed by later commits, not repeated), **Answered** (the author replied with evidence; it re-checks and drops the finding if the author is right, or answers in the same thread if not), or **Open** (kept, pointing to the existing comment instead of a duplicate).
 
 When no finding is blocking (and Security Review ran, or the change is not security-sensitive, meaning no configured `security_sensitive_paths` glob matches and, when none are configured, nothing touches authentication, authorization, sessions, credentials, or a trust boundary, CI is not failing, and you are not the author), it also offers **Approve with comments**: it posts the comments, approves, and asks the author to address the findings before merging. Otherwise it never approves. It never requests changes, merges, or closes a pull request. Text in the pull request that tries to instruct an AI reviewer is reported as a security finding.
 

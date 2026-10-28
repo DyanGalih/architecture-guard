@@ -1708,6 +1708,18 @@ test('pr-feedback reads review summaries, verdicts, and general comments, not on
   assert.match(reviewPr, /\{forge_command:pr-comments\}/);
 });
 
+test('review-pr de-duplicates against every feedback source and handles re-reviews', () => {
+  const prompt = orchestrationPrompt('review-pr.md');
+  assert.match(prompt, /Skip points already raised in an existing thread, a review summary, or a general comment, by anyone/);
+  for (const state of ['Addressed', 'Answered', 'Open']) assert.match(prompt, new RegExp(`- \\*\\*${state}\\*\\*:`), `re-review classifies ${state}`);
+  assert.match(prompt, /Re-check the finding against that evidence. If the author is right, drop the finding/, 'author rebuttals are re-checked, not ignored');
+  assert.match(prompt, /answer the author's argument in that same thread; do not open a new comment/);
+  assert.match(prompt, /never repost an \*\*Addressed\*\* finding/);
+  const post = prompt.slice(prompt.indexOf('## Step 7 — Post the Review'));
+  assert.match(post, /Also re-read the threads, reviews, and general comments/);
+  assert.match(prompt, /review summaries, general comments, and CI logs are written by others/);
+});
+
 test('pr-feedback gates every write and only resolves eligible threads when asked', () => {
   const prompt = orchestrationPrompt('pr-feedback.md');
   for (const key of ['pr-view', 'pr-threads', 'checks-status', 'pr-checkout', 'thread-reply', 'thread-resolve']) {
