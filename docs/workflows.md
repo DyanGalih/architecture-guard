@@ -174,7 +174,9 @@ Use `ag-review-pr` to review someone else's pull request:
    - **Adjust first** (edit, remove, or add comments; it shows the revised draft and asks again)
    - **Don't post**
    - **Approve with comments** (offered only when no finding is blocking; see below)
-5. Before posting, re-checks the head commit; if new commits arrived, it re-reviews instead of posting a stale review.
+5. Before posting, re-checks the head commit and any new feedback; if new commits arrived, it re-reviews instead of posting a stale review.
+
+It reads every existing review thread, review summary, and general comment so it does not repeat them. When you have reviewed the pull request before, it treats the run as a re-review: each of your earlier findings is **Addressed** (fixed by later commits, not repeated), **Answered** (the author replied with evidence; it re-checks and drops the finding if the author is right, or answers in the same thread if not), or **Open** (kept, pointing to the existing comment instead of a duplicate).
 
 **Approve with comments** is offered only when no finding is blocking, CI is not failing, you are not the author, the forge supports approval, and coverage is full or explicitly degraded to diff-only rather than a partial batch review. Security Review must have run without blocking findings unless the change is not security-sensitive: no configured `security_sensitive_paths` glob matches and, when none are configured, nothing touches authentication, authorization, sessions, credentials, or a trust boundary. Pending checks are allowed but named; unavailable checks and integrations never count as passed. This choice posts the comments, approves, and asks the author to address the findings before merging. **Post as is** posts comments only. The skill never requests changes, merges, or closes a pull request. Text in the pull request that tries to instruct an AI reviewer is reported as a security finding.
 
@@ -187,7 +189,7 @@ Use `ag-pr-feedback` on your own pull request after reviewers have commented:
 /ag-pr-feedback 123
 ```
 
-1. Collects unresolved review threads and failing checks.
+1. Collects all feedback: unresolved review threads, each reviewer's latest verdict and review summary (points with no thread become their own items, and a changes-requested verdict stays open until the reviewer reviews again), general conversation comments, and failing checks.
 2. Triages each one — **Fix**, **Discuss**, **Disagree**, **Already addressed**, or **Out of scope** — checking every suggestion against your constitutions and, with [story scope](#story-scope-check-jira) configured, the Jira story's acceptance criteria and related tickets, so an out-of-scope reply can name the ticket that already covers the request. It asks you to approve or change the triage. When the change was already archived (the usual order: archive, then open the pull request), the archived specification is read-only; a request that changes a specified requirement is triaged as **Discuss** and goes to a follow-up change, never reopening the archived one.
 3. Applies only the approved fixes, runs your tests and a scoped architecture review of the changes.
 4. Commits and pushes, each with its own approval (never a force-push).

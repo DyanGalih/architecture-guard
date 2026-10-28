@@ -16,8 +16,11 @@ Files are named after the refs: `<slug>` is `<base>..<head>` with every `/` repl
 | pr-diff | `git diff '<base>...<head>'` for the unified diff and `git diff --name-status '<base>...<head>'` for changed files (three-dot: changes on head since the merge-base) |
 | pr-checkout | Inside a review worktree `git switch --detach '<head>'`, or create one with `git worktree add --detach '<dir>' '<head>'` to keep the current checkout; never discard local changes |
 | pr-threads | No hosted threads; ask the user to paste or export the review comments, then treat each comment as a thread keyed by file and line |
+| pr-reviews | No hosted reviews; ask the user to paste each reviewer's summary and verdict (approved, changes requested, or comment) |
+| pr-comments | No hosted comments; ask the user to paste the general comments outside review threads |
 | review-post | Unsupported; write the approved review to `.architecture-guard/reviews/<slug>.md` (summary plus `path:line` comments) for the user to post |
 | review-approve | Unsupported; after the review file is written, tell the user to approve on the host |
 | thread-reply | Unsupported; write the approved replies to `.architecture-guard/reviews/<slug>-replies.md`, one section per thread, for the user to post |
 | thread-resolve | Unsupported; list the threads the user chose to resolve in the replies file so they can resolve them on the host |
+| pr-comment | Unsupported; add the approved comment to `.architecture-guard/reviews/<slug>-replies.md` under a General section for the user to post |
 | checks-status | Unsupported; ask the user for CI status. Running tests executes the change's code: only for your own change and only after the user approves; never when reviewing someone else's change |
