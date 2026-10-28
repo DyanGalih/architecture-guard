@@ -51,7 +51,7 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | create-tasks | Resolve `architecture-guard resolve flow default` and `architecture-guard resolve template generic_tasks`, then create `{adapter_path:tasks}` inline following the flow-template guidance |
 | implement | Execute unchecked tasks inline and update their status |
 | analyze | Compare active spec, plan, and tasks inline for coverage and contradictions |
-| security-review-implementation | Host Security Review dispatch operation `sr-verify`; accept `sr-branch` only when host registration declares implementation scope; never `sr-changes` |
+| security-review-implementation | Host Security Review dispatch operation `sr-branch`, against the base ref the work will merge into (never `HEAD`); never `sr-verify` (it can execute code), `sr-staged`, `sr-audit`, or `sr-changes` |
 | hygiene | architecture-guard hygiene --json --target . |
 | security-review | Use an optional host Security Review capability or report the skipped review |
 | security-review-plan | Use an optional host Security Review capability or report the skipped review |

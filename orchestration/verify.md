@@ -145,7 +145,7 @@ Build internal representations:
 - If security findings are architecture-relevant, classify them as `Security-Architecture Conflict` and preserve the Security Review operation's own severity and blocking decision.
 
 #### F. Change Checks
-- Resolve and apply the `change_checks` template with `architecture-guard resolve template change_checks` to the verification scope: governance, intent, tests, secrets and trust boundaries, security-sensitive files, and CI (`Not Applicable` locally). The base ref is the one resolved in step D. The intent source is the active change's spec, plan, and tasks plus the commit messages from the merge-base to `HEAD`. Step D is the Security Review owner. These are the checks `ag-review-pr` runs on the pull request, so findings here are findings the pull-request review would otherwise raise after the push.
+- Resolve and apply the `change_checks` template with `architecture-guard resolve template change_checks` to the verification scope: governance, intent, story scope, tests, secrets and trust boundaries, security-sensitive files, and CI (`Not Applicable` locally). The base ref is the one resolved in step D. The intent source is the active change's spec, plan, and tasks plus the commit messages from the merge-base to `HEAD`. Story scope compares the branch with its Jira story and related tickets, or with overlapping open tickets when no story is linked, through the `story_scope` template; it reads Jira and never writes to it. Step D is the Security Review owner. These are the checks `ag-review-pr` runs on the pull request, so findings here are findings the pull-request review would otherwise raise after the push.
 - Report each finding with the severity and blocking status of its governing policy, and list each one in the Action Plan with its remediation.
 
 #### E. Repository Hygiene Validation
@@ -212,11 +212,12 @@ For each task in `{adapter_path:tasks}`:
 ### Change Checks
 - **Base ref**: [ref]
 - **Intent source**: [active change and commits / commits only / none]
+- **Story scope**: [Clean / Findings / Not Applicable: reason / Unavailable: reason]; story [KEY or none], candidates [keys] when searched
 - **Security Review**: [Reported by: step D]
 
 | Check | Status | Severity | Blocking | Location(s) | Summary |
 |:---|:---|:---|:---|:---|:---|
-| [Governance / Intent / Tests / Secrets / Security-sensitive files / CI] | [Clean / Finding / Not Applicable / Degraded] | [from policy] | [Yes/No] | [File:Line] | [What was found, or why the check did not apply] |
+| [Governance / Intent / Story scope / Tests / Secrets / Security-sensitive files / CI] | [Clean / Finding / Not Applicable / Degraded] | [from policy] | [Yes/No] | [File:Line] | [What was found, or why the check did not apply] |
 
 ### Metrics
 - **Tasks Verified**: [Completed / Total]
@@ -228,7 +229,7 @@ For each task in `{adapter_path:tasks}`:
 ### Action Plan
 1. **Critical Gaps**: Address missing implementation for tasks [IDs] immediately.
 2. **Architecture Alignment**: Resolve boundary violations in [Files] using suggested refactor tasks.
-2b. **Change Checks**: Resolve intent, test, secret, governance, and security-sensitive findings before opening or updating the pull request; `ag-review-pr` runs the same checks and would raise them there.
+2b. **Change Checks**: Resolve intent, story scope, test, secret, governance, and security-sensitive findings before opening or updating the pull request; `ag-review-pr` runs the same checks and would raise them there.
 3. **Completion**: If no blocking findings remain (Constitution P0, policy-blocking security, or blocking hygiene) and all CRITICAL/HIGH findings are resolved, propose any validated Flash-Mem lessons and write them only after explicit user approval.
 
 ### Claude Code Agent Teams Verification Protocol (When Active)

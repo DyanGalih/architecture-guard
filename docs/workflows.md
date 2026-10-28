@@ -140,15 +140,18 @@ When you want a single unified command that drives the complete lifecycle intera
 **How it works:**
 1. **Interactive Teammate Detection**: If `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is configured in `.claude/settings.json`, `/ag-workflow` prompts:
    > *"Claude Code Agent Teams configuration detected. Would you like to orchestrate this workflow using multi-agent Teammates (Author, Reviewer, Implementers, Quality Gate) or standard single-agent mode?"*
-2. **Phase 1: Spec & Plan Delivery**: 
-   - Uses **Teammate A (Author)** & **Teammate B (Spec Reviewer)** to generate and review specification, technical plan, and tasks.
-   - **🛑 Human Gate 1**: Pauses and asks for your approval on the generated plan and tasks.
-3. **Phase 2: Governed Implementation**:
-   - Spawns **Teammate C** (partitioned by C.1 Core, C.2 CLI/UI, C.3 Tests) to write code and tests concurrently via git task locking.
-   - **Teammate D (Reviewer)** performs whitebox code review and test verification.
-   - **🛑 Human Gate 2**: Pauses and presents implementation evidence for your sign-off.
-4. **Phase 3: Verification & Archive Gate**:
-   - Executes `/ag-verify` to ensure 100% task delivery and zero architectural boundary breaches before offering archive options.
+2. **Phase 1: Discovery and Specification**: runs `ag-governed-discover` when the request is exploratory, then `ag-governed-spec`.
+   - **🛑 Human Gate 0**: approve the specification.
+3. **Phase 2: Delivery**: runs `ag-governed-delivery`, which generates the plan and tasks, then runs `ag-review-artifacts` and Security Review (when installed) and applies fixes until a pass is clean (at most 5 passes).
+   - **🛑 Human Gate 1**: approve the plan and tasks, with the Artifact Review status.
+4. **Phase 3: Governed Implementation**: runs `ag-governed-implement`, which loops the implementation review and Security Review until a pass is clean (at most 5 passes). In Agent Teams mode, implementers own non-overlapping tasks and files.
+   - **🛑 Human Gate 2**: sign off on the implementation evidence.
+5. **Phase 4: Final Review**: confirms the verification run by `ag-governed-implement` covered the whole branch diff against the destination branch (pull-request change checks plus Security Review's branch operation), and reruns `ag-verify base=<destination branch>` only if that result is missing, stale, or used another base. Findings that need code changes return to Phase 3, at most twice.
+   - **🛑 Human Gate 3**: approve the final review.
+   - In the SpecKit extension channel (`/speckit.architecture-guard.ag-workflow`), the registered `ag-verify` does not take `base=` or apply the change checks, so the final review reports Change Checks as `Unavailable` and points to the standalone `ag-verify base=<branch>` or `ag-review-pr`.
+6. **Archive**: only after Gate 3, the workflow suggests `ag-governed-archive`.
+
+**Subagents:** the workflow runs sequentially by default on every host. When the host can dispatch a fresh subagent, read-only reviews (loop passes and the final review) may run in one, and the architecture and security halves of a pass may run side by side. Subagents never write artifacts or code, never satisfy a human gate, and are used only when the host really provides them.
 
 If you are specifically cleaning up duplicated logic (Brownfield), follow the [DRY Cleanup Guide](dry-cleanup.md) after your initialization pass. This keeps architecture concerns visible throughout the delivery lifecycle instead of concentrating them at the end.
 
@@ -163,7 +166,7 @@ Use `ag-review-pr` to review someone else's pull request:
 
 1. Fetches the pull request, diff, existing review threads, and CI status through the selected forge (see [FORGES.md](../FORGES.md)).
 2. Optionally reads the full files from a temporary git worktree (it asks first; your checkout is never changed). Without it, the review is labelled diff-only.
-3. Reviews the change against your constitutions and any linked spec, plan, or tasks by running `ag-review-implementation` on the pull request's files, which applies the shared change checks (governance, intent versus description, tests, secrets, security-sensitive files, and CI failures), the same checks `ag-review-implementation` and `ag-verify` run on your own branch before a push. When the separate Security Review tool is installed, it also runs its branch operation (`sr-branch`) on the pull request.
+3. Reviews the change against your constitutions and any linked spec, plan, or tasks by running `ag-review-implementation` on the pull request's files, which applies the shared change checks (governance, intent versus description, story scope against Jira, tests, secrets, security-sensitive files, and CI failures), the same checks `ag-review-implementation` and `ag-verify` run on your own branch before a push. When the separate Security Review tool is installed, it also runs its branch operation (`sr-branch`) on the pull request.
 4. Drafts a comment-only review — inline comments with severity and blocking labels, plus a summary — and asks you to choose:
    - **Post as is**
    - **Adjust first** (edit, remove, or add comments; it shows the revised draft and asks again)
@@ -183,7 +186,7 @@ Use `ag-pr-feedback` on your own pull request after reviewers have commented:
 ```
 
 1. Collects unresolved review threads and failing checks.
-2. Triages each one — **Fix**, **Discuss**, **Disagree**, **Already addressed**, or **Out of scope** — checking every suggestion against your constitutions, and asks you to approve or change the triage.
+2. Triages each one — **Fix**, **Discuss**, **Disagree**, **Already addressed**, or **Out of scope** — checking every suggestion against your constitutions and, with [story scope](#story-scope-check-jira) configured, the Jira story's acceptance criteria and related tickets, so an out-of-scope reply can name the ticket that already covers the request. It asks you to approve or change the triage.
 3. Applies only the approved fixes, runs your tests and a scoped architecture review of the changes.
 4. Commits and pushes, each with its own approval (never a force-push).
 5. Drafts one reply per thread and asks you to choose:
@@ -218,3 +221,23 @@ The configuration is strictly validated during the workflow using `architecture-
 5. The result is recorded locally in `.architecture-guard/sync_status.json` (e.g., `{ "status": "success", "issue_url": "..." }`).
 
 If the push fails, the workflow gracefully degrades by logging a warning and writing `{ "status": "failed" }` to the status file without blocking local delivery.
+
+## Story Scope Check (Jira)
+
+`ag-review-implementation`, `ag-verify`, `ag-review-pr`, and `ag-pr-feedback` compare a change with the work agreed in Jira, so out-of-scope work is caught before review rather than after. It is part of the shared change checks and uses the same `.architecture-guard/sync.yml`:
+
+```yaml
+provider: jira
+project: PROJ
+scope_check:
+  enabled: true            # default when provider is jira
+  max_candidates: 20       # cap on related tickets and search results (1-50)
+  # candidate_jql: project = PROJ AND sprint in openSprints() AND statusCategory != Done
+```
+
+1. Finds the story key in the branch name, the pull request title or description, or the commit subjects; when several keys appear, or none, it asks you.
+2. Reads the story's acceptance criteria and its related tickets: subtasks, linked issues, and open siblings under the same epic.
+3. With no story, runs one bounded search of open tickets (current sprint, yours, or recently updated, matched on the change's own terms; or your `candidate_jql`), shows the best matches, and asks you to pick the story or confirm there is none.
+4. Reports out-of-scope changes, changes that belong to another ticket (noting when someone else is assigned), acceptance criteria with no matching change, and untracked changes.
+
+Findings are advisory unless your Constitution marks out-of-scope or untracked work as P0. The check needs a Jira MCP server; without one it reports `Unavailable`, never clean. It only reads Jira, treats ticket text as untrusted data, and reads `sync.yml` from your checkout, never from the pull request. The top-level `enabled` flag controls only the delivery-team push sync.

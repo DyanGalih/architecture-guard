@@ -8,6 +8,19 @@ const syncSchema = z.object({
   repo: z.string().optional(), // For github
   project: z.string().optional(), // For jira
   enabled: z.boolean().default(true),
+  // Read-only story scope check used by reviews (see templates/story_scope.md)
+  scope_check: z.object({
+    enabled: z.boolean().default(true),
+    candidate_jql: z.string().min(1).optional(),
+    max_candidates: z.number().int().min(1).max(50).default(20),
+  }).strict().optional(),
+}).superRefine((config, ctx) => {
+  if (config.scope_check?.enabled && config.provider !== 'jira') {
+    ctx.addIssue({ code: 'custom', path: ['scope_check'], message: 'scope_check supports provider jira only' });
+  }
+  if (config.scope_check?.enabled && !config.project) {
+    ctx.addIssue({ code: 'custom', path: ['project'], message: 'scope_check needs the jira project key' });
+  }
 });
 
 export type SyncConfig = z.infer<typeof syncSchema>;

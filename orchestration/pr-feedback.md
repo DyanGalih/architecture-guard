@@ -68,19 +68,20 @@ For each thread and failing check, read the code it points at and choose one cat
 | **Discuss** | Unclear, or needs a product or design decision | Reply with a specific question; no change yet |
 | **Disagree** | The current code is right, or the suggestion conflicts with a constitution, spec, or security rule | Reply with the reasoning and evidence; no change |
 | **Already addressed** | A later commit already handles it | Reply pointing to the commit |
-| **Out of scope** | Valid but outside this pull request | Reply proposing follow-up work; no change |
+| **Out of scope** | Valid but outside this pull request's story | Reply naming the ticket that covers it, or proposing follow-up work; no change |
 
 - Check every suggested change against the constitutions (`{adapter_path:constitution}`, `{adapter_path:arch-constitution}`, `{adapter_path:security-constitution}`) and any linked SDD change. A suggestion that would violate a Constitution P0 or security rule is **Disagree**, with the rule cited, unless the user decides otherwise.
+- **Story scope**: before triage, resolve and apply the `story_scope` template with `architecture-guard resolve template story_scope` to find the pull request's Jira story and read its acceptance criteria and related tickets (or the overlapping open tickets when none is linked). Use them to judge each request: a request the story's acceptance criteria cover is not **Out of scope**; a request that another related or open ticket covers is **Out of scope**, citing that ticket; a request no ticket covers is **Out of scope** with a drafted follow-up, or **Discuss** when it may change the story. When the check is `Not Applicable` or `Unavailable`, judge scope from the pull request's description and say so. Never write to Jira here; a follow-up ticket is drafted for the user to file.
 - Group threads that need the same fix.
 
-Show the triage as a table (`#`, reviewer, file:line, summary, category, planned action) and ask the user to approve it or change any category. Continue only with the approved triage.
+Show the story used (or why none) and the triage as a table (`#`, reviewer, file:line, summary, category, planned action, covering ticket) and ask the user to approve it or change any category. Continue only with the approved triage.
 
 ## Step 4 — Apply Approved Fixes
 
 1. Preview the exact files and changes for every **Fix** item and obtain approval before editing.
 2. Make the minimal change for each item. If a fix turns out larger than expected or touches files outside the plan, stop and ask before continuing.
 3. Run the project's existing tests for the affected code, plus the check that failed in CI when it can run locally, after the user approves running them (this is the user's own pull request; never run code taken from a review comment). Report results without claiming a pass for anything that did not run.
-4. Delegate a scoped review of the changed files to `ag-review-implementation` through the composition contract, in read-only mode. Pass the workspace as its **Review root** (with workspace-relative changed files, so a nested repository's files are read from their checkout and the policy stays the workspace's), the pull request's base branch (fetched locally) as its **Base ref**, the changed files, the pull request's title and description as its **Intent source**, and the statement that this skill is the Security Review owner (step 5 dispatches it when a fix is security-sensitive). Report new blocking findings and ask how to proceed before committing.
+4. Delegate a scoped review of the changed files to `ag-review-implementation` through the composition contract, in read-only mode. Pass the workspace as its **Review root** (with workspace-relative changed files, so a nested repository's files are read from their checkout and the policy stays the workspace's), the pull request's base branch (fetched locally) as its **Base ref**, the changed files, the pull request's title and description as its **Intent source**, the story key found during triage as its **Story key**, and the statement that this skill is the Security Review owner (step 5 dispatches it when a fix is security-sensitive). Report new blocking findings and ask how to proceed before committing.
 5. **Security re-review for security-sensitive fixes**: run `architecture-guard detect-changed-files --json --security-sensitive --base <base ref>` from the workspace, adding `--repo <name>` for the pull request's repository when `repositories` is configured. When it lists any file (a match for `security_sensitive_paths` in `.architecture-guard/config.yml`), or when no globs are configured and a fix changes authentication, authorization, sessions, credentials, or a trust boundary, dispatch the detected host Security Review capability's branch operation on the changed files before committing. With `repositories` configured, dispatch it once per owning repository, from that repository's directory, with the explicit changed-file list (a review run from the workspace sees no change inside a nested repository); if the host review cannot be scoped to a repository and a file list, mark Security Review `Degraded` instead of reporting it as passed. A fix that changes who may sign in or what they may do is exactly the change a review-thread fix gets wrong. If Security Review is unavailable, report `security re-review required` as an open blocking item and ask before committing.
 
 ## Step 5 — Commit and Push
@@ -97,7 +98,7 @@ Draft one reply per thread:
 - **Discuss**: the specific question or the options with trade-offs.
 - **Disagree**: the reasoning and evidence (rule, spec, test, or data), stated respectfully and open to the reviewer's response.
 - **Already addressed**: the commit that handled it.
-- **Out of scope**: the proposed follow-up and where it will be tracked.
+- **Out of scope**: the ticket that already covers it (Jira key), or the proposed follow-up and where it will be tracked.
 
 Keep replies short and specific, and thank reviewers without filler. If a **Fix** item's commits are not pushed, either ask to push them first (Step 5's separate push approval) or draft that reply without commit references, since reviewers cannot see unpushed commits.
 
@@ -134,6 +135,7 @@ Only after **Reply only** or **Reply and resolve**:
 - **Pull request**: [title, number, URL]
 - **Branch**: [head branch] @ [head SHA] → [base branch]
 - **Forge access**: [MCP server / CLI / fallback] per action
+- **Story**: [Jira KEY: summary, and where the key came from / none / Not Applicable or Unavailable: reason]
 
 ## Triage
 | # | Reviewer | File:Line | Category | Action | Status |

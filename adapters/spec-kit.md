@@ -49,7 +49,7 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | create-tasks | `/speckit.tasks`; if unavailable, create `{adapter_path:tasks}` inline from the active plan |
 | implement | `/speckit.implement`; if unavailable, execute unchecked tasks inline and update their status |
 | analyze | `/speckit.analyze`; if unavailable, compare spec, plan, and tasks inline for coverage and contradictions |
-| security-review-implementation | Host Security Review dispatch operation `sr-verify`; accept `sr-branch` only when host registration declares implementation scope; never `sr-changes` |
+| security-review-implementation | Host Security Review dispatch operation `sr-branch`, against the base ref the work will merge into (never `HEAD`); never `sr-verify` (it can execute code), `sr-staged`, `sr-audit`, or `sr-changes` |
 | hygiene | architecture-guard hygiene --json --target . |
 | security-review | Unsupported in standalone SDD orchestration; report `Unavailable`. Current SpecKit extension integration exists only in the legacy `commands/` delivery channel |
 | security-review-plan | Unsupported in standalone SDD orchestration; report `Unavailable`. Current SpecKit extension integration exists only in the legacy `commands/` delivery channel |
