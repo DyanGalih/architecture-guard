@@ -2096,6 +2096,22 @@ test('legacy workflow does not claim whole-branch checks its registered verifier
   }
 });
 
+test('pull-request feedback and review keep archived changes read-only', () => {
+  const root = path.join(__dirname, '..');
+  const feedback = fs.readFileSync(path.join(root, 'orchestration', 'pr-feedback.md'), 'utf8');
+  assert.match(feedback, /^## Archived Changes$/m);
+  assert.match(feedback, /Never move, edit, restore, or recreate an archived change, and never run \{adapter_command:create-change\} for it/);
+  assert.match(feedback, /changes a specified requirement or behavior is \*\*Discuss\*\*, never \*\*Fix\*\*/, 'requirement changes are not silently fixed');
+  assert.match(feedback, /follow-up change with its own specification/);
+  const reviewPr = fs.readFileSync(path.join(root, 'orchestration', 'review-pr.md'), 'utf8');
+  assert.match(reviewPr, /never ask the author to restore or reopen it/);
+  assert.match(reviewPr, /request for a follow-up change, not a fix/);
+  for (const prompt of [feedback, reviewPr]) {
+    assert.match(prompt, /artifacts retained in place/, 'adapters that archive in place are covered');
+    assert.match(prompt, /\{adapter_path:fallback-spec-index\}`\) only to locate it/, 'the index is never the requirement text');
+  }
+});
+
 test('discovery proposes a story set that the spec records and later scope checks read', () => {
   const root = path.join(__dirname, '..');
   const contract = fs.readFileSync(path.join(root, 'templates', 'story_scope.md'), 'utf8');
