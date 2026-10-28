@@ -51,31 +51,53 @@ When the environment flag is present, explain that `.architecture-guard/agents.y
 4. If no active specification exists, run the registered `ag-governed-spec` capability. Do not enter planning until specification creation and clarification succeed.
 5. If an active specification already exists, confirm the intended active change when more than one candidate is plausible.
 
-### Step 2 - Governed Planning and Tasks
+### Human Gate 0 - Approve Specification
+
+After discovery and specification (Step 1) succeed, present the specification and any clarification outcomes. Obtain explicit user approval before delivery starts. Skip this gate only when the user supplied an already-approved active specification and asked to resume from it.
+
+### Step 2 - Governed Planning, Tasks, and Artifact Review Loop
 
 - When stakeholder User Story approval is required, run the registered `ag-governed-delivery-team` capability, in single-agent or Agent Teams mode.
 - Otherwise run the registered `ag-governed-delivery` capability (with the active team profile in Agent Teams mode).
-- Let the delegated delivery prompt perform its own plan, task, security, architecture, analysis, and write-approval gates.
+- Let the delegated delivery prompt perform its own plan, task, security, architecture, analysis, and write-approval gates. It also owns the Artifact Review Convergence Loop (`ag-review-artifacts` plus Security Review on the plan and tasks, repaired through `ag-apply`, until a pass is clean). Do not restate or rerun that loop here; report its status and pass count.
 
 ### Human Gate 1 - Approve Plan and Tasks
 
-Present the resolved plan and task artifacts plus any blocking findings. Obtain explicit user approval before starting implementation. Approval of artifacts does not approve unrelated writes or Git operations.
+Present the resolved plan and task artifacts, the **Artifact Review** status (Clean, Not converged, Blocked, or Unavailable, with qualifiers), and any blocking or open findings. Obtain explicit user approval before starting implementation. Approval of artifacts does not approve unrelated writes or Git operations.
 
-### Step 3 - Governed Implementation
+### Step 3 - Governed Implementation and Implementation Review Loop
 
-Run the registered `ag-governed-implement` capability. In Agent Teams mode, the lead assigns non-overlapping task and file ownership before spawning implementors. If an overlap is discovered, pause one owner and coordinate a handoff; do not rely on an invented Git locking mechanism or allow concurrent edits to the same file.
+Run the registered `ag-governed-implement` capability. It owns the Implementation Review Convergence Loop (architecture review plus Security Review on the code, fixed and rerun until a pass is clean). Do not restate or rerun that loop here; report its status and pass count. In Agent Teams mode, the lead assigns non-overlapping task and file ownership before spawning implementors. If an overlap is discovered, pause one owner and coordinate a handoff; do not rely on an invented Git locking mechanism or allow concurrent edits to the same file.
 
 ### Human Gate 2 - Review Implementation
 
-Present modified files, completed tasks, review findings, test results, and the verification result. Obtain explicit user approval before the archival handoff.
+Present modified files, completed tasks, the **Implementation Review** status, test results, and the verification result. Obtain explicit user approval before the final review.
 
-### Step 4 - Verification
+### Step 4 - Final Review Against the Destination Branch
 
-`ag-governed-implement` owns verification: its Mandatory Verification Gate already runs `ag-verify`. Use that result here; do not run verification a second time. Run `ag-verify` directly only when implementation finished outside `ag-governed-implement` or its verification result is missing or stale (code changed after it ran). A pass requires task and requirement evidence, architecture and security-policy compliance, repository hygiene results, and no unresolved blocking findings. Do not equate unavailable optional integrations with a pass.
+`ag-governed-implement` owns verification: its Mandatory Verification Gate already runs `ag-verify`, which applies the pull-request change checks and Security Review's branch operation over the whole branch diff against the target branch. Use that result; do not run verification a second time.
+
+1. Confirm the destination branch that result used: the user's stated branch, the pull-request base, or the repository's default branch. If it cannot be determined, ask. Never accept `HEAD` as the base. With `repositories` configured, confirm it per owning repository.
+2. Run `ag-verify` directly with `base=<destination branch>` only when the result is missing, stale (code changed after it ran), or used a different base. When the host can run a fresh subagent, run it in a fresh context so it does not grade work it produced. Rules come from the user's checkout, not from the branch under review.
+3. A pass requires task and requirement evidence, architecture and security-policy compliance, repository hygiene results, and no unresolved blocking findings. Do not equate unavailable optional integrations with a pass.
+4. If the result reports findings that need code changes, return to Step 3 with those findings as input, then repeat this step. At most 2 such returns per run. If findings remain after the second, stop, report what each return changed, and ask the user how to proceed. A finding that needs a product or architecture decision goes to the user instead of back into the loop.
+
+### Human Gate 3 - Approve Final Review
+
+Present the final review result, the destination branch, and any accepted or advisory findings. Obtain explicit user approval before the archival handoff.
 
 ### Step 5 - Optional Archival Handoff
 
-After verification passes, present the final governance summary and offer to run `ag-governed-archive`. Archival, changelog, memory, Git, and cleanup actions retain the separate approvals required by that capability. If the user declines, leave the active work intact.
+Only after Gate 3 passes, present the final governance summary and suggest running `ag-governed-archive`. Archival, changelog, memory, Git, and cleanup actions retain the separate approvals required by that capability. If the user declines, leave the active work intact.
+
+## Execution Mode
+
+This workflow is host-neutral. Lifecycle steps depend on each other and on human gates, so run them in order in the current session by default.
+
+- **Sequential (default, any host)**: read each delegated capability file and execute it in the current session, as the capability composition contract requires.
+- **Subagents (only when the host exposes real dispatch of a fresh context)**: use them only for read-only work that does not depend on another running task: the review passes in the convergence loops and the Step 4 final review, and the architecture and Security Review halves of a single pass. Give each subagent the explicit artifact paths, change identifier, base ref, and constitutions; subagents do not inherit this conversation. Repairs, artifact writes, implementation, commits, and archival stay with one owner at a time. Merge subagent findings into the parent's single findings list before evaluating a pass.
+- **Agent Teams**: remains the Claude Code experimental mode described above.
+- Never claim parallel or subagent execution the host did not perform, never run two writers on the same file, and never let a subagent satisfy a human gate. When the host has no dispatch, run sequentially and report the mode.
 
 ## Output
 
@@ -83,8 +105,10 @@ Return a concise lifecycle summary containing:
 
 - selected adapter, mode, and active change/artifact paths;
 - completed, skipped, blocked, and degraded phases;
-- approvals obtained and approvals still required;
-- verification status and unresolved findings;
+- approvals obtained and approvals still required (Gates 0-3);
+- Artifact Review, Implementation Review, and final review status with pass counts;
+- destination branch and unresolved findings;
+- execution mode used (sequential, subagents, or Agent Teams);
 - the next safe action.
 
 ## Guardrails
@@ -92,5 +116,7 @@ Return a concise lifecycle summary containing:
 - Preserve the delegated phase prompts as the source of truth for phase behavior.
 - Never skip discovery/specification merely because no active artifact exists.
 - Never cross a human gate based on an earlier phase's approval.
+- Do not duplicate the delegated convergence loops; they keep their own pass limits and stop conditions.
+- Never suggest archival before the final review is clean and Gate 3 is approved.
 - Never claim Agent Teams behavior when the host capability is unavailable.
 - Preserve unrelated and uncommitted work throughout the lifecycle.

@@ -62,7 +62,7 @@ When this adapter is selected, establish one `CHANGE_ID` before running any Open
 | create-tasks | Read `openspec instructions tasks --change "$CHANGE_ID" --json`, then create `{adapter_path:tasks}` inline|
 | implement | Use the registered OpenSpec apply-change capability; if unavailable, execute unchecked tasks inline and update their status |
 | analyze | Run `openspec validate "$CHANGE_ID" --strict`; supplement it with an inline spec/plan/tasks coverage check|
-| security-review-implementation | Host Security Review dispatch operation `sr-verify`; accept `sr-branch` only when host registration declares implementation scope; never `sr-changes` |
+| security-review-implementation | Host Security Review dispatch operation `sr-branch`, against the base ref the work will merge into (never `HEAD`); never `sr-verify` (it can execute code), `sr-staged`, `sr-audit`, or `sr-changes` |
 | hygiene | architecture-guard hygiene --json --target . |
 | security-review | Not part of OpenSpec; detect the optional Security Review host capability or report the skipped review |
 | security-review-plan | Not part of OpenSpec; detect the optional Security Review host capability or report the skipped review |
