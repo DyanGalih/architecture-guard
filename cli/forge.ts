@@ -24,7 +24,7 @@ export const FORGE_KEYS = [
 
 // Optional actions: built-in forges define them, but a custom forge may leave them out. A skill that uses one must
 // handle the `Unsupported` value it then receives.
-export const OPTIONAL_FORGE_KEYS = ['review-approve'];
+export const OPTIONAL_FORGE_KEYS = ['review-approve', 'pr-reviews', 'pr-comments', 'pr-comment'];
 const UNSUPPORTED_OPTIONAL_ACTION = 'Unsupported by this forge adapter; do not offer or attempt this action';
 
 const FORGE_NAME = /^[a-z0-9][a-z0-9-]*$/;

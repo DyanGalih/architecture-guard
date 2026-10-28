@@ -48,9 +48,9 @@ Each forge adapter must define a `## Command Map` table whose first column holds
 
 ### Optional Keys
 
-- Optional Command Map: `review-approve`
+- Optional Command Map: `review-approve`, `pr-reviews`, `pr-comments`, `pr-comment`
 
-Built-in forges define every optional key. A custom forge may leave one out; skills then receive it as unsupported and do not offer that action, so `ag-review-pr` simply does not offer **Approve with comments**.
+Built-in forges define every optional key. A custom forge may leave one out; skills then receive it as unsupported and do not offer that action, so `ag-review-pr` simply does not offer **Approve with comments**, and `ag-pr-feedback` asks you to paste review summaries and general comments and marks its feedback collection `Degraded`.
 
 | Key | Action |
 |---|---|
@@ -58,10 +58,13 @@ Built-in forges define every optional key. A custom forge may leave one out; ski
 | `pr-diff` | Unified diff and the list of changed files |
 | `pr-checkout` | Check out the pull request's head locally without discarding local changes |
 | `pr-threads` | Review threads with id, resolved state, file, line, and each comment's id, author, and body |
+| `pr-reviews` | Optional. Submitted reviews with author, verdict (approved, changes requested, commented, dismissed), summary body, time, and commit, plus each reviewer's current verdict |
+| `pr-comments` | Optional. General conversation comments outside review threads, with id, author, body, and time |
 | `review-post` | Post one comment-only review: a summary plus inline comments. Never approve or request changes |
 | `review-approve` | Optional. Approve the pull request at the recorded head SHA after (or together with) the review comments; used only by `ag-review-pr`'s **Approve with comments** choice |
 | `thread-reply` | Reply to an existing review thread |
 | `thread-resolve` | Mark a review thread resolved |
+| `pr-comment` | Optional. Post one general comment on the pull request, used to answer review summaries and general comments, which have no thread to reply to |
 | `checks-status` | CI and check status for the pull request |
 
 The test suite checks that every built-in forge defines these keys, that this list matches the installer's contract, and that skills only use declared keys.

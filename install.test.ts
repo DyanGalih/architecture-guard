@@ -1539,7 +1539,7 @@ test('forge adapters pass review and reply text through temporary files, never s
   for (const name of ['github', 'gitlab', 'bitbucket', 'azure-devops']) {
     const content = fs.readFileSync(path.join(repoRoot, 'adapters/forges', `${name}.md`), 'utf8');
     const commands = forgeCommands(content);
-    for (const key of ['review-post', 'thread-reply']) {
+    for (const key of ['review-post', 'thread-reply', 'pr-comment']) {
       const value = commands.get(key);
       assert.match(value, /file/, `${name} ${key} passes text through a file`);
       assert.doesNotMatch(value, /=<(reply|comment|body)>/, `${name} ${key} interpolates text into a shell argument`);
@@ -1687,6 +1687,25 @@ test('review-pr installs with the selected forge actions resolved', () => {
   assert.match(skill, /draft_notes\/<draft id>\/publish/);
   assert.match(skill, /never call bulk_publish/);
   assert.match(skill, /glab mr view <iid> -F json/);
+});
+
+test('pr-feedback reads review summaries, verdicts, and general comments, not only threads', () => {
+  const prompt = orchestrationPrompt('pr-feedback.md');
+  const collect = prompt.slice(prompt.indexOf('## Step 2 — Collect Feedback'), prompt.indexOf('## Step 3 — Triage'));
+  for (const key of ['pr-threads', 'pr-reviews', 'pr-comments', 'checks-status']) {
+    assert.match(collect, new RegExp(`\\{forge_command:${key}\\}`), `feedback collection reads ${key}`);
+  }
+  assert.match(collect, /A reviewer whose latest verdict requests changes is outstanding until that reviewer reviews again/);
+  assert.match(collect, /A point that restates an inline thread is the same feedback item as that thread/, 'summary points are merged with their threads');
+  assert.match(collect, /Never report that there is no feedback when a source was not read/);
+  assert.match(collect, /Stop only when there are no unresolved threads, no open review-summary or general-comment items, no failing checks, and no reviewer whose latest verdict requests changes/);
+  assert.match(prompt, /posted with \{forge_command:pr-comment\}/, 'summary points are answered in a general comment');
+  assert.match(prompt, /never dismiss a review or request a re-review on the user's behalf/);
+  const post = prompt.slice(prompt.indexOf('## Step 8 — Post'));
+  assert.match(post, /the reviews with \{forge_command:pr-reviews\}, and the general comments with \{forge_command:pr-comments\} right before posting/);
+  const reviewPr = orchestrationPrompt('review-pr.md');
+  assert.match(reviewPr, /\{forge_command:pr-reviews\}/);
+  assert.match(reviewPr, /\{forge_command:pr-comments\}/);
 });
 
 test('pr-feedback gates every write and only resolves eligible threads when asked', () => {

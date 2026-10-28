@@ -187,7 +187,7 @@ Use `ag-pr-feedback` on your own pull request after reviewers have commented:
 /ag-pr-feedback 123
 ```
 
-1. Collects unresolved review threads and failing checks.
+1. Collects all feedback: unresolved review threads, each reviewer's latest verdict and review summary (points with no thread become their own items, and a changes-requested verdict stays open until the reviewer reviews again), general conversation comments, and failing checks.
 2. Triages each one — **Fix**, **Discuss**, **Disagree**, **Already addressed**, or **Out of scope** — checking every suggestion against your constitutions and, with [story scope](#story-scope-check-jira) configured, the Jira story's acceptance criteria and related tickets, so an out-of-scope reply can name the ticket that already covers the request. It asks you to approve or change the triage.
 3. Applies only the approved fixes, runs your tests and a scoped architecture review of the changes.
 4. Commits and pushes, each with its own approval (never a force-push).
