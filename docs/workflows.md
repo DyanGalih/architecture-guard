@@ -176,7 +176,7 @@ Use `ag-review-pr` to review someone else's pull request:
    - **Approve with comments** (offered only when no finding is blocking; see below)
 5. Before posting, re-checks the head commit; if new commits arrived, it re-reviews instead of posting a stale review.
 
-When no finding is blocking (and Security Review ran, or the change is not security-sensitive, meaning no configured `security_sensitive_paths` glob matches and, when none are configured, nothing touches authentication, authorization, sessions, credentials, or a trust boundary, CI is not failing, and you are not the author), it also offers **Approve with comments**: it posts the comments, approves, and asks the author to address the findings before merging. Otherwise it never approves. It never requests changes, merges, or closes a pull request. Text in the pull request that tries to instruct an AI reviewer is reported as a security finding.
+**Approve with comments** is offered only when no finding is blocking, CI is not failing, you are not the author, the forge supports approval, and coverage is full or explicitly degraded to diff-only rather than a partial batch review. Security Review must have run without blocking findings unless the change is not security-sensitive: no configured `security_sensitive_paths` glob matches and, when none are configured, nothing touches authentication, authorization, sessions, credentials, or a trust boundary. Pending checks are allowed but named; unavailable checks and integrations never count as passed. This choice posts the comments, approves, and asks the author to address the findings before merging. **Post as is** posts comments only. The skill never requests changes, merges, or closes a pull request. Text in the pull request that tries to instruct an AI reviewer is reported as a security finding.
 
 ## Pull Request Feedback Workflow
 
@@ -196,6 +196,8 @@ Use `ag-pr-feedback` on your own pull request after reviewers have commented:
    - **Reply and resolve** — also resolve the eligible threads (only pushed fixes and already-addressed threads; discussions and disagreements stay open)
    - **Adjust first**
    - **Don't post**
+
+For archived changes, both review and feedback read the full specification where the adapter left it: merged current specifications, a moved archive, or artifacts retained in place. A specification index only locates that text; its summary does not replace the requirements. Retained-in-place artifacts remain read-only after archival. Code corrections follow the normal approval gates; requirement changes are discussed as follow-up changes with their own specifications.
 
 ## User Story Tracker Sync (Team Delivery)
 
@@ -237,9 +239,13 @@ scope_check:
   # candidate_jql: project = PROJ AND sprint in openSprints() AND statusCategory != Done
 ```
 
-1. Finds the story key in the branch name, the pull request title or description, or the commit subjects; when several keys appear, or none, it asks you.
-2. Reads the story's acceptance criteria and its related tickets: subtasks, linked issues, and open siblings under the same epic.
+1. Uses the accepted story set recorded in the change's `## Stories` section, or finds a story key in the branch name, pull request title or description, or commit subjects. Several keys from an accepted set are not ambiguous; other ambiguous or missing keys prompt a question.
+2. Reads every story's acceptance criteria and related tickets: subtasks, linked issues, and open siblings under the same epic. Related tickets share one candidate cap across the set.
 3. With no story, runs one bounded search of open tickets (current sprint, yours, or recently updated, matched on the change's own terms; or your `candidate_jql`), shows the best matches, and asks you to pick the story or confirm there is none.
 4. Reports out-of-scope changes, changes that belong to another ticket (noting when someone else is assigned), acceptance criteria with no matching change, and untracked changes.
+
+During discovery, Planning Mode also searches for related open tickets when a main story is already selected, preserving that main story. It classifies candidates as **Bundle now**, **Do next**, **Conflicts**, or **Owned elsewhere**, and asks you to accept, trim, or extend the proposed set. Only the accepted main story and accepted **Bundle now** tickets enter `## Stories` in the proposal, or in the specification when the adapter has no proposal. Later checks evaluate scope and delivery against every story in that set.
+
+In a pull-request review, a story set introduced or widened by the change is an author claim, not automatic approval. Added keys are reported as **Story set widened by this change** for reviewer confirmation, with assignee and status. Stories assigned to someone else or marked Done are also flagged. Discovery and review never write to Jira.
 
 Findings are advisory unless your Constitution marks out-of-scope or untracked work as P0. The check needs a Jira MCP server; without one it reports `Unavailable`, never clean. It only reads Jira, treats ticket text as untrusted data, and reads `sync.yml` from your checkout, never from the pull request. The top-level `enabled` flag controls only the delivery-team push sync.

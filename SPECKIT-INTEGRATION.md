@@ -60,6 +60,10 @@ Existing Spec Kit projects can continue using the `extension.yml` installation a
 
 The extension hooks are optional. In standalone mode, the agent-native command preambles explicitly instruct the agent when to run the equivalent governance checks.
 
+The legacy channel receives safety and breakage fixes, while new features ship in the standalone channel. Its verifier covers the active feature and does not accept `base=<ref>` or apply whole-branch change checks. Its final workflow reports those checks as `Unavailable`; use standalone `ag-verify base=<destination branch>` or `ag-review-pr` for that coverage. Jira discovery story sets and governance suggestions are standalone features.
+
+The standalone Spec Kit adapter archives by retaining feature artifacts in `specs/{feature}/` and updating `specs/system_context.md`. Later feedback reads the full retained specification, using the index only to locate it. Archived artifacts stay read-only even at their original paths; requirement changes go to a separately specified follow-up change.
+
 ## Detection and Overrides
 
 This section applies to standalone installs only. The legacy `extension.yml` commands are self-contained, use Spec Kit paths directly, and never load SDD adapters or accept `--adapter`.

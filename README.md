@@ -6,7 +6,7 @@
 
 > Keep AI-generated code aligned with your architecture, specs, and delivery workflow.
 
-[![Version](https://img.shields.io/badge/version-3.2.0-22c55e)](extension.yml)
+[![Version](https://img.shields.io/badge/version-3.3.0-22c55e)](extension.yml)
 [![OpenSpec](https://img.shields.io/badge/OpenSpec-compatible-8b5cf6)](https://github.com/Fission-AI/OpenSpec)
 [![Spec Kit](https://img.shields.io/badge/Spec%20Kit-compatible-2563eb)](https://spec-kit.dev)
 [![Non-blocking](https://img.shields.io/badge/style-non--blocking-10b981)](https://spec-kit.dev)
@@ -25,6 +25,8 @@ It orchestrates the full delivery path—from discovery and specification throug
 Architecture Guard doesn't just manage files; it actively constraints AI behavior using proven engineering practices:
 
 * **OpenSpec & Spec Kit Governance:** Detects the active SDD tool and applies the matching artifact paths, commands, and gap fills.
+* **Jira Story Scope:** Discovery proposes related stories for you to accept, and specifications record the accepted set for later scope checks. Jira access is read-only during discovery and review. [Story scope guide →](docs/workflows.md#story-scope-check-jira)
+* **Governance Suggestions:** Discovery can propose rule or workflow changes with supporting evidence; applying them requires a separately approved edit. [Discovery workflow →](docs/workflows.md#governed-discovery-workflow)
 * **Ponytail Core:** Applies one shared decision ladder across discovery, planning, tasks, implementation, and review. Includes root-cause caller tracing, a safety floor, and runnable checks for non-trivial logic. *(Inspired by the [Ponytail Pragmatism Skill](https://github.com/DietrichGebert/ponytail))*
 * **DRY Cleanup Guidance:** Prevents agents from blindly copying code. It helps find duplicated business logic, validation, DTO mapping, and orchestration, turning them into small refactor tasks instead of silent drift.
 * **Flash-Mem Context Injection:** Automatically queries [Flash-Mem](https://github.com/spec-kit/flash-mem) first to inject historical architectural decisions before the AI generates any new plans or specs.
@@ -74,12 +76,13 @@ Instead of letting AI agents run wild, Architecture Guard provides structured en
 | **`ag-review-pr`** | Reviewing someone else's pull request | Fetches the pull request from your code host (GitHub, GitLab, Bitbucket, Azure DevOps, or plain git), reviews it against your architecture, security, and hygiene rules, runs Security Review (`sr-branch`) when that separate tool is installed, and drafts a comment-only review that is posted only when you choose. When no finding is blocking, you can instead approve it with comments asking the author to address the findings before merging. |
 | **`ag-pr-feedback`** | Feedback on your own pull request | Triages unresolved review threads and failing checks, applies the fixes you approve, drafts replies, and lets you choose to reply only or reply and resolve. |
 
-*(Note: Granular commands like `ag-governed-spec`, `ag-governed-plan`, and `ag-governed-tasks` are still available if you want manual control. See the [Manual Workflow Guide](docs/manual-workflow-guide.md).)*
+*(Note: Granular commands like `ag-governed-spec`, `ag-governed-plan`, and `ag-governed-tasks` are still available if you want manual control. See the [Workflow Guide](docs/workflows.md).)*
 
 ### Suggested Feature Delivery Flow
 
 ```text
 /ag-governed-discover (optional, to brainstorm an idea)
+  → /ag-governed-spec (creates and clarifies the specification)
   → /ag-governed-delivery (generates or reconciles the plan and tasks)
   → /ag-governed-implement (writes the code)
   → /ag-verify base=main (checks for unapproved drift and runs the same change checks as the pull-request review)
@@ -117,7 +120,7 @@ architecture-guard/
 
 ### Direct Links
 - [Standalone Usage Guide](docs/standalone-usage.md)
-- [Manual Workflow Guide](docs/manual-workflow-guide.md)
+- [Workflow Guide](docs/workflows.md)
 - [Adapter Reference](ADAPTERS.md)
 - [Forge Reference (code hosts and pull-request skills)](FORGES.md)
 - [Spec Kit Integration Guide](SPECKIT-INTEGRATION.md)

@@ -18,7 +18,7 @@ Architecture Guard runs at each intersection:
   - After spec: boundary check, DRY drift detection
   - After design: architecture review, violation detection
   - During apply: task-by-task hygiene check
-  - After archive: final architecture verify
+  - After implementation and before archive: task-to-code and architecture verify
 ```
 
 ## Installation
@@ -50,8 +50,8 @@ Then select:
 | Plan artifact | `specs/{feature}/plan.md` | `openspec/changes/{change}/design.md` |
 | Tasks artifact | `specs/{feature}/tasks.md` | `openspec/changes/{change}/tasks.md` |
 | Clarify step | `/speckit.clarify` | Inline clarification loop |
-| Branch creation | Automatic | Offered as gap fill |
-| Architecture verify | Separate command | Runs after `openspec archive` |
+| Branch creation | Requires explicit approval | Offered as gap fill, with explicit approval |
+| Architecture verify | Before archival | Before `openspec archive` |
 
 ## Gap Fill Actions
 
@@ -59,10 +59,12 @@ OpenSpec does not automatically:
 
 1. **Create git branches** — Architecture Guard offers `git checkout -b` before `openspec new change`.
 2. **Clarify specifications** — After spec creation, Architecture Guard offers interactive clarifications.
-3. **Verify task-to-code evidence** — After archive, Architecture Guard reads tasks.md checkboxes and validates against code.
+3. **Verify task-to-code evidence** — Before archive, Architecture Guard reads tasks.md checkboxes and validates against code. `ag-governed-implement` owns verification; `ag-governed-archive` verifies again before its separately approved archive operation.
 4. **Detect DRY violations** — Architecture Guard scans for duplicated business rules across modules.
 
 ## SDD Adapter Resolution
+
+After archival, pull-request review and feedback read the full merged specifications or archived artifacts where the adapter left them. An index is only a locator, never the requirement text. Archived artifacts remain read-only: code corrections can proceed through approved feedback fixes, while requirement changes are discussed as follow-up changes with their own specifications.
 
 Architecture Guard uses `openspec` when `.architecture-guard/selected-adapter` contains `openspec`. The `openspec/config.yaml` marker is only a fallback when no adapter has been persisted. The `--adapter` value mentioned by installed prompts is a one-command prompt input, not an `architecture-guard init` option.
 
