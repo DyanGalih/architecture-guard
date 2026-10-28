@@ -148,6 +148,7 @@ When you want a single unified command that drives the complete lifecycle intera
    - **🛑 Human Gate 2**: sign off on the implementation evidence.
 5. **Phase 4: Final Review**: confirms the verification run by `ag-governed-implement` covered the whole branch diff against the destination branch (pull-request change checks plus Security Review's branch operation), and reruns `ag-verify base=<destination branch>` only if that result is missing, stale, or used another base. Findings that need code changes return to Phase 3, at most twice.
    - **🛑 Human Gate 3**: approve the final review.
+   - In the SpecKit extension channel (`/speckit.architecture-guard.ag-workflow`), the registered `ag-verify` does not take `base=` or apply the change checks, so the final review reports Change Checks as `Unavailable` and points to the standalone `ag-verify base=<branch>` or `ag-review-pr`.
 6. **Archive**: only after Gate 3, the workflow suggests `ag-governed-archive`.
 
 **Subagents:** the workflow runs sequentially by default on every host. When the host can dispatch a fresh subagent, read-only reviews (loop passes and the final review) may run in one, and the architecture and security halves of a pass may run side by side. Subagents never write artifacts or code, never satisfy a human gate, and are used only when the host really provides them.
