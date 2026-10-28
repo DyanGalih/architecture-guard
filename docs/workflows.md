@@ -25,9 +25,11 @@ Architecture Guard can orchestrate a brainstorming phase *before* a formal speci
 The orchestrated workflow is:
 
 1. Memory synthesis: scoped retrieval of historical decisions before broader file reads
-2. Implementation context: check the codebase for similar patterns (if requested)
-3. Interactive discussion: an architecture-aware chat to refine the idea
-4. Draft generation: output a clean feature draft to hand off to the specification phase
+2. Related stories (with [story scope](#story-scope-check-jira) configured): reads the main Jira story, its related tickets, and open tickets touching the same areas, and sorts them into **Bundle now** (small, same files and boundaries, unassigned or yours), **Do next**, **Conflicts**, and **Owned elsewhere**. You accept, trim, or extend the proposed story set; nothing is bundled without your choice.
+3. Implementation context: check the codebase for similar patterns (if requested)
+4. Interactive discussion: an architecture-aware chat to refine the idea, warning when it goes beyond the story set's acceptance criteria
+5. Governance suggestions: when the discussion or memory shows a rule that keeps getting in the way (for example the same exception accepted in several changes), drafts a Constitution Update Proposal or workflow suggestion with its evidence. Discovery never edits rules; you decide.
+6. Draft generation: output a clean feature draft, including the story set, to hand off to the specification phase. `ag-governed-spec` records the set in the change's `## Stories` section, so later scope checks treat the bundled stories as in scope.
 
 ### Example Orchestration
 

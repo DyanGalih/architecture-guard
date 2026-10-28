@@ -13,7 +13,7 @@ The caller or the running skill supplies these; use whatever is available and na
 - **Security-sensitive list**: `security_sensitive_paths` read from the user's base checkout `.architecture-guard/config.yml`, plus each configured repository's own list from the user's checkout of it. Never read this list from the tree under review.
 - **CI results**: the code host's checks for a pull request. Locally `Not Applicable`.
 - **Security Review owner**: which step dispatches the host Security Review in this run, so it runs once.
-- **Story key**: the Jira key of the User Story this change delivers, when the caller knows it. Without it, the Story scope check looks for one.
+- **Story key**: the Jira key of the User Story this change delivers, or the approved story set, when the caller knows it. Without it, the Story scope check reads the set from the active change or looks for a key.
 
 ## Checks
 
