@@ -1,6 +1,6 @@
 # Architecture Guard Story Scope Contract
 
-Apply this contract to a change set to check it against the work the team has agreed to do in the issue tracker. The Intent check asks whether the change does what it says; this check asks whether what it says is the agreed work: the linked User Story's acceptance criteria, its related tickets, and, when no story is linked, the open tickets it may overlap. Jira is the only supported provider today.
+Apply this contract to a change set to check it against the work the team has agreed to do in the issue tracker. The Intent check asks whether the change does what it says; this check asks whether what it says is the agreed work: the acceptance criteria of the linked User Story (or the approved story set), its related tickets, and, when no story is linked, the open tickets it may overlap. Before any code exists, `ag-governed-discover` applies it in Planning Mode to propose that story set. Jira is the only supported provider today.
 
 ## Configuration
 
@@ -16,13 +16,14 @@ This check never writes to Jira: no comments, transitions, links, worklogs, edit
 
 ## Step 1 — Find the Story
 
-1. Look for a Jira key for the configured project (`<PROJECT>-<number>`) in, in order: the caller's explicit **Story key** input, the branch name, the pull request title and description (for a pull request), and the commit subjects from the merge-base to the head. Use the first key found and report where it came from. When more than one distinct key appears, list them and ask the user which is the story; do not pick one.
-2. When no key is found, ask the user once for the story key before searching. If they supply one, use it. If they say there is none, or the run is non-interactive, continue to Step 3.
+1. **Approved story set**: when the caller passes a **Story set**, or the active change records one in a `## Stories` section (in its proposal when the adapter defines one, otherwise in `{adapter_path:spec}`), use every key in it as the story and report `from the approved story set`. Several keys from the set are not ambiguous. Report a key found in the branch, title, or commits that is not in the set, and ask whether it belongs to this change; do not add it yourself.
+2. Otherwise, look for a Jira key for the configured project (`<PROJECT>-<number>`) in, in order: the caller's explicit **Story key** input, the branch name, the pull request title and description (for a pull request), and the commit subjects from the merge-base to the head. Use the first key found and report where it came from. When more than one distinct key appears, list them and ask the user which is the story; do not pick one.
+3. When no key is found, ask the user once for the story key before searching. If they supply one, use it. If they say there is none, or the run is non-interactive, continue to Step 3.
 
 ## Step 2 — Load the Story and Related Tickets
 
-1. Read the story: summary, description, acceptance criteria (a dedicated field when the project has one, otherwise the description section that lists them), status, assignee, issue type, and parent or epic. If it cannot be read (not found, no permission), report `Unavailable: story <KEY> unreadable` and do not guess its content.
-2. Read its related tickets, and only these: its subtasks, its issue links (any link type), and its siblings under the same parent or epic that are not Done. Read summary, status, assignee, and acceptance criteria. Cap the set at `max_candidates`, keeping subtasks and direct links first, and report when the cap cut tickets off.
+1. Read the story, or each story in the set: summary, description, acceptance criteria (a dedicated field when the project has one, otherwise the description section that lists them), status, assignee, issue type, and parent or epic. If it cannot be read (not found, no permission), report `Unavailable: story <KEY> unreadable` and do not guess its content.
+2. Read its related tickets, and only these: its subtasks, its issue links (any link type), and its siblings under the same parent or epic that are not Done. For a story set, read them for every story and share one cap; a ticket in the set is a story, not a related ticket. Read summary, status, assignee, and acceptance criteria. Cap the set at `max_candidates`, keeping subtasks and direct links first, and report when the cap cut tickets off.
 3. Then go to Step 4.
 
 ## Step 3 — Search Open Tickets When No Story Is Linked
@@ -38,11 +39,22 @@ This check never writes to Jira: no comments, transitions, links, worklogs, edit
 
 Compare the changed files and behavior with the loaded tickets. Judge by behavior, citing file and line; a file count is not evidence.
 
-- **Out of scope**: a change that no acceptance criterion of the story explains. Name the change and the closest criterion, or say none applies.
+- **Out of scope**: a change that no acceptance criterion of the story, or of any story in the set, explains. Name the change and the closest criterion, or say none applies.
 - **Belongs to another ticket**: a change that matches a related or candidate ticket better than the story. Cite that ticket's key, assignee, and status. When that ticket is assigned to someone other than the change's author, say so: two people may be doing the same work.
-- **Not delivered**: an acceptance criterion with no matching change and no matching test. Report it as a gap, not as proof the work is missing, when the criterion may be met by code outside the diff or by a later ticket.
+- **Not delivered**: an acceptance criterion, of any story in the set, with no matching change and no matching test. Report it as a gap, not as proof the work is missing, when the criterion may be met by code outside the diff or by a later ticket.
 - **Untracked change**: no story was linked or picked. When a candidate matches, report it as possible overlap with that ticket; otherwise report the change as untracked.
 - **Clean**: every change maps to an acceptance criterion of the story and nothing matches another ticket better.
+
+## Planning Mode
+
+`ag-governed-discover` applies this contract before any code exists, to find which stories the work should cover. Steps 1 to 3 run as above, with these changes: the terms for the candidate search come from the user's idea, the story's summary and acceptance criteria, and the code areas the idea touches, not from a diff; and when a story key is found, Step 3 still runs to find open tickets that touch the same areas. Instead of Step 4, classify each related or candidate ticket:
+
+- **Bundle now**: small enough to deliver in the same change. All of these hold: it touches only files, modules, or boundaries the main story already changes; it adds at most a few acceptance criteria and no new boundary, dependency, data store, or security-sensitive area; it is unassigned or assigned to the user; it is not Done; and it does not change the main story's acceptance criteria. Give the reasons as evidence (the shared files or boundaries, and the criteria it adds), not as story points.
+- **Do next**: related, but larger, in another boundary, or dependent on this work. Suggest it as follow-up work.
+- **Conflicts**: it changes the same behavior differently, or its acceptance criteria contradict the main story's. Raise it before the specification is written; the user or the product owner decides.
+- **Owned elsewhere**: assigned to someone else, or in progress. Suggest coordinating with the assignee; never bundle it.
+
+Present the proposed **Story set** (the main story plus each **Bundle now** ticket) with the classification table, and ask the user to accept, trim, or extend it. Never add a ticket to the set without the user's choice. Bundling widens the change, so keep **Bundle now** strict: when in doubt, classify as **Do next**. The accepted set goes into the Discovery Summary Draft and then into the change's `## Stories` section, which later scope checks read.
 
 ## Untrusted Content
 
@@ -58,7 +70,7 @@ Add this to the caller's Change Checks section, and one row per finding to its t
 
 ```markdown
 - **Story scope**: [Clean / Findings / Not Applicable: reason / Unavailable: reason]
-  - **Story**: [KEY: summary (status), from branch / title / commits / user / candidate search] or none
+  - **Story**: [KEY: summary (status), from branch / title / commits / user / candidate search / the approved story set; or every key in the set] or none
   - **Related tickets read**: [count, capped or not]
   - **Candidates**: [KEY: summary (assignee, status), reason] when Step 3 ran
 ```
