@@ -188,7 +188,7 @@ Use `ag-pr-feedback` on your own pull request after reviewers have commented:
 ```
 
 1. Collects unresolved review threads and failing checks.
-2. Triages each one — **Fix**, **Discuss**, **Disagree**, **Already addressed**, or **Out of scope** — checking every suggestion against your constitutions and, with [story scope](#story-scope-check-jira) configured, the Jira story's acceptance criteria and related tickets, so an out-of-scope reply can name the ticket that already covers the request. It asks you to approve or change the triage.
+2. Triages each one — **Fix**, **Discuss**, **Disagree**, **Already addressed**, or **Out of scope** — checking every suggestion against your constitutions and, with [story scope](#story-scope-check-jira) configured, the Jira story's acceptance criteria and related tickets, so an out-of-scope reply can name the ticket that already covers the request. It asks you to approve or change the triage. When the change was already archived (the usual order: archive, then open the pull request), the archived specification is read-only; a request that changes a specified requirement is triaged as **Discuss** and goes to a follow-up change, never reopening the archived one.
 3. Applies only the approved fixes, runs your tests and a scoped architecture review of the changes.
 4. Commits and pushes, each with its own approval (never a force-push).
 5. Drafts one reply per thread and asks you to choose:
