@@ -70,7 +70,7 @@ provides:
       description: "Run the governed SpecKit lifecycle from discovery or an active feature through specification, planning, tasks, implementation, verification, and optional archival."
     - name: "speckit.architecture-guard.ag-review-artifacts"
       file: "commands/review-artifacts.md"
-      description: "Review specification and planning artifacts against architectural rules without reading implementation code."
+      description: "Review specification and planning artifacts against architectural rules without reviewing implementation code; it reads only the base-branch locations the artifacts cite, to confirm their premises."
     - name: "speckit.architecture-guard.ag-review-implementation"
       file: "commands/review-implementation.md"
       description: "Review implementation code or pre-implementation planning artifacts against active specifications and constitutions."
