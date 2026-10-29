@@ -1217,13 +1217,21 @@ test('governed-backlog keeps the fixes from its dry run', () => {
 
   // A resume can unpark, diff, and re-approve
   assert.match(prompt, /When the reason no longer holds, set the group back to `planned`/);
-  assert.match(prompt, /a dependency with no pull request is not merged/);
-  assert.match(example, /depends_on: \[\], size: s, title: [^,]+, acceptance:/, 'queue.yml keeps an item snapshot for the resume diff');
+  assert.match(example, /depends_on: \[\], size: s, title: [^,]+, description: [^,]+, acceptance:/, 'queue.yml keeps an item snapshot for the resume diff');
   assert.match(prompt, /On a resume, Steps 2 and 3 and Gate Q run again over the whole queue/);
 
   // Worktrees start from an up-to-date base, and stacked groups never start on an unfinished dependency
   assert.match(prompt, /create every worktree from the fetched remote base \(`origin\/<base>`\)/);
-  assert.match(prompt, /A stacked group whose dependency is not `ready` or `published` by then is parked/);
+  assert.match(prompt, /A stacked group runs only in the second pass after Gate P, once its dependency is `published`/);
+  assert.match(prompt, /a full-lane group always waits/);
+
+  // A dependency can count as merged without a pull request
+  assert.match(prompt, /`git merge-base --is-ancestor <branch> <base>`/);
+  assert.match(prompt, /a dependency that is not `published` is not merged/);
+
+  // The widened fix is an in-scope item, and any item change re-plans its group
+  assert.match(prompt, /the fix joins the group as an extra item with id `<group>-hygiene-<n>`/);
+  assert.match(prompt, /any change to an item of a group that is not yet `published`, re-plan that group/);
 
   // A change with no specification delta stays valid
   assert.match(prompt, /as a change having no specification delta/);
@@ -1236,7 +1244,7 @@ test('governed-backlog keeps the fixes from its dry run', () => {
 
   // A resume keeps what the user approved at Gate Q and notices changed item text
   assert.match(prompt, /The groups recorded in `queue.yml` are kept as approved/);
-  assert.match(prompt, /title, or acceptance criteria changed/);
+  assert.match(prompt, /title, description, or acceptance criteria changed/);
   assert.match(gateS, /its `assumptions`, and its `decisions`/);
   assert.match(gateS, /One with an undecided decision stays `researched`/);
   assert.match(prompt, /Work out the work order: first the full-lane and research groups/);

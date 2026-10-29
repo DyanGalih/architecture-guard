@@ -198,8 +198,13 @@ A group SHALL be parked, and the run SHALL continue with the next group, when it
 
 #### Scenario: Stacked branches opt-in
 
-- **WHEN** the user enabled stacking at Gate Q for a dependent group
-- **THEN** the group branches from its dependency's branch and targets that branch with its pull request, instead of waiting
+- **WHEN** the user enabled stacking at Gate Q for a dependent fix-lane or light-lane group
+- **THEN** the group runs after its dependency was published at Gate P in the same run, branches from the dependency's committed branch, and targets that branch with its pull request, instead of waiting
+
+#### Scenario: Merge detected without a pull request
+
+- **WHEN** a dependency was committed locally because the repository has no remote, or pushed without a pull request because the forge cannot open one
+- **THEN** a later run counts it as merged when its branch is an ancestor of the base or the user confirms the merge, and unparks the waiting group
 
 ### Requirement: Opt-in Beads write-back
 

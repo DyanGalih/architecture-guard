@@ -43,4 +43,6 @@
 - [x] 7.5 Fix the third dry run's findings (unparking, item snapshots, resume re-planning, fetched base for worktrees, stacked groups on unfinished dependencies, `skip_specs` for changes without a spec delta, blockers park before start, work order, expected files) and verify with prompt tests
 - [x] 7.6 Re-run the dry run and verify it raises no new defects in the backlog skill or its template
 - [x] 7.7 Fix the fourth dry run's findings (widen by default instead of a blocked-group deadlock, no blockers for research, Gate Q choices kept on resume, title and acceptance in the snapshot, research decisions at Gate S, temporary base worktree, no-remote path) and verify with prompt tests
-- [ ] 7.8 Re-run the dry run with a resume and verify it raises no new defects in the backlog skill or its template
+- [x] 7.8 Re-run the dry run with a resume and verify it raises no new defects in the backlog skill or its template
+- [x] 7.9 Fix the fifth dry run's findings (merge detection without pull requests, stacking after the dependency's Gate P and only for fix and light lanes, the widened fix as a bundled item, re-planning on any item change, description in the snapshot, hygiene on the fetched base) and verify with prompt tests
+- [ ] 7.10 Re-run the dry run with a resume and verify it raises no new defects in the backlog skill or its template
