@@ -25,6 +25,10 @@ Architecture Guard engine resources are standalone package resources. Never sear
 
 Before continuing, you **MUST** resolve and apply the `ponytail_core` template with `architecture-guard resolve template ponytail_core` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Host Agent Execution
+
+Resolve and apply `agent_execution` with `architecture-guard resolve template agent_execution`. It owns mode activation, delegation decisions, complete handoffs, role restrictions, and ownership. Preserve phase-specific gates below. All retrieval instructions below accept current sufficient run-local context under `budgeted_context_sdd`: reuse it instead of repeating calls. An exposed memory tool is not usable when this run has recorded an absent store; reuse that unavailable outcome until tools or environment change.
+
 ## Capability Composition
 
 Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
@@ -55,6 +59,8 @@ Produce an approved User Story and an implementation-ready `{adapter_path:tasks}
 
 ## Write Approval Gate
 
+Accept an existing caller approval only for the identical action, phase, exact targets, and owning repository under `capability_composition`; distinct human decisions and material scope expansions still require approval.
+
 Before the first mutation, resolve and preview the exact branch, change container, User Story, plan, and task artifacts together with all planned creation, status, linkage, generation, repair, reconciliation, and artifact-review repair operations. Obtain explicit user approval, then allow routine writes already previewed within this team-delivery phase scope without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 
 ## Mandatory Branch Preflight
@@ -81,7 +87,7 @@ Before creating, planning, or modifying any active change:
 
 ## Phase 2 — Mandatory Memory Preflight When Available
 
-When Flash-Mem is available, execute both operations before planning, reviewing, or generating tasks:
+When no current sufficient cached synthesis exists and Flash-Mem is usable under the run-local context contract, execute both operations before planning, reviewing, or generating tasks:
 
 1. `get_project_summary`
 2. `search_memory` scoped to the active feature, architecture boundaries, security-sensitive areas, prior decisions, approved exceptions, and related files

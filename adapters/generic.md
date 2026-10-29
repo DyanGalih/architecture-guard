@@ -57,7 +57,7 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | security-review-plan | Use an optional host Security Review capability or report the skipped review |
 | security-review-tasks | Use an optional host Security Review capability or report the skipped review |
 | security-review-branch | Use an optional host Security Review capability or report the skipped review |
-| subagent-synthesize | Use host delegation when available; otherwise synthesize inline |
+| subagent-synthesize | Use callable host delegation under the agent_execution contract when authorized; otherwise synthesize inline. SDD-native command availability does not determine host capability |
 | list-specs | Inspect `changes/*/spec.md` or ask the user which historical specifications are relevant |
 | consolidate-specs | Unsupported; do not write a fallback index |
 | architecture-apply | Apply plan/tasks findings directly inline; run inline AG-native artifact-fix for upstream findings after user confirmation |

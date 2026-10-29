@@ -1,4 +1,4 @@
-import { access, cp, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { access, cp, lstat, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
 
@@ -70,25 +70,43 @@ async function resolveFramework(root: string, override?: string) {
 }
 
 function archiveGenericChange(changeName: string, root: string, json: boolean) {
-    return archiveChangeDirectory(changeName, path.join(root, 'changes'), 'generic', json);
+    return archiveChangeDirectory(changeName, root, path.join(root, 'changes'), 'generic', json);
 }
 
 function archiveOpenSpecChange(changeName: string, root: string, json: boolean) {
-    return archiveChangeDirectory(changeName, path.join(root, 'openspec', 'changes'), 'openspec', json);
+    return archiveChangeDirectory(changeName, root, path.join(root, 'openspec', 'changes'), 'openspec', json);
 }
 
-async function archiveChangeDirectory(changeName: string, changesDir: string, framework: 'generic' | 'openspec', json: boolean) {
+// A workspace is the trusted anchor. Refuse links in all source and destination components.
+async function rejectArchiveSymlinks(root: string, target: string) {
+    const relative = path.relative(root, target);
+    if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) reportError(`Archive path escapes project: ${target}`);
+    let current = root;
+    for (const part of relative.split(path.sep).filter(Boolean)) {
+        current = path.join(current, part);
+        try {
+            if ((await lstat(current)).isSymbolicLink()) reportError(`Symlink archive path is not allowed: ${current}`);
+        } catch (error) {
+            if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+            throw error;
+        }
+    }
+}
+
+async function archiveChangeDirectory(changeName: string, root: string, changesDir: string, framework: 'generic' | 'openspec', json: boolean) {
     const sourceDir = path.resolve(changesDir, changeName);
     const relativeSource = path.relative(changesDir, sourceDir);
     if (!relativeSource || relativeSource.startsWith('..') || path.isAbsolute(relativeSource)) {
         reportError(`change "${changeName}" must resolve inside ${changesDir}`);
     }
+    await rejectArchiveSymlinks(root, sourceDir);
     if (!await exists(sourceDir)) reportError(`source change directory not found: ${sourceDir}`);
 
     const date = new Date().toISOString().split('T')[0];
     const targetName = /^\d{4}-\d{2}-\d{2}-/.test(changeName) ? changeName : `${date}-${changeName}`;
     const archiveDir = path.join(changesDir, 'archive');
     const targetDir = path.join(archiveDir, targetName);
+    await rejectArchiveSymlinks(root, targetDir);
     if (await exists(targetDir)) reportError(`destination already exists: ${targetDir}`);
 
     await mkdir(archiveDir, { recursive: true });

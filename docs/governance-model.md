@@ -34,38 +34,18 @@ Violations are turned into:
 
 Only rules explicitly marked as `P0` in the architecture constitution should block delivery.
 
-## Sub-Agent Delegation Model
+## Host Agent Execution
 
-Throughout Architecture Guard commands, complex analysis steps can offer optional sub-agent delegation for workload distribution.
+The canonical `agent_execution` template defines three modes: sequential (default), read-only subagents, and coordinated implementation. Coordinated implementation requires explicit selection for the current run; installing roles does not activate it. Callable host capabilities and session policy govern every delegation. Claude keeps its native Agent Teams flag; Codex does not require Claude settings.
 
-### How It Works
-
-When a command encounters analysis marked `[OPTIONAL SUB-AGENT DELEGATION]`:
-
-- the model assesses complexity such as file count, line count, and decision count
-- it decides between inline execution or delegation to a sub-agent
-- explicit `--inline` or `--delegate` flags override the decision
-
-### Decision Criteria
-
-| Scenario | Decision |
+| Work | Delegation threshold when permitted |
 | --- | --- |
-| Fewer than 50 files and fewer than 10,000 lines | Inline execution |
-| 50 files or more, or 10,000 lines or more | Sub-agent execution |
-| 20 or more memory documents | Sub-agent execution |
+| Review analysis | 15 changed files or 500 changed lines |
+| Memory synthesis | 20 relevant memory results or 15 relevant active decision documents |
+| Independent convergence/final review | Prefer a fresh reviewer regardless of size |
 
-### Override Flags
+Below the thresholds execute inline. Explicit inline/delegate preferences affect thresholds only; they cannot override authorization, host capabilities, required permissions, or read-only constraints. These are skill arguments when the host supports them, not standalone CLI flags. A fresh reviewer never recursively delegates the same complete scope.
 
-```bash
-ag-review-artifacts --inline
-/ag-governed-plan --delegate
-```
+Handoffs include the workspace, owning repository, adapter/change, artifact paths, trusted rule sources, constraints, approval scope, and expected evidence; reviews also need changed files, review root, and destination base. The lead assigns files before parallel implementation, serializes overlaps, respects concurrency limits, and merges findings. Unavailable external Security Review remains unavailable.
 
-### Where Delegation Appears
-
-- `ag-review-artifacts` Step 7b — SonarLint code quality scanning
-- `governed-plan.md` Step 2 — Memory synthesis for planning
-- `governed-tasks.md` Step 2 — Memory synthesis for task generation
-- `governed-implement.md` Step 2 — Memory synthesis for implementation
-
-This keeps typical PRs fast while still allowing large refactors to distribute work more thoroughly.
+Context is reused only while current content and trust roots match. Context loss requires reloading; a missing memory store uses repository fallback without repeated identical probes or implicit initialization. Caller approval is reusable only for the identical action, phase, exact targets, and repository. Distinct human gates, expanded scope, memory writes, and external effects still require approval.

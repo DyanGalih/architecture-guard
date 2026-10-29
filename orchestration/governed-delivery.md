@@ -22,6 +22,10 @@ Architecture Guard engine resources are standalone package resources. Never sear
 
 Before continuing, you **MUST** resolve and apply the `ponytail_core` template with `architecture-guard resolve template ponytail_core` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Host Agent Execution
+
+Resolve and apply `agent_execution` with `architecture-guard resolve template agent_execution`. It owns mode activation, delegation decisions, complete handoffs, role restrictions, and ownership. Preserve phase-specific gates below. All retrieval instructions below accept current sufficient run-local context under `budgeted_context_sdd`: reuse it instead of repeating calls. An exposed memory tool is not usable when this run has recorded an absent store; reuse that unavailable outcome until tools or environment change.
+
 ## Capability Composition
 
 Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
@@ -55,6 +59,8 @@ Produce an implementation-ready `{adapter_path:tasks}` from an accepted technica
 
 ## Write Approval Gate
 
+Accept an existing caller approval only for the identical action, phase, exact targets, and owning repository under `capability_composition`; distinct human decisions and material scope expansions still require approval.
+
 Before the first mutation, resolve and preview the exact branch, change container, specification, plan, and task artifacts together with all planned creation, generation, repair, reconciliation, and artifact-review repair operations. Obtain explicit user approval, then allow routine writes already previewed within this delivery phase scope without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 
 ## Mandatory Branch Preflight
@@ -84,7 +90,7 @@ After a new or repaired spec is written, immediately run {adapter_command:valida
 
 ## Phase 2 — Mandatory Memory Preflight When Available
 
-When Flash-Mem is available, execute both operations before planning, reviewing, or generating tasks:
+When no current sufficient cached synthesis exists and Flash-Mem is usable under the run-local context contract, execute both operations before planning, reviewing, or generating tasks:
 
 1. `get_project_summary`
 2. `search_memory` scoped to the active feature, architecture boundaries, security-sensitive areas, prior decisions, approved exceptions, and related files
@@ -144,9 +150,9 @@ The governed task phase must:
 5. Keep implementation, security, migration, and refactor work explicit.
 6. Run task-scope repository hygiene checks with the same configured severity policy.
 
-#### Claude Code Agent Teams Coordination (When Active)
+#### Coordinated Host Roles (When Active)
 
-Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
+Apply this coordination in the explicitly selected coordinated implementation mode defined by `agent_execution`. Claude retains its native activation prerequisites; Codex uses callable host capabilities and its own profile:
 - **Analyst Creator** drafts the plan and role-annotated task breakdown. **Analyst Reviewer** audits it through host messaging and the shared task list. This path bypasses `delivery-team` User Story branching only when stakeholder story approval is not required.
 - **Human-in-the-Loop Gate**: Lead session presents the reconciled `{adapter_path:tasks}` and requires explicit human approval after the Artifact Review Convergence Loop, before concluding delivery or advancing to implementation.
 

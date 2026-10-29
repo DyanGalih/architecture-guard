@@ -25,6 +25,10 @@ Architecture Guard engine resources are standalone package resources. Never sear
 
 Before continuing, you **MUST** resolve and apply the `ponytail_core` template with `architecture-guard resolve template ponytail_core` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Host Agent Execution
+
+Resolve and apply `agent_execution` with `architecture-guard resolve template agent_execution`. It owns mode activation, delegation decisions, complete handoffs, role restrictions, and ownership. Preserve phase-specific gates below. All retrieval instructions below accept current sufficient run-local context under `budgeted_context_sdd`: reuse it instead of repeating calls. An exposed memory tool is not usable when this run has recorded an absent store; reuse that unavailable outcome until tools or environment change.
+
 ## Capability Composition
 
 Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
@@ -52,6 +56,8 @@ Provide a single command that ensures:
 ## Orchestration Flow
 
 ### Write Approval Gate
+
+Accept an existing caller approval only for the identical action, phase, exact targets, and owning repository under `capability_composition`; distinct human decisions and material scope expansions still require approval.
 
 Before the first mutation, resolve and preview the exact target plan and constraint artifacts together with all planned generation, correction, and constraint-write operations. Obtain explicit user approval, then allow routine writes already previewed within this planning phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 
@@ -85,18 +91,7 @@ If Flash-Mem is unavailable or the context is insufficient, rely on the Constitu
 When Flash-Mem MCP is unavailable but the Memory MD CLI detected in Step 1 is present, use that CLI for supported local context preparation, search, or synthesis before falling back to repository artifacts. Inspect its help once when command syntax is needed; do not search for an MCP wrapper or a global/shared publication tool.
 
 **[OPTIONAL SUB-AGENT DELEGATION]**
-* **Capability Gate:** Detect a host synthesis/delegation capability independently of the adapter command map. If unavailable, execute inline regardless of size and report the degraded path.
-* **Trigger Condition:** When the capability is available, you **MUST** delegate memory retrieval and synthesis if:
-  - The Flash-Mem index contains $\ge 20$ memory documents.
-  - OR the project repository contains $\ge 15$ active ADRs/docs.
-  - Otherwise, you **MUST** execute inline.
-* **Execution:** Invoke the host capability directly with the handoff below and architecture-boundary context. Do not append flags to {adapter_command:subagent-synthesize} or execute adapter fallback prose.
-* **Strict Handoff Template:** Format the sub-agent prompt exactly like this:
-  ```yaml
-  Task: Retrieve and synthesize relevant architecture constraints and ADRs.
-  Focus: Architecture boundaries and project standards.
-  Expected Output: Synthesized markdown summary of key constraints to apply to the technical plan.
-  ```
+Apply the shared `agent_execution` policy for relevant memory synthesis and invoke callable host delegation directly. Complete every applicable handoff field before dispatch; do not execute the adapter-defined "subagent-synthesize" fallback prose as a command.
 
 
 ---
@@ -124,9 +119,9 @@ You must orchestrate {adapter_command:create-plan} workflow directly.
 3. The planning process must incorporate the Constitution Inputs and memory synthesis. Use Flash-Mem first when available.
 4. Prefer the cached synthesis and selected index entries over reopening the full durable memory set.
 
-#### Claude Code Agent Teams Coordination (When Active)
+#### Coordinated Host Roles (When Active)
 
-Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
+Apply this coordination in the explicitly selected coordinated implementation mode defined by `agent_execution`. Claude retains its native activation prerequisites; Codex uses callable host capabilities and its own profile:
 - **Analyst Creator** drafts the technical design artifact at `{adapter_path:plan}` and decomposes requirements.
 - **Analyst Reviewer** audits the artifacts against the constitutions, Ponytail pragmatism, DRY boundaries, and security constraints through host messaging.
 - **Lead Session** resolves review findings, synthesizes the final plan, and pauses for explicit human approval before task generation.

@@ -148,3 +148,13 @@ architecture-guard/
 The standalone orchestrator is the primary experience, and all new features ship there. The legacy Spec Kit extension (`extension.yml` installation) remains available for existing Spec Kit users with limited support: it receives safety and breakage fixes only, not new features. New Spec Kit projects should use the standalone installer with `--framework spec-kit`.
 
 If your project is already centered on Spec Kit, you can continue installing Architecture Guard as a native Spec Kit extension. See the [Spec Kit Integration Guide](SPECKIT-INTEGRATION.md).
+
+### Codex execution
+
+Install skills and optional native roles with `architecture-guard init . --yes --agent codex --framework openspec --codex-agents`. The flag is optional: interactive CLI setup asks whether to install roles and lets you select a roster and model. Refresh roles with `architecture-guard sync-team-roles --agent codex`; configure the roster in `.architecture-guard/codex-agents.yml`. Claude profiles and flags remain separate.
+
+Sequential execution is the default. Read-only review subagents require callable host tools and session authorization; coordinated implementation requires explicit selection each run, verified role restrictions, and non-overlapping file ownership. Role installation never activates a mode. Parent permissions apply; Codex role files cannot override sandbox, approval, or MCP settings. Unsupported required restrictions prevent role activation.
+
+Shared contracts govern delegation, complete handoffs, current-context reuse, and exact-scope approval reuse. Distinct human gates and external effects retain approval. See [setup and permission details](docs/standalone-usage.md#codex-roles) and [execution policy](docs/governance-model.md#host-agent-execution). Fixture tests do not prove runtime host enforcement; unavailable host/security checks are reported explicitly.
+
+Resource overrides and generic/OpenSpec archive paths must not contain symbolic links below the workspace root; the CLI rejects them to prevent paths escaping the workspace. These checks assume the workspace is not concurrently modified by an untrusted process while the CLI runs.

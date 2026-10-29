@@ -1,5 +1,14 @@
 ## Unreleased
 
+## Unreleased — Codex governed execution
+
+- Add opt-in native Codex role setup and explicit role sync targeting; preserve Claude defaults and user-owned configuration.
+- Share three execution modes, delegation thresholds, complete handoffs, ownership, and independent-review policy across canonical skills.
+- Reuse current context and exact-scope approvals while retaining separate human gates and external-effect approval.
+- Distinguish native feature reductions from behavioral guidance; parent sandbox, approval, and MCP settings are not per-role overrides.
+- Runtime Codex role discovery/enforcement and independent Security Review require separate evidence; fixture checks alone do not establish them.
+
+
 ## 3.3.1
 
 - **`ag-pr-feedback` reads the whole review, not only threads**: it now also reads each review's summary body and verdict and the general conversation comments, through new optional forge keys `pr-reviews`, `pr-comments`, and `pr-comment` (defined for GitHub, GitLab, Bitbucket, Azure DevOps, and plain git). Summary points that restate a thread are merged with it; points with no thread become their own items and are answered in one general comment per reviewer. A changes-requested verdict keeps the pass open until that reviewer reviews again, even when every thread is resolved. Previously a pass with no unresolved threads and no failing checks stopped and reported no feedback, missing findings stated only in a review summary. A custom forge without the new keys makes the skill ask you to paste them and report `Degraded`. `ag-review-pr` reads the same sources and now de-duplicates against all of them, not only threads.

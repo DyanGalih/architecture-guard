@@ -60,6 +60,24 @@ function ensureWithinBounds(targetPath: string, allowedDirs: string[]): boolean 
   });
 }
 
+// Treat the workspace/package root as the trusted anchor; reject links below it, including dangling links.
+function rejectSymlinks(root: string, target: string): void {
+  const relative = path.relative(root, target);
+  if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error(`Resource path escapes root: ${target}`);
+  }
+  let current = root;
+  for (const part of relative.split(path.sep).filter(Boolean)) {
+    current = path.join(current, part);
+    try {
+      if (fs.lstatSync(current).isSymbolicLink()) throw new Error(`Symlink resource path is not allowed: ${current}`);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+      throw error;
+    }
+  }
+}
+
 export function resolveResource(
   rawCategory: string,
   rawName?: string,
@@ -89,6 +107,7 @@ export function resolveResource(
     ];
 
     for (const candidate of candidatePaths) {
+      rejectSymlinks(targetDir, candidate);
       if (fs.existsSync(candidate)) {
         return {
           category: 'manifest',
@@ -129,6 +148,7 @@ export function resolveResource(
   for (const dir of localDirs) {
     for (const ext of extensionsToTry) {
       const candidate = path.join(dir, `${cleanName}${ext}`);
+      rejectSymlinks(targetDir, candidate);
       if (ensureWithinBounds(candidate, allowedDirs) && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
         return {
           category: normalizedCategory,
@@ -144,6 +164,7 @@ export function resolveResource(
   // 2. Fall back to bundled package resources
   for (const ext of extensionsToTry) {
     const candidate = path.join(bundledDir, `${cleanName}${ext}`);
+    rejectSymlinks(ROOT_DIR, candidate);
     if (ensureWithinBounds(candidate, allowedDirs) && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
       return {
         category: normalizedCategory,
@@ -178,8 +199,10 @@ export function listCategoryResources(
 
   // Bundled
   const bundledDir = path.join(ROOT_DIR, normalizedCategory);
+  rejectSymlinks(ROOT_DIR, bundledDir);
   if (fs.existsSync(bundledDir)) {
     for (const file of fs.readdirSync(bundledDir)) {
+      rejectSymlinks(ROOT_DIR, path.join(bundledDir, file));
       if (fs.statSync(path.join(bundledDir, file)).isFile()) {
         items.add(file);
       }
@@ -192,8 +215,10 @@ export function listCategoryResources(
     path.join(targetDir, 'ag', normalizedCategory),
   ];
   for (const localDir of localDirs) {
+    rejectSymlinks(targetDir, localDir);
     if (fs.existsSync(localDir)) {
       for (const file of fs.readdirSync(localDir)) {
+        rejectSymlinks(targetDir, path.join(localDir, file));
         if (fs.statSync(path.join(localDir, file)).isFile()) {
           items.add(file);
         }

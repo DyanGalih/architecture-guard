@@ -68,7 +68,7 @@ When this adapter is selected, establish one `CHANGE_ID` before running any Open
 | security-review-plan | Not part of OpenSpec; detect the optional Security Review host capability or report the skipped review |
 | security-review-tasks | Not part of OpenSpec; detect the optional Security Review host capability or report the skipped review |
 | security-review-branch | Not part of OpenSpec; detect the optional Security Review host capability or report the skipped review |
-| subagent-synthesize | Unsupported natively; synthesize inline unless the host exposes an equivalent capability |
+| subagent-synthesize | Use callable host delegation under the agent_execution contract when authorized; otherwise synthesize inline. SDD-native command availability does not determine host capability |
 | list-specs | Run `openspec list --specs --json` to list durable capability specs; for in-flight change-level specs, run `openspec list --json` to list changes and read `openspec/changes/<change>/specs/*/spec.md`. Never treat a capability name as a change identifier |
 | consolidate-specs | Unsupported: use `list-specs` as the fallback index and do not write a consolidated artifact |
 | architecture-apply | Apply plan/tasks findings directly inline; delegate upstream findings (`proposal.md`, `spec.md`) to `openspec-update-change` (or native update capability) with finding details as input context after user confirmation |
