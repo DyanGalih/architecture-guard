@@ -1068,18 +1068,25 @@ test('validate-backlog accepts the example and rejects invalid backlogs', () => 
     ['unknown-key.yml', `items:\n${item('A', '    owner: me\n')}`, /owner/],
     ['bad-priority.yml', 'items:\n  - id: A\n    type: task\n    priority: urgent\n    title: A\n', /priority/],
     ['empty.yml', 'items: []\n', /items/],
+    ['self-dep.yml', `items:\n${item('A', '    depends_on: [A]\n')}`, /A depends on itself/],
+    ['self-group-dep.yml', `items:\n${item('A', '    group: g1\n    depends_on: [g1]\n')}`, /A depends on itself/],
+    ['empty-slug-id.yml', `items:\n${item('___')}`, /becomes a change name/],
+    ['empty-slug-group.yml', `items:\n${item('A', '    group: ...\n')}`, /becomes a change name/],
   ]) {
     fs.writeFileSync(path.join(cwd, name), yaml);
     const result = spawnSync(process.execPath, [installer, 'validate-backlog', name], { cwd, encoding: 'utf8' });
     assert.notEqual(result.status, 0, `${name} must be rejected`);
     assert.match(result.stderr, message, name);
   }
+  fs.writeFileSync(path.join(cwd, 'same-group.yml'), `items:\n${item('A', '    group: g1\n    depends_on: [B]\n')}${item('B', '    group: g1\n')}`);
+  const sameGroup = spawnSync(process.execPath, [installer, 'validate-backlog', 'same-group.yml'], { cwd, encoding: 'utf8' });
+  assert.equal(sameGroup.status, 0, sameGroup.stderr);
   const missing = spawnSync(process.execPath, [installer, 'validate-backlog', 'nope.yml'], { cwd, encoding: 'utf8' });
   assert.notEqual(missing.status, 0);
   assert.match(missing.stderr, /Backlog not found/);
 });
 
-test('governed-backlog queues groups through lanes with three batched gates', () => {
+test('governed-backlog queues groups through lanes with four batched gates', () => {
   const root = path.join(__dirname, '..');
   const prompt = fs.readFileSync(path.join(root, 'orchestration', 'governed-backlog.md'), 'utf8');
   const contract = fs.readFileSync(path.join(root, 'templates', 'backlog_item.md'), 'utf8');
@@ -1091,7 +1098,7 @@ test('governed-backlog queues groups through lanes with three batched gates', ()
   const gateQ = prompt.indexOf('### Human Gate Q');
   const gateS = prompt.indexOf('### Human Gate S');
   const gateP = prompt.indexOf('### Human Gate P');
-  assert.ok(gateQ < prompt.indexOf('### Step 4') && prompt.indexOf('### Step 4') < gateS && gateS < prompt.indexOf('### Step 5') && prompt.indexOf('### Step 5') < gateP, 'gates run in order Q, S, P');
+  assert.ok(gateQ < prompt.indexOf('### Step 4') && prompt.indexOf('### Step 4') < gateS && gateS < prompt.indexOf('### Step 5') && prompt.indexOf('### Step 5') < prompt.indexOf('### Human Gate I') && prompt.indexOf('### Human Gate I') < prompt.indexOf('### Step 6') && prompt.indexOf('### Step 6') < gateP, 'gates run in order Q, S, I, P');
   assert.match(prompt, /Start no group before this approval/);
 
   // Sources, in order, and Flash-Mem is context only
@@ -1101,10 +1108,21 @@ test('governed-backlog queues groups through lanes with three batched gates', ()
   assert.match(prompt, /Never store backlog items or their status in Flash-Mem/);
 
   // Lanes and their capability order
-  const step5 = prompt.slice(prompt.indexOf('### Step 5'), gateP);
-  assert.match(step5, /\*\*Full lane\*\*: run `ag-governed-delivery`, then `ag-governed-implement`/);
-  assert.match(step5, /\*\*Fix lane\*\*:[^\n]*fails for its cause before any fix\. Then run `ag-governed-tasks` and `ag-governed-implement`/);
-  assert.match(step5, /\*\*Light lane\*\*:[^\n]*`ag-governed-tasks` and `ag-governed-implement`\. Do not write a new specification/);
+  const step5 = prompt.slice(prompt.indexOf('### Step 5'), prompt.indexOf('### Human Gate I'));
+  assert.match(step5, /\*\*Full lane\*\*: run `ag-governed-delivery`/);
+  assert.match(step5, /\*\*Fix lane\*\*:[^\n]*then run `ag-governed-tasks`\. Its tasks start with reproducing each bug/);
+  assert.match(step5, /\*\*Light lane\*\*:[^\n]*then run `ag-governed-tasks`\. Do not write a new specification/);
+  assert.match(step5, /never code or tests/);
+  assert.doesNotMatch(step5, /`ag-governed-implement`[^']/);
+  // Gate I previews the exact implementation scope; implement accepts only that caller approval
+  const gateI = prompt.slice(prompt.indexOf('### Human Gate I'), prompt.indexOf('### Step 6'));
+  assert.match(gateI, /every `tasked` group together, with its implementation scope/);
+  const step6 = prompt.slice(prompt.indexOf('### Step 6'), gateP);
+  assert.match(step6, /run `ag-governed-implement`, passing the Gate I approval as the caller approval/);
+  assert.match(step6, /covers only the files and operations Gate I showed/);
+  for (const file of ['governed-implement.md', 'governed-tasks.md', 'governed-delivery.md']) {
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'orchestration', file), 'utf8'), /\*\*Caller approval\*\*: [^\n]*covers only what that preview showed/, file);
+  }
   assert.match(prompt, /For each `planned` research group, set it to `specifying` and run `ag-governed-discover` read-only/);
   for (const row of ['| story, feature | full |', '| bug, defect | fix |', '| spike | research |']) {
     assert.ok(contract.includes(row), `lane map row ${row}`);
@@ -1113,12 +1131,12 @@ test('governed-backlog queues groups through lanes with three batched gates', ()
 
   // Every park trigger, and parking does not stop the run
   for (const trigger of [/review convergence loop ends with findings left/, /Security Review reports a blocking finding/, /product or architecture decision/, /verification fails/, /depends on was parked or skipped/]) {
-    assert.match(step5, trigger);
+    assert.match(step6, trigger);
   }
-  assert.match(step5, /Never let one group's failure stop the run/);
+  assert.match(step6, /Never let one group's failure stop the run/);
 
   // Gate P carries archive's push and pull request approvals per group
-  const publish = prompt.slice(gateP, prompt.indexOf('### Step 6'));
+  const publish = prompt.slice(gateP, prompt.indexOf('### Step 7'));
   assert.match(publish, /approves each group separately/);
   for (const field of ['repository', 'remote', 'branch', 'base branch', 'title and description']) {
     assert.ok(publish.includes(field), `Gate P must name the ${field}`);
@@ -1178,6 +1196,16 @@ test('governed-backlog keeps the fixes from its dry run', () => {
   assert.match(gateS, /A presented research group becomes `done`/);
   assert.doesNotMatch(prompt, /ends as `published` with no branch/);
 
+  // A phase's required confirmation parks the group instead of being crossed for the user
+  assert.match(prompt, /never cross it on the user's behalf/);
+  assert.match(prompt, /park the group with the reason `needs confirmation: <question>`/);
+  assert.doesNotMatch(prompt, /continue only when what follows writes nothing outside the group's worktree/);
+  assert.match(gateS, /every group parked with `needs confirmation`/);
+
+  // Research groups open no pull request, so their beads are never closed by the queue
+  assert.match(gateS, /its beads are never closed by this command/);
+  assert.doesNotMatch(gateS, /bd close/);
+
   // Gate Q shows the change name, known blockers, and the queue.yml write
   const gateQ = prompt.slice(prompt.indexOf('### Human Gate Q'), prompt.indexOf('### Step 4'));
   assert.match(gateQ, /group id \(the change name\)/);
@@ -1191,7 +1219,7 @@ test('governed-backlog keeps the fixes from its dry run', () => {
 
   // Branch prefix per lane, and bugs keep the failing-test rule in the full lane
   assert.match(prompt, /full: `feat\/<group>`, fix: `fix\/<group>`, light: `chore\/<group>`/);
-  assert.match(prompt, /\*\*Full lane\*\*:[^\n]*For each bug item, reproduce the bug and add a test that fails/);
+  assert.match(prompt, /### Step 6[\s\S]*For each bug item, reproduce the bug and add a test that fails/);
 
   // A forge that cannot report merge state makes the queue ask
   assert.match(prompt, /When the forge cannot report merge state[^\n]*ask the user whether each pull request in question has merged/);

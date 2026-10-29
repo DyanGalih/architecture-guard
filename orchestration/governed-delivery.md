@@ -55,7 +55,7 @@ Produce an implementation-ready `{adapter_path:tasks}` from an accepted technica
 
 ## Write Approval Gate
 
-Before the first mutation, resolve and preview the exact branch, change container, specification, plan, and task artifacts together with all planned creation, generation, repair, reconciliation, and artifact-review repair operations. Obtain explicit user approval, then allow routine writes already previewed within this delivery phase scope without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+Before the first mutation, resolve and preview the exact branch, change container, specification, plan, and task artifacts together with all planned creation, generation, repair, reconciliation, and artifact-review repair operations. Obtain explicit user approval, then allow routine writes already previewed within this delivery phase scope without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval. **Caller approval**: when a calling skill passes an approval whose preview showed this phase's exact branch, change container, and specification, plan, and task artifacts and operations (for example `ag-governed-backlog`'s Gate Q), that approval satisfies this gate and is not asked again. It covers only what that preview showed; anything else still needs its own preview and approval.
 
 ## Mandatory Branch Preflight
 

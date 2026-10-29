@@ -6,7 +6,12 @@ import { z } from 'zod';
 export const BACKLOG_TYPES = ['story', 'feature', 'bug', 'task', 'chore', 'spike'] as const;
 export const BACKLOG_PRIORITIES = ['highest', 'high', 'medium', 'low', 'lowest'] as const;
 
-const id = z.string().regex(/^[A-Za-z0-9._-]+$/, 'use letters, digits, dot, underscore, or hyphen');
+// Group ids become change, branch, and worktree names (templates/backlog_item.md)
+export const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+const id = z.string()
+  .regex(/^[A-Za-z0-9._-]+$/, 'use letters, digits, dot, underscore, or hyphen')
+  .refine(value => slug(value) !== '', 'needs at least one letter or digit, because it becomes a change name');
 
 // Local fallback backlog for ag-governed-backlog (see templates/backlog_item.md)
 const itemSchema = z.object({
@@ -40,7 +45,9 @@ const backlogSchema = z.object({
   }
   backlog.items.forEach((item, index) => {
     (item.depends_on ?? []).forEach((target, depIndex) => {
-      if (!itemIds.has(target) && !groupIds.has(target)) {
+      if (target === item.id || target === item.group) {
+        ctx.addIssue({ code: 'custom', path: ['items', index, 'depends_on', depIndex], message: `${item.id} depends on itself` });
+      } else if (!itemIds.has(target) && !groupIds.has(target)) {
         ctx.addIssue({ code: 'custom', path: ['items', index, 'depends_on', depIndex], message: `unknown dependency ${target}` });
       }
     });

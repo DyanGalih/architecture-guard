@@ -54,7 +54,7 @@ Provide a single command that ensures:
 
 ### Write Approval Gate
 
-Before the first mutation, resolve and preview the working branch and the exact code, test, and task artifacts together with all planned implementation, test, and task-checkbox operations. Obtain explicit user approval, then allow routine writes already previewed within this implementation phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+Before the first mutation, resolve and preview the working branch and the exact code, test, and task artifacts together with all planned implementation, test, and task-checkbox operations. Obtain explicit user approval, then allow routine writes already previewed within this implementation phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval. **Caller approval**: when a calling skill passes an approval whose preview showed this phase's exact branch, code, test, and task files and operations (for example `ag-governed-backlog`'s Gate I), that approval satisfies this gate and is not asked again. It covers only what that preview showed; anything else still needs its own preview and approval.
 
 ### Constitution Inputs
 
