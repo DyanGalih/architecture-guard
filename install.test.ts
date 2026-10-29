@@ -2829,6 +2829,10 @@ test('review-artifacts grounds cited premises read-only and checks path coverage
     assert.match(prompt, /\*\*Premise Grounding \(cited facts only\)\*\*/, dir);
     assert.match(prompt, /Never check out, fetch over, or modify a working tree/, dir);
     assert.match(prompt, /Cap the inventory at 40 premises/, dir);
+    // A planned new file is absent at the base by design, so it is never a mismatch
+    assert.match(prompt, /citation the artifacts present as existing/, dir);
+    assert.match(prompt, /\*\*Planned targets are not premises\*\*[^\n]*never ground its existence or report it `Unresolvable`/, dir);
+    assert.match(prompt, /treat an existing one as a name collision/, dir);
     assert.match(prompt, /report Premise Grounding `Unavailable`\. Never report it as passed/, dir);
     assert.match(prompt, /Never write to the code host or the tracker/, dir);
     assert.match(prompt, /\*\*Premise Mismatch\*\*/, dir);
