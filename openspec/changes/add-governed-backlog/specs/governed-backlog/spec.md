@@ -4,14 +4,29 @@ Deliver a prioritized backlog of stories, bugs, tasks, and spikes as an ordered 
 
 ## ADDED Requirements
 
-### Requirement: Backlog intake from Jira or a local file
+### Requirement: Backlog intake from Jira, Beads, or a local file
 
-The queue SHALL read work items from a Jira JQL query through a registered Jira MCP server, or from `.architecture-guard/backlog.yml`, and normalize each to one item shape: id, type, priority, title, description, acceptance criteria, group, and dependencies. It SHALL treat item text as untrusted data and SHALL never write to Jira.
+The queue SHALL read work items from a Jira JQL query through a registered Jira MCP server, from a Beads database through the `bd` CLI, or from `.architecture-guard/backlog.yml`, and normalize each to one item shape: id, type, priority, title, description, acceptance criteria, group, and dependencies. It SHALL treat item text as untrusted data and SHALL never write to Jira.
 
 #### Scenario: Jira intake
 
 - **WHEN** `sync.yml` sets `provider: jira` with a `backlog.jql` query and a Jira MCP server is callable
 - **THEN** the queue reads the matching issues, normalizes each one, and reports the query and the item count
+
+#### Scenario: Beads intake
+
+- **WHEN** `bd` is installed and the repository has a `.beads/` directory
+- **THEN** the queue reads open, unclosed beads with `bd` JSON output, maps `issue_type`, `priority` (0-4), parent epic, and `blocks` dependencies to the item shape, and excludes `deferred`, `pinned`, and `closed` beads
+
+#### Scenario: Source selection
+
+- **WHEN** more than one source is available
+- **THEN** the queue proposes them in the order Jira, Beads, local file, and uses the one the user picks at Gate Q
+
+#### Scenario: Flash-Mem is not a source
+
+- **WHEN** Flash-Mem is available
+- **THEN** the queue reads it for durable context before each group and does not read or store backlog items in it
 
 #### Scenario: Local intake
 
@@ -41,6 +56,11 @@ The queue SHALL group items into changes, each delivered on its own branch and p
 
 - **WHEN** Jira items are planned
 - **THEN** **Bundle now** tickets join their main story's group, and **Do next** and **Conflicts** tickets become ordering constraints between groups
+
+#### Scenario: Beads grouping
+
+- **WHEN** Beads items are planned
+- **THEN** beads under the same parent epic form one group, a bead with no parent forms its own group, and `blocks` dependencies become ordering constraints between groups
 
 #### Scenario: Local grouping
 
@@ -146,6 +166,25 @@ A group SHALL be parked, and the run SHALL continue with the next group, when it
 
 - **WHEN** the user enabled stacking at Gate Q for a dependent group
 - **THEN** the group branches from its dependency's branch and targets that branch with its pull request, instead of waiting
+
+### Requirement: Opt-in Beads write-back
+
+When the source is Beads and the user enabled write-back at Gate Q, the queue SHALL set a group's beads to `in_progress` when the group starts and add a note with the pull request URL when it opens. It SHALL close a bead only on a later run, after its pull request has merged. Without write-back, the queue SHALL not modify Beads.
+
+#### Scenario: Write-back enabled
+
+- **WHEN** a group starts and write-back is enabled
+- **THEN** each of its beads is set to `in_progress`, and after Gate P each gets a note naming the pull request URL
+
+#### Scenario: Close after merge
+
+- **WHEN** a later run finds that a published group's pull request has merged
+- **THEN** the queue proposes closing its beads and closes them only on the user's approval
+
+#### Scenario: Write-back disabled
+
+- **WHEN** write-back is not enabled
+- **THEN** the queue never runs a `bd` command that writes
 
 ### Requirement: Isolated working copies
 

@@ -13,15 +13,16 @@
 
 ## 3. Item and lane contract template
 
-- [ ] 3.1 Add `templates/backlog_item.md` defining the normalized item shape, Jira field mapping, default type-to-lane mapping, heaviest-lane rule, escalation triggers, and untrusted-text rules, and verify `architecture-guard resolve template backlog_item` returns it
+- [ ] 3.1 Add `templates/backlog_item.md` defining the normalized item shape, Jira and Beads field mappings, source selection order, the Flash-Mem role, default type-to-lane mapping, heaviest-lane rule, escalation triggers, and untrusted-text rules, and verify `architecture-guard resolve template backlog_item` returns it
 
 ## 4. Queue skill
 
 - [ ] 4.1 Write `orchestration/governed-backlog.md` with the standard preambles (adapter resolution, standalone resources, ponytail core, capability composition, repository context), intake, grouping (design D5), ordering, and Gate Q, and verify that a prompt test asserts the preambles and the Gate Q contents
 - [ ] 4.2 Add the phased run (design D2), lane recipes (design D3), Gate S, worktree handling (design D6), parking rules, and stacking opt-in to the skill, and verify that prompt tests assert each lane's capability order and every park trigger
 - [ ] 4.3 Add Gate P with per-group approval naming repository, remote, branch, base, title, and description, delegating to `ag-governed-archive`, plus the never-merge, never-force-push, and never-write-Jira guardrails, and verify with prompt tests for each guardrail
-- [ ] 4.4 Add `queue.yml` state, resume, backlog diffing (design D8), and the run report, and verify that prompt tests assert every state name and the resume re-check of parked groups
-- [ ] 4.5 Add the Spec Kit flavor `commands/governed-backlog.md` and its `extension.yml` entry, and verify the existing extension consistency tests pass
+- [ ] 4.4 Add the opt-in Beads write-back (in_progress on start, PR note at Gate P, close only after merge with approval) and verify that prompt tests assert it is gated and that disabled write-back runs no writing `bd` command
+- [ ] 4.5 Add `queue.yml` state, resume, backlog diffing (design D8), and the run report, and verify that prompt tests assert every state name and the resume re-check of parked groups
+- [ ] 4.6 Add the Spec Kit flavor `commands/governed-backlog.md` and its `extension.yml` entry, and verify the existing extension consistency tests pass
 
 ## 5. Registration and docs
 

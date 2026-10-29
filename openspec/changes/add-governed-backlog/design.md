@@ -71,9 +71,22 @@ items:
 
 Validated by `architecture-guard validate-backlog [path]` with zod in strict mode: unknown keys, duplicate ids, unknown `depends_on` targets, and cycles are errors. Jira items normalize to the same shape: priority from the Jira priority field, size from story points when present.
 
+### D4b. Intake sources and their roles
+
+| Source | Read | Write | Chosen when |
+|---|---|---|---|
+| Jira | Jira MCP server, `sync.yml` `backlog.jql` | never | `provider: jira` |
+| Beads | `bd list --json` / `bd show --json` / `bd dep list --json` | opt-in: `bd update --status in_progress`, `bd note`, `bd close` after merge | `bd` on PATH and `.beads/` present |
+| Local | `backlog.yml` | never (the user edits it) | fallback |
+| Flash-Mem | durable context per group | durable lessons only (root causes, park reasons that reflect a constraint) | never a backlog source |
+
+Flash-Mem is excluded as a source because its contract stores validated, durable knowledge, not transient status, and it has no priority, dependency, or readiness model. Beads mapping: `issue_type` story/feature/bug/task/chore/spike/epic → type (epics become groups, not items); `priority` 0-4 → highest..lowest; parent epic → `group`; `blocks` dependencies → `depends_on`. Beads text is untrusted like ticket text. Readiness comes from the queue's own ordering over the full open set, not from `bd ready`, because a group can contain items `bd ready` reports as blocked only by other items in the same group.
+
+Beads write-back is opt-in at Gate Q because the database is shared through git with the team. Each write is a single named `bd` command shown in the Gate Q plan.
+
 ### D5. Grouping
 
-Jira: run `story_scope` Planning Mode once per candidate main story, highest priority first. A ticket claimed as **Bundle now** by a higher-priority story is not reconsidered. **Do next** becomes `depends_on` from the later group to the earlier one, and **Conflicts** becomes an ordering edge in priority order. **Owned elsewhere** tickets are excluded and listed at Gate Q. Local: the `group` field. In both cases a file-overlap hint (files named in descriptions plus paths matched from item terms) proposes merges at Gate Q. It never applies them.
+Beads: one group per parent epic, one group per parentless bead. Jira: run `story_scope` Planning Mode once per candidate main story, highest priority first. A ticket claimed as **Bundle now** by a higher-priority story is not reconsidered. **Do next** becomes `depends_on` from the later group to the earlier one, and **Conflicts** becomes an ordering edge in priority order. **Owned elsewhere** tickets are excluded and listed at Gate Q. Local: the `group` field. In both cases a file-overlap hint (files named in descriptions plus paths matched from item terms) proposes merges at Gate Q. It never applies them.
 
 ### D6. Worktree per group, created beside the repository
 
@@ -87,7 +100,8 @@ Groups run one at a time in queue order, because implementation writes and gates
 
 ```yaml
 # .architecture-guard/queue.yml (written by the queue; git-ignored by recommendation)
-source: jira | local
+source: jira | beads | local
+beads_writeback: false
 base: main
 groups:
   - id: auth-session

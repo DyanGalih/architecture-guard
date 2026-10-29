@@ -7,13 +7,14 @@
 ## What Changes
 
 - Add `ag-governed-backlog`, a new top-level capability that reads a backlog, ranks it, groups it into changes, and runs each group through a lane matched to its work type, one branch and one pull request per group.
-- Support two intake sources: a Jira JQL query through a registered Jira MCP server, and a local `.architecture-guard/backlog.yml` file for teams without Jira. Both normalize to the same item shape.
-- Group items with `story_scope` Planning Mode for Jira, and with declared `group` and `depends_on` fields (plus a file-overlap hint) for the local file. Every group becomes one change with its own `## Stories` set, so existing scope checks apply per pull request unchanged.
+- Support three intake sources, all normalized to one item shape: a Jira JQL query through a registered Jira MCP server; a Beads issue database (`bd` CLI with a `.beads/` directory), which already provides types, priorities, dependencies, and epics; and a local `.architecture-guard/backlog.yml` file as the zero-dependency fallback. Flash-Mem is not a backlog source: it stays the durable-context store read before each group.
+- Group items with `story_scope` Planning Mode for Jira, by parent epic and `blocks` dependencies for Beads, and by declared `group` and `depends_on` fields for the local file, with a file-overlap hint for every source. Every group becomes one change with its own `## Stories` set, so existing scope checks apply per pull request unchanged.
 - Route each group to a lane by type: **full** (stories and features), **fix** (bugs), **light** (tasks and chores), and **research** (spikes). The mapping is configurable; security-sensitive or boundary-crossing groups escalate to **full**.
 - Replace per-change gates with three batched human gates per run: **Gate Q** (approve the queue), **Gate S** (approve every full-lane specification), and **Gate P** (approve each group's archive, commit, push, and pull request). Implementation and review loops between gates run without stopping.
 - Park a group, instead of stopping the run, on a non-converging review loop, a blocking security finding, a decision only the user can make, or a dependency whose pull request is not merged.
 - Record run state in `.architecture-guard/queue.yml` so a stopped or partially blocked run resumes where it left off.
 - Add `architecture-guard validate-backlog` to validate `backlog.yml`, and extend `sync.yml` validation with an optional `backlog` block (intake JQL and lane mapping).
+- Optional, opt-in write-back to Beads only: mark a group's beads `in_progress` when it starts and note the pull request URL when it opens. Beads are closed only after their pull request has merged.
 - The queue never merges, closes, or approves a pull request, never force-pushes, and never writes to Jira.
 
 ## Capabilities
@@ -30,5 +31,5 @@ None. The repository has no existing OpenSpec capability specs. Existing skills 
 
 - New files: `orchestration/governed-backlog.md`, `commands/governed-backlog.md`, `templates/backlog_item.md` (normalized item and lane contract), `cli/validate-backlog.ts`, an example `examples/backlog.yml`.
 - Changed: `cli/install.ts` (`COMMANDS`), `bin/cli.ts` (new subcommand), `cli/validate-sync-config.ts` (optional `backlog` block), `extension.yml` (Spec Kit command), `docs/workflows.md`, `docs/reference-manual.md`, `README.md`, `docs/release-notes.md`, and `install.test.ts`.
-- No new runtime dependencies (`yaml` and `zod` are already used).
+- No new runtime dependencies (`yaml` and `zod` are already used). Beads intake uses the user's installed `bd` CLI when present and degrades to `Unavailable` otherwise.
 - Users: opt-in. Nothing changes for teams that do not run `ag-governed-backlog`.
