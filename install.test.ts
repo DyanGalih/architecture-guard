@@ -1105,7 +1105,7 @@ test('governed-backlog queues groups through lanes with three batched gates', ()
   assert.match(step5, /\*\*Full lane\*\*: run `ag-governed-delivery`, then `ag-governed-implement`/);
   assert.match(step5, /\*\*Fix lane\*\*:[^\n]*fails for its cause before any fix\. Then run `ag-governed-tasks` and `ag-governed-implement`/);
   assert.match(step5, /\*\*Light lane\*\*:[^\n]*`ag-governed-tasks` and `ag-governed-implement`\. Do not write a new specification/);
-  assert.match(prompt, /For each `planned` research group, run `ag-governed-discover` read-only/);
+  assert.match(prompt, /For each `planned` research group, set it to `specifying` and run `ag-governed-discover` read-only/);
   for (const row of ['| story, feature | full |', '| bug, defect | fix |', '| spike | research |']) {
     assert.ok(contract.includes(row), `lane map row ${row}`);
   }
@@ -1183,7 +1183,7 @@ test('governed-backlog keeps the fixes from its dry run', () => {
   assert.match(gateQ, /group id \(the change name\)/);
   assert.match(gateQ, /blocking findings from Step 3/);
   assert.match(gateQ, /`queue.yml` and the discovery summaries will be written/);
-  assert.match(prompt, /Run `architecture-guard hygiene --json --target <path>` on a clean checkout of the base branch/);
+  assert.match(prompt, /Run `architecture-guard hygiene --json` on the base branch/);
 
   // Source is chosen before intake; a missing sync.yml is not invalid
   assert.match(prompt, /ask the user which to use before reading any items/);
@@ -1218,7 +1218,7 @@ test('governed-backlog keeps the fixes from its dry run', () => {
   // A resume can unpark, diff, and re-approve
   assert.match(prompt, /When the reason no longer holds, set the group back to `planned`/);
   assert.match(prompt, /a dependency with no pull request is not merged/);
-  assert.match(example, /depends_on: \[\], size: s\}/, 'queue.yml keeps an item snapshot for the resume diff');
+  assert.match(example, /depends_on: \[\], size: s, title: [^,]+, acceptance:/, 'queue.yml keeps an item snapshot for the resume diff');
   assert.match(prompt, /On a resume, Steps 2 and 3 and Gate Q run again over the whole queue/);
 
   // Worktrees start from an up-to-date base, and stacked groups never start on an unfinished dependency
@@ -1230,7 +1230,15 @@ test('governed-backlog keeps the fixes from its dry run', () => {
   assert.match(fs.readFileSync(path.join(root, 'adapters', 'openspec.md'), 'utf8'), /\| create-change \|[^\n]*skip_specs: true/);
 
   // Known blockers park the group before it starts instead of after a wasted run
-  assert.match(prompt, /parked as `blocked by <finding>` before it starts/);
+  assert.match(prompt, /The default is to widen, because the group's verification would fail on it otherwise/);
+  assert.match(prompt, /research groups never have blockers/);
+  assert.match(prompt, /When the user declines, the group is parked as `blocked by <finding>` before it starts/);
+
+  // A resume keeps what the user approved at Gate Q and notices changed item text
+  assert.match(prompt, /The groups recorded in `queue.yml` are kept as approved/);
+  assert.match(prompt, /title, or acceptance criteria changed/);
+  assert.match(gateS, /its `assumptions`, and its `decisions`/);
+  assert.match(gateS, /One with an undecided decision stays `researched`/);
   assert.match(prompt, /Work out the work order: first the full-lane and research groups/);
 });
 

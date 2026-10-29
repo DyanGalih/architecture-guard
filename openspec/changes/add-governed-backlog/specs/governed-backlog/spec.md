@@ -132,7 +132,7 @@ Each run SHALL have three human gates: **Gate Q** approves the queue (groups, or
 #### Scenario: Known blockers shown before approval
 
 - **WHEN** the base branch already has blocking hygiene findings in files a group is expected to touch
-- **THEN** Gate Q lists them for that group and asks whether to widen it to fix them, and by default parks the group as `blocked by <finding>` before it starts
+- **THEN** Gate Q lists them for that code-writing group and proposes widening it to fix them by default; when the user declines, the group and the groups that depend on it are parked as `blocked by <finding>` before they start
 
 #### Scenario: Specification approval
 
@@ -242,6 +242,11 @@ The queue SHALL record each group's state (`planned`, `specifying`, `spec-pendin
 
 - **WHEN** a run stops and the user starts the queue again
 - **THEN** the queue reloads `queue.yml`, re-checks parked groups' conditions, resumes a group left in `specifying` or `in-progress` in its existing worktree and change, sends `spec-pending` and `researched` groups to Gate S and `specified` groups to delivery without repeating their phase, and does not repeat `published` or `done` groups
+
+#### Scenario: Gate Q choices survive a resume
+
+- **WHEN** the user renamed, merged, or re-laned a group at Gate Q and a later run resumes
+- **THEN** the recorded group is kept as approved, and only items in no recorded group are planned again
 
 #### Scenario: Backlog changed since the last run
 
