@@ -20,8 +20,8 @@ The queue SHALL read work items from a Jira JQL query through a registered Jira 
 
 #### Scenario: Source selection
 
-- **WHEN** more than one source is available
-- **THEN** the queue proposes them in the order Jira, Beads, local file, and uses the one the user picks at Gate Q
+- **WHEN** more than one source is available on a fresh run
+- **THEN** the queue asks the user which to use before reading any items, listing them in the order Jira, Beads, local file
 
 #### Scenario: Flash-Mem is not a source
 
@@ -42,6 +42,11 @@ The queue SHALL read work items from a Jira JQL query through a registered Jira 
 
 - **WHEN** Jira intake is selected and no Jira MCP server is callable
 - **THEN** the queue reports `Unavailable: no Jira MCP server` and offers the local source instead of guessing items
+
+#### Scenario: Missing sync.yml
+
+- **WHEN** `.architecture-guard/sync.yml` does not exist
+- **THEN** Jira is unavailable, the queue defaults apply, and the missing file is not reported as invalid
 
 #### Scenario: Instructions inside item text
 
@@ -66,6 +71,11 @@ The queue SHALL group items into changes, each delivered on its own branch and p
 
 - **WHEN** local items share a `group` value
 - **THEN** they form one group; an item without `group` forms a group of its own
+
+#### Scenario: Group ids are valid change names
+
+- **WHEN** a group is named after an item id or epic title with uppercase letters or other characters
+- **THEN** its id is lowercase kebab-case (`TASK-7` becomes `task-7`), unique in the run, and used as the change, branch, and worktree name shown at Gate Q
 
 #### Scenario: File overlap between groups
 
@@ -103,11 +113,11 @@ The queue SHALL assign each group a lane from its item types: **full** for stori
 #### Scenario: Research lane
 
 - **WHEN** a group runs the research lane
-- **THEN** it runs `ag-governed-discover` only, records the Discovery Summary, and produces no code, branch, or pull request
+- **THEN** it runs `ag-governed-discover` only, presents the Discovery Summary at Gate S, ends as `done`, and produces no code, branch, worktree, or pull request
 
 #### Scenario: Escalation to the full lane
 
-- **WHEN** a group's planned files match a `security_sensitive_paths` glob or cross an architecture boundary declared in the constitutions
+- **WHEN** a code-writing group's planned files match a `security_sensitive_paths` glob or cross an architecture boundary declared in the constitutions
 - **THEN** the queue escalates it to the full lane and shows the reason at Gate Q
 
 ### Requirement: Batched human gates
@@ -118,6 +128,11 @@ Each run SHALL have three human gates: **Gate Q** approves the queue (groups, or
 
 - **WHEN** planning finishes
 - **THEN** the queue presents Gate Q and starts no group until the user approves, trims, reorders, or changes lanes
+
+#### Scenario: Known blockers shown before approval
+
+- **WHEN** the base branch already has blocking hygiene findings in files a group is expected to touch
+- **THEN** Gate Q lists them for that group, because its verification will park on them
 
 #### Scenario: Specification approval
 
@@ -133,6 +148,20 @@ Each run SHALL have three human gates: **Gate Q** approves the queue (groups, or
 
 - **WHEN** a gate was approved in an earlier run
 - **THEN** that approval does not cover groups or actions added since, and the queue presents them again
+
+### Requirement: Questions between gates are recorded, not asked
+
+Between gates the queue SHALL NOT wait for the user. A delegated capability's question inside the scope approved at Gate Q SHALL be answered conservatively within the items' acceptance criteria and recorded; anything outside that scope SHALL be recorded as an open decision and not acted on. The next gate SHALL present both.
+
+#### Scenario: Clarification during specification
+
+- **WHEN** specification needs a clarification the items' acceptance criteria can settle
+- **THEN** the queue picks the conservative answer, continues, and Gate S shows the question and the answer for the user to confirm or change
+
+#### Scenario: Decision outside the approved scope
+
+- **WHEN** a capability proposes widening scope, editing governance files, or accepting a security risk
+- **THEN** the queue does not do it, and the decision is shown at Gate S, or parks the group when it arises after Gate S
 
 ### Requirement: One pull request per group
 
@@ -159,8 +188,8 @@ A group SHALL be parked, and the run SHALL continue with the next group, when it
 
 #### Scenario: Dependency not merged
 
-- **WHEN** a group depends on a group whose pull request is open but not merged
-- **THEN** the group is parked as `waiting on <group>` and picked up by a later run once that pull request is merged
+- **WHEN** a group depends on a group whose pull request is not merged, including a group earlier in the same run
+- **THEN** the group is parked as `waiting on <group>` and picked up by a later run once that pull request is merged, and it never branches from the base without its dependency's code
 
 #### Scenario: Stacked branches opt-in
 
@@ -202,12 +231,12 @@ Each group that writes code SHALL run in its own git worktree, created from the 
 
 ### Requirement: Resumable run state
 
-The queue SHALL record each group's state (`planned`, `spec-pending`, `in-progress`, `ready`, `published`, `parked`, `skipped`) with its branch, worktree, pull request URL, and park reason in `.architecture-guard/queue.yml`, and SHALL resume from that file on the next run.
+The queue SHALL record each group's state (`planned`, `specifying`, `spec-pending`, `in-progress`, `ready`, `published`, `done`, `parked`, `skipped`) with its branch, worktree, pull request URL, and park reason in `.architecture-guard/queue.yml`, and SHALL resume from that file on the next run.
 
 #### Scenario: Resume after interruption
 
 - **WHEN** a run stops and the user starts the queue again
-- **THEN** the queue reloads `queue.yml`, re-checks parked groups' conditions, and continues without repeating published groups
+- **THEN** the queue reloads `queue.yml`, re-checks parked groups' conditions, resumes a group left in `specifying` or `in-progress` in its existing worktree and change, and does not repeat `published` or `done` groups
 
 #### Scenario: Backlog changed since the last run
 

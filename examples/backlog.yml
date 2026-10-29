@@ -1,5 +1,5 @@
 # Local backlog for ag-governed-backlog, used when neither Jira nor Beads is available.
-# Validate with: architecture-guard validate-backlog examples/backlog.yml
+# Copy it to .architecture-guard/backlog.yml and validate with: architecture-guard validate-backlog
 items:
   - id: STORY-1
     type: story

@@ -10,7 +10,7 @@ Offer the available sources in this order and use the one the user picks at Gate
 2. **Beads**: the `bd` CLI is on `PATH` and the repository root has a `.beads/` directory. Read with `bd list --json`, then `bd show <id> --json` for each bead's full text, and `bd dep list <id> --json --type blocks` and `--type parent-child` for its dependencies and parent. Skip `closed`, `deferred`, and `pinned` beads.
 3. **Local file**: `.architecture-guard/backlog.yml`. When the `architecture-guard` CLI is installed, validate it with `architecture-guard validate-backlog .architecture-guard/backlog.yml`; a non-zero exit stops the run with the reported errors.
 
-Read `sync.yml` and `backlog.yml` from the user's checkout. When the CLI is installed, validate `sync.yml` with `architecture-guard validate-sync-config .architecture-guard/sync.yml`; a non-zero exit means `Unavailable: invalid sync.yml`. Never fetch the CLI on demand.
+Read `sync.yml` and `backlog.yml` from the user's checkout. When `sync.yml` exists and the CLI is installed, validate it with `architecture-guard validate-sync-config .architecture-guard/sync.yml`; a non-zero exit means `Unavailable: invalid sync.yml`. Without `sync.yml`, Jira is unavailable and the defaults below apply. Never fetch the CLI on demand.
 
 **Flash-Mem is not a source.** It stores durable knowledge (decisions, conventions, root causes), not work status, and has no priority or dependency model. Read it for context before each group. Write to it only durable lessons the run validated, such as a fix lane's root cause, and never item status.
 
@@ -37,11 +37,13 @@ A missing field stays empty; never invent acceptance criteria. An item with no a
 - **Local file**: items with the same `group` form one group. An item with no `group` forms its own group, named after its id.
 - **Every source**: when two groups are likely to touch the same files (files named in their text, or modules matched from their terms), propose merging or ordering them at Gate Q. Never merge groups without the user's choice.
 
+**Group ids** are lowercase kebab-case, because they become change, branch, and worktree names: lowercase the name, replace every run of characters other than `a-z` and `0-9` with `-`, and trim leading and trailing `-` (`TASK-7` becomes `task-7`, an epic titled `Auth & Sessions` becomes `auth-sessions`). When two groups would get the same id, append `-2`, `-3`, and so on in run order.
+
 A group depends on another group when any of its items depends on an item in it, or on the group itself. Report dependency cycles at Gate Q and do not start any group in a cycle.
 
 ## Order
 
-Order groups so that every dependency comes first. Among groups that are free to run, take the one with the highest item priority, then the smaller estimated size (the largest item `size`; unknown counts as `m`), then the earliest id.
+Order groups so that every dependency comes first. Among groups that are free to run, take the one with the highest item priority, then the smaller size (unknown counts as `m`), then the earliest id. A group's size is its largest item `size`.
 
 ## Lanes
 
@@ -54,7 +56,7 @@ Order groups so that every dependency comes first. Among groups that are free to
 
 `sync.yml` `backlog.lanes` overrides or extends this map. A type that maps to no lane is shown at Gate Q, and the user picks one. A group takes the heaviest lane among its items: full, then fix, then light, then research. A group that mixes research items with code items runs the code lane and treats the research items as discovery input.
 
-Escalate a group to **full**, and show why at Gate Q, when its expected files match a `security_sensitive_paths` glob from `.architecture-guard/config.yml` or it would add or cross an architecture boundary declared in the constitutions.
+Escalate a code-writing group to **full**, and show why at Gate Q, when its expected files match a `security_sensitive_paths` glob from `.architecture-guard/config.yml` or it would add or cross an architecture boundary declared in the constitutions.
 
 ## Untrusted Content
 

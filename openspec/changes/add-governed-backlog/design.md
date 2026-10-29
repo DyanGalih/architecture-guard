@@ -41,6 +41,8 @@ The run proceeds in phases across the whole queue rather than group by group:
 
 Alternative: per-group Gates 0-3 (40 stops for 10 groups). Rejected as unusable. Alternative: fully unattended. Rejected because archive's push and pull request approvals must name exact targets. Gate P satisfies them by listing each group's repository, remote, branch, base, title, and description and taking a separate approval per group. That is the same explicit approval archive asks for, collected in one place, so `ag-governed-archive` does not change. Gate 1 (plan and tasks) and Gate 2 (implementation) are not presented; their review convergence loops still run and any non-convergence parks the group.
 
+Delegated capabilities still ask questions of their own (clarifications, write previews, capability names). Between gates the queue answers those inside the Gate Q scope conservatively and records them per group (`assumptions`), and records anything outside it as an open decision; Gate S (or Gate P after it) presents both. Without this, a run would stop mid-way for each group and the gates would not be batched. A dry run found this. `ag-governed-discover` gains a caller-passed accepted story set so a Jira group is not classified and approved a second time.
+
 ### D3. Lanes as composition recipes
 
 | Lane | Capabilities, in order |
@@ -94,7 +96,9 @@ Worktrees go in `../<repo>-queue-<group>` from the approved base, listed at Gate
 
 ### D7. Sequential execution, wait-on-dependency by default
 
-Groups run one at a time in queue order, because implementation writes and gates are sequential and parallel writers would need ownership coordination that Agent Teams already defines. Subagents may run the read-only review halves inside a group, as `ag-workflow` allows. A dependent group waits for its dependency's merged pull request (parked `waiting on`). Stacking is opt-in per group at Gate Q, because squash-merging the base pull request forces a rebase of the stacked branch.
+Group ids are lowercase kebab-case because they become change names, and OpenSpec rejects uppercase change names (`TASK-7` → `task-7`).
+
+Groups run one at a time in queue order, because implementation writes and gates are sequential and parallel writers would need ownership coordination that Agent Teams already defines. Subagents may run the read-only review halves inside a group, as `ag-workflow` allows. A dependent group waits for its dependency's merged pull request (parked `waiting on`), including when the dependency is in the same run: otherwise it would branch from the base without its dependency's code and could merge first. Stacking is opt-in per group at Gate Q, because squash-merging the base pull request forces a rebase of the stacked branch.
 
 ### D8. State file
 
@@ -107,14 +111,14 @@ groups:
   - id: auth-session
     items: [BUG-3, TASK-7]
     lane: fix
-    state: parked          # planned | spec-pending | in-progress | ready | published | parked | skipped
+    state: parked          # planned | specifying | spec-pending | in-progress | ready | published | done | parked | skipped
     reason: waiting on STORY-1
     branch: fix/auth-session
     worktree: ../app-queue-auth-session
     pr: https://...
 ```
 
-On resume, the queue re-reads intake, diffs it against the file, re-checks every parked reason (for example, whether the dependency pull request has merged, via `pr-view` state), and presents the diff at Gate Q.
+Research groups end as `done`, not `published`, since they have no pull request. `specifying` lets an interrupted specification resume in its existing worktree and change. On resume, the queue re-reads intake, diffs it against the file, re-checks every parked reason (for example, whether the dependency pull request has merged, via `pr-view` state, or by asking the user when the forge cannot report merge state), and presents the diff at Gate Q.
 
 ## Risks / Trade-offs
 

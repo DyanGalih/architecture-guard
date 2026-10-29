@@ -1105,7 +1105,7 @@ test('governed-backlog queues groups through lanes with three batched gates', ()
   assert.match(step5, /\*\*Full lane\*\*: run `ag-governed-delivery`, then `ag-governed-implement`/);
   assert.match(step5, /\*\*Fix lane\*\*:[^\n]*fails for its cause before any fix\. Then run `ag-governed-tasks` and `ag-governed-implement`/);
   assert.match(step5, /\*\*Light lane\*\*:[^\n]*`ag-governed-tasks` and `ag-governed-implement`\. Do not write a new specification/);
-  assert.match(prompt, /research-lane group runs `ag-governed-discover` only/);
+  assert.match(prompt, /For each `planned` research group, run `ag-governed-discover` read-only/);
   for (const row of ['| story, feature | full |', '| bug, defect | fix |', '| spike | research |']) {
     assert.ok(contract.includes(row), `lane map row ${row}`);
   }
@@ -1139,11 +1139,66 @@ test('governed-backlog queues groups through lanes with three batched gates', ()
   assert.match(prompt, /Never close a bead whose pull request is not merged/);
 
   // Run state names and resume
-  for (const state of ['planned', 'spec-pending', 'in-progress', 'ready', 'published', 'parked', 'skipped']) {
+  for (const state of ['planned', 'specifying', 'spec-pending', 'in-progress', 'ready', 'published', 'done', 'parked', 'skipped']) {
     assert.match(prompt, new RegExp(`\`${state}\` \\(`), `state ${state} must be defined`);
   }
   assert.match(prompt, /For every `parked` group, re-check its reason/);
-  assert.match(prompt, /Never repeat a published group/);
+  assert.match(prompt, /Never repeat a `published` or `done` group/);
+  assert.match(prompt, /For every `published` group with a `pr`/, 'research groups have no pull request to look up');
+});
+
+test('governed-backlog keeps the fixes from its dry run', () => {
+  const root = path.join(__dirname, '..');
+  const prompt = fs.readFileSync(path.join(root, 'orchestration', 'governed-backlog.md'), 'utf8');
+  const contract = fs.readFileSync(path.join(root, 'templates', 'backlog_item.md'), 'utf8');
+  const discover = fs.readFileSync(path.join(root, 'orchestration', 'governed-discover.md'), 'utf8');
+
+  // Group ids must be valid OpenSpec change names
+  assert.match(contract, /\*\*Group ids\*\* are lowercase kebab-case/);
+  assert.match(contract, /`TASK-7` becomes `task-7`/);
+  assert.match(prompt, /The group id is also the change name/);
+
+  // A dependency in the same run still makes the group wait, unless stacked
+  assert.doesNotMatch(prompt, /unless the dependency is earlier in this run/);
+  assert.match(prompt, /waits, including when the dependency is in this run/);
+
+  // Questions between gates are recorded for the next gate, not asked
+  assert.match(prompt, /^## Questions Between Gates$/m);
+  assert.match(prompt, /Between gates, nothing waits for the user/);
+  assert.match(prompt, /record the question and the answer in the group's `assumptions`/);
+  const gateS = prompt.slice(prompt.indexOf('### Human Gate S'), prompt.indexOf('### Step 5'));
+  assert.match(gateS, /its `assumptions`/);
+  assert.match(gateS, /open decisions/);
+  assert.match(discover, /When the caller passes an accepted \*\*Story set\*\*/);
+  assert.match(prompt, /does not propose or ask about it again/);
+
+  // Worktrees are created when a group starts; research groups get none and end as done
+  assert.match(prompt, /`git worktree add -b <branch> <worktree> <start point>`/);
+  assert.match(prompt, /Research groups get neither/);
+  assert.match(gateS, /A presented research group becomes `done`/);
+  assert.doesNotMatch(prompt, /ends as `published` with no branch/);
+
+  // Gate Q shows the change name, known blockers, and the queue.yml write
+  const gateQ = prompt.slice(prompt.indexOf('### Human Gate Q'), prompt.indexOf('### Step 4'));
+  assert.match(gateQ, /group id \(the change name\)/);
+  assert.match(gateQ, /blocking findings from Step 3/);
+  assert.match(gateQ, /`queue.yml` will be written/);
+  assert.match(prompt, /Run `architecture-guard hygiene --json` read-only on the base branch/);
+
+  // Source is chosen before intake; a missing sync.yml is not invalid
+  assert.match(prompt, /ask the user which to use before reading any items/);
+  assert.match(contract, /When `sync.yml` exists and the CLI is installed, validate it/);
+
+  // Branch prefix per lane, and bugs keep the failing-test rule in the full lane
+  assert.match(prompt, /full: `feat\/<group>`, fix: `fix\/<group>`, light: `chore\/<group>`/);
+  assert.match(prompt, /\*\*Full lane\*\*:[^\n]*For each bug item, reproduce the bug and add a test that fails/);
+
+  // A forge that cannot report merge state makes the queue ask
+  assert.match(prompt, /When the forge cannot report merge state[^\n]*ask the user whether each pull request in question has merged/);
+
+  // The run-state example follows the heaviest-lane rule
+  const example = prompt.slice(prompt.indexOf('```yaml'), prompt.indexOf('```', prompt.indexOf('```yaml') + 3));
+  assert.match(example, /items: \[BUG-3, STORY-1\]\n\s+lane: full/);
 });
 
 test('Sonar severities map onto the shared scale and the filter keeps MAJOR findings', () => {

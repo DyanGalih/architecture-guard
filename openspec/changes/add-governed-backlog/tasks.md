@@ -32,4 +32,9 @@
 ## 6. Integration check
 
 - [x] 6.1 Run `pnpm test` and `pnpm lint` and verify both pass
-- [ ] 6.2 Dry-run the installed skill against a sample repo with `examples/backlog.yml` (three groups, one dependency, one bug) through Gate Q and Gate S, and verify that the proposed order, lanes, and worktree names match the design
+- [x] 6.2 Dry-run the installed skill against a sample repo with `examples/backlog.yml` (three groups, one dependency, one bug) through Gate Q and Gate S, and verify that the proposed order, lanes, and worktree names match the design
+
+## 7. Dry-run fixes
+
+- [x] 7.1 Fix the findings of the 6.2 dry run (kebab-case group ids, in-run dependencies wait, questions recorded between gates, worktree creation timing, research `done` state, `specifying` state, baseline blockers at Gate Q, source choice before intake, missing `sync.yml`, lane branch prefixes, bug tests in the full lane, forge without merge state, caller-passed story set in `ag-governed-discover`) and verify with prompt tests for each
+- [ ] 7.2 Re-run the dry run and verify that Gate Q and Gate S raise none of the fixed findings

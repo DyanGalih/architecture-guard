@@ -64,6 +64,8 @@ If the user supplied no feature idea or only a title, ask for the minimum input 
 
 ### Step 2.5 — Related Stories (when story scope is configured)
 
+When the caller passes an accepted **Story set** (for example `ag-governed-backlog`, whose user accepted it at its queue gate), use it as the accepted set from any source (Jira, Beads, or a local backlog): skip the Planning Mode search and the accept question in item 1, and apply items 2 to 4 to it. Do not add, drop, or reclassify its items.
+
 When `.architecture-guard/sync.yml` configures Jira story scope and a Jira MCP server is callable, resolve and apply the `story_scope` template with `architecture-guard resolve template story_scope` in its **Planning Mode**. It finds the main story (from the user, the branch, or a candidate search the user confirms), reads its related tickets and the open tickets that touch the same areas, and classifies each as **Bundle now**, **Do next**, **Conflicts**, or **Owned elsewhere**.
 
 1. Show the proposed **Story set** with the classification table and the evidence for each **Bundle now** ticket, and ask the user to accept, trim, or extend it. Never add a ticket without the user's choice.
