@@ -29,7 +29,7 @@ None. The repository has no existing OpenSpec capability specs. Existing skills 
 
 ## Impact
 
-- New files: `orchestration/governed-backlog.md`, `commands/governed-backlog.md`, `templates/backlog_item.md` (normalized item and lane contract), `cli/validate-backlog.ts`, an example `examples/backlog.yml`.
-- Changed: `cli/install.ts` (`COMMANDS`), `bin/cli.ts` (new subcommand), `cli/validate-sync-config.ts` (optional `backlog` block), `extension.yml` (Spec Kit command), `docs/workflows.md`, `docs/reference-manual.md`, `README.md`, `docs/release-notes.md`, and `install.test.ts`.
+- New files: `orchestration/governed-backlog.md`, `templates/backlog_item.md` (normalized item and lane contract), `cli/validate-backlog.ts`, an example `examples/backlog.yml`.
+- Changed: `cli/install.ts` (`COMMANDS`), `bin/cli.ts` (new subcommand), `cli/validate-sync-config.ts` (optional `backlog` block), `docs/workflows.md`, `docs/reference-manual.md`, `README.md`, `docs/release-notes.md`, and `install.test.ts`.
 - No new runtime dependencies (`yaml` and `zod` are already used). Beads intake uses the user's installed `bd` CLI when present and degrades to `Unavailable` otherwise.
 - Users: opt-in. Nothing changes for teams that do not run `ag-governed-backlog`.

@@ -90,7 +90,7 @@ Beads: one group per parent epic, one group per parentless bead. Jira: run `stor
 
 ### D6. Worktree per group, created beside the repository
 
-Worktrees go in `../<repo>-ag-<group>` from the approved base, listed at Gate Q. They let groups keep uncommitted work isolated until Gate P without intermediate commits, and keep the user's checkout untouched. With `repositories` configured, the queue creates one worktree per owning repository per group. Worktrees are kept after publish so `ag-pr-feedback` can use them, and the report lists them for cleanup.
+Worktrees go in `../<repo>-queue-<group>` from the approved base, listed at Gate Q. They let groups keep uncommitted work isolated until Gate P without intermediate commits, and keep the user's checkout untouched. With `repositories` configured, the queue creates one worktree per owning repository per group. Worktrees are kept after publish so `ag-pr-feedback` can use them, and the report lists them for cleanup.
 
 ### D7. Sequential execution, wait-on-dependency by default
 
@@ -110,7 +110,7 @@ groups:
     state: parked          # planned | spec-pending | in-progress | ready | published | parked | skipped
     reason: waiting on STORY-1
     branch: fix/auth-session
-    worktree: ../app-ag-auth-session
+    worktree: ../app-queue-auth-session
     pr: https://...
 ```
 

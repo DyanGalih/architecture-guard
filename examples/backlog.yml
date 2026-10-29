@@ -1,0 +1,41 @@
+# Local backlog for ag-governed-backlog, used when neither Jira nor Beads is available.
+# Validate with: architecture-guard validate-backlog examples/backlog.yml
+items:
+  - id: STORY-1
+    type: story
+    priority: high
+    title: Remember me on sign-in
+    description: Let users stay signed in for 30 days on trusted devices.
+    acceptance:
+      - A "Remember me" checkbox is shown on the sign-in form
+      - Checked sessions last 30 days; unchecked sessions end with the browser
+    group: auth-session
+    size: m
+
+  - id: BUG-3
+    type: bug
+    priority: highest
+    title: Login fails on expired session
+    acceptance:
+      - Expired sessions redirect to sign-in instead of returning 500
+    group: auth-session
+    size: s
+
+  - id: TASK-7
+    type: task
+    priority: medium
+    title: Add structured logging to the billing worker
+    depends_on: [auth-session]
+    size: s
+
+  - id: CHORE-2
+    type: chore
+    priority: low
+    title: Upgrade the test runner
+    size: xs
+
+  - id: SPIKE-1
+    type: spike
+    priority: medium
+    title: Evaluate passkeys for sign-in
+    size: m

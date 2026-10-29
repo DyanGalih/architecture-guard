@@ -1028,6 +1028,124 @@ test('validate-sync-config is a registered CLI command', () => {
   }
 });
 
+test('validate-sync-config accepts the backlog block and rejects bad values', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  fs.writeFileSync(path.join(cwd, 'ok.yml'), 'provider: jira\nproject: PROJ\nbacklog:\n  jql: project = PROJ AND statusCategory != Done\n  lanes:\n    defect: fix\n');
+  const ok = spawnSync(process.execPath, [installer, 'validate-sync-config', 'ok.yml'], { cwd, encoding: 'utf8' });
+  assert.equal(ok.status, 0, ok.stderr);
+  assert.deepEqual(JSON.parse(ok.stdout).backlog, { jql: 'project = PROJ AND statusCategory != Done', lanes: { defect: 'fix' }, max_groups: 10 });
+  for (const [name, yaml] of [
+    ['github-jql.yml', 'provider: github\nrepo: org/repo\nbacklog:\n  jql: project = PROJ\n'],
+    ['bad-lane.yml', 'provider: jira\nproject: PROJ\nbacklog:\n  lanes:\n    bug: quick\n'],
+    ['too-many.yml', 'provider: jira\nproject: PROJ\nbacklog:\n  max_groups: 51\n'],
+    ['typo.yml', 'provider: jira\nproject: PROJ\nbacklog:\n  max_group: 5\n'],
+  ]) {
+    fs.writeFileSync(path.join(cwd, name), yaml);
+    const result = spawnSync(process.execPath, [installer, 'validate-sync-config', name], { cwd, encoding: 'utf8' });
+    assert.notEqual(result.status, 0, `${name} must be rejected`);
+  }
+});
+
+test('validate-backlog accepts the example and rejects invalid backlogs', () => {
+  const example = path.join(__dirname, '..', 'examples', 'backlog.yml');
+  const ok = spawnSync(process.execPath, [installer, 'validate-backlog', example], { encoding: 'utf8' });
+  assert.equal(ok.status, 0, ok.stderr);
+  const items = JSON.parse(ok.stdout).items;
+  assert.deepEqual([...new Set(items.map(item => item.type))].sort(), ['bug', 'chore', 'spike', 'story', 'task']);
+
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  fs.mkdirSync(path.join(cwd, '.architecture-guard'));
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/backlog.yml'), 'items:\n  - id: A-1\n    type: bug\n    priority: high\n    title: A\n');
+  const byDefault = spawnSync(process.execPath, [installer, 'validate-backlog'], { cwd, encoding: 'utf8' });
+  assert.equal(byDefault.status, 0, byDefault.stderr);
+
+  const item = (id, extra = '') => `  - id: ${id}\n    type: task\n    priority: low\n    title: ${id}\n${extra}`;
+  for (const [name, yaml, message] of [
+    ['duplicate.yml', `items:\n${item('A')}${item('A')}`, /duplicate id A/],
+    ['unknown-dep.yml', `items:\n${item('A', '    depends_on: [B]\n')}`, /unknown dependency B/],
+    ['cycle.yml', `items:\n${item('A', '    depends_on: [B]\n')}${item('B', '    depends_on: [A]\n')}`, /dependency cycle/],
+    ['group-cycle.yml', `items:\n${item('A', '    group: g1\n    depends_on: [g2]\n')}${item('B', '    group: g2\n    depends_on: [A]\n')}`, /dependency cycle/],
+    ['unknown-key.yml', `items:\n${item('A', '    owner: me\n')}`, /owner/],
+    ['bad-priority.yml', 'items:\n  - id: A\n    type: task\n    priority: urgent\n    title: A\n', /priority/],
+    ['empty.yml', 'items: []\n', /items/],
+  ]) {
+    fs.writeFileSync(path.join(cwd, name), yaml);
+    const result = spawnSync(process.execPath, [installer, 'validate-backlog', name], { cwd, encoding: 'utf8' });
+    assert.notEqual(result.status, 0, `${name} must be rejected`);
+    assert.match(result.stderr, message, name);
+  }
+  const missing = spawnSync(process.execPath, [installer, 'validate-backlog', 'nope.yml'], { cwd, encoding: 'utf8' });
+  assert.notEqual(missing.status, 0);
+  assert.match(missing.stderr, /Backlog not found/);
+});
+
+test('governed-backlog queues groups through lanes with three batched gates', () => {
+  const root = path.join(__dirname, '..');
+  const prompt = fs.readFileSync(path.join(root, 'orchestration', 'governed-backlog.md'), 'utf8');
+  const contract = fs.readFileSync(path.join(root, 'templates', 'backlog_item.md'), 'utf8');
+
+  assert.match(prompt, /architecture-guard resolve template backlog_item/);
+  for (const section of ['Repository Context', 'Backlog Item Contract', 'Run State', 'Human Gate Q - Approve the Queue', 'Human Gate S - Approve Specifications', 'Human Gate P - Approve Publishing', 'Guardrails']) {
+    assert.match(prompt, new RegExp(`^#+ ${section}$`, 'm'), `missing section ${section}`);
+  }
+  const gateQ = prompt.indexOf('### Human Gate Q');
+  const gateS = prompt.indexOf('### Human Gate S');
+  const gateP = prompt.indexOf('### Human Gate P');
+  assert.ok(gateQ < prompt.indexOf('### Step 4') && prompt.indexOf('### Step 4') < gateS && gateS < prompt.indexOf('### Step 5') && prompt.indexOf('### Step 5') < gateP, 'gates run in order Q, S, P');
+  assert.match(prompt, /Start no group before this approval/);
+
+  // Sources, in order, and Flash-Mem is context only
+  assert.ok(contract.indexOf('1. **Jira**') < contract.indexOf('2. **Beads**') && contract.indexOf('2. **Beads**') < contract.indexOf('3. **Local file**'));
+  assert.match(contract, /architecture-guard validate-backlog/);
+  assert.match(contract, /\*\*Flash-Mem is not a source\.\*\*/);
+  assert.match(prompt, /Never store backlog items or their status in Flash-Mem/);
+
+  // Lanes and their capability order
+  const step5 = prompt.slice(prompt.indexOf('### Step 5'), gateP);
+  assert.match(step5, /\*\*Full lane\*\*: run `ag-governed-delivery`, then `ag-governed-implement`/);
+  assert.match(step5, /\*\*Fix lane\*\*:[^\n]*fails for its cause before any fix\. Then run `ag-governed-tasks` and `ag-governed-implement`/);
+  assert.match(step5, /\*\*Light lane\*\*:[^\n]*`ag-governed-tasks` and `ag-governed-implement`\. Do not write a new specification/);
+  assert.match(prompt, /research-lane group runs `ag-governed-discover` only/);
+  for (const row of ['| story, feature | full |', '| bug, defect | fix |', '| spike | research |']) {
+    assert.ok(contract.includes(row), `lane map row ${row}`);
+  }
+  assert.match(contract, /heaviest lane among its items: full, then fix, then light, then research/);
+
+  // Every park trigger, and parking does not stop the run
+  for (const trigger of [/review convergence loop ends with findings left/, /Security Review reports a blocking finding/, /product or architecture decision/, /verification fails/, /depends on was parked or skipped/]) {
+    assert.match(step5, trigger);
+  }
+  assert.match(step5, /Never let one group's failure stop the run/);
+
+  // Gate P carries archive's push and pull request approvals per group
+  const publish = prompt.slice(gateP, prompt.indexOf('### Step 6'));
+  assert.match(publish, /approves each group separately/);
+  for (const field of ['repository', 'remote', 'branch', 'base branch', 'title and description']) {
+    assert.ok(publish.includes(field), `Gate P must name the ${field}`);
+  }
+  assert.match(publish, /run `ag-governed-archive` in its worktree/);
+
+  // Guardrails
+  const guardrails = prompt.slice(prompt.indexOf('## Guardrails'));
+  assert.match(guardrails, /Never merge, close, reopen, approve, or request changes on a pull request/);
+  assert.match(guardrails, /Never force-push/);
+  assert.match(guardrails, /Never write to Jira/);
+
+  // Beads write-back is opt-in and every writing bd command sits behind it
+  assert.match(prompt, /Write-back is off unless the user enables it/);
+  for (const line of prompt.split('\n').filter(line => /`bd (update|note|close)/.test(line))) {
+    assert.match(line, /write-back is enabled/i, `ungated bd write: ${line}`);
+  }
+  assert.match(prompt, /Never close a bead whose pull request is not merged/);
+
+  // Run state names and resume
+  for (const state of ['planned', 'spec-pending', 'in-progress', 'ready', 'published', 'parked', 'skipped']) {
+    assert.match(prompt, new RegExp(`\`${state}\` \\(`), `state ${state} must be defined`);
+  }
+  assert.match(prompt, /For every `parked` group, re-check its reason/);
+  assert.match(prompt, /Never repeat a published group/);
+});
+
 test('Sonar severities map onto the shared scale and the filter keeps MAJOR findings', () => {
   const root = path.join(__dirname, '..');
   const core = fs.readFileSync(path.join(root, 'templates/ponytail_core.md'), 'utf8');
