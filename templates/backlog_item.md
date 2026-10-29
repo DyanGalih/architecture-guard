@@ -35,7 +35,9 @@ A missing field stays empty; never invent acceptance criteria. An item with no a
 - **Jira**: run the `story_scope` template in Planning Mode once per candidate main story, highest priority first. Each accepted **Bundle now** ticket joins that story's group, and a ticket already claimed by a higher-priority group is not reconsidered. **Do next** makes the later group depend on the earlier one. **Conflicts** orders the two groups by priority and is shown at Gate Q. **Owned elsewhere** tickets are excluded and listed at Gate Q.
 - **Beads**: beads under the same parent epic form one group, named after the epic. A bead with no parent forms its own group. Epics themselves are groups, not items.
 - **Local file**: items with the same `group` form one group. An item with no `group` forms its own group, named after its id.
-- **Every source**: when two code-writing groups are likely to touch the same files (files named in their text, or modules matched from their terms), propose merging or ordering them at Gate Q. Never merge groups without the user's choice.
+- **Every source**: when two code-writing groups are likely to touch the same expected files, propose merging or ordering them at Gate Q. Never merge groups without the user's choice.
+
+A group's **expected files** are the files named in its items' text, plus the files of the modules or directories its items' terms match by name. When they cannot be worked out, Gate Q shows the group as having unclear expected files and asks the user to confirm its lane.
 
 **Group ids** are lowercase kebab-case, because they become change, branch, and worktree names: lowercase the name, replace every run of characters other than `a-z` and `0-9` with `-`, and trim leading and trailing `-` (`TASK-7` becomes `task-7`, an epic titled `Auth & Sessions` becomes `auth-sessions`). When two groups would get the same id, append `-2`, `-3`, and so on in run order.
 

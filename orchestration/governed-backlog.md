@@ -41,7 +41,7 @@ Read `.architecture-guard/forges/resolve.md` and load the forge adapter named by
 
 ## Run State
 
-Keep run state in `.architecture-guard/queue.yml` in the user's checkout, and each group's Discovery Summary in `.architecture-guard/queue/<group>.discovery.md`. Recommend adding both to `.gitignore`. They are the only files this command writes outside the group worktrees, and Gate Q says so. Write `queue.yml` after every state change so an interrupted run can resume:
+Keep run state in `.architecture-guard/queue.yml` in the user's checkout, and each group's Discovery Summary in `.architecture-guard/queue/<group>.discovery.md`. They are the only files this command writes outside the group worktrees, and Gate Q says so. Gate Q also offers to add both paths to `.git/info/exclude`, which keeps them out of `git status` without changing a tracked file. Write `queue.yml` after every state change so an interrupted run can resume:
 
 ```yaml
 source: local         # jira | beads | local
@@ -49,8 +49,11 @@ base: main
 beads_writeback: false
 groups:
   - id: auth-session  # lowercase kebab-case; also the change name
-    items: [BUG-3, STORY-1]
+    items:            # snapshot of each item, so a resume can diff the backlog
+      - {id: STORY-1, type: story, priority: high, depends_on: [], size: m}
+      - {id: BUG-3, type: bug, priority: highest, depends_on: [], size: s}
     lane: full        # full | fix | light | research
+    lane_reason: heaviest item lane (story); src/auth/** is security-sensitive
     state: planned    # planned | specifying | spec-pending | researched | specified | in-progress | ready | published | done | parked | skipped
     stacked_on: null  # a group id when the user enabled stacking for this group
     reason: null      # why the group is parked or skipped
@@ -60,15 +63,16 @@ groups:
     review: null      # last review status with pass counts
     assumptions: []   # {question, answer} pairs answered on the user's behalf, for the next gate
     decisions: []     # open decisions outside the approved scope, for the next gate
+    blockers: []      # blocking findings on the base in this group's expected files, and the user's choice
 ```
 
-States: `planned` (approved at Gate Q, not started), `specifying` (discovery or specification is running), `spec-pending` (a specification awaits Gate S), `researched` (a research group's summary awaits Gate S), `specified` (its specification was approved at Gate S), `in-progress` (its lane is running), `ready` (verified, awaiting Gate P), `published` (pull request opened), `done` (a research group whose findings were presented), `parked` (stopped with a reason; the run continues), `skipped` (the user removed it at a gate). A group that waits on a dependency is `parked` with the reason `waiting on <group>` from Gate Q on; it does not start in this run.
+States: `planned` (approved at Gate Q, not started), `specifying` (discovery or specification is running), `spec-pending` (a specification awaits Gate S), `researched` (a research group's summary awaits Gate S), `specified` (its specification was approved at Gate S), `in-progress` (its lane is running), `ready` (verified, awaiting Gate P), `published` (pull request opened), `done` (a research group whose findings were presented), `parked` (stopped with a reason; the run continues), `skipped` (the user removed it at a gate). A group that waits on a dependency is `parked` with the reason `waiting on <group>` from Gate Q on; it does not start in this run. A group with a blocking finding the user chose not to fix is `parked` with the reason `blocked by <finding>` before it starts.
 
 ## Questions Between Gates
 
 Between gates, nothing waits for the user. When a delegated capability would ask the user something, handle it as follows and never stop the run for it:
 
-- **Inside the approved scope** (the change name, branch, or worktree approved at Gate Q; names the phase needs, such as a capability name; artifact and code writes inside the group's worktree; clarifications that the items' acceptance criteria and the constitutions can settle): do not ask. Choose the most conservative answer, continue, and record the question and the answer in the group's `assumptions`. The most conservative answer adds no scope and changes the least; decline offers to make extra changes. The next gate presents the assumptions for the user to confirm or change.
+- **Inside the approved scope** (the change name, branch, or worktree approved at Gate Q; names the phase needs, such as a capability name; artifact and code writes inside the group's worktree; clarifications that the items' acceptance criteria, titles, descriptions, and the constitutions can settle, including the narrowest reading of an item with no acceptance criteria): do not ask. Choose the most conservative answer, continue, and record the question and the answer in the group's `assumptions`. The most conservative answer adds no scope and changes the least. Accept an offer to repair the group's own artifacts within the items' scope (for example a specification revision for a gap its validation found); decline an offer that adds scope, and record it in `decisions`. The next gate presents the assumptions for the user to confirm or change.
 - **Outside it** (widening scope beyond the items, editing a constitution, rule, workflow, or template, writing outside the group's worktree, a product or architecture decision, or accepting a security risk): do not do it. Record it in the group's `decisions`. Before Gate S, the group still reaches `spec-pending` and the decision is shown there. After Gate S, park the group with the decision as its reason.
 - **A confirmation the phase needs to continue** (for example a specification step that asks to proceed without security rules): continue only when what follows writes nothing outside the group's worktree, record the confirmation in `decisions`, and do not approve the group at Gate S until the user has decided it.
 - **An acceptance criterion the repository cannot meet** (for example a UI criterion where no UI exists): specify what the repository can meet, and record the rest in `decisions`.
@@ -78,7 +82,9 @@ Between gates, nothing waits for the user. When a delegated capability would ask
 ### Step 1 - Load Context and Resume
 
 1. Read Flash-Mem context when its tools are available; otherwise resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map. Never silently omit an existing file.
-2. When `.architecture-guard/queue.yml` exists, load it. For every `parked` group, re-check its reason (for a `waiting on` reason, read the dependency's pull request state as Forge Access defines); clear the reason when it no longer holds. For every `published` group with a `pr`, read its state the same way. Never repeat a `published` or `done` group. A group left in `specifying` or `in-progress` resumes in its existing worktree and reuses its existing change. `spec-pending` and `researched` groups go to Gate S without repeating their phase, and `specified` groups go to Step 5.
+2. When `.architecture-guard/queue.yml` exists, load it. For every `parked` group, re-check its reason. A `waiting on <group>` reason holds until that group is `published` and its pull request has merged (read as Forge Access defines); a dependency with no pull request is not merged. A `blocked by <finding>` reason holds until Step 3 no longer finds it on the base. When the reason no longer holds, set the group back to `planned` and clear the reason; Gate Q presents it again because its start point changed. For every `published` group with a `pr`, read its state the same way. Never repeat a `published` or `done` group.
+3. A group left in `specifying` resumes in its existing worktree and change, reusing its saved Discovery Summary when one exists and running only what is missing. A group left in `in-progress` resumes its lane in its existing worktree. `spec-pending` and `researched` groups go to Gate S without repeating their phase, and `specified` groups go to Step 5.
+4. On a resume, Steps 2 and 3 and Gate Q run again over the whole queue. Gate Q marks which groups were approved before and are unchanged, and the user approves the queue again.
 
 ### Step 2 - Intake
 
@@ -88,16 +94,17 @@ Between gates, nothing waits for the user. When a delegated capability would ask
 
 ### Step 3 - Plan
 
-1. Group, order, and assign lanes as the `backlog_item` template defines. Cap the run at `backlog.max_groups` from `sync.yml` (default 10; research groups count) and leave the rest for a later run.
+1. Group, order, and assign lanes as the `backlog_item` template defines. Cap the run at `backlog.max_groups` from `sync.yml` (default 10), counting the groups that will run, research groups included, and not those that wait. Leave the rest for a later run.
 2. Name each group with its id in lowercase kebab-case, as the template defines. The group id is also the change name for {adapter_command:create-change}.
 3. For each code-writing group, propose a branch named by lane (full: `feat/<group>`, fix: `fix/<group>`, light: `chore/<group>`) and a worktree beside the repository (`../<repository>-queue-<group>`, where `<repository>` is the repository's directory name). With `repositories` configured, propose one worktree per owning repository. Research groups get neither.
-4. Confirm the base branch: the user's stated branch, otherwise the remote's default branch (`origin/HEAD`), otherwise the current branch when it is the only long-lived branch. Ask when none of these settles it. Never accept `HEAD`.
-5. A group whose dependency has no merged pull request waits, including when the dependency is in this run: it is `parked` as `waiting on <group>` once the queue is approved, and does not run in this run. Offer stacking for it. A stacked group runs after its dependency in this run, branches from the dependency's branch, and its pull request targets that branch. List waiting groups after the groups that will run.
-6. Run `architecture-guard hygiene --json --target <path>` on a clean checkout of the base branch: the user's checkout when it is on the base branch with no local changes, otherwise a temporary worktree of the base branch that is removed afterwards. A non-zero exit with a report means blocking findings, not a tool failure. List each blocking finding in files a group is expected to touch, because that group's verification will park on it. For each one, Gate Q asks whether to widen that group to fix it; the default is not to, and the group will probably park at verification.
+4. Confirm the base branch: the user's stated branch, otherwise the remote's default branch (`origin/HEAD`), otherwise `main` or `master` when exactly one of them exists. Ask when none of these settles it. Never accept `HEAD`. When the repository has a remote, fetch it, and create every worktree from the fetched remote base (`origin/<base>`), never from a stale local branch; never pull into the user's checkout.
+5. A group whose dependency has no merged pull request waits, including when the dependency is in this run: it is `parked` as `waiting on <group>` once the queue is approved, and does not run in this run. Offer stacking for it. A stacked group runs after its dependency in this run, branches from the dependency's branch, and its pull request targets that branch.
+6. Run `architecture-guard hygiene --json --target <path>` on a clean checkout of the base branch: the user's checkout when it is on the base branch with no local changes, otherwise a temporary worktree of the base branch that is removed afterwards. A non-zero exit with a report means blocking findings, not a tool failure. List each blocking finding in files a group is expected to touch (as the template defines), and record it in the group's `blockers`. For each one, Gate Q asks whether to widen that group to fix it. The default is not to, and then the group is parked as `blocked by <finding>` before it starts, because its verification would fail on it.
+7. Work out the work order: first the full-lane and research groups (Step 4), then the fix-lane and light-lane groups (Step 5), each in the template's order; waiting and blocked groups last.
 
 ### Human Gate Q - Approve the Queue
 
-Present, as one table in run order: group id (the change name), items (id, type, priority, title), lane and why (including any escalation), dependencies and whether the group waits or is stacked, branch, worktree, and size. State plainly which groups will not run in this run because they wait. Also present: excluded items, proposed merges for overlapping groups, conflicts, dependency cycles (their groups cannot start), items with no acceptance criteria or whose expected files are unclear, item text reported under Untrusted Content, blocking findings from Step 3 with their widen-or-not question, the base branch, the forge and whether it can open pull requests and report merge state, that `queue.yml` and the discovery summaries will be written, and, for a resume, the diff from Step 2.
+Present, as one table in the work order from Step 3: group id (the change name), items (id, type, priority, title), lane and why (including any escalation), dependencies and whether the group waits or is stacked, branch, worktree, and size. State plainly which groups will not run in this run because they wait or are blocked. Also present: excluded items, proposed merges for overlapping groups, conflicts, dependency cycles (their groups cannot start), items with no acceptance criteria or whose expected files are unclear, item text reported under Untrusted Content, blocking findings from Step 3 with their widen-or-not question, the base branch, the forge and whether it can open pull requests and report merge state, that `queue.yml` and the discovery summaries will be written, with the offer to add them to `.git/info/exclude`, and, for a resume, the diff from Step 2 and which groups were approved before and are unchanged.
 
 Ask the user to approve the queue, or to trim, reorder, split, merge, rename, change a lane, or enable stacking for a waiting group. When the source is Beads, also ask whether to enable Beads write-back and show the exact `bd` commands it will run. Write-back is off unless the user enables it.
 
@@ -107,26 +114,28 @@ Start no group before this approval. It approves, for the groups shown: their ch
 
 For each `planned` full-lane group, in order:
 
-1. Create its worktree and branch from the base branch, or from the dependency's branch when stacked (`git worktree add -b <branch> <worktree> <start point>`). When they already exist on that branch, reuse them. Set the group to `specifying`, and when write-back is enabled, run `bd update <id> --status in_progress` for each of its beads.
-2. In the worktree, run the registered `ag-governed-discover` capability with the group's items as the idea. Pass the group's items as the accepted **Story set**: the highest-priority item is the main story and the rest are bundled. The set was accepted at Gate Q, so discovery does not propose or ask about it again. Save its Discovery Summary Draft to `.architecture-guard/queue/<group>.discovery.md`.
+1. Create its worktree and branch from the base branch (Step 3 item 4), or from the dependency's branch when stacked (`git worktree add -b <branch> <worktree> <start point>`). When they already exist on that branch, reuse them. Set the group to `specifying`, and when write-back is enabled, run `bd update <id> --status in_progress` for each of its beads.
+2. In the worktree, run the registered `ag-governed-discover` capability with the group's items as the idea. Pass the group's items as the accepted **Story set**: the main story is its highest-priority story or feature item, or its highest-priority item when it has none, and the rest are bundled. The set was accepted at Gate Q, so discovery does not propose or ask about it again. Save its Discovery Summary Draft to `.architecture-guard/queue/<group>.discovery.md`.
 3. Run `ag-governed-spec` with the Discovery Summary Draft and the group id as the change name. It records the story set in the change's `## Stories` section. For each bug item in the group, the specification states the defect's expected behavior as a requirement.
 4. Set the group to `spec-pending`.
 
-For each `planned` research group, run `ag-governed-discover` read-only in the user's checkout, with Questions Between Gates applying. Save its Discovery Summary to `.architecture-guard/queue/<group>.discovery.md` and set the group to `researched`. Research groups never escalate to another lane.
+For each `planned` research group, run `ag-governed-discover` read-only in the user's checkout, with Questions Between Gates applying and the group's items passed as its accepted **Story set** the same way. Save its Discovery Summary to `.architecture-guard/queue/<group>.discovery.md` and set the group to `researched`. Research groups never escalate to another lane.
 
 ### Human Gate S - Approve Specifications
 
-When no group is `specifying`, present every `spec-pending` and `researched` group together. For each full-lane group, include the story set, the requirements, its `assumptions` (each question with the answer chosen), its `decisions`, and Step 3's blocking findings. For each research group, include its saved Discovery Summary and assumptions. Skip this gate when there is nothing to present.
+When no group is `specifying`, present every `spec-pending` and `researched` group together. For each full-lane group, include the story set, the requirements, its `assumptions` (each question with the answer chosen), its `decisions`, and the `blockers` found in this command's Step 3. For each research group, include its saved Discovery Summary and assumptions. Skip this gate when there is nothing to present.
 
-The user approves, edits, or skips each group separately, and confirms or changes each assumption and decides each decision. Apply the changes to the specification, revalidate it, and clear the answered entries. An approved full-lane group becomes `specified`; one with an undecided decision stays `spec-pending`; a skipped group becomes `skipped`. A presented research group becomes `done`. When write-back is enabled, propose `bd note <id> "<summary>"` and `bd close <id>` for its beads, and run them only after the user approves.
+The user approves, edits, or skips each group separately, and confirms or changes each assumption and decides each decision. Apply the changes to the specification, revalidate it, and clear the answered entries. An approved full-lane group becomes `specified`; one with an undecided decision stays `spec-pending`; a skipped group becomes `skipped`. A presented research group becomes `done`, unless the user's answers change what it should evaluate; then it returns to `planned` and runs again. When write-back is enabled, propose `bd note <id> "<summary>"` and `bd close <id>` for its beads, and run them only after the user approves.
 
 ### Step 5 - Deliver Each Group
 
-For each `specified` full-lane group and each `planned` fix-lane or light-lane group, in order, one group at a time: create or reuse its worktree as Step 4 item 1 describes, set it to `in-progress`, and when write-back is enabled and not yet done, mark its beads `in_progress`. Questions Between Gates applies throughout.
+For each `specified` full-lane group and each `planned` fix-lane or light-lane group, in the work order, one group at a time. A stacked group whose dependency is not `ready` or `published` by then is parked as `waiting on <group>` instead. Otherwise: create or reuse its worktree as Step 4 item 1 describes, set it to `in-progress`, and when write-back is enabled and not yet done, mark its beads `in_progress`. Questions Between Gates applies throughout.
 
 - **Full lane**: run `ag-governed-delivery`, then `ag-governed-implement`. For each bug item, reproduce the bug and add a test that fails for its cause before fixing it.
 - **Fix lane**: create the change with {adapter_command:create-change} using the group id, with the item ids under `## Stories` (highest-priority item first). Reproduce the bug and add a test that fails for its cause before any fix. Then run `ag-governed-tasks` and `ag-governed-implement`. When the root cause requires a change to specified behavior, write the specification delta, move the group to `spec-pending`, and present it at a Gate S for this group before implementing.
 - **Light lane**: create the change the same way, then run `ag-governed-tasks` and `ag-governed-implement`. Do not write a new specification.
+
+Create a light-lane change, and a fix-lane change whose root cause changes no specified behavior, with {adapter_command:create-change} as a change having no specification delta, applying whatever that command defines for such a change so validation does not reject it.
 
 The delegated capabilities keep their review convergence loops, pass limits, and the Mandatory Verification Gate (`ag-verify` against the base branch, or the dependency's branch when stacked). Gate Q and Gate S cover their plan, task, and implementation approvals for these groups, so present none of those. Do not rerun those loops here; record their status and pass counts.
 

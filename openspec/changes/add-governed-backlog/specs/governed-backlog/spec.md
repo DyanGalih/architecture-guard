@@ -108,7 +108,7 @@ The queue SHALL assign each group a lane from its item types: **full** for stori
 #### Scenario: Light lane
 
 - **WHEN** a group runs the light lane
-- **THEN** it generates tasks, implements them, and runs `ag-verify` without writing a new specification
+- **THEN** it generates tasks, implements them, and runs `ag-verify` without writing a new specification, marking the change as declaring no specification change when the adapter requires it to validate
 
 #### Scenario: Research lane
 
@@ -132,7 +132,7 @@ Each run SHALL have three human gates: **Gate Q** approves the queue (groups, or
 #### Scenario: Known blockers shown before approval
 
 - **WHEN** the base branch already has blocking hygiene findings in files a group is expected to touch
-- **THEN** Gate Q lists them for that group, because its verification will park on them
+- **THEN** Gate Q lists them for that group and asks whether to widen it to fix them, and by default parks the group as `blocked by <finding>` before it starts
 
 #### Scenario: Specification approval
 
@@ -190,6 +190,11 @@ A group SHALL be parked, and the run SHALL continue with the next group, when it
 
 - **WHEN** a group depends on a group whose pull request is not merged, including a group earlier in the same run
 - **THEN** the group is parked as `waiting on <group>` and picked up by a later run once that pull request is merged, and it never branches from the base without its dependency's code
+
+#### Scenario: Unparking on a later run
+
+- **WHEN** a later run finds that a parked group's reason no longer holds
+- **THEN** the group returns to `planned`, is presented at Gate Q again, and its worktree starts from the up-to-date base
 
 #### Scenario: Stacked branches opt-in
 

@@ -1210,12 +1210,28 @@ test('governed-backlog keeps the fixes from its dry run', () => {
   assert.match(prompt, /decisions: \[\]/);
   assert.match(prompt, /one with an undecided decision stays `spec-pending`/);
 
-  // Known blockers have a stated default
-  assert.match(prompt, /the default is not to, and the group will probably park at verification/);
 
   // The run-state example follows the heaviest-lane rule
   const example = prompt.slice(prompt.indexOf('```yaml'), prompt.indexOf('```', prompt.indexOf('```yaml') + 3));
-  assert.match(example, /items: \[BUG-3, STORY-1\]\n\s+lane: full/);
+  assert.match(example, /type: story[\s\S]*type: bug[\s\S]*\n\s+lane: full\s/);
+
+  // A resume can unpark, diff, and re-approve
+  assert.match(prompt, /When the reason no longer holds, set the group back to `planned`/);
+  assert.match(prompt, /a dependency with no pull request is not merged/);
+  assert.match(example, /depends_on: \[\], size: s\}/, 'queue.yml keeps an item snapshot for the resume diff');
+  assert.match(prompt, /On a resume, Steps 2 and 3 and Gate Q run again over the whole queue/);
+
+  // Worktrees start from an up-to-date base, and stacked groups never start on an unfinished dependency
+  assert.match(prompt, /create every worktree from the fetched remote base \(`origin\/<base>`\)/);
+  assert.match(prompt, /A stacked group whose dependency is not `ready` or `published` by then is parked/);
+
+  // A change with no specification delta stays valid
+  assert.match(prompt, /as a change having no specification delta/);
+  assert.match(fs.readFileSync(path.join(root, 'adapters', 'openspec.md'), 'utf8'), /\| create-change \|[^\n]*skip_specs: true/);
+
+  // Known blockers park the group before it starts instead of after a wasted run
+  assert.match(prompt, /parked as `blocked by <finding>` before it starts/);
+  assert.match(prompt, /Work out the work order: first the full-lane and research groups/);
 });
 
 test('Sonar severities map onto the shared scale and the filter keeps MAJOR findings', () => {
