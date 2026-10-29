@@ -37,4 +37,6 @@
 ## 7. Dry-run fixes
 
 - [x] 7.1 Fix the findings of the 6.2 dry run (kebab-case group ids, in-run dependencies wait, questions recorded between gates, worktree creation timing, research `done` state, `specifying` state, baseline blockers at Gate Q, source choice before intake, missing `sync.yml`, lane branch prefixes, bug tests in the full lane, forge without merge state, caller-passed story set in `ag-governed-discover`) and verify with prompt tests for each
-- [ ] 7.2 Re-run the dry run and verify that Gate Q and Gate S raise none of the fixed findings
+- [x] 7.2 Re-run the dry run and verify that Gate Q and Gate S raise none of the fixed findings
+- [x] 7.3 Fix the second dry run's findings (waiting groups are parked, `specified` and `researched` states, saved discovery summaries, a `decisions` field, the blocker default, rules for phase confirmations and unmeetable criteria, forges that cannot open pull requests) and verify with prompt tests
+- [ ] 7.4 Re-run the dry run and verify it raises no new skill defects

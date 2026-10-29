@@ -231,12 +231,12 @@ Each group that writes code SHALL run in its own git worktree, created from the 
 
 ### Requirement: Resumable run state
 
-The queue SHALL record each group's state (`planned`, `specifying`, `spec-pending`, `in-progress`, `ready`, `published`, `done`, `parked`, `skipped`) with its branch, worktree, pull request URL, and park reason in `.architecture-guard/queue.yml`, and SHALL resume from that file on the next run.
+The queue SHALL record each group's state (`planned`, `specifying`, `spec-pending`, `researched`, `specified`, `in-progress`, `ready`, `published`, `done`, `parked`, `skipped`) with its branch, worktree, pull request URL, park reason, assumptions, and open decisions in `.architecture-guard/queue.yml`, and each Discovery Summary in `.architecture-guard/queue/`, and SHALL resume from that file on the next run.
 
 #### Scenario: Resume after interruption
 
 - **WHEN** a run stops and the user starts the queue again
-- **THEN** the queue reloads `queue.yml`, re-checks parked groups' conditions, resumes a group left in `specifying` or `in-progress` in its existing worktree and change, and does not repeat `published` or `done` groups
+- **THEN** the queue reloads `queue.yml`, re-checks parked groups' conditions, resumes a group left in `specifying` or `in-progress` in its existing worktree and change, sends `spec-pending` and `researched` groups to Gate S and `specified` groups to delivery without repeating their phase, and does not repeat `published` or `done` groups
 
 #### Scenario: Backlog changed since the last run
 

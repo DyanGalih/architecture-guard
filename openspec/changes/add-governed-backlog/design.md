@@ -111,14 +111,14 @@ groups:
   - id: auth-session
     items: [BUG-3, TASK-7]
     lane: fix
-    state: parked          # planned | specifying | spec-pending | in-progress | ready | published | done | parked | skipped
+    state: parked          # planned | specifying | spec-pending | researched | specified | in-progress | ready | published | done | parked | skipped
     reason: waiting on STORY-1
     branch: fix/auth-session
     worktree: ../app-queue-auth-session
     pr: https://...
 ```
 
-Research groups end as `done`, not `published`, since they have no pull request. `specifying` lets an interrupted specification resume in its existing worktree and change. On resume, the queue re-reads intake, diffs it against the file, re-checks every parked reason (for example, whether the dependency pull request has merged, via `pr-view` state, or by asking the user when the forge cannot report merge state), and presents the diff at Gate Q.
+A second dry run showed that reusing `planned` after Gate S made a resumed run repeat specification, and that a waiting group had no state, so `specified`, `researched`, and waiting-as-`parked` were added, with discovery summaries saved under `.architecture-guard/queue/`. Research groups end as `done`, not `published`, since they have no pull request. `specifying` lets an interrupted specification resume in its existing worktree and change. On resume, the queue re-reads intake, diffs it against the file, re-checks every parked reason (for example, whether the dependency pull request has merged, via `pr-view` state, or by asking the user when the forge cannot report merge state), and presents the diff at Gate Q.
 
 ## Risks / Trade-offs
 

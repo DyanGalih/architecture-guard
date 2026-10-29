@@ -1139,7 +1139,7 @@ test('governed-backlog queues groups through lanes with three batched gates', ()
   assert.match(prompt, /Never close a bead whose pull request is not merged/);
 
   // Run state names and resume
-  for (const state of ['planned', 'specifying', 'spec-pending', 'in-progress', 'ready', 'published', 'done', 'parked', 'skipped']) {
+  for (const state of ['planned', 'specifying', 'spec-pending', 'researched', 'specified', 'in-progress', 'ready', 'published', 'done', 'parked', 'skipped']) {
     assert.match(prompt, new RegExp(`\`${state}\` \\(`), `state ${state} must be defined`);
   }
   assert.match(prompt, /For every `parked` group, re-check its reason/);
@@ -1168,7 +1168,7 @@ test('governed-backlog keeps the fixes from its dry run', () => {
   assert.match(prompt, /record the question and the answer in the group's `assumptions`/);
   const gateS = prompt.slice(prompt.indexOf('### Human Gate S'), prompt.indexOf('### Step 5'));
   assert.match(gateS, /its `assumptions`/);
-  assert.match(gateS, /open decisions/);
+  assert.match(gateS, /its `decisions`/);
   assert.match(discover, /When the caller passes an accepted \*\*Story set\*\*/);
   assert.match(prompt, /does not propose or ask about it again/);
 
@@ -1182,8 +1182,8 @@ test('governed-backlog keeps the fixes from its dry run', () => {
   const gateQ = prompt.slice(prompt.indexOf('### Human Gate Q'), prompt.indexOf('### Step 4'));
   assert.match(gateQ, /group id \(the change name\)/);
   assert.match(gateQ, /blocking findings from Step 3/);
-  assert.match(gateQ, /`queue.yml` will be written/);
-  assert.match(prompt, /Run `architecture-guard hygiene --json` read-only on the base branch/);
+  assert.match(gateQ, /`queue.yml` and the discovery summaries will be written/);
+  assert.match(prompt, /Run `architecture-guard hygiene --json --target <path>` on a clean checkout of the base branch/);
 
   // Source is chosen before intake; a missing sync.yml is not invalid
   assert.match(prompt, /ask the user which to use before reading any items/);
@@ -1195,6 +1195,23 @@ test('governed-backlog keeps the fixes from its dry run', () => {
 
   // A forge that cannot report merge state makes the queue ask
   assert.match(prompt, /When the forge cannot report merge state[^\n]*ask the user whether each pull request in question has merged/);
+
+  // A waiting group is parked and never delivered in this run
+  assert.match(prompt, /A group that waits on a dependency is `parked` with the reason `waiting on <group>`/);
+  assert.match(prompt, /State plainly which groups will not run in this run because they wait/);
+
+  // Gate S hands specified groups to delivery, so a resume never repeats specification
+  assert.match(gateS, /An approved full-lane group becomes `specified`/);
+  assert.match(prompt, /For each `specified` full-lane group and each `planned` fix-lane or light-lane group/);
+  assert.match(prompt, /`spec-pending` and `researched` groups go to Gate S without repeating their phase/);
+
+  // Discovery summaries and open decisions survive an interrupted run
+  assert.match(prompt, /`\.architecture-guard\/queue\/<group>\.discovery\.md`/);
+  assert.match(prompt, /decisions: \[\]/);
+  assert.match(prompt, /one with an undecided decision stays `spec-pending`/);
+
+  // Known blockers have a stated default
+  assert.match(prompt, /the default is not to, and the group will probably park at verification/);
 
   // The run-state example follows the heaviest-lane rule
   const example = prompt.slice(prompt.indexOf('```yaml'), prompt.indexOf('```', prompt.indexOf('```yaml') + 3));
