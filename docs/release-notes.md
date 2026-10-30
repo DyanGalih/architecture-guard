@@ -197,6 +197,14 @@ Architecture Guard's standalone orchestrator now supports any SDD tool through c
 
 # Release Notes
 
+## agy-native-governed-execution (3.5.0)
+
+- **Antigravity (agy) Team Roles**: Added independent role profiles (`.architecture-guard/agy-agents.yml`), template (`agy_agents_template.yml`), and generated role files (`.agents/agents/agteam-<role>.md`).
+- **Unified Team Role Selection in Init**: Interactive `architecture-guard init` presents a single multi-select question covering only the selected hosts that support team roles (Claude, Codex, agy), with effect labels and none pre-selected.
+- **Consistent Non-Interactive Flags**: Flags like `--claude-agent-teams`, `--codex-agents`, and `--agy-agents` strictly require their respective host in `--agent`, failing before writes if mismatched. `--yes` alone enables no team roles.
+- **Host Role Sync**: `architecture-guard sync-team-roles --agent antigravity` regenerates owned agy roles.
+
+
 ## 2.0.1
 
 - Repositioned Architecture Guard as a standalone SDD Tools Orchestration layer for discovery, specification, planning, implementation, and verification.

@@ -139,7 +139,8 @@ Flags:
 | `--framework` | `spec-kit \| openspec \| none` | Framework to target |
 | `--commands` | `all`, `review`, or `init,governed-plan` | Comma-separated canonical names, indices, or aliases |
 | `--overwrite` | `replace` (default) / `skip` / `keep-both` | Existing file policy with `--yes` |
-| `--codex-agents` | (none) | Optional: install native Codex roles for a selection including `codex`; does not activate coordinated execution. Without this flag, interactive CLI setup asks whether to install roles; `--yes` leaves them uninstalled. Interactive CLI setup interviews for the roster and model before writing a new profile. |
+| `--codex-agents` | (none) | Optional: install native Codex roles for a selection including `codex`; does not activate coordinated execution. Interactive CLI setup asks via a single multi-select question across selected team-role hosts; `--yes` leaves roles uninstalled unless explicit role flags are given. |
+| `--agy-agents` | (none) | Optional: install native Antigravity (agy) roles for a selection including `antigravity`; does not activate coordinated execution. Interactive CLI setup interviews for roster and model. |
 | `--claude-agent-teams` | (none) | Enable Claude Code Agent Teams (Beta / Experimental): sets `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `.claude/settings.json` (an unreadable settings file is left unchanged) and generates one agent type per role in `.claude/agents/agteam-<role>.md` from `.architecture-guard/agents.yml` or the bundled role profile. `ag-init` interviews for the roster (for example no FE implementor on a backend-only API) and runs `architecture-guard sync-team-roles` to regenerate the files |
 
 Positional target:
@@ -202,6 +203,16 @@ SpecKit user switching to OpenSpec:
 - Spec Kit integration guide: [SPECKIT-INTEGRATION.md](../SPECKIT-INTEGRATION.md)
 - Governance workflows: [workflows.md](workflows.md)
 - Beginner guide: [beginner-guide.md](beginner-guide.md)
+
+
+## Antigravity (agy) Roles
+
+```bash
+architecture-guard init . --yes --agent antigravity --framework openspec --agy-agents
+architecture-guard sync-team-roles --agent antigravity
+```
+
+Customize `.architecture-guard/agy-agents.yml` from `architecture-guard resolve template agy_agents_template`. Roles generate `.agents/agents/agteam-<role>.md` with YAML frontmatter. Agy role configuration includes `read_only: true|false`. Reviewer roles require host-enforced write restrictions; if write restrictions cannot be enforced by the host, the role is not activated and execution falls back sequentially.
 
 ## Codex Roles
 

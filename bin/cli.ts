@@ -38,6 +38,7 @@ program
   .option('--vendor', 'Copy immutable runtime resources locally (for air-gapped setups)')
   .option('--full', 'Alias for --vendor')
   .option('--codex-agents', 'Install native Codex roles without activating coordinated execution')
+  .option('--agy-agents', 'Install native Antigravity (agy) roles without activating coordinated execution')
   .option('--claude-agent-teams', 'Enable Claude Code Agent Teams (Beta / Experimental)')
   .option('--claude-teams', 'Alias for --claude-agent-teams')
   .action(async (target, options) => {
@@ -80,7 +81,7 @@ program
 program
   .command('sync-team-roles [target]')
   .description('Regenerate owned host role files (default: Claude)')
-  .option('--agent <name>', 'Role target: claude | codex (default: claude)')
+  .option('--agent <name>', 'Role target: claude | codex | antigravity (default: claude)')
   .action((target, options) => { runSyncTeamRoles(target, options); });
 
 program
