@@ -115,7 +115,7 @@ If the discussion surfaced new architectural decisions, rejected alternatives, o
 Once you and the user are aligned on the feature details and any blocking/P0 conflicts are resolved:
 1. Conclude the discussion.
 2. Generate a structured **Discovery Summary Draft**.
-3. Hand the draft to the adapter-registered governed-spec capability as its seed input.
+3. For a multi-item breakdown, recommend team delivery as described below; otherwise hand the draft to the adapter-registered governed-spec capability as its seed input.
 
 ## Output Structure
 
@@ -164,10 +164,10 @@ When the discussion is concluded and aligned, the command MUST return:
 - [Proposed decision/constraint/lesson, rationale, and intended Flash-Mem type; or "None"]
 
 ## Recommended Next Step
-Run `ag-governed-spec` with this Discovery Summary Draft as its seed (suggested change name: `<suggested-feature-name>`); it records the Story Set in the change. It establishes the change through {adapter_command:create-change} after its branch and write-approval gates, then writes and validates the specification.
+For a single feature, run `ag-governed-spec` with this Discovery Summary Draft as its seed (suggested change name: `<suggested-feature-name>`); it records the Story Set in the change. It establishes the change through {adapter_command:create-change} after its branch and write-approval gates, then writes and validates the specification.
 
 When the draft includes a multi-item **Backlog Breakdown** (or the user wants to store the breakdown as User Stories in `<root>/user-stories/`, `.architecture-guard/backlog.yml`, GitHub Issues, or Jira before engineering planning):
-- Run `ag-governed-delivery-team` with this Discovery Summary Draft to approve, persist (`.architecture-guard/backlog.yml` and/or `<root>/user-stories/*.md`), and optionally sync the breakdown to GitHub Issues or Jira, stopping after Phase 3 and handing off to `ag-governed-backlog` for queued delivery.
+- Run `ag-governed-delivery-team` with this Discovery Summary Draft to approve and persist the requested outputs, optionally sync them to GitHub Issues or Jira, and stop after Phase 3. Hand off to `ag-governed-backlog` only after confirming a supported source contains the approved items.
 
 After the specification is accepted, choose a delivery workflow:
 - For solo developers: run `ag-governed-delivery`.

@@ -3178,7 +3178,7 @@ test('governed-discover decomposes ideas read-only and governed-delivery-team pe
   const discover = orchestrationPrompt('governed-discover.md');
   assert.match(discover, /architecture-guard resolve template backlog_item/);
   assert.match(discover, /^## Backlog Breakdown$/m);
-  assert.match(discover, /Run `ag-governed-delivery-team` with this Discovery Summary Draft to approve, persist/);
+  assert.match(discover, /Run `ag-governed-delivery-team` with this Discovery Summary Draft to approve and persist/);
 
   const team = orchestrationPrompt('governed-delivery-team.md');
   assert.match(team, /architecture-guard resolve template backlog_item/);
@@ -3187,9 +3187,39 @@ test('governed-discover decomposes ideas read-only and governed-delivery-team pe
   assert.match(team, /stop cleanly here before Phase 4 \(`Specification Gate`\)/);
   assert.match(team, /Skipped \(breakdown-only\)/);
   assert.match(team, /recommend running `ag-governed-backlog` to deliver the queued items/);
+  assert.match(team, /Continue with steps 4–7 and Phase 2 before Phase 3/);
+  assert.doesNotMatch(team, /skip single-feature SDD change creation[^\n]*proceed to Phase 3/);
+  assert.match(team, /do not create unrequested outputs/);
+  assert.match(team, /Otherwise present the proposed items without creating story files/);
+  assert.match(team, /check for `\.architecture-guard\/sync\.yml` for a normal single-feature run, or for a breakdown only if tracker sync was selected/);
+  assert.match(team, /If the file is absent, report sync as skipped/);
+  assert.match(team, /If it is disabled, report disabled and do not push/);
+  assert.match(team, /If it is enabled, offer synchronization/);
+  assert.match(team, /requires explicit approval of the resolved provider, repository\/project, and target/);
+  assert.match(team, /confirm a supported source \(Jira, Beads, or local backlog\) contains the approved items/);
+  assert.match(team, /Story files and GitHub Issues alone are not queue sources/);
+  assert.match(team, /Defer the adapter's change-scope action until Phase 4 for every run/);
+  assert.match(team, /Before then, do not look up SDD change artifacts/);
+  assert.match(team, /First establish the active change scope with \{adapter_command:change-scope\}/);
+  assert.match(team, /Only when the user selected `\.architecture-guard\/backlog\.yml` as an output in item 1/);
+  assert.match(team, /the user's selection controls/);
+  assert.match(team, /preview a separate non-protected breakdown branch named with the user's approval/);
+  assert.match(discover, /only after confirming a supported source contains the approved items/);
 
   for (const file of ['governed-discover.md', 'governed-delivery-team.md']) {
     const legacy = fs.readFileSync(path.join(repoRoot, 'commands', file), 'utf8');
     assert.match(legacy, /dedicated standalone `architecture-guard` CLI installation/, `commands/${file}`);
   }
+});
+
+test('installed OpenSpec team delivery defers scope and container creation until after the breakdown gate', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-team-scope-'));
+  runArgs(['init', '--yes', '--agent', 'codex', '--framework', 'openspec', '--commands', 'governed-delivery-team'], cwd);
+  const prompt = fs.readFileSync(path.join(cwd, '.codex/skills/ag-governed-delivery-team/SKILL.md'), 'utf8');
+  assert.match(prompt, /Defer the adapter's change-scope action until Phase 4 for every run/);
+  assert.match(prompt, /Before then, do not look up SDD change artifacts/);
+  assert.match(prompt, /First establish the active change scope with/);
+  assert.match(prompt, /Reuse an existing selected change without recreating it/);
+  assert.match(prompt, /openspec new change .*CHANGE_ID/);
+  assert.doesNotMatch(prompt, /\{adapter_command:/);
 });
