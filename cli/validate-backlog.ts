@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'yaml';
 import { z } from 'zod';
+import { insideWorkspace } from './repositories';
 
 export const BACKLOG_TYPES = ['story', 'feature', 'bug', 'task', 'chore', 'spike'] as const;
 export const BACKLOG_PRIORITIES = ['highest', 'high', 'medium', 'low', 'lowest'] as const;
@@ -52,7 +53,8 @@ const backlogSchema = z.object({
       }
     });
   });
-  const cycle = findGroupCycle(backlog.items);
+  // Items first: a cycle inside one group is invisible once edges collapse to groups
+  const cycle = findCycle(itemEdges(backlog.items)) ?? findCycle(groupEdges(backlog.items));
   if (cycle) {
     ctx.addIssue({ code: 'custom', path: ['items'], message: `dependency cycle: ${cycle.join(' -> ')}` });
   }
@@ -61,8 +63,24 @@ const backlogSchema = z.object({
 export type Backlog = z.infer<typeof backlogSchema>;
 type BacklogItem = Backlog['items'][number];
 
-// Items without a group form a group of their own, so cycles are checked between groups
-function findGroupCycle(items: BacklogItem[]): string[] | null {
+// A dependency on a group is a dependency on every item in it
+function itemEdges(items: BacklogItem[]) {
+  const edges = new Map<string, Set<string>>();
+  for (const item of items) {
+    for (const target of item.depends_on ?? []) {
+      const members = items.filter(other => other.group === target).map(other => other.id);
+      for (const to of members.length ? members : [target]) {
+        if (to === item.id) continue;
+        if (!edges.has(item.id)) edges.set(item.id, new Set());
+        edges.get(item.id).add(to);
+      }
+    }
+  }
+  return edges;
+}
+
+// Items without a group form a group of their own; groups deliver as units, so they can cycle when items do not
+function groupEdges(items: BacklogItem[]) {
   const groupOf = new Map(items.map(item => [item.id, item.group ?? item.id]));
   const edges = new Map<string, Set<string>>();
   for (const item of items) {
@@ -74,6 +92,10 @@ function findGroupCycle(items: BacklogItem[]): string[] | null {
       edges.get(from).add(to);
     }
   }
+  return edges;
+}
+
+function findCycle(edges: Map<string, Set<string>>): string[] | null {
   const state = new Map<string, 'visiting' | 'done'>();
   const stack: string[] = [];
   const visit = (node: string): string[] | null => {
@@ -98,6 +120,11 @@ function findGroupCycle(items: BacklogItem[]): string[] | null {
 
 export function validateBacklog(backlogPath: string): Backlog {
   const fullPath = path.resolve(backlogPath);
+  // Checked on the real path too, so a symlinked backlog cannot read outside the project; before the existence
+  // check, so the error does not reveal which outside paths exist
+  if (!insideWorkspace(process.cwd(), fullPath)) {
+    throw new Error(`Backlog ${backlogPath} is outside the project root ${process.cwd()}`);
+  }
   if (!fs.existsSync(fullPath)) {
     throw new Error(`Backlog not found at ${fullPath}`);
   }

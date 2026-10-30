@@ -1072,6 +1072,8 @@ test('validate-backlog accepts the example and rejects invalid backlogs', () => 
     ['self-group-dep.yml', `items:\n${item('A', '    group: g1\n    depends_on: [g1]\n')}`, /A depends on itself/],
     ['empty-slug-id.yml', `items:\n${item('___')}`, /becomes a change name/],
     ['empty-slug-group.yml', `items:\n${item('A', '    group: ...\n')}`, /becomes a change name/],
+    // Items in one group that depend on each other cannot be ordered, although the group has no outside edge
+    ['same-group-cycle.yml', `items:\n${item('A', '    group: g1\n    depends_on: [B]\n')}${item('B', '    group: g1\n    depends_on: [A]\n')}`, /dependency cycle: (A -> B -> A|B -> A -> B)/],
   ]) {
     fs.writeFileSync(path.join(cwd, name), yaml);
     const result = spawnSync(process.execPath, [installer, 'validate-backlog', name], { cwd, encoding: 'utf8' });
@@ -1084,6 +1086,23 @@ test('validate-backlog accepts the example and rejects invalid backlogs', () => 
   const missing = spawnSync(process.execPath, [installer, 'validate-backlog', 'nope.yml'], { cwd, encoding: 'utf8' });
   assert.notEqual(missing.status, 0);
   assert.match(missing.stderr, /Backlog not found/);
+
+  // The backlog path stays inside the project root, lexically and after resolving symlinks
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-outside-'));
+  fs.writeFileSync(path.join(outside, 'backlog.yml'), `items:\n${item('SECRET')}`);
+  const project = path.join(cwd, 'project');
+  fs.mkdirSync(project);
+  fs.symlinkSync(path.join(outside, 'backlog.yml'), path.join(project, 'linked.yml'));
+  for (const target of [path.relative(project, path.join(outside, 'backlog.yml')), path.join(outside, 'backlog.yml'), 'linked.yml', '../nope.yml']) {
+    const escaped = spawnSync(process.execPath, [installer, 'validate-backlog', target], { cwd: project, encoding: 'utf8' });
+    assert.notEqual(escaped.status, 0, `${target} must be rejected`);
+    assert.match(escaped.stderr, /is outside the project root/, target);
+    assert.doesNotMatch(escaped.stdout + escaped.stderr, /SECRET|not found/, target);
+  }
+  fs.writeFileSync(path.join(project, 'inside.yml'), `items:\n${item('A')}`);
+  fs.symlinkSync(path.join(project, 'inside.yml'), path.join(project, 'inside-link.yml'));
+  const insideLink = spawnSync(process.execPath, [installer, 'validate-backlog', 'inside-link.yml'], { cwd: project, encoding: 'utf8' });
+  assert.equal(insideLink.status, 0, insideLink.stderr);
 });
 
 test('governed-backlog queues groups through lanes with four batched gates', () => {

@@ -258,7 +258,7 @@ items:
     size: s                # xs | s | m | l | xl, breaks priority ties
 ```
 
-Check it with `architecture-guard validate-backlog`. Queue settings go in `.architecture-guard/sync.yml`:
+Check it with `architecture-guard validate-backlog`, run from the project root; it reads only a backlog file inside that root (after resolving symlinks) and rejects dependency cycles, including between items of one group. Queue settings go in `.architecture-guard/sync.yml`:
 
 ```yaml
 provider: jira
