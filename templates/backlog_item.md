@@ -39,7 +39,7 @@ A missing field stays empty; never invent acceptance criteria. An item with no a
 
 A group's **expected files** are the files named in its items' text, plus the files of the modules or directories its items' terms match by name. When they cannot be worked out, Gate Q shows the group as having unclear expected files and asks the user to confirm its lane.
 
-**Group ids** are lowercase kebab-case, because they become change, branch, and worktree names: lowercase the name, replace every run of characters other than `a-z` and `0-9` with `-`, and trim leading and trailing `-` (`TASK-7` becomes `task-7`, an epic titled `Auth & Sessions` becomes `auth-sessions`). When two groups would get the same id, append `-2`, `-3`, and so on in run order.
+**Group ids** are lowercase kebab-case, because they become change, branch, and worktree names: lowercase the name, replace every run of characters other than `a-z` and `0-9` with `-`, and trim leading and trailing `-` (`TASK-7` becomes `task-7`, an epic titled `Auth & Sessions` becomes `auth-sessions`). This applies to every source, not only the local file. When the name normalizes to an empty id (for example an epic titled only in non-Latin script, such as `認証`), use the group's main item id normalized the same way, and when that is empty too, `group-<n>` in run order; Gate Q marks the id as a fallback and offers a rename. A rename must also normalize to a non-empty id. When two groups would get the same id, append `-2`, `-3`, and so on in run order.
 
 A group depends on another group when any of its items depends on an item in it, or on the group itself. Report dependency cycles at Gate Q and do not start any group in a cycle.
 

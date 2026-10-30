@@ -1110,9 +1110,20 @@ test('governed-backlog queues groups through lanes with four batched gates', () 
   // Lanes and their capability order
   const step5 = prompt.slice(prompt.indexOf('### Step 5'), prompt.indexOf('### Human Gate I'));
   assert.match(step5, /\*\*Full lane\*\*: run `ag-governed-delivery`/);
-  assert.match(step5, /\*\*Fix lane\*\*:[^\n]*then run `ag-governed-tasks`\. Its tasks start with reproducing each bug/);
-  assert.match(step5, /\*\*Light lane\*\*:[^\n]*then run `ag-governed-tasks`\. Do not write a new specification/);
+  assert.match(step5, /\*\*Fix lane\*\*:[^\n]*Then run `ag-governed-tasks`, telling it the change has no specification delta\. Its tasks start with reproducing each bug/);
+  assert.match(step5, /\*\*Light lane\*\*:[^\n]*then run `ag-governed-tasks`, telling it the change has no specification delta\. Do not write a new specification/);
   assert.match(step5, /never code or tests/);
+  // Fix and light lanes supply the inputs ag-governed-tasks requires before handing off to it
+  for (const lane of ['Fix', 'Light']) {
+    const line = step5.split('\n').find(l => l.startsWith(`- **${lane} lane**`)) || '';
+    assert.ok(line.indexOf('minimal plan') !== -1 && line.indexOf('minimal plan') < line.indexOf('`ag-governed-tasks`'), `${lane} lane writes a plan before tasks`);
+    assert.match(line, /telling it the change has no specification delta/, lane);
+  }
+  assert.match(step5, /each item's id, title, and acceptance criteria under `## Stories`/);
+  const tasksPhase = fs.readFileSync(path.join(__dirname, '..', 'orchestration', 'governed-tasks.md'), 'utf8');
+  assert.match(tasksPhase, /\*\*Change with no specification delta\*\*[^\n]*`## Stories` section, with each item's acceptance criteria, stands in for `\{adapter_path:spec\}`[^\n]*`\{adapter_path:plan\}` and the Constitution Inputs are still required\. If the spec \(unless the `## Stories` section stands in for it\), plan, governance rules, or architecture rules are missing, stop/);
+  // Standing in for the spec never waives the governance, architecture, or security checks
+  assert.doesNotMatch(tasksPhase, /still required\. Otherwise, if the spec/);
   assert.doesNotMatch(step5, /`ag-governed-implement`[^']/);
   // Gate I previews the exact implementation scope; implement accepts only that caller approval
   const gateI = prompt.slice(prompt.indexOf('### Human Gate I'), prompt.indexOf('### Step 6'));
@@ -1201,6 +1212,11 @@ test('governed-backlog keeps the fixes from its dry run', () => {
   assert.match(prompt, /park the group with the reason `needs confirmation: <question>`/);
   assert.doesNotMatch(prompt, /continue only when what follows writes nothing outside the group's worktree/);
   assert.match(gateS, /every group parked with `needs confirmation`/);
+  // The park records where to resume, so an interrupted run restarts each phase at the right point
+  assert.match(prompt, /parked_from: null # for a `needs confirmation` park: \{state, phase, capability, step\}, where phase is discovery \| specification \| plan-and-tasks \| implementation/);
+  assert.match(prompt, /before parking write `parked_from` to `queue.yml`/);
+  assert.match(prompt, /set the group back to `parked_from.state`, clear `parked_from`, and resume `parked_from.capability` from that step/);
+  assert.match(prompt, /its `parked_from` says where the group resumes/);
 
   // Research groups open no pull request, so their beads are never closed by the queue
   assert.match(gateS, /its beads are never closed by this command/);
@@ -1208,7 +1224,9 @@ test('governed-backlog keeps the fixes from its dry run', () => {
 
   // Gate Q shows the change name, known blockers, and the queue.yml write
   const gateQ = prompt.slice(prompt.indexOf('### Human Gate Q'), prompt.indexOf('### Step 4'));
-  assert.match(gateQ, /group id \(the change name\)/);
+  assert.match(gateQ, /group id \(the change name, marked when it is a fallback id\)/);
+  // Every source gets a non-empty group id
+  assert.match(contract, /This applies to every source[^\n]*`認証`[^\n]*main item id[^\n]*`group-<n>`[^\n]*offers a rename\. A rename must also normalize to a non-empty id/);
   assert.match(gateQ, /blocking findings from Step 3/);
   assert.match(gateQ, /`queue.yml` and the discovery summaries will be written/);
   assert.match(prompt, /Run `architecture-guard hygiene --json` on the base branch/);
