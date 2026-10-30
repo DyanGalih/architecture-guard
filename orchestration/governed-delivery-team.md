@@ -10,7 +10,7 @@ Before executing this command, read `.architecture-guard/adapters/resolve.md` an
 
 ## Change Scope
 
-Before any SDD artifact lookup or command, establish the active change scope with {adapter_command:change-scope}. If no unambiguous scope can be resolved, stop and ask the user rather than continuing without one.
+Before any SDD artifact lookup or command, establish the active change scope with {adapter_command:change-scope}. If no unambiguous scope can be resolved, stop and ask the user rather than continuing without one. **Backlog / Story Breakdown Mode**: when the user invokes this command solely to break down an idea or multi-item `Discovery Summary Draft` into `<root>/user-stories/*.md`, `.architecture-guard/backlog.yml`, and/or external tracker issues (GitHub Issues or Jira) and stop after Phase 3, defer establishing a single SDD change scope until and unless the run continues to Phase 4 (`Specification Gate`).
 
 ## Standalone Resource Resolution
 
@@ -55,7 +55,7 @@ Produce an approved User Story and an implementation-ready `{adapter_path:tasks}
 
 ## Write Approval Gate
 
-Before the first mutation, resolve and preview the exact branch, change container, User Story, plan, and task artifacts together with all planned creation, status, linkage, generation, repair, reconciliation, and artifact-review repair operations. Obtain explicit user approval, then allow routine writes already previewed within this team-delivery phase scope without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+Before the first mutation, resolve and preview the exact branch, change container, User Story (`<root>/user-stories/*.md`), local backlog (`.architecture-guard/backlog.yml` when persisting a backlog breakdown), plan, and task artifacts together with all planned creation, status, linkage, generation, repair, reconciliation, and artifact-review repair operations. Obtain explicit user approval, then allow routine writes already previewed within this team-delivery phase scope without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 
 ## Mandatory Branch Preflight
 
@@ -68,10 +68,11 @@ Before creating, planning, or modifying any active change:
 3. If already on a feature branch, reuse it.
 4. Preserve existing uncommitted changes; never reset or discard them.
 5. Report the selected branch before creating artifacts.
+6. **Backlog / Story Breakdown Mode**: when this run only persists User Stories (`<root>/user-stories/*.md`), `.architecture-guard/backlog.yml`, or `.architecture-guard/sync_status.json` and stops after Phase 3 without creating an SDD change container, do not create a single-feature `feature/<change-name>` branch up front (`ag-governed-backlog` creates per-group branches and worktrees at its Gate Q); still report the current branch and require the Write Approval Gate before writing any file.
 
 ## Phase 1 — Detect the Active Feature and Integrations
 
-1. Resolve the active work from the user's explicit path, adapter artifact paths, current branch metadata when supported, or one unambiguous result from {adapter_command:list-specs}, in that order.
+1. Resolve the active work from the user's explicit path, adapter artifact paths, current branch metadata when supported, or one unambiguous result from {adapter_command:list-specs}, in that order. When the user supplies a multi-item **Backlog Breakdown** from `ag-governed-discover` or asks to break down features into a backlog / tracker stories and stop after Phase 3, skip single-feature SDD change creation (`{adapter_command:create-change}`) here and proceed to Phase 3.
 2. If no active feature directories exist (ignoring archived or completed work), derive a kebab-case name from the user's goal, show the derived name and change container in the Write Approval Gate preview, and after approval execute {adapter_command:create-change} before creating specification artifacts.
 3. Do not guess when multiple active feature directories are plausible. Ask the user to identify the feature.
 4. Detect `flash-mem` as an MCP service. Do not inspect an SDD extension manifest for it.
@@ -90,12 +91,12 @@ Prefer summaries, metadata, tags, confidence, and related files. Load full entri
 
 ## Phase 3 — Generate User Story
 
-Before engineering planning begins, generate a business-oriented User Story representing the approved business intent.
+Before engineering planning begins, generate a business-oriented User Story (or multi-item backlog / story breakdown when decomposing an initiative) representing the approved business intent.
 
 `<root>` is the project root (the directory containing `.architecture-guard/`).
 
-1. Look in the `<root>/user-stories/` directory. If none exist, create a new story. If exactly one exists, ask the user to confirm it is the story being fulfilled or to create a new one. If multiple exist, ask which User Story they are fulfilling, or whether to create a new one.
-2. If creating a new story, analyze the Discovery context and generate a User Story containing:
+1. Look in the `<root>/user-stories/` directory. If none exist, create a new story (or stories when decomposing multiple items). If exactly one exists, ask the user to confirm it is the story being fulfilled or to create a new one. If multiple exist, ask which User Story they are fulfilling, or whether to create new ones.
+2. If creating a new story (or multi-story breakdown), analyze the Discovery context and generate each User Story containing:
    - Business objective
    - User stories
    - Acceptance criteria
@@ -105,14 +106,16 @@ Before engineering planning begins, generate a business-oriented User Story repr
    - Risks
    - Open questions
 3. Ensure the User Story is understandable by technical and non-technical stakeholders.
-4. After the Write Approval Gate, persist the generated User Story as `<feature-name>.md` in the `<root>/user-stories/` directory with status `draft`.
-5. Present it for stakeholder review and stop before engineering planning until the user explicitly accepts it. Record the result as `approved` in the file.
-6. Once the User Story is approved, check for `.architecture-guard/sync.yml`. External synchronization is a separate side effect and requires explicit approval of the resolved provider, repository/project, and target before the first push:
+4. After the Write Approval Gate, persist the generated User Story as `<feature-name>.md` (or `<story-id>.md` per story in a multi-story breakdown) in the `<root>/user-stories/` directory with status `draft`.
+5. Present it for stakeholder review and stop before engineering planning until the user explicitly accepts it. Record the result as `approved` in the file(s).
+5b. **Local Backlog Persistence (when breaking down into a backlog)**: When the user or Discovery Summary Draft requests persisting a backlog breakdown to `.architecture-guard/backlog.yml`, resolve and apply the `backlog_item` template with `architecture-guard resolve template backlog_item` and write or update `.architecture-guard/backlog.yml` after the Write Approval Gate and stakeholder acceptance in item 5. When the `architecture-guard` CLI is installed, validate the written file with `architecture-guard validate-backlog .architecture-guard/backlog.yml`; a non-zero exit means invalid and must be repaired and re-validated before continuing or stopping.
+6. Once the User Story (or breakdown) is approved, check for `.architecture-guard/sync.yml`. External synchronization is a separate side effect and requires explicit approval of the resolved provider, repository/project, and target before the first push:
    - When the `architecture-guard` CLI is installed, run `architecture-guard validate-sync-config .architecture-guard/sync.yml` to strictly validate the configuration; a non-zero exit means invalid and no remote write happens. Never fetch the CLI on demand (for example through a package runner); if it is not installed, skip sync and record `Unavailable`.
-   - If valid, enabled, and approved, use the recorded external ID/URL for this story when present and update that item instead of creating a duplicate. Otherwise create one item and persist its provider, target, ID/URL, story path, and content fingerprint in `.architecture-guard/sync_status.json`.
+   - If valid, enabled, and approved, use the recorded external ID/URL for each story when present and update that item instead of creating a duplicate. Otherwise create one item per approved story and persist its provider, target, ID/URL, story path, and content fingerprint in `.architecture-guard/sync_status.json`.
    - Skip a push when the same target and content fingerprint already succeeded.
    - On validation, approval, or provider failure, do not create/update an external item. Record `disabled`, `approval-required`, or `failed` with the target and error; warn without blocking local delivery. Never report success without a confirmed external ID/URL.
 7. If a previously approved User Story has been modified after engineering artifacts were generated, mark it `review-required`, warn the user, and require re-approval before proceeding.
+8. **Phase 3 Stop / Handoff Gate (Backlog & Multi-Story Breakdown)**: Once the breakdown features have been saved to `<root>/user-stories/*.md`, `.architecture-guard/backlog.yml`, and/or synced to GitHub Issues or Jira, if the user requested a backlog/story breakdown only or if multiple groups/stories were produced, stop cleanly here before Phase 4 (`Specification Gate`). Return the `Governed Team Delivery Summary` (marking `Plan`, `Tasks`, `Analysis`, and `Artifact Review` as `Skipped (breakdown-only)`) and recommend running `ag-governed-backlog` to deliver the queued items. Only continue to Phase 4 when the user wants immediate single-feature specification, planning, and task generation.
 
 ## Phase 4 — Specification Gate
 
@@ -217,24 +220,25 @@ Return a concise `Governed Team Delivery Summary`:
 # Governed Team Delivery Summary
 
 ## Workflow State
-- **Feature**: [feature path]
+- **Feature**: [feature path, or `Backlog Breakdown` when stopped after Phase 3]
 - **Memory**: [Ready / Unavailable]
 - **User Story**: [Draft / Approved / Review Required] — [Generated / Reused]
+- **Backlog**: [Validated (`.architecture-guard/backlog.yml`) / Skipped / Not Applicable]
 - **External Sync**: [Synced / Skipped / Approval Required / Failed / Unavailable]
-- **Plan**: [Generated / Reused / Repaired / Blocked]
+- **Plan**: [Generated / Reused / Repaired / Blocked / Skipped (breakdown-only)]
 - **Plan Security Review**: [Passed / Advisory / Blocked / Not Applicable / Unavailable]
-- **Plan Architecture Review**: [Passed / Advisory / Blocked]
-- **Tasks**: [Generated / Reconciled / Reused / Blocked]
+- **Plan Architecture Review**: [Passed / Advisory / Blocked / Not Applicable]
+- **Tasks**: [Generated / Reconciled / Reused / Blocked / Skipped (breakdown-only)]
 - **Task Security Review**: [Passed / Advisory / Blocked / Not Applicable / Unavailable]
-- **Analysis**: [Passed / Repaired / Blocked]
-- **Artifact Review**: [Clean (N passes; qualifiers) / Not converged (N passes) / Blocked / Unavailable]
+- **Analysis**: [Passed / Repaired / Blocked / Skipped (breakdown-only)]
+- **Artifact Review**: [Clean (N passes; qualifiers) / Not converged (N passes) / Blocked / Unavailable / Skipped (breakdown-only)]
 
 ## Findings
 - **Blocking**: [None or explicit findings]
 - **Advisory**: [Non-blocking findings]
 
 ## Next Step
-- [Continue to governed-implement, resolve a blocking decision, or rerun a targeted phase]
+- [Continue to governed-implement, run `ag-governed-backlog` to deliver the queued breakdown, resolve a blocking decision, or rerun a targeted phase]
 ```
 
 ## Targeted Recovery Commands

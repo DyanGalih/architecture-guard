@@ -86,6 +86,7 @@ Enter an interactive Q&A discussion with the user.
 1. **Acknowledge and Advise**: Briefly state your understanding of the user's idea and any immediate architectural considerations.
 2. **Warn on Violations**: If the user suggests an idea that conflicts with an architectural constraint (e.g., adding a new database when the constitution mandates a single shared database), you MUST warn them, identify whether the rule is blocking/P0 or non-blocking, and suggest an architecture-compliant alternative.
 3. **Refine**: Ask clarifying questions to flesh out edge cases, UX flows, and technical boundaries.
+4. **Idea-to-Backlog Decomposition (when requested or multi-item)**: When the user's idea spans multiple stories, bugs, tasks, or spikes, or the user asks to break an idea down into a backlog or user stories, resolve and apply the `backlog_item` template with `architecture-guard resolve template backlog_item` and decompose the idea into proposed backlog items (`id`, `type`, `priority`, `size`, `group`, `depends_on`, `title`, `description`, `acceptance`) for the handoff draft. Keep this decomposition strictly read-only.
 
 *Do not generate a full specification markdown file during this phase. Keep the interaction conversational and focused on alignment.*
 
@@ -141,6 +142,9 @@ When the discussion is concluded and aligned, the command MUST return:
 - **Conflicts**: [KEY: summary, what conflicts, and the user's decision or Open] or None
 - **Owned elsewhere**: [KEY: summary (assignee), coordinate with] or None
 
+## Backlog Breakdown
+- [Proposed items using the `backlog_item` template shape (`id`, `type`, `priority`, `size`, `group`, `depends_on`, `title`, `description`, `acceptance`) when decomposing a multi-item idea into a backlog or user stories; or "Single feature (none)"]
+
 ## Rejected Options
 - [Options avoided because they conflict with architecture, add drift, or over-engineer the solution]
 
@@ -161,6 +165,9 @@ When the discussion is concluded and aligned, the command MUST return:
 
 ## Recommended Next Step
 Run `ag-governed-spec` with this Discovery Summary Draft as its seed (suggested change name: `<suggested-feature-name>`); it records the Story Set in the change. It establishes the change through {adapter_command:create-change} after its branch and write-approval gates, then writes and validates the specification.
+
+When the draft includes a multi-item **Backlog Breakdown** (or the user wants to store the breakdown as User Stories in `<root>/user-stories/`, `.architecture-guard/backlog.yml`, GitHub Issues, or Jira before engineering planning):
+- Run `ag-governed-delivery-team` with this Discovery Summary Draft to approve, persist (`.architecture-guard/backlog.yml` and/or `<root>/user-stories/*.md`), and optionally sync the breakdown to GitHub Issues or Jira, stopping after Phase 3 and handing off to `ag-governed-backlog` for queued delivery.
 
 After the specification is accepted, choose a delivery workflow:
 - For solo developers: run `ag-governed-delivery`.

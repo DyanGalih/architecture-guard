@@ -3173,3 +3173,23 @@ test('review-artifacts grounds cited premises read-only and checks path coverage
     assert.doesNotMatch(installed, /\{forge_command:/, file);
   }
 });
+
+test('governed-discover decomposes ideas read-only and governed-delivery-team persists backlog breakdowns with a Phase 3 stop gate', () => {
+  const discover = orchestrationPrompt('governed-discover.md');
+  assert.match(discover, /architecture-guard resolve template backlog_item/);
+  assert.match(discover, /^## Backlog Breakdown$/m);
+  assert.match(discover, /Run `ag-governed-delivery-team` with this Discovery Summary Draft to approve, persist/);
+
+  const team = orchestrationPrompt('governed-delivery-team.md');
+  assert.match(team, /architecture-guard resolve template backlog_item/);
+  assert.match(team, /architecture-guard validate-backlog \.architecture-guard\/backlog\.yml/);
+  assert.match(team, /Phase 3 Stop \/ Handoff Gate/);
+  assert.match(team, /stop cleanly here before Phase 4 \(`Specification Gate`\)/);
+  assert.match(team, /Skipped \(breakdown-only\)/);
+  assert.match(team, /recommend running `ag-governed-backlog` to deliver the queued items/);
+
+  for (const file of ['governed-discover.md', 'governed-delivery-team.md']) {
+    const legacy = fs.readFileSync(path.join(repoRoot, 'commands', file), 'utf8');
+    assert.match(legacy, /dedicated standalone `architecture-guard` CLI installation/, `commands/${file}`);
+  }
+});

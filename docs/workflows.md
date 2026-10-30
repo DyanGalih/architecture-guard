@@ -29,7 +29,7 @@ The orchestrated workflow is:
 3. Implementation context: check the codebase for similar patterns (if requested)
 4. Interactive discussion: an architecture-aware chat to refine the idea, warning when it goes beyond the story set's acceptance criteria
 5. Governance suggestions: when the discussion or memory shows a rule that keeps getting in the way (for example the same exception accepted in several changes), drafts a Constitution Update Proposal or workflow suggestion with its evidence. Discovery never edits rules; you decide.
-6. Draft generation: output a clean feature draft, including the story set, to hand off to the specification phase. `ag-governed-spec` records the set in the change's `## Stories` section, so later scope checks treat the bundled stories as in scope.
+6. Draft generation: output a clean feature draft, including the story set, to hand off to the specification phase. `ag-governed-spec` records the set in the change's `## Stories` section, so later scope checks treat the bundled stories as in scope. When your idea spans multiple deliverables or you ask to break it down into a backlog or User Stories, the draft also includes a read-only **Backlog Breakdown** using the `backlog_item` schema and recommends `ag-governed-delivery-team` to approve, persist, and optionally sync the breakdown before running `ag-governed-backlog`.
 
 ### Example Orchestration
 
@@ -220,11 +220,12 @@ enabled: true
 The configuration is strictly validated during the workflow using `architecture-guard validate-sync-config` to ensure security constraints on untrusted input are met.
 
 ### How it Works
-1. Run `/ag-governed-delivery-team`.
-2. A User Story is generated and proposed.
+1. Run `/ag-governed-delivery-team` (either directly or seeded with a `Discovery Summary Draft` from `/ag-governed-discover`).
+2. One or more User Stories (`user-stories/*.md`) and/or a local backlog breakdown (`.architecture-guard/backlog.yml`, validated with `architecture-guard validate-backlog`) are generated and proposed for stakeholder review.
 3. Upon your explicit approval, the agent reads `sync.yml`.
-4. If enabled, the agent uses its MCP tools (e.g., `github-mcp-server`) to create the issue in your tracker.
+4. If enabled, the agent uses its MCP tools (e.g., `github-mcp-server` or Jira) to create or update the issues in your tracker.
 5. The result is recorded locally in `.architecture-guard/sync_status.json` (e.g., `{ "status": "success", "issue_url": "..." }`).
+6. **Phase 3 Stop / Handoff Gate**: If you only wanted to break down features into `.architecture-guard/backlog.yml`, `user-stories/*.md`, and/or GitHub Issues or Jira (or when multiple groups/stories were produced), `ag-governed-delivery-team` stops cleanly after Phase 3 and hands off to `/ag-governed-backlog` to deliver the queue without forcing single-feature Plan/Tasks generation.
 
 If the push fails, the workflow gracefully degrades by logging a warning and writing `{ "status": "failed" }` to the status file without blocking local delivery.
 
