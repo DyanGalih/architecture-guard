@@ -58,7 +58,7 @@ Provide a single command that ensures:
 
 ### Write Approval Gate
 
-Accept an existing caller approval only for the identical action, phase, exact targets, and owning repository under `capability_composition`; distinct human decisions and material scope expansions still require approval.
+**Caller approval**: Accept an existing caller approval only for the identical action, phase, exact targets, and owning repository under `capability_composition`; it covers only what that preview showed. Distinct human decisions and material scope expansions still require approval.
 
 Before the first mutation, resolve and preview the working branch and the exact code, test, and task artifacts together with all planned implementation, test, and task-checkbox operations. Obtain explicit user approval, then allow routine writes already previewed within this implementation phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 
@@ -204,7 +204,7 @@ IF architecture violations exist:
 
 ### Step 7 — Mandatory Verification Gate
 
-Run {adapter_command:verify} after implementation and reviews. Do not mark the workflow complete or ready to merge until verification passes with no unresolved blocking findings; if unavailable as a registered capability, execute the Architecture Guard verification workflow inline.
+Run {adapter_command:verify} after implementation and reviews. When the caller stated the change has no specification delta, pass that statement to it, so it verifies against the change's `## Stories` section. Do not mark the workflow complete or ready to merge until verification passes with no unresolved blocking findings; if unavailable as a registered capability, execute the Architecture Guard verification workflow inline.
 
 ### Step 8 — Proactive Durable Memory Preservation
 

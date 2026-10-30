@@ -1029,6 +1029,310 @@ test('validate-sync-config is a registered CLI command', () => {
   }
 });
 
+test('validate-sync-config accepts the backlog block and rejects bad values', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  fs.writeFileSync(path.join(cwd, 'ok.yml'), 'provider: jira\nproject: PROJ\nbacklog:\n  jql: project = PROJ AND statusCategory != Done\n  lanes:\n    defect: fix\n');
+  const ok = spawnSync(process.execPath, [installer, 'validate-sync-config', 'ok.yml'], { cwd, encoding: 'utf8' });
+  assert.equal(ok.status, 0, ok.stderr);
+  assert.deepEqual(JSON.parse(ok.stdout).backlog, { jql: 'project = PROJ AND statusCategory != Done', lanes: { defect: 'fix' }, max_groups: 10 });
+  for (const [name, yaml] of [
+    ['github-jql.yml', 'provider: github\nrepo: org/repo\nbacklog:\n  jql: project = PROJ\n'],
+    ['bad-lane.yml', 'provider: jira\nproject: PROJ\nbacklog:\n  lanes:\n    bug: quick\n'],
+    ['too-many.yml', 'provider: jira\nproject: PROJ\nbacklog:\n  max_groups: 51\n'],
+    ['typo.yml', 'provider: jira\nproject: PROJ\nbacklog:\n  max_group: 5\n'],
+  ]) {
+    fs.writeFileSync(path.join(cwd, name), yaml);
+    const result = spawnSync(process.execPath, [installer, 'validate-sync-config', name], { cwd, encoding: 'utf8' });
+    assert.notEqual(result.status, 0, `${name} must be rejected`);
+  }
+});
+
+test('validate-backlog accepts the example and rejects invalid backlogs', () => {
+  const example = path.join(__dirname, '..', 'examples', 'backlog.yml');
+  const ok = spawnSync(process.execPath, [installer, 'validate-backlog', example], { encoding: 'utf8' });
+  assert.equal(ok.status, 0, ok.stderr);
+  const items = JSON.parse(ok.stdout).items;
+  assert.deepEqual([...new Set(items.map(item => item.type))].sort(), ['bug', 'chore', 'spike', 'story', 'task']);
+
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  fs.mkdirSync(path.join(cwd, '.architecture-guard'));
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/backlog.yml'), 'items:\n  - id: A-1\n    type: bug\n    priority: high\n    title: A\n');
+  const byDefault = spawnSync(process.execPath, [installer, 'validate-backlog'], { cwd, encoding: 'utf8' });
+  assert.equal(byDefault.status, 0, byDefault.stderr);
+
+  const item = (id, extra = '') => `  - id: ${id}\n    type: task\n    priority: low\n    title: ${id}\n${extra}`;
+  for (const [name, yaml, message] of [
+    ['duplicate.yml', `items:\n${item('A')}${item('A')}`, /duplicate id A/],
+    ['unknown-dep.yml', `items:\n${item('A', '    depends_on: [B]\n')}`, /unknown dependency B/],
+    ['cycle.yml', `items:\n${item('A', '    depends_on: [B]\n')}${item('B', '    depends_on: [A]\n')}`, /dependency cycle/],
+    ['group-cycle.yml', `items:\n${item('A', '    group: g1\n    depends_on: [g2]\n')}${item('B', '    group: g2\n    depends_on: [A]\n')}`, /dependency cycle/],
+    ['unknown-key.yml', `items:\n${item('A', '    owner: me\n')}`, /owner/],
+    ['bad-priority.yml', 'items:\n  - id: A\n    type: task\n    priority: urgent\n    title: A\n', /priority/],
+    ['empty.yml', 'items: []\n', /items/],
+    ['self-dep.yml', `items:\n${item('A', '    depends_on: [A]\n')}`, /A depends on itself/],
+    ['self-group-dep.yml', `items:\n${item('A', '    group: g1\n    depends_on: [g1]\n')}`, /A depends on itself/],
+    ['empty-slug-id.yml', `items:\n${item('___')}`, /becomes a change name/],
+    ['empty-slug-group.yml', `items:\n${item('A', '    group: ...\n')}`, /becomes a change name/],
+    // Items in one group that depend on each other cannot be ordered, although the group has no outside edge
+    ['same-group-cycle.yml', `items:\n${item('A', '    group: g1\n    depends_on: [B]\n')}${item('B', '    group: g1\n    depends_on: [A]\n')}`, /dependency cycle: (A -> B -> A|B -> A -> B)/],
+  ]) {
+    fs.writeFileSync(path.join(cwd, name), yaml);
+    const result = spawnSync(process.execPath, [installer, 'validate-backlog', name], { cwd, encoding: 'utf8' });
+    assert.notEqual(result.status, 0, `${name} must be rejected`);
+    assert.match(result.stderr, message, name);
+  }
+  fs.writeFileSync(path.join(cwd, 'same-group.yml'), `items:\n${item('A', '    group: g1\n    depends_on: [B]\n')}${item('B', '    group: g1\n')}`);
+  const sameGroup = spawnSync(process.execPath, [installer, 'validate-backlog', 'same-group.yml'], { cwd, encoding: 'utf8' });
+  assert.equal(sameGroup.status, 0, sameGroup.stderr);
+  const missing = spawnSync(process.execPath, [installer, 'validate-backlog', 'nope.yml'], { cwd, encoding: 'utf8' });
+  assert.notEqual(missing.status, 0);
+  assert.match(missing.stderr, /Backlog not found/);
+
+  // The backlog path stays inside the project root, lexically and after resolving symlinks
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-outside-'));
+  fs.writeFileSync(path.join(outside, 'backlog.yml'), `items:\n${item('SECRET')}`);
+  const project = path.join(cwd, 'project');
+  fs.mkdirSync(project);
+  fs.symlinkSync(path.join(outside, 'backlog.yml'), path.join(project, 'linked.yml'));
+  for (const target of [path.relative(project, path.join(outside, 'backlog.yml')), path.join(outside, 'backlog.yml'), 'linked.yml', '../nope.yml']) {
+    const escaped = spawnSync(process.execPath, [installer, 'validate-backlog', target], { cwd: project, encoding: 'utf8' });
+    assert.notEqual(escaped.status, 0, `${target} must be rejected`);
+    assert.match(escaped.stderr, /is outside the project root/, target);
+    assert.doesNotMatch(escaped.stdout + escaped.stderr, /SECRET|not found/, target);
+  }
+  fs.writeFileSync(path.join(project, 'inside.yml'), `items:\n${item('A')}`);
+  fs.symlinkSync(path.join(project, 'inside.yml'), path.join(project, 'inside-link.yml'));
+  const insideLink = spawnSync(process.execPath, [installer, 'validate-backlog', 'inside-link.yml'], { cwd: project, encoding: 'utf8' });
+  assert.equal(insideLink.status, 0, insideLink.stderr);
+});
+
+test('governed-backlog queues groups through lanes with four batched gates', () => {
+  const root = path.join(__dirname, '..');
+  const prompt = fs.readFileSync(path.join(root, 'orchestration', 'governed-backlog.md'), 'utf8');
+  const contract = fs.readFileSync(path.join(root, 'templates', 'backlog_item.md'), 'utf8');
+
+  assert.match(prompt, /architecture-guard resolve template backlog_item/);
+  for (const section of ['Repository Context', 'Backlog Item Contract', 'Run State', 'Human Gate Q - Approve the Queue', 'Human Gate S - Approve Specifications', 'Human Gate P - Approve Publishing', 'Guardrails']) {
+    assert.match(prompt, new RegExp(`^#+ ${section}$`, 'm'), `missing section ${section}`);
+  }
+  const gateQ = prompt.indexOf('### Human Gate Q');
+  const gateS = prompt.indexOf('### Human Gate S');
+  const gateP = prompt.indexOf('### Human Gate P');
+  assert.ok(gateQ < prompt.indexOf('### Step 4') && prompt.indexOf('### Step 4') < gateS && gateS < prompt.indexOf('### Step 5') && prompt.indexOf('### Step 5') < prompt.indexOf('### Human Gate I') && prompt.indexOf('### Human Gate I') < prompt.indexOf('### Step 6') && prompt.indexOf('### Step 6') < gateP, 'gates run in order Q, S, I, P');
+  assert.match(prompt, /Start no group before this approval/);
+
+  // Sources, in order, and Flash-Mem is context only
+  assert.ok(contract.indexOf('1. **Jira**') < contract.indexOf('2. **Beads**') && contract.indexOf('2. **Beads**') < contract.indexOf('3. **Local file**'));
+  assert.match(contract, /architecture-guard validate-backlog/);
+  assert.match(contract, /\*\*Flash-Mem is not a source\.\*\*/);
+  assert.match(prompt, /Never store backlog items or their status in Flash-Mem/);
+
+  // Lanes and their capability order
+  const step5 = prompt.slice(prompt.indexOf('### Step 5'), prompt.indexOf('### Human Gate I'));
+  assert.match(step5, /\*\*Full lane\*\*: run `ag-governed-delivery`/);
+  assert.match(step5, /\*\*Fix lane\*\*:[^\n]*Then run `ag-governed-tasks`, telling it the change has no specification delta\. Its tasks start with reproducing each bug/);
+  assert.match(step5, /\*\*Light lane\*\*:[^\n]*then run `ag-governed-tasks`, telling it the change has no specification delta\. Do not write a new specification/);
+  assert.match(step5, /never code or tests/);
+  // Fix and light lanes supply the inputs ag-governed-tasks requires before handing off to it
+  for (const lane of ['Fix', 'Light']) {
+    const line = step5.split('\n').find(l => l.startsWith(`- **${lane} lane**`)) || '';
+    assert.ok(line.indexOf('minimal plan') !== -1 && line.indexOf('minimal plan') < line.indexOf('`ag-governed-tasks`'), `${lane} lane writes a plan before tasks`);
+    assert.match(line, /telling it the change has no specification delta/, lane);
+  }
+  assert.match(step5, /each item's id, title, and acceptance criteria under `## Stories`/);
+  const tasksPhase = fs.readFileSync(path.join(__dirname, '..', 'orchestration', 'governed-tasks.md'), 'utf8');
+  // An item with no acceptance criteria has nothing to trace to: tasks stop, and Gate Q must approve criteria first
+  assert.match(tasksPhase, /when any listed item has no acceptance criteria, stop and report the item[^\n]*never derive criteria here/);
+  assert.match(prompt, /For each item with no acceptance criteria in a fix-lane or light-lane group, propose the narrowest criteria[^\n]*never written back to the source[^\n]*`approved_acceptance`[^\n]*`needs acceptance criteria: <item>`/);
+  assert.match(step5, /using the group's `approved_acceptance` for an item with none/);
+  assert.match(prompt, /A `needs acceptance criteria` reason holds until the user approves criteria for that item at Gate Q/);
+  // The Stories substitute and its provenance reach the Mandatory Verification Gate
+  const verifyPhase = fs.readFileSync(path.join(__dirname, '..', 'orchestration', 'verify.md'), 'utf8');
+  assert.match(verifyPhase, /\*\*Change with no specification delta\*\*[^\n]*`## Stories` section[^\n]*stands in for `\{adapter_path:spec\}`[^\n]*records the provenance[^\n]*no acceptance criteria is `Missing`, never inferred[^\n]*a missing spec is not a no-delta change/);
+  const implementPhase = fs.readFileSync(path.join(__dirname, '..', 'orchestration', 'governed-implement.md'), 'utf8');
+  assert.match(implementPhase, /Run \{adapter_command:verify\}[^\n]*When the caller stated the change has no specification delta, pass that statement to it/);
+  assert.match(prompt, /run `ag-governed-implement`[^\n]*For a fix-lane or light-lane change with no specification delta, also tell it so/);
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'adapters', 'openspec.md'), 'utf8'), /`skip_specs: true` is the change's no-specification-delta marker/);
+  assert.match(tasksPhase, /\*\*Change with no specification delta\*\*[^\n]*`## Stories` section, with each item's acceptance criteria, stands in for `\{adapter_path:spec\}`[^\n]*`\{adapter_path:plan\}` and the Constitution Inputs are still required\. If the spec \(unless the `## Stories` section stands in for it\), plan, governance rules, or architecture rules are missing, stop/);
+  // Standing in for the spec never waives the governance, architecture, or security checks
+  assert.doesNotMatch(tasksPhase, /still required\. Otherwise, if the spec/);
+  assert.doesNotMatch(step5, /`ag-governed-implement`[^']/);
+  // Gate I previews the exact implementation scope; implement accepts only that caller approval
+  const gateI = prompt.slice(prompt.indexOf('### Human Gate I'), prompt.indexOf('### Step 6'));
+  assert.match(gateI, /every `tasked` group together, with its implementation scope/);
+  const step6 = prompt.slice(prompt.indexOf('### Step 6'), gateP);
+  assert.match(step6, /run `ag-governed-implement`, passing the Gate I approval as the caller approval/);
+  assert.match(step6, /covers only the files and operations Gate I showed/);
+  for (const file of ['governed-implement.md', 'governed-tasks.md', 'governed-delivery.md']) {
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'orchestration', file), 'utf8'), /\*\*Caller approval\*\*: [^\n]*covers only what that preview showed/, file);
+  }
+  assert.match(prompt, /For each `planned` research group, set it to `specifying` and run `ag-governed-discover` read-only/);
+  for (const row of ['| story, feature | full |', '| bug, defect | fix |', '| spike | research |']) {
+    assert.ok(contract.includes(row), `lane map row ${row}`);
+  }
+  assert.match(contract, /heaviest lane among its items: full, then fix, then light, then research/);
+
+  // Every park trigger, and parking does not stop the run
+  for (const trigger of [/review convergence loop ends with findings left/, /Security Review reports a blocking finding/, /product or architecture decision/, /verification fails/, /depends on was parked or skipped/]) {
+    assert.match(step6, trigger);
+  }
+  assert.match(step6, /Never let one group's failure stop the run/);
+
+  // Gate P carries archive's push and pull request approvals per group
+  const publish = prompt.slice(gateP, prompt.indexOf('### Step 7'));
+  assert.match(publish, /approves each group separately/);
+  for (const field of ['repository', 'remote', 'branch', 'base branch', 'title and description']) {
+    assert.ok(publish.includes(field), `Gate P must name the ${field}`);
+  }
+  assert.match(publish, /run `ag-governed-archive` in its worktree/);
+
+  // Guardrails
+  const guardrails = prompt.slice(prompt.indexOf('## Guardrails'));
+  assert.match(guardrails, /Never merge, close, reopen, approve, or request changes on a pull request/);
+  assert.match(guardrails, /Never force-push/);
+  assert.match(guardrails, /Never write to Jira/);
+
+  // Beads write-back is opt-in and every writing bd command sits behind it
+  assert.match(prompt, /Write-back is off unless the user enables it/);
+  for (const line of prompt.split('\n').filter(line => /`bd (update|note|close)/.test(line))) {
+    assert.match(line, /write-back is enabled/i, `ungated bd write: ${line}`);
+  }
+  assert.match(prompt, /Never close a bead whose pull request is not merged/);
+
+  // Run state names and resume
+  for (const state of ['planned', 'specifying', 'spec-pending', 'researched', 'specified', 'in-progress', 'ready', 'published', 'done', 'parked', 'skipped']) {
+    assert.match(prompt, new RegExp(`\`${state}\` \\(`), `state ${state} must be defined`);
+  }
+  assert.match(prompt, /For every `parked` group, re-check its reason/);
+  assert.match(prompt, /Never repeat a `published` or `done` group/);
+  assert.match(prompt, /For every `published` group with a `pr`/, 'research groups have no pull request to look up');
+});
+
+test('governed-backlog keeps the fixes from its dry run', () => {
+  const root = path.join(__dirname, '..');
+  const prompt = fs.readFileSync(path.join(root, 'orchestration', 'governed-backlog.md'), 'utf8');
+  const contract = fs.readFileSync(path.join(root, 'templates', 'backlog_item.md'), 'utf8');
+  const discover = fs.readFileSync(path.join(root, 'orchestration', 'governed-discover.md'), 'utf8');
+
+  // Group ids must be valid OpenSpec change names
+  assert.match(contract, /\*\*Group ids\*\* are lowercase kebab-case/);
+  assert.match(contract, /`TASK-7` becomes `task-7`/);
+  assert.match(prompt, /The group id is also the change name/);
+
+  // A dependency in the same run still makes the group wait, unless stacked
+  assert.doesNotMatch(prompt, /unless the dependency is earlier in this run/);
+  assert.match(prompt, /waits, including when the dependency is in this run/);
+
+  // Questions between gates are recorded for the next gate, not asked
+  assert.match(prompt, /^## Questions Between Gates$/m);
+  assert.match(prompt, /Between gates, nothing waits for the user/);
+  assert.match(prompt, /record the question and the answer in the group's `assumptions`/);
+  const gateS = prompt.slice(prompt.indexOf('### Human Gate S'), prompt.indexOf('### Step 5'));
+  assert.match(gateS, /its `assumptions`/);
+  assert.match(gateS, /its `decisions`/);
+  assert.match(discover, /When the caller passes an accepted \*\*Story set\*\*/);
+  assert.match(prompt, /does not propose or ask about it again/);
+
+  // Worktrees are created when a group starts; research groups get none and end as done
+  assert.match(prompt, /`git worktree add -b <branch> <worktree> <start point>`/);
+  assert.match(prompt, /Research groups get neither/);
+  assert.match(gateS, /A presented research group becomes `done`/);
+  assert.doesNotMatch(prompt, /ends as `published` with no branch/);
+
+  // A phase's required confirmation parks the group instead of being crossed for the user
+  assert.match(prompt, /never cross it on the user's behalf/);
+  assert.match(prompt, /park the group with the reason `needs confirmation: <question>`/);
+  assert.doesNotMatch(prompt, /continue only when what follows writes nothing outside the group's worktree/);
+  assert.match(gateS, /every group parked with `needs confirmation`/);
+  // The park records where to resume, so an interrupted run restarts each phase at the right point
+  assert.match(prompt, /parked_from: null # for a `needs confirmation` park: \{state, phase, capability, step\}, where phase is discovery \| specification \| plan-and-tasks \| implementation/);
+  assert.match(prompt, /before parking write `parked_from` to `queue.yml`/);
+  // The checkpoint survives the handoff: cleared only after the resumed phase records progress
+  assert.match(prompt, /set the group back to `parked_from.state` and clear its park reason, but keep `parked_from`; then resume `parked_from.capability` from `parked_from.step`/);
+  assert.match(prompt, /Clear `parked_from` only after the resumed phase has recorded durable progress in `queue.yml`/);
+  assert.match(prompt, /A run interrupted between those points finds the group in `parked_from.state` with `parked_from` still set[^\n]*resumes from `parked_from.step` again/);
+  assert.doesNotMatch(prompt, /clear `parked_from`, and resume/);
+  assert.match(prompt, /A group that still has `parked_from` resumes `parked_from.capability` from `parked_from.step`/);
+  assert.match(prompt, /its `parked_from` says where the group resumes/);
+
+  // Research groups open no pull request, so their beads are never closed by the queue
+  assert.match(gateS, /its beads are never closed by this command/);
+  assert.doesNotMatch(gateS, /bd close/);
+
+  // Gate Q shows the change name, known blockers, and the queue.yml write
+  const gateQ = prompt.slice(prompt.indexOf('### Human Gate Q'), prompt.indexOf('### Step 4'));
+  assert.match(gateQ, /group id \(the change name, marked when it is a fallback id\)/);
+  // Every source gets a non-empty group id
+  assert.match(contract, /This applies to every source[^\n]*`認証`[^\n]*main item id[^\n]*`group-<n>`[^\n]*offers a rename\. A rename must also normalize to a non-empty id/);
+  assert.match(gateQ, /blocking findings from Step 3/);
+  assert.match(gateQ, /`queue.yml` and the discovery summaries will be written/);
+  assert.match(prompt, /Run `architecture-guard hygiene --json` on the base branch/);
+
+  // Source is chosen before intake; a missing sync.yml is not invalid
+  assert.match(prompt, /ask the user which to use before reading any items/);
+  assert.match(contract, /When `sync.yml` exists and the CLI is installed, validate it/);
+
+  // Branch prefix per lane, and bugs keep the failing-test rule in the full lane
+  assert.match(prompt, /full: `feat\/<group>`, fix: `fix\/<group>`, light: `chore\/<group>`/);
+  assert.match(prompt, /### Step 6[\s\S]*For each bug item, reproduce the bug and add a test that fails/);
+
+  // A forge that cannot report merge state makes the queue ask
+  assert.match(prompt, /When the forge cannot report merge state[^\n]*ask the user whether each pull request in question has merged/);
+
+  // A waiting group is parked and never delivered in this run
+  assert.match(prompt, /A group that waits on a dependency is `parked` with the reason `waiting on <group>`/);
+  assert.match(prompt, /State plainly which groups will not run in this run because they wait/);
+
+  // Gate S hands specified groups to delivery, so a resume never repeats specification
+  assert.match(gateS, /An approved full-lane group becomes `specified`/);
+  assert.match(prompt, /For each `specified` full-lane group and each `planned` fix-lane or light-lane group/);
+  assert.match(prompt, /`spec-pending` and `researched` groups go to Gate S without repeating their phase/);
+
+  // Discovery summaries and open decisions survive an interrupted run
+  assert.match(prompt, /`\.architecture-guard\/queue\/<group>\.discovery\.md`/);
+  assert.match(prompt, /decisions: \[\]/);
+  assert.match(prompt, /one with an undecided decision stays `spec-pending`/);
+
+
+  // The run-state example follows the heaviest-lane rule
+  const example = prompt.slice(prompt.indexOf('```yaml'), prompt.indexOf('```', prompt.indexOf('```yaml') + 3));
+  assert.match(example, /type: story[\s\S]*type: bug[\s\S]*\n\s+lane: full\s/);
+
+  // A resume can unpark, diff, and re-approve
+  assert.match(prompt, /When the reason no longer holds, set the group back to `planned`/);
+  assert.match(example, /depends_on: \[\], size: s, title: [^,]+, description: [^,]+, acceptance:/, 'queue.yml keeps an item snapshot for the resume diff');
+  assert.match(prompt, /On a resume, Steps 2 and 3 and Gate Q run again over the whole queue/);
+
+  // Worktrees start from an up-to-date base, and stacked groups never start on an unfinished dependency
+  assert.match(prompt, /create every worktree from the fetched remote base \(`origin\/<base>`\)/);
+  assert.match(prompt, /A stacked group runs only in the second pass after Gate P, once its dependency is `published`/);
+  assert.match(prompt, /a full-lane group always waits/);
+
+  // A dependency can count as merged without a pull request
+  assert.match(prompt, /`git merge-base --is-ancestor <branch> <base>`/);
+  assert.match(prompt, /a dependency that is not `published` is not merged/);
+
+  // The widened fix is an in-scope item, and any item change re-plans its group
+  assert.match(prompt, /the fix joins the group as an extra item with id `<group>-hygiene-<n>`/);
+  assert.match(prompt, /any change to an item of a group that is not yet `published`, re-plan that group/);
+
+  // A change with no specification delta stays valid
+  assert.match(prompt, /as a change having no specification delta/);
+  assert.match(fs.readFileSync(path.join(root, 'adapters', 'openspec.md'), 'utf8'), /\| create-change \|[^\n]*skip_specs: true/);
+
+  // Known blockers park the group before it starts instead of after a wasted run
+  assert.match(prompt, /The default is to widen, because the group's verification would fail on it otherwise/);
+  assert.match(prompt, /research groups never have blockers/);
+  assert.match(prompt, /When the user declines, the group is parked as `blocked by <finding>` before it starts/);
+
+  // A resume keeps what the user approved at Gate Q and notices changed item text
+  assert.match(prompt, /The groups recorded in `queue.yml` are kept as approved/);
+  assert.match(prompt, /title, description, or acceptance criteria changed/);
+  assert.match(gateS, /its `assumptions`, and its `decisions`/);
+  assert.match(gateS, /One with an undecided decision stays `researched`/);
+  assert.match(prompt, /Work out the work order: first the full-lane and research groups/);
+});
+
 test('Sonar severities map onto the shared scale and the filter keeps MAJOR findings', () => {
   const root = path.join(__dirname, '..');
   const core = fs.readFileSync(path.join(root, 'templates/ponytail_core.md'), 'utf8');
@@ -3077,4 +3381,103 @@ test('Codex role installation uses the approved profile rather than rereading a 
     assert.ok(fs.existsSync(path.join(cwd, '.codex/agents/agteam-approved.toml')));
     assert.equal(fs.existsSync(path.join(cwd, '.codex/agents/agteam-changed.toml')), false);
   } finally { fs.rmSync(cwd, { recursive: true, force: true }); }
+});
+
+test('review-artifacts grounds cited premises read-only and checks path coverage and guarantees', () => {
+  for (const dir of ['orchestration', 'commands']) {
+    const prompt = fs.readFileSync(path.join(repoRoot, dir, 'review-artifacts.md'), 'utf8');
+    assert.match(prompt, /\*\*No Implementation Code Review\*\*/, dir);
+    assert.doesNotMatch(prompt, /MUST NOT read, evaluate, or scan implementation code/, dir);
+    assert.match(prompt, /\*\*Premise Grounding \(cited facts only\)\*\*/, dir);
+    assert.match(prompt, /Never check out, fetch over, or modify a working tree/, dir);
+    assert.match(prompt, /Cap the inventory at 40 premises/, dir);
+    // A planned new file is absent at the base by design, so it is never a mismatch
+    assert.match(prompt, /citation the artifacts present as existing/, dir);
+    assert.match(prompt, /\*\*Planned targets are not premises\*\*[^\n]*never ground its existence or report it `Unresolvable`/, dir);
+    assert.match(prompt, /treat an existing one as a name collision/, dir);
+    assert.match(prompt, /report Premise Grounding `Unavailable`; when only some resolve, report it `Degraded` and name the unavailable repositories\. Never report it as passed/, dir);
+    // Each owning repository merges into its own branch, so grounding never reads one at another's ref
+    assert.match(prompt, /Resolve the base ref \*\*per owning repository\*\*[^\n]*never infer one repository's ref from another's/, dir);
+    assert.match(prompt, /Resolve the ref to its commit SHA in that repository[^\n]*report both/, dir);
+    assert.match(prompt, /a single unnamed Base ref was given while the cited paths span several repositories\), report that repository's grounding `Unavailable`[^\n]*never read it at another repository's ref/, dir);
+    assert.match(prompt, /a single unnamed Base ref applies only when every cited path has the same owning repository/, dir);
+    assert.match(prompt, /- \*\*Base ref\*\*: \[one line per owning repository: repository, ref, commit SHA; or Unavailable: reason\]/, dir);
+    assert.match(prompt, /Never write to the code host or the tracker/, dir);
+    assert.match(prompt, /\*\*Premise Mismatch\*\*/, dir);
+    assert.match(prompt, /\*\*Root-Cause Miss \/ Path Coverage Gap\*\*/, dir);
+    assert.match(prompt, /\*\*Unqualified Guarantee\*\*/, dir);
+    assert.match(prompt, /2b\. \*\*Ground Premises\*\*/, dir);
+    assert.match(prompt, /### Premise Grounding\n- \*\*Base ref\*\*/, dir);
+  }
+  for (const file of ['governed-delivery.md', 'governed-delivery-team.md']) {
+    for (const dir of ['orchestration', 'commands']) {
+      assert.match(fs.readFileSync(path.join(repoRoot, dir, file), 'utf8'), /pass it as the \*\*Base ref\*\*[^\n]*pass one Base ref per repository, naming each/, `${dir}/${file}`);
+    }
+  }
+
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  install('all\n1\n', cwd);
+  for (const file of [
+    '.claude/skills/ag-review-artifacts/SKILL.md',
+    '.codex/skills/ag-review-artifacts/SKILL.md',
+    '.agent/skills/ag-review-artifacts/SKILL.md',
+    '.agent/workflows/agx-review-artifacts.md',
+    '.cursor/skills/ag-review-artifacts/SKILL.md',
+    '.gemini/commands/ag-review-artifacts.toml',
+  ]) {
+    const installed = fs.readFileSync(path.join(cwd, file), 'utf8');
+    assert.match(installed, /Premise Grounding/, file);
+    assert.match(installed, /Unqualified Guarantee/, file);
+    assert.doesNotMatch(installed, /\{forge_command:/, file);
+  }
+});
+
+test('governed-discover decomposes ideas read-only and governed-delivery-team persists backlog breakdowns with a Phase 3 stop gate', () => {
+  const discover = orchestrationPrompt('governed-discover.md');
+  assert.match(discover, /architecture-guard resolve template backlog_item/);
+  assert.match(discover, /^## Backlog Breakdown$/m);
+  assert.match(discover, /Run `ag-governed-delivery-team` with this Discovery Summary Draft to approve and persist/);
+
+  const team = orchestrationPrompt('governed-delivery-team.md');
+  assert.match(team, /architecture-guard resolve template backlog_item/);
+  assert.match(team, /architecture-guard validate-backlog \.architecture-guard\/backlog\.yml/);
+  assert.match(team, /Phase 3 Stop \/ Handoff Gate/);
+  assert.match(team, /stop cleanly here before Phase 4 \(`Specification Gate`\)/);
+  assert.match(team, /Skipped \(breakdown-only\)/);
+  assert.match(team, /recommend running `ag-governed-backlog` to deliver the queued items/);
+  assert.match(team, /Continue with steps 4–7 and Phase 2 before Phase 3/);
+  assert.doesNotMatch(team, /skip single-feature SDD change creation[^\n]*proceed to Phase 3/);
+  assert.match(team, /do not create unrequested outputs/);
+  assert.match(team, /Otherwise present the proposed items without creating story files/);
+  assert.match(team, /check for `\.architecture-guard\/sync\.yml` for a normal single-feature run, or for a breakdown only if tracker sync was selected/);
+  assert.match(team, /If the file is absent, report sync as skipped/);
+  assert.match(team, /If it is disabled, report disabled and do not push/);
+  assert.match(team, /If it is enabled, offer synchronization/);
+  assert.match(team, /requires explicit approval of the resolved provider, repository\/project, and target/);
+  assert.match(team, /confirm a supported source \(Jira, Beads, or local backlog\) contains the approved items/);
+  assert.match(team, /Story files and GitHub Issues alone are not queue sources/);
+  assert.match(team, /Defer the adapter's change-scope action until Phase 4 for every run/);
+  assert.match(team, /Before then, do not look up SDD change artifacts/);
+  assert.match(team, /First establish the active change scope with \{adapter_command:change-scope\}/);
+  assert.match(team, /Only when the user selected `\.architecture-guard\/backlog\.yml` as an output in item 1/);
+  assert.match(team, /the user's selection controls/);
+  assert.match(team, /preview a separate non-protected breakdown branch named with the user's approval/);
+  assert.match(discover, /only after confirming a supported source contains the approved items/);
+
+  for (const file of ['governed-discover.md', 'governed-delivery-team.md']) {
+    const legacy = fs.readFileSync(path.join(repoRoot, 'commands', file), 'utf8');
+    assert.match(legacy, /dedicated standalone `architecture-guard` CLI installation/, `commands/${file}`);
+  }
+});
+
+test('installed OpenSpec team delivery defers scope and container creation until after the breakdown gate', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-team-scope-'));
+  runArgs(['init', '--yes', '--agent', 'codex', '--framework', 'openspec', '--commands', 'governed-delivery-team'], cwd);
+  const prompt = fs.readFileSync(path.join(cwd, '.codex/skills/ag-governed-delivery-team/SKILL.md'), 'utf8');
+  assert.match(prompt, /Defer the adapter's change-scope action until Phase 4 for every run/);
+  assert.match(prompt, /Before then, do not look up SDD change artifacts/);
+  assert.match(prompt, /First establish the active change scope with/);
+  assert.match(prompt, /Reuse an existing selected change without recreating it/);
+  assert.match(prompt, /openspec new change .*CHANGE_ID/);
+  assert.doesNotMatch(prompt, /\{adapter_command:/);
 });

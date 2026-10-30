@@ -64,7 +64,7 @@ Override the persisted adapter for one installed command with its `--adapter` in
 
 ## 4. Choose Your Commands
 
-Pick from 21 governance commands:
+Pick from 22 governance commands:
 
 | Command | When |
 | :--- | :--- |
@@ -76,6 +76,7 @@ Pick from 21 governance commands:
 | `governed-tasks` | Task — generate tasks, analyze gaps |
 | `governed-delivery` | Delivery — full plan → tasks → analyse pipeline |
 | `governed-delivery-team` | Team delivery — approved User Story, plan, and tasks |
+| `governed-backlog` | Queue prioritized Jira, Beads, or local backlog items through approved delivery gates |
 | `governed-implement` | Implement — apply tasks, then review |
 | `review-artifacts` | Review artifacts — boundary drift, DRY violations, and hygiene |
 | `review-implementation` | Review implementation — security and architecture findings |

@@ -62,6 +62,8 @@ The extension hooks are optional. In standalone mode, the agent-native command p
 
 The legacy channel receives safety and breakage fixes, while new features ship in the standalone channel. Its verifier covers the active feature and does not accept `base=<ref>` or apply whole-branch change checks. Its final workflow reports those checks as `Unavailable`; use standalone `ag-verify base=<destination branch>` or `ag-review-pr` for that coverage. Jira discovery story sets and governance suggestions are standalone features.
 
+`ag-governed-backlog` is available through the standalone installer, including for Spec Kit projects; it has no legacy `/speckit.architecture-guard.*` command. Both channels' artifact review commands support read-only premise grounding against the destination branch. See the [backlog queue](docs/workflows.md#backlog-queue) and [artifact grounding reference](docs/reference-manual.md#artifact-premise-grounding).
+
 The standalone Spec Kit adapter archives by retaining feature artifacts in `specs/{feature}/` and updating `specs/system_context.md`. Later feedback reads the full retained specification, using the index only to locate it. Archived artifacts stay read-only even at their original paths; requirement changes go to a separately specified follow-up change.
 
 ## Detection and Overrides

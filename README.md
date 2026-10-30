@@ -6,7 +6,7 @@
 
 > Keep AI-generated code aligned with your architecture, specs, and delivery workflow.
 
-[![Version](https://img.shields.io/badge/version-3.3.1-22c55e)](extension.yml)
+[![Version](https://img.shields.io/badge/version-3.4.0-22c55e)](extension.yml)
 [![OpenSpec](https://img.shields.io/badge/OpenSpec-compatible-8b5cf6)](https://github.com/Fission-AI/OpenSpec)
 [![Spec Kit](https://img.shields.io/badge/Spec%20Kit-compatible-2563eb)](https://spec-kit.dev)
 [![Non-blocking](https://img.shields.io/badge/style-non--blocking-10b981)](https://spec-kit.dev)
@@ -72,6 +72,7 @@ Instead of letting AI agents run wild, Architecture Guard provides structured en
 | **`ag-governed-delivery-team`**<br>*(or `/speckit.architecture-guard.ag-governed-delivery-team`)* | Team delivery | Creates a stakeholder-approved User Story before the governed plan-to-tasks workflow. |
 | **`ag-governed-archive`**<br>*(or `/speckit.architecture-guard.ag-governed-archive`)* | Finalization | Archives a completed feature after verification, with explicit approval for changelog, memory, Git, and cleanup actions. |
 | **`ag-governed-implement`**<br>*(or `/speckit.architecture-guard.ag-governed-implement`)* | Implementation | Executes the generated tasks while strictly following the plan and architecture rules. |
+| **`ag-governed-backlog`** | Several stories, bugs, and tasks at once | Reads a prioritized backlog from Jira, Beads, or a local `backlog.yml`, groups related items, and delivers code-writing groups as separate changes and pull requests; research groups run discovery only. You approve the queue, specifications, implementation scope, and publishing; blocked groups are parked. [Backlog queue →](docs/workflows.md#backlog-queue) |
 | **`ag-e2e-testing`** | Testing a feature end to end | Decides from the spec whether the feature needs end-to-end tests. If it does, it designs scenarios from the acceptance criteria and writes them with Playwright: browser tests for UI journeys, API-only tests for API scope. If the spec isn't end-to-end, it skips them and names the lower-level tests to write instead. |
 | **`ag-review-pr`** | Reviewing someone else's pull request | Fetches the pull request from your code host (GitHub, GitLab, Bitbucket, Azure DevOps, or plain git), reviews it against your architecture, security, and hygiene rules, runs Security Review (`sr-branch`) when that separate tool is installed, and drafts a comment-only review that is posted only when you choose. When no finding is blocking, you can instead approve it with comments asking the author to address the findings before merging. |
 | **`ag-pr-feedback`** | Feedback on your own pull request | Triages unresolved review threads and failing checks, applies the fixes you approve, drafts replies, and lets you choose to reply only or reply and resolve. |

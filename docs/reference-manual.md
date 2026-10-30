@@ -171,14 +171,21 @@ This injects refactor tasks into the technical design and task artifacts so the 
 | `governed-delivery` | Orchestration | Resume governed delivery from an active specification through plan and task generation, with optional memory context, gates, reconciliation, and analysis | Recommended entry point after specification |
 | `governed-delivery-team` | Orchestration | Team delivery flow with an approved User Story before planning and task generation | Use when stakeholders need to approve business intent before engineering proceeds |
 | `governed-archive` | Finalization | Archives a completed feature after verification, with explicit approval for changelog, memory, Git, and cleanup actions | Use only after implementation is verified |
+| `governed-backlog` | Orchestration | Run report of a queue of groups from Jira, Beads, or `backlog.yml`: lane, state, pull request, and park reason per group, with resumable state in `.architecture-guard/queue.yml` | Use when several prioritized stories, bugs, and tasks should be delivered as one pull request per group |
 | `ag-workflow` | General Review | Violations, severity and priority, refactor tasks, evolution proposals | Entry point for end-to-end review; good for dashboards |
-| `ag-review-artifacts` | Validation | Validates planning artifacts (spec, plan) against constitution without reading code | After `/specify` or `/plan` |
+| `ag-review-artifacts` | Validation | Validates planning artifacts (spec, plan) against constitution without reviewing code; reads only the base-branch locations the artifacts cite to confirm their premises | After `/specify` or `/plan` |
 | `ag-review-implementation` | Validation | Validates implementation codebase against planning artifacts and constitution | After `/implement` |
 | `violation-detection` | Detection | Drift summary, boundary violations, module coupling | Focus on specific architecture problems |
 | `refactor-generator` | Planning | Refactor task generation | After review; convert violations to non-blocking refactor tasks |
 | `ag-apply` | Implementation | After refactor decisions | Inject refactor tasks into `tasks.md` and the technical design artifact using the approved review context |
 | `ag-verify` | Verification | Implementation verification report with task fulfillment, architecture, and hygiene findings | Final gate after implementation to ensure all tasks are delivered, with cached memory context if available |
 | `ag-e2e-testing` | Testing | E2E decision (UI, API, both, or Skip) with Playwright scenarios traced to acceptance criteria | After the spec is accepted, to plan e2e coverage, or after implementation to write and run the tests |
+
+### Artifact premise grounding
+
+`ag-review-artifacts` checks claims about existing paths, named symbols, and current behavior against the destination branch without reviewing implementation quality. Pass the destination as **Base ref** when known; for a multi-repository change, name a base ref for each owning repository. Otherwise the review uses each repository's fetched default branch. It reports the ref and commit per repository, and marks grounding unavailable for repositories whose destination cannot be resolved.
+
+Paths proposed for creation are checked for name collisions, not reported missing. Grounding covers up to 40 premises by default and records remaining ones as not grounded. Referenced pull requests or tickets are checked read-only when a host action is available; otherwise their state is not checked. The review also checks coverage of privileged or irreversible paths and flags absolute guarantees that lack a mechanism or verification task.
 
 ### Ponytail Core
 
@@ -255,9 +262,11 @@ specify extension add architecture-guard
 
 ### From a Release Artifact (ZIP)
 
+These examples use the `v3.4.0` release tag.
+
 ```text
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v2.5.3.zip
+  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.4.0.zip
 ```
 
 ### Global Preset Usage
@@ -273,7 +282,7 @@ If you manage multiple projects using the same framework (e.g., Laravel), you ca
 
 ```bash
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v2.5.3.zip
+  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.4.0.zip
 ```
 
 ### From a Local Developer Artifact
@@ -286,5 +295,5 @@ specify extension add architecture-guard --dev /path/to/architecture-guard
 
 ```text
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v2.5.3.zip
+  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.4.0.zip
 ```

@@ -59,7 +59,7 @@ Provide a single command that ensures:
 
 ### Write Approval Gate
 
-Accept an existing caller approval only for the identical action, phase, exact targets, and owning repository under `capability_composition`; distinct human decisions and material scope expansions still require approval.
+**Caller approval**: Accept an existing caller approval only for the identical action, phase, exact targets, and owning repository under `capability_composition`; it covers only what that preview showed. Distinct human decisions and material scope expansions still require approval.
 
 Before the first mutation, resolve and preview the exact target task and constraint artifacts together with all planned task-generation, reconciliation, refactor, analysis-fix, and constraint-write operations. Obtain explicit user approval, then allow routine writes already previewed within this task phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 
@@ -69,7 +69,7 @@ Resolve the selected adapter's project configuration first (`{adapter_path:proje
 
 ### Required Active Inputs
 
-Require active `{adapter_path:spec}` and `{adapter_path:plan}` artifacts plus the complete Constitution Inputs. In Generic mode, ask for every unresolved input path and the destination tasks path, resolve the latter as `{adapter_path:tasks}`, and do not write until it is supplied. If the spec, plan, governance rules, or architecture rules are missing, stop and direct the user to the corresponding governed phase or init; if security rules are missing, report the gap and obtain explicit confirmation before continuing with baseline security task validation.
+Require active `{adapter_path:spec}` and `{adapter_path:plan}` artifacts plus the complete Constitution Inputs. In Generic mode, ask for every unresolved input path and the destination tasks path, resolve the latter as `{adapter_path:tasks}`, and do not write until it is supplied. **Change with no specification delta**: when the caller states the active change has no specification delta (for example a fix-lane or light-lane change from `ag-governed-backlog`), its `## Stories` section, with each item's acceptance criteria, stands in for `{adapter_path:spec}` wherever this phase reads the specification, and every task traces to one of those criteria; when any listed item has no acceptance criteria, stop and report the item, because no criterion exists to trace its work to, and never derive criteria here; `{adapter_path:plan}` and the Constitution Inputs are still required. If the spec (unless the `## Stories` section stands in for it), plan, governance rules, or architecture rules are missing, stop and direct the user to the corresponding governed phase or init; if security rules are missing, report the gap and obtain explicit confirmation before continuing with baseline security task validation.
 
 ### Step 1 — Detect Optional Integrations
 

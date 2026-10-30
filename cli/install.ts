@@ -126,6 +126,7 @@ const COMMANDS = [
   'e2e-testing',
   'apply',
   'workflow',
+  'governed-backlog',
   'violation-detection',
   'refactor-generator',
   'consolidate-specs',

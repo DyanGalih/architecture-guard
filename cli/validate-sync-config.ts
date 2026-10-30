@@ -14,9 +14,18 @@ const syncSchema = z.object({
     candidate_jql: z.string().min(1).optional(),
     max_candidates: z.number().int().min(1).max(50).default(20),
   }).strict().optional(),
+  // Queue settings for ag-governed-backlog (see templates/backlog_item.md)
+  backlog: z.object({
+    jql: z.string().min(1).optional(),
+    lanes: z.record(z.string().regex(/^[a-z][a-z0-9_-]*$/), z.enum(['full', 'fix', 'light', 'research'])).optional(),
+    max_groups: z.number().int().min(1).max(50).default(10),
+  }).strict().optional(),
 }).superRefine((config, ctx) => {
   if (config.scope_check?.enabled && config.provider !== 'jira') {
     ctx.addIssue({ code: 'custom', path: ['scope_check'], message: 'scope_check supports provider jira only' });
+  }
+  if (config.backlog?.jql && config.provider !== 'jira') {
+    ctx.addIssue({ code: 'custom', path: ['backlog', 'jql'], message: 'backlog.jql needs provider jira' });
   }
   if (config.scope_check?.enabled && !config.project) {
     ctx.addIssue({ code: 'custom', path: ['project'], message: 'scope_check needs the jira project key' });

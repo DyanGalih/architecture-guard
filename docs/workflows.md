@@ -29,7 +29,7 @@ The orchestrated workflow is:
 3. Implementation context: check the codebase for similar patterns (if requested)
 4. Interactive discussion: an architecture-aware chat to refine the idea, warning when it goes beyond the story set's acceptance criteria
 5. Governance suggestions: when the discussion or memory shows a rule that keeps getting in the way (for example the same exception accepted in several changes), drafts a Constitution Update Proposal or workflow suggestion with its evidence. Discovery never edits rules; you decide.
-6. Draft generation: output a clean feature draft, including the story set, to hand off to the specification phase. `ag-governed-spec` records the set in the change's `## Stories` section, so later scope checks treat the bundled stories as in scope.
+6. Draft generation: output a clean feature draft, including the story set, to hand off to the specification phase. `ag-governed-spec` records the set in the change's `## Stories` section, so later scope checks treat the bundled stories as in scope. When your idea spans multiple deliverables or you ask to break it down into a backlog or User Stories, the draft also includes a read-only **Backlog Breakdown** using the `backlog_item` schema and recommends `ag-governed-delivery-team` to approve and persist the requested outputs and optionally sync them. Queue delivery follows when a supported source contains the approved items.
 
 ### Example Orchestration
 
@@ -219,13 +219,67 @@ enabled: true
 The configuration is strictly validated during the workflow using `architecture-guard validate-sync-config` to ensure security constraints on untrusted input are met.
 
 ### How it Works
-1. Run `/ag-governed-delivery-team`.
-2. A User Story is generated and proposed.
-3. Upon your explicit approval, the agent reads `sync.yml`.
-4. If enabled, the agent uses its MCP tools (e.g., `github-mcp-server`) to create the issue in your tracker.
+1. Run `/ag-governed-delivery-team` (either directly or seeded with a `Discovery Summary Draft` from `/ag-governed-discover`).
+2. One or more User Stories (`user-stories/*.md`) and/or a local backlog breakdown (`.architecture-guard/backlog.yml`, validated with `architecture-guard validate-backlog`) are generated and proposed for stakeholder review.
+3. For single-feature delivery, the agent checks `sync.yml` after story approval. For a breakdown, it checks only when tracker sync was selected.
+4. If sync is enabled, the agent offers synchronization. With your separate approval of the provider and target, it uses its MCP tools (e.g., `github-mcp-server` or Jira) to create or update the issues in your tracker.
 5. The result is recorded locally in `.architecture-guard/sync_status.json` (e.g., `{ "status": "success", "issue_url": "..." }`).
+6. **Phase 3 Stop / Handoff Gate**: For a breakdown-only request or multiple groups/stories, team delivery stops after Phase 3. It recommends `/ag-governed-backlog` when a supported source contains the approved items. Story files and GitHub Issues alone are not queue sources; first add the items to a local backlog, Jira, or Beads.
 
 If the push fails, the workflow gracefully degrades by logging a warning and writing `{ "status": "failed" }` to the status file without blocking local delivery.
+
+## Backlog Queue
+
+`ag-governed-backlog` delivers several backlog items in one run, with one pull request per code-writing group of related items. Research groups run discovery without a pull request.
+
+1. **Intake**: reads items from Jira (with `provider: jira` and a Jira MCP server), Beads (when `bd` is installed and the repository has `.beads/`), or `.architecture-guard/backlog.yml`, in that order of preference. You pick the source when more than one is available. Flash-Mem supplies context for each group but never holds backlog items.
+2. **Plan**: groups related items (Jira with [story scope](#story-scope-check-jira) Planning Mode, Beads by parent epic, the local file by `group`), orders groups by dependencies, then priority, then size, and assigns each group a lane: **full** (story, feature: discover, spec, plan, tasks, implement), **fix** (bug: reproduce, failing test, fix), **light** (task, chore: tasks and implement), or **research** (spike: discovery only, no pull request). A group takes its heaviest item's lane, and a group touching security-sensitive paths or an architecture boundary is escalated to **full**.
+3. **Gate Q**: you approve the queue: groups, order, lanes, base branch, and one worktree per group beside the repository.
+4. **Gate S**: discovery and specification run for every full-lane group, then you approve all the specifications together, with research findings. Questions the skills would have asked you along the way are answered conservatively and listed here for you to confirm or change; anything outside the approved scope is listed as an open decision instead of being done.
+5. **Planning**: each group writes its plan and tasks in its own worktree (fix and light lanes create their change and tasks), with the usual artifact review loops. No code is written yet.
+6. **Gate I**: you approve each group's implementation scope together: the exact code, test, and task files and operations its tasks will change. This is the approval `ag-governed-implement` would otherwise ask for one group at a time.
+7. **Implementation**: each approved group is implemented and verified in its worktree. A group whose review does not converge, has a blocking security finding, needs a decision or confirmation from you, or depends on an unmerged pull request is **parked**, and the run moves on. A step a skill needs you to confirm (for example continuing without security rules) is never taken for you: the group is parked until you answer at the next gate.
+8. **Gate P**: for each verified group you approve the repository, remote, branch, base, files, and pull request text; `ag-governed-archive` then archives, commits, pushes, and opens that pull request.
+
+Run state is kept in `.architecture-guard/queue.yml` and discovery summaries in `.architecture-guard/queue/`; Gate Q offers to add these paths to `.git/info/exclude`. The next run re-checks parked groups, shows what changed in the backlog, and continues. A group that depends on an unmerged pull request waits by default, even when that dependency is delivered in the same run. You can opt in to stacking a fix or light group on its dependency's branch after the dependency is published; full groups wait. The queue never merges or approves pull requests, never force-pushes, and never writes to Jira. With Beads, write-back is opt-in at Gate Q: beads are marked in progress when their group starts, get a note with the pull request URL, and are closed only after the pull request has merged and you approve. Research beads have no pull request, so the queue leaves them open for you to close. Without a remote, Gate P commits approved work locally; when the forge cannot create pull requests, the queue supplies the title and description for you to open one.
+
+A local backlog (see [`examples/backlog.yml`](../examples/backlog.yml)):
+
+```yaml
+items:
+  - id: STORY-1
+    type: story
+    priority: high
+    title: Support expired sessions
+    acceptance:
+      - Users with expired sessions are redirected to sign-in
+  - id: BUG-3
+    type: bug              # story | feature | bug | task | chore | spike, or a type mapped in sync.yml
+    priority: highest      # highest | high | medium | low | lowest
+    title: Login fails on expired session
+    acceptance:
+      - Expired sessions redirect to sign-in instead of returning 500
+    group: auth-session    # same group → same change and pull request
+    depends_on: [STORY-1]  # item or group ids
+    size: s                # xs | s | m | l | xl, breaks priority ties
+```
+
+Check it with `architecture-guard validate-backlog`, run from the project root; it reads only a backlog file inside that root (after resolving symlinks) and rejects dependency cycles, including between items of one group.
+
+Fix and light items need acceptance criteria before task generation. At Gate Q, provide or approve criteria for an item that has none; otherwise its group is parked. For a change with no specification delta, the approved criteria in `## Stories` stand in for the specification during task generation and verification, with their provenance recorded.
+
+Queue settings go in `.architecture-guard/sync.yml`:
+
+```yaml
+provider: jira
+project: PROJ
+backlog:
+  jql: project = PROJ AND sprint in openSprints() AND statusCategory != Done
+  lanes:                 # override or extend the type-to-lane map
+    defect: fix
+    improvement: light
+  max_groups: 10         # groups per run (1-50)
+```
 
 ## Story Scope Check (Jira)
 

@@ -19,6 +19,7 @@ program
 import { runInstallCommand, runSyncTeamRoles } from '../cli/install';
 import { runDetectChangedFiles } from '../cli/detect-changed-files';
 import { runValidateSyncConfig } from '../cli/validate-sync-config';
+import { runValidateBacklog } from '../cli/validate-backlog';
 import { runValidateSetup } from '../cli/validate-setup';
 import { runCreateContextBudgetFixtures } from '../cli/create-context-budget-fixtures';
 import { runReviewArtifacts } from '../cli/review-artifacts';
@@ -65,6 +66,11 @@ program
   .command('validate-sync-config [path]')
   .description('Strictly validate the external sync configuration (default: .architecture-guard/sync.yml)')
   .action(runValidateSyncConfig);
+
+program
+  .command('validate-backlog [path]')
+  .description('Strictly validate the local backlog for ag-governed-backlog (default: .architecture-guard/backlog.yml)')
+  .action(runValidateBacklog);
 
 program
   .command('validate-setup [target]')
