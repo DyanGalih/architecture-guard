@@ -28,7 +28,7 @@ Read `sync.yml` and `backlog.yml` from the user's checkout. When `sync.yml` exis
 | `depends_on` | from `story_scope` grouping (below) | beads it depends on (`blocks` dependencies) | `depends_on` |
 | `size` | story points: ≤1 xs, 2 s, 3-5 m, 8 l, more xl | `estimate` minutes: ≤60 xs, ≤240 s, ≤960 m, ≤2400 l, more xl | `size` |
 
-A missing field stays empty; never invent acceptance criteria. An item with no acceptance criteria is shown as such at Gate Q.
+A missing field stays empty; never invent acceptance criteria. An item with no acceptance criteria is shown as such at Gate Q; in a fix-lane or light-lane group, which has no specification to supply them, the user must approve criteria for it there before the group starts (see `ag-governed-backlog`).
 
 ## Grouping
 

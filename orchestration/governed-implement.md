@@ -209,7 +209,7 @@ IF architecture violations exist:
 
 ### Step 7 — Mandatory Verification Gate
 
-Run {adapter_command:verify} after implementation and reviews. Do not mark the workflow complete or ready to merge until verification passes with no unresolved blocking findings; if unavailable as a registered capability, execute the Architecture Guard verification workflow inline.
+Run {adapter_command:verify} after implementation and reviews. When the caller stated the change has no specification delta, pass that statement to it, so it verifies against the change's `## Stories` section. Do not mark the workflow complete or ready to merge until verification passes with no unresolved blocking findings; if unavailable as a registered capability, execute the Architecture Guard verification workflow inline.
 
 ### Step 8 — Proactive Durable Memory Preservation
 

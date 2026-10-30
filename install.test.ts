@@ -1121,6 +1121,18 @@ test('governed-backlog queues groups through lanes with four batched gates', () 
   }
   assert.match(step5, /each item's id, title, and acceptance criteria under `## Stories`/);
   const tasksPhase = fs.readFileSync(path.join(__dirname, '..', 'orchestration', 'governed-tasks.md'), 'utf8');
+  // An item with no acceptance criteria has nothing to trace to: tasks stop, and Gate Q must approve criteria first
+  assert.match(tasksPhase, /when any listed item has no acceptance criteria, stop and report the item[^\n]*never derive criteria here/);
+  assert.match(prompt, /For each item with no acceptance criteria in a fix-lane or light-lane group, propose the narrowest criteria[^\n]*never written back to the source[^\n]*`approved_acceptance`[^\n]*`needs acceptance criteria: <item>`/);
+  assert.match(step5, /using the group's `approved_acceptance` for an item with none/);
+  assert.match(prompt, /A `needs acceptance criteria` reason holds until the user approves criteria for that item at Gate Q/);
+  // The Stories substitute and its provenance reach the Mandatory Verification Gate
+  const verifyPhase = fs.readFileSync(path.join(__dirname, '..', 'orchestration', 'verify.md'), 'utf8');
+  assert.match(verifyPhase, /\*\*Change with no specification delta\*\*[^\n]*`## Stories` section[^\n]*stands in for `\{adapter_path:spec\}`[^\n]*records the provenance[^\n]*no acceptance criteria is `Missing`, never inferred[^\n]*a missing spec is not a no-delta change/);
+  const implementPhase = fs.readFileSync(path.join(__dirname, '..', 'orchestration', 'governed-implement.md'), 'utf8');
+  assert.match(implementPhase, /Run \{adapter_command:verify\}[^\n]*When the caller stated the change has no specification delta, pass that statement to it/);
+  assert.match(prompt, /run `ag-governed-implement`[^\n]*For a fix-lane or light-lane change with no specification delta, also tell it so/);
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'adapters', 'openspec.md'), 'utf8'), /`skip_specs: true` is the change's no-specification-delta marker/);
   assert.match(tasksPhase, /\*\*Change with no specification delta\*\*[^\n]*`## Stories` section, with each item's acceptance criteria, stands in for `\{adapter_path:spec\}`[^\n]*`\{adapter_path:plan\}` and the Constitution Inputs are still required\. If the spec \(unless the `## Stories` section stands in for it\), plan, governance rules, or architecture rules are missing, stop/);
   // Standing in for the spec never waives the governance, architecture, or security checks
   assert.doesNotMatch(tasksPhase, /still required\. Otherwise, if the spec/);
@@ -1215,7 +1227,12 @@ test('governed-backlog keeps the fixes from its dry run', () => {
   // The park records where to resume, so an interrupted run restarts each phase at the right point
   assert.match(prompt, /parked_from: null # for a `needs confirmation` park: \{state, phase, capability, step\}, where phase is discovery \| specification \| plan-and-tasks \| implementation/);
   assert.match(prompt, /before parking write `parked_from` to `queue.yml`/);
-  assert.match(prompt, /set the group back to `parked_from.state`, clear `parked_from`, and resume `parked_from.capability` from that step/);
+  // The checkpoint survives the handoff: cleared only after the resumed phase records progress
+  assert.match(prompt, /set the group back to `parked_from.state` and clear its park reason, but keep `parked_from`; then resume `parked_from.capability` from `parked_from.step`/);
+  assert.match(prompt, /Clear `parked_from` only after the resumed phase has recorded durable progress in `queue.yml`/);
+  assert.match(prompt, /A run interrupted between those points finds the group in `parked_from.state` with `parked_from` still set[^\n]*resumes from `parked_from.step` again/);
+  assert.doesNotMatch(prompt, /clear `parked_from`, and resume/);
+  assert.match(prompt, /A group that still has `parked_from` resumes `parked_from.capability` from `parked_from.step`/);
   assert.match(prompt, /its `parked_from` says where the group resumes/);
 
   // Research groups open no pull request, so their beads are never closed by the queue
