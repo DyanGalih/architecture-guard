@@ -228,6 +228,49 @@ The configuration is strictly validated during the workflow using `architecture-
 
 If the push fails, the workflow gracefully degrades by logging a warning and writing `{ "status": "failed" }` to the status file without blocking local delivery.
 
+## Backlog Queue
+
+`ag-governed-backlog` delivers several backlog items in one run, one pull request per group of related items.
+
+1. **Intake**: reads items from Jira (with `provider: jira` and a Jira MCP server), Beads (when `bd` is installed and the repository has `.beads/`), or `.architecture-guard/backlog.yml`, in that order of preference. You pick the source when more than one is available. Flash-Mem supplies context for each group but never holds backlog items.
+2. **Plan**: groups related items (Jira with [story scope](#story-scope-check-jira) Planning Mode, Beads by parent epic, the local file by `group`), orders groups by dependencies, then priority, then size, and assigns each group a lane: **full** (story, feature: discover, spec, plan, tasks, implement), **fix** (bug: reproduce, failing test, fix), **light** (task, chore: tasks and implement), or **research** (spike: discovery only, no pull request). A group takes its heaviest item's lane, and a group touching security-sensitive paths or an architecture boundary is escalated to **full**.
+3. **Gate Q**: you approve the queue: groups, order, lanes, base branch, and one worktree per group beside the repository.
+4. **Gate S**: discovery and specification run for every full-lane group, then you approve all the specifications together, with research findings. Questions the skills would have asked you along the way are answered conservatively and listed here for you to confirm or change; anything outside the approved scope is listed as an open decision instead of being done.
+5. **Planning**: each group writes its plan and tasks in its own worktree (fix and light lanes create their change and tasks), with the usual artifact review loops. No code is written yet.
+6. **Gate I**: you approve each group's implementation scope together: the exact code, test, and task files and operations its tasks will change. This is the approval `ag-governed-implement` would otherwise ask for one group at a time.
+7. **Implementation**: each approved group is implemented and verified in its worktree. A group whose review does not converge, has a blocking security finding, needs a decision or confirmation from you, or depends on an unmerged pull request is **parked**, and the run moves on. A step a skill needs you to confirm (for example continuing without security rules) is never taken for you: the group is parked until you answer at the next gate.
+8. **Gate P**: for each verified group you approve the repository, remote, branch, base, files, and pull request text; `ag-governed-archive` then archives, commits, pushes, and opens that pull request.
+
+Run state is kept in `.architecture-guard/queue.yml` (add it to `.gitignore`), so the next run re-checks parked groups, shows what changed in the backlog, and continues. A group that depends on an unmerged pull request waits by default, even when that dependency is delivered in the same run; you can opt in to stacking it on the dependency's branch instead. The queue never merges or approves pull requests, never force-pushes, and never writes to Jira. With Beads, write-back is opt-in at Gate Q: beads are marked in progress when their group starts, get a note with the pull request URL, and are closed only after the pull request has merged and you approve. Research beads have no pull request, so the queue leaves them open for you to close.
+
+A local backlog (see [`examples/backlog.yml`](../examples/backlog.yml)):
+
+```yaml
+items:
+  - id: BUG-3
+    type: bug              # story | feature | bug | task | chore | spike, or a type mapped in sync.yml
+    priority: highest      # highest | high | medium | low | lowest
+    title: Login fails on expired session
+    acceptance:
+      - Expired sessions redirect to sign-in instead of returning 500
+    group: auth-session    # same group → same change and pull request
+    depends_on: [STORY-1]  # item or group ids
+    size: s                # xs | s | m | l | xl, breaks priority ties
+```
+
+Check it with `architecture-guard validate-backlog`, run from the project root; it reads only a backlog file inside that root (after resolving symlinks) and rejects dependency cycles, including between items of one group. Queue settings go in `.architecture-guard/sync.yml`:
+
+```yaml
+provider: jira
+project: PROJ
+backlog:
+  jql: project = PROJ AND sprint in openSprints() AND statusCategory != Done
+  lanes:                 # override or extend the type-to-lane map
+    defect: fix
+    improvement: light
+  max_groups: 10         # groups per run (1-50)
+```
+
 ## Story Scope Check (Jira)
 
 `ag-review-implementation`, `ag-verify`, `ag-review-pr`, and `ag-pr-feedback` compare a change with the work agreed in Jira, so out-of-scope work is caught before review rather than after. It is part of the shared change checks and uses the same `.architecture-guard/sync.yml`:
