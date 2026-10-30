@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { roleAgentName, installCodexRoles, planCodexRoles, validateProfile, assertRolePath } = require('./role-setup');
+const { roleAgentName, installCodexRoles, planCodexRoles, validateProfile, assertRolePath, CODEX_ROLES, AGY_ROLES, planRoles, installRoles } = require('./role-setup');
 
 const ROOT_DIR = path.join(__dirname, '..', '..');
 const { resolveForge, installForges, materializeForgeTokens } = require('./forge');
@@ -146,6 +146,8 @@ async function ask(promptText, choices, multi = false) {
     if (!choices) return input;
     if (multi) {
       if (input.trim().toLowerCase() === 'all') return choices.map(c => typeof c === 'string' ? c : c.value);
+      if (['y', 'yes'].includes(input.trim().toLowerCase())) return choices.map(c => typeof c === 'string' ? c : c.value);
+      if (['n', 'no'].includes(input.trim().toLowerCase())) return [];
       const indices = input.split(',').map(s => parseInt(s.trim()) - 1).filter(i => i >= 0 && i < choices.length);
       return indices.map(i => typeof choices[i] === 'string' ? choices[i] : choices[i].value);
     }
@@ -848,6 +850,15 @@ function installClaudeRoleAgents(targetDir: string, overwrite?: string) {
 }
 
 // Role files are Claude Code agent types, so they are only written where the Claude skills are installed.
+function hasAgySkills(targetDir: string) {
+  const skillsDir = path.join(targetDir, AGENT_CONFIGS.antigravity.dir);
+  try {
+    return fs.statSync(skillsDir).isDirectory() && fs.readdirSync(skillsDir).some(entry => entry.startsWith('ag-'));
+  } catch {
+    return false;
+  }
+}
+
 function hasClaudeSkills(targetDir: string) {
   const skillsDir = path.join(targetDir, AGENT_CONFIGS.claude.dir);
   try {
@@ -858,17 +869,27 @@ function hasClaudeSkills(targetDir: string) {
 }
 
 export function runSyncTeamRoles(target?: string, options: { agent?: string } = {}) {
-  if (options.agent && !['claude', 'codex'].includes(options.agent)) {
-    console.error('Unknown role target; use --agent codex or --agent claude');
+  if (options.agent && !['claude', 'codex', 'antigravity'].includes(options.agent)) {
+    console.error('Unknown role target; use --agent codex, --agent claude, or --agent antigravity');
     process.exitCode = 1;
     return { written: [], removed: [], errors: ['Unknown role target'] };
   }
+  const targetDir = target ? path.resolve(target) : process.cwd();
   if (options.agent === 'codex') {
-    const result = installCodexRoles(target ? path.resolve(target) : process.cwd());
+    const result = installRoles(CODEX_ROLES, targetDir);
     if (result.errors.length) process.exitCode = 1;
     return result;
   }
-  const targetDir = target ? path.resolve(target) : process.cwd();
+  if (options.agent === 'antigravity') {
+    if (!hasAgySkills(targetDir)) {
+      console.error(`No Antigravity (agy) skills are installed in ${path.relative(process.cwd(), targetDir) || '.'}; install agy skills before role setup.`);
+      process.exitCode = 1;
+      return { written: [], removed: [], errors: ['No agy skills installed'] };
+    }
+    const result = installRoles(AGY_ROLES, targetDir);
+    if (result.errors.length) process.exitCode = 1;
+    return result;
+  }
   if (!hasClaudeSkills(targetDir)) {
     console.log(`No Claude Code skills are installed in ${path.relative(process.cwd(), targetDir) || '.'}; teammate roles are Claude Code agent types, so nothing was written.`);
     return { written: [], removed: [], errors: [] };
@@ -1001,50 +1022,58 @@ function pruneVendoredCopies(runtimeDir, overwrite) {
 }
 
 // Preview and preflight the whole operation before creating a profile or changing roles.
-async function interviewCodexRoles(targetDir, overwrite) {
+async function interviewHostRoles(desc, targetDir, overwrite) {
   const root = fs.realpathSync(targetDir);
-  const profilePath = path.join(root, '.architecture-guard', 'codex-agents.yml');
+  const profilePath = path.join(root, '.architecture-guard', desc.profileName);
   assertRolePath(root, profilePath);
   const existing = fs.existsSync(profilePath);
   const YAML = require('yaml');
   const { resolveResource } = require('./resolve');
   const source = existing ? fs.readFileSync(profilePath, 'utf8') :
-    resolveResource('template', 'codex_agents_template', { target: root }).content;
+    resolveResource('template', desc.templateName, { target: root }).content;
   const profile = YAML.parse(source);
   // Validate the catalog before selection; preflight destinations after selection.
-  validateProfile(profile);
+  desc.validateProfile(profile);
   if (!existing) {
     const keys = Object.keys(profile.roles);
-    console.log(`Available Codex roles: ${keys.join(', ')}`);
+    console.log(`Available ${desc.label} roles: ${keys.join(', ')}`);
     const answer = String(await ask('Roles to keep (comma-separated keys; blank keeps all): ', null)).trim();
     const selected = answer ? [...new Set(answer.split(',').map(key => key.trim()).filter(Boolean))] : keys;
     const unknown = selected.filter(key => !keys.includes(key));
-    if (!selected.length || unknown.length) throw new Error(`Invalid Codex role selection: ${unknown.join(', ') || 'empty roster'}`);
+    if (!selected.length || unknown.length) throw new Error(`Invalid ${desc.label} role selection: ${unknown.join(', ') || 'empty roster'}`);
     profile.roles = Object.fromEntries(selected.map(key => [key, profile.roles[key]]));
     const model = String(await ask('Model for these roles (blank inherits the lead model): ', null)).trim();
     if (model) for (const role of Object.values(profile.roles) as any[]) role.model = model;
   } else {
-    console.log('Using existing Codex role profile; edit it and sync roles to change the roster.');
+    console.log(`Using existing ${desc.label} role profile; edit it and sync roles to change the roster.`);
   }
-  const plan = planCodexRoles(root, overwrite, profile);
-  console.log(`Codex profile: ${profilePath} (${existing ? 'retain' : 'create'})`);
+  const plan = planRoles(desc, root, overwrite, profile);
+  console.log(`${desc.label} profile: ${profilePath} (${existing ? 'retain' : 'create'})`);
   for (const action of ['create', 'replace', 'retain', 'remove']) {
     console.log(`${action}: ${plan[action].length ? plan[action].map(file => path.relative(root, file)).join(', ') : '(none)'}`);
   }
-  const confirm = String(await ask('Apply this Codex role plan? (y/n): ', null)).trim().toLowerCase();
+  const confirm = String(await ask(`Apply this ${desc.label} role plan? (y/n): `, null)).trim().toLowerCase();
   if (!['y', 'yes'].includes(confirm)) return null;
   assertRolePath(root, profilePath);
   if (existing && (!fs.existsSync(profilePath) || fs.readFileSync(profilePath, 'utf8') !== source)) {
-    throw new Error('Codex role profile changed after preview; retry setup');
+    throw new Error(`${desc.label} role profile changed after preview; retry setup`);
   }
-  const current = planCodexRoles(root, overwrite, profile);
-  if (JSON.stringify(plan) !== JSON.stringify(current)) throw new Error('Codex role destinations changed after preview; retry setup');
+  const current = planRoles(desc, root, overwrite, profile);
+  if (JSON.stringify(plan) !== JSON.stringify(current)) throw new Error(`${desc.label} role destinations changed after preview; retry setup`);
   if (!existing) {
     assertRolePath(root, profilePath);
     fs.mkdirSync(path.dirname(profilePath), { recursive: true });
     fs.writeFileSync(profilePath, YAML.stringify(profile), { flag: 'wx' });
   }
   return profile;
+}
+
+async function interviewCodexRoles(targetDir, overwrite) {
+  return interviewHostRoles(CODEX_ROLES, targetDir, overwrite);
+}
+
+async function interviewAgyRoles(targetDir, overwrite) {
+  return interviewHostRoles(AGY_ROLES, targetDir, overwrite);
 }
 
 async function runInit(targetDir, opts) {
@@ -1084,7 +1113,15 @@ async function runInit(targetDir, opts) {
     selectedAgents = await ask('Select AI agent(s) to install commands for:', agentChoices, true);
   }
 
-  if (opts.codexAgents && !selectedAgents?.includes('codex')) throw new Error('--codex-agents requires --agent codex (or a selection including codex)');
+  if (opts.claudeAgentTeams && !selectedAgents?.includes('claude')) {
+    throw new Error('--claude-agent-teams requires --agent claude (or a selection including claude)');
+  }
+  if (opts.codexAgents && !selectedAgents?.includes('codex')) {
+    throw new Error('--codex-agents requires --agent codex (or a selection including codex)');
+  }
+  if (opts.agyAgents && !selectedAgents?.includes('antigravity')) {
+    throw new Error('--agy-agents requires --agent antigravity (or a selection including antigravity)');
+  }
 
   if (!selectedAgents || selectedAgents.length === 0) {
     console.log('No agents selected. Exiting.');
@@ -1173,35 +1210,47 @@ async function runInit(targetDir, opts) {
     }
   }
 
-  if (selectedAgents.includes('claude')) {
-    let enableTeams = opts.claudeAgentTeams;
-    if (!enableTeams && !opts.yes) {
-      const answer = await ask('\nEnable Claude Code Agent Teams / Teammates (Beta / Experimental - unstable)? (y/n): ', null);
-      if (answer && ['y', 'yes'].includes(String(answer).toLowerCase())) {
-        enableTeams = true;
-      }
-    }
-    if (enableTeams) {
-      configureClaudeAgentTeams(targetDir);
-      installClaudeRoleAgents(targetDir, opts.overwrite);
+  const teamRoleHostCandidates = [
+    { key: 'claude', name: 'Claude Code Agent Teams (roles + enables experimental Agent Teams setting)' },
+    { key: 'codex', name: 'Codex (installs roles only; does not activate coordinated execution)' },
+    { key: 'antigravity', name: 'Antigravity / agy (installs roles only; does not activate coordinated execution)' },
+  ];
+  const eligibleTeamHosts = teamRoleHostCandidates.filter(h => selectedAgents.includes(h.key));
+
+  let selectedTeamHosts: string[] = [];
+  const anyTeamFlag = Boolean(opts.claudeAgentTeams || opts.codexAgents || opts.agyAgents);
+
+  if (opts.yes || anyTeamFlag) {
+    if (opts.claudeAgentTeams && selectedAgents.includes('claude')) selectedTeamHosts.push('claude');
+    if (opts.codexAgents && selectedAgents.includes('codex')) selectedTeamHosts.push('codex');
+    if (opts.agyAgents && selectedAgents.includes('antigravity')) selectedTeamHosts.push('antigravity');
+  } else if (eligibleTeamHosts.length > 0) {
+    selectedTeamHosts = await ask(
+      'Select AI agent(s) to set up team roles for:',
+      eligibleTeamHosts.map(h => ({ name: h.name, value: h.key })),
+      true
+    ) || [];
+  }
+
+  if (selectedTeamHosts.includes('claude')) {
+    configureClaudeAgentTeams(targetDir);
+    installClaudeRoleAgents(targetDir, opts.overwrite);
+  }
+
+  if (selectedTeamHosts.includes('codex')) {
+    const profile = opts.yes ? undefined : await interviewHostRoles(CODEX_ROLES, targetDir, opts.overwrite);
+    if (opts.yes || profile) {
+      const result = installRoles(CODEX_ROLES, targetDir, opts.overwrite, profile);
+      if (result.errors.length) process.exitCode = 1;
     }
   }
 
-  if (selectedAgents.includes('codex')) {
-    let enableCodex = opts.codexAgents;
-    if (!enableCodex && !opts.yes) {
-      const answer = await ask('Install Codex roles (does not activate coordinated execution)? (y/n): ', null);
-      enableCodex = answer && ['y', 'yes'].includes(String(answer).toLowerCase());
+  if (selectedTeamHosts.includes('antigravity')) {
+    const profile = opts.yes ? undefined : await interviewHostRoles(AGY_ROLES, targetDir, opts.overwrite);
+    if (opts.yes || profile) {
+      const result = installRoles(AGY_ROLES, targetDir, opts.overwrite, profile);
+      if (result.errors.length) process.exitCode = 1;
     }
-    if (enableCodex) {
-      const profile = opts.yes ? undefined : await interviewCodexRoles(targetDir, opts.overwrite);
-      if (opts.yes || profile) {
-        const result = installCodexRoles(targetDir, opts.overwrite, profile);
-        if (result.errors.length) process.exitCode = 1;
-      }
-    }
-  } else if (opts.codexAgents) {
-    throw new Error('--codex-agents requires --agent codex (or a selection including codex)');
   }
 
   const runtimeDir = path.join(targetDir, '.architecture-guard');

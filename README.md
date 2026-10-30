@@ -150,9 +150,9 @@ The standalone orchestrator is the primary experience, and all new features ship
 
 If your project is already centered on Spec Kit, you can continue installing Architecture Guard as a native Spec Kit extension. See the [Spec Kit Integration Guide](SPECKIT-INTEGRATION.md).
 
-### Codex execution
+### Codex and Antigravity (agy) execution
 
-Install skills and optional native roles with `architecture-guard init . --yes --agent codex --framework openspec --codex-agents`. The flag is optional: interactive CLI setup asks whether to install roles and lets you select a roster and model. Refresh roles with `architecture-guard sync-team-roles --agent codex`; configure the roster in `.architecture-guard/codex-agents.yml`. Claude profiles and flags remain separate.
+Install skills and optional native roles with `architecture-guard init . --yes --agent codex --framework openspec --codex-agents` or `--agent antigravity --agy-agents`. Interactive CLI setup asks a single unified multi-select question for all selected hosts that support team roles (Claude, Codex, agy) and interviews for roster/model. Refresh roles with `architecture-guard sync-team-roles --agent codex` or `--agent antigravity`; configure rosters in `.architecture-guard/codex-agents.yml` or `.architecture-guard/agy-agents.yml`. Profiles and role files remain separate per host.
 
 Sequential execution is the default. Read-only review subagents require callable host tools and session authorization; coordinated implementation requires explicit selection each run, verified role restrictions, and non-overlapping file ownership. Role installation never activates a mode. Parent permissions apply; Codex role files cannot override sandbox, approval, or MCP settings. Unsupported required restrictions prevent role activation.
 
