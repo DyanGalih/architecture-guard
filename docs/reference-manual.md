@@ -181,6 +181,12 @@ This injects refactor tasks into the technical design and task artifacts so the 
 | `ag-verify` | Verification | Implementation verification report with task fulfillment, architecture, and hygiene findings | Final gate after implementation to ensure all tasks are delivered, with cached memory context if available |
 | `ag-e2e-testing` | Testing | E2E decision (UI, API, both, or Skip) with Playwright scenarios traced to acceptance criteria | After the spec is accepted, to plan e2e coverage, or after implementation to write and run the tests |
 
+### Artifact premise grounding
+
+`ag-review-artifacts` checks claims about existing paths, named symbols, and current behavior against the destination branch without reviewing implementation quality. Pass the destination as **Base ref** when known; for a multi-repository change, name a base ref for each owning repository. Otherwise the review uses each repository's fetched default branch. It reports the ref and commit per repository, and marks grounding unavailable for repositories whose destination cannot be resolved.
+
+Paths proposed for creation are checked for name collisions, not reported missing. Grounding covers up to 40 premises by default and records remaining ones as not grounded. Referenced pull requests or tickets are checked read-only when a host action is available; otherwise their state is not checked. The review also checks coverage of privileged or irreversible paths and flags absolute guarantees that lack a mechanism or verification task.
+
 ### Ponytail Core
 
 All commands load `templates/ponytail_core.md`. The contract applies an ordered YAGNI-to-minimum-code ladder, requires root-cause caller tracing, preserves a correctness and safety floor, and requires a runnable check for non-trivial logic. Framework presets add vocabulary but cannot require a layer or dependency without repository evidence.
@@ -256,9 +262,11 @@ specify extension add architecture-guard
 
 ### From a Release Artifact (ZIP)
 
+These examples use the latest published tag, `v3.3.1`. The prepared `3.4.0` version is not available at a release URL until that tag is published.
+
 ```text
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v2.5.3.zip
+  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.3.1.zip
 ```
 
 ### Global Preset Usage
@@ -274,7 +282,7 @@ If you manage multiple projects using the same framework (e.g., Laravel), you ca
 
 ```bash
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v2.5.3.zip
+  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.3.1.zip
 ```
 
 ### From a Local Developer Artifact
@@ -287,5 +295,5 @@ specify extension add architecture-guard --dev /path/to/architecture-guard
 
 ```text
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v2.5.3.zip
+  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.3.1.zip
 ```

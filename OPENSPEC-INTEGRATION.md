@@ -68,6 +68,8 @@ After archival, pull-request review and feedback read the full merged specificat
 
 Architecture Guard uses `openspec` when `.architecture-guard/selected-adapter` contains `openspec`. The `openspec/config.yaml` marker is only a fallback when no adapter has been persisted. The `--adapter` value mentioned by installed prompts is a one-command prompt input, not an `architecture-guard init` option.
 
+For a fix or light backlog group with no specification delta, the adapter marks the change with `skip_specs: true`. The group's approved acceptance criteria in `## Stories` stand in for the specification during task generation and verification; the plan and governance inputs remain required. See the [backlog queue](docs/workflows.md#backlog-queue).
+
 ## Agent Files
 
 The OpenSpec adapter (`adapters/openspec.md`) also provides a Command Map for all OpenSpec CLI invocations. This lets Architecture Guard orchestrate `openspec *` commands naturally.
