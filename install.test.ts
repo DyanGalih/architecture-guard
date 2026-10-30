@@ -2820,3 +2820,52 @@ test('optional forge keys materialize as unsupported for a custom forge that omi
   assert.match(out, /- \*\*review-approve\*\*: Unsupported by this forge adapter; do not offer or attempt this action/);
   assert.throws(() => materializeForgeTokens('{forge_command:review-post}', 'custom-missing', cwd), /Unavailable: forge adapter not found/);
 });
+
+test('review-artifacts grounds cited premises read-only and checks path coverage and guarantees', () => {
+  for (const dir of ['orchestration', 'commands']) {
+    const prompt = fs.readFileSync(path.join(repoRoot, dir, 'review-artifacts.md'), 'utf8');
+    assert.match(prompt, /\*\*No Implementation Code Review\*\*/, dir);
+    assert.doesNotMatch(prompt, /MUST NOT read, evaluate, or scan implementation code/, dir);
+    assert.match(prompt, /\*\*Premise Grounding \(cited facts only\)\*\*/, dir);
+    assert.match(prompt, /Never check out, fetch over, or modify a working tree/, dir);
+    assert.match(prompt, /Cap the inventory at 40 premises/, dir);
+    // A planned new file is absent at the base by design, so it is never a mismatch
+    assert.match(prompt, /citation the artifacts present as existing/, dir);
+    assert.match(prompt, /\*\*Planned targets are not premises\*\*[^\n]*never ground its existence or report it `Unresolvable`/, dir);
+    assert.match(prompt, /treat an existing one as a name collision/, dir);
+    assert.match(prompt, /report Premise Grounding `Unavailable`; when only some resolve, report it `Degraded` and name the unavailable repositories\. Never report it as passed/, dir);
+    // Each owning repository merges into its own branch, so grounding never reads one at another's ref
+    assert.match(prompt, /Resolve the base ref \*\*per owning repository\*\*[^\n]*never infer one repository's ref from another's/, dir);
+    assert.match(prompt, /Resolve the ref to its commit SHA in that repository[^\n]*report both/, dir);
+    assert.match(prompt, /a single unnamed Base ref was given while the cited paths span several repositories\), report that repository's grounding `Unavailable`[^\n]*never read it at another repository's ref/, dir);
+    assert.match(prompt, /a single unnamed Base ref applies only when every cited path has the same owning repository/, dir);
+    assert.match(prompt, /- \*\*Base ref\*\*: \[one line per owning repository: repository, ref, commit SHA; or Unavailable: reason\]/, dir);
+    assert.match(prompt, /Never write to the code host or the tracker/, dir);
+    assert.match(prompt, /\*\*Premise Mismatch\*\*/, dir);
+    assert.match(prompt, /\*\*Root-Cause Miss \/ Path Coverage Gap\*\*/, dir);
+    assert.match(prompt, /\*\*Unqualified Guarantee\*\*/, dir);
+    assert.match(prompt, /2b\. \*\*Ground Premises\*\*/, dir);
+    assert.match(prompt, /### Premise Grounding\n- \*\*Base ref\*\*/, dir);
+  }
+  for (const file of ['governed-delivery.md', 'governed-delivery-team.md']) {
+    for (const dir of ['orchestration', 'commands']) {
+      assert.match(fs.readFileSync(path.join(repoRoot, dir, file), 'utf8'), /pass it as the \*\*Base ref\*\*[^\n]*pass one Base ref per repository, naming each/, `${dir}/${file}`);
+    }
+  }
+
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  install('all\n1\n', cwd);
+  for (const file of [
+    '.claude/skills/ag-review-artifacts/SKILL.md',
+    '.codex/skills/ag-review-artifacts/SKILL.md',
+    '.agent/skills/ag-review-artifacts/SKILL.md',
+    '.agent/workflows/agx-review-artifacts.md',
+    '.cursor/skills/ag-review-artifacts/SKILL.md',
+    '.gemini/commands/ag-review-artifacts.toml',
+  ]) {
+    const installed = fs.readFileSync(path.join(cwd, file), 'utf8');
+    assert.match(installed, /Premise Grounding/, file);
+    assert.match(installed, /Unqualified Guarantee/, file);
+    assert.doesNotMatch(installed, /\{forge_command:/, file);
+  }
+});

@@ -172,7 +172,7 @@ This injects refactor tasks into the technical design and task artifacts so the 
 | `governed-delivery-team` | Orchestration | Team delivery flow with an approved User Story before planning and task generation | Use when stakeholders need to approve business intent before engineering proceeds |
 | `governed-archive` | Finalization | Archives a completed feature after verification, with explicit approval for changelog, memory, Git, and cleanup actions | Use only after implementation is verified |
 | `ag-workflow` | General Review | Violations, severity and priority, refactor tasks, evolution proposals | Entry point for end-to-end review; good for dashboards |
-| `ag-review-artifacts` | Validation | Validates planning artifacts (spec, plan) against constitution without reading code | After `/specify` or `/plan` |
+| `ag-review-artifacts` | Validation | Validates planning artifacts (spec, plan) against constitution without reviewing code; reads only the base-branch locations the artifacts cite to confirm their premises | After `/specify` or `/plan` |
 | `ag-review-implementation` | Validation | Validates implementation codebase against planning artifacts and constitution | After `/implement` |
 | `violation-detection` | Detection | Drift summary, boundary violations, module coupling | Focus on specific architecture problems |
 | `refactor-generator` | Planning | Refactor task generation | After review; convert violations to non-blocking refactor tasks |
