@@ -2833,7 +2833,13 @@ test('review-artifacts grounds cited premises read-only and checks path coverage
     assert.match(prompt, /citation the artifacts present as existing/, dir);
     assert.match(prompt, /\*\*Planned targets are not premises\*\*[^\n]*never ground its existence or report it `Unresolvable`/, dir);
     assert.match(prompt, /treat an existing one as a name collision/, dir);
-    assert.match(prompt, /report Premise Grounding `Unavailable`\. Never report it as passed/, dir);
+    assert.match(prompt, /report Premise Grounding `Unavailable`; when only some resolve, report it `Degraded` and name the unavailable repositories\. Never report it as passed/, dir);
+    // Each owning repository merges into its own branch, so grounding never reads one at another's ref
+    assert.match(prompt, /Resolve the base ref \*\*per owning repository\*\*[^\n]*never infer one repository's ref from another's/, dir);
+    assert.match(prompt, /Resolve the ref to its commit SHA in that repository[^\n]*report both/, dir);
+    assert.match(prompt, /a single unnamed Base ref was given while the cited paths span several repositories\), report that repository's grounding `Unavailable`[^\n]*never read it at another repository's ref/, dir);
+    assert.match(prompt, /a single unnamed Base ref applies only when every cited path has the same owning repository/, dir);
+    assert.match(prompt, /- \*\*Base ref\*\*: \[one line per owning repository: repository, ref, commit SHA; or Unavailable: reason\]/, dir);
     assert.match(prompt, /Never write to the code host or the tracker/, dir);
     assert.match(prompt, /\*\*Premise Mismatch\*\*/, dir);
     assert.match(prompt, /\*\*Root-Cause Miss \/ Path Coverage Gap\*\*/, dir);
@@ -2843,7 +2849,7 @@ test('review-artifacts grounds cited premises read-only and checks path coverage
   }
   for (const file of ['governed-delivery.md', 'governed-delivery-team.md']) {
     for (const dir of ['orchestration', 'commands']) {
-      assert.match(fs.readFileSync(path.join(repoRoot, dir, file), 'utf8'), /pass it as the \*\*Base ref\*\*/, `${dir}/${file}`);
+      assert.match(fs.readFileSync(path.join(repoRoot, dir, file), 'utf8'), /pass it as the \*\*Base ref\*\*[^\n]*pass one Base ref per repository, naming each/, `${dir}/${file}`);
     }
   }
 
