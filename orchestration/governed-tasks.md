@@ -25,6 +25,10 @@ Architecture Guard engine resources are standalone package resources. Never sear
 
 Before continuing, you **MUST** resolve and apply the `ponytail_core` template with `architecture-guard resolve template ponytail_core` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Host Agent Execution
+
+Resolve and apply `agent_execution` with `architecture-guard resolve template agent_execution`. It owns mode activation, delegation decisions, complete handoffs, role restrictions, and ownership. Preserve phase-specific gates below. All retrieval instructions below accept current sufficient run-local context under `budgeted_context_sdd`: reuse it instead of repeating calls. An exposed memory tool is not usable when this run has recorded an absent store; reuse that unavailable outcome until tools or environment change.
+
 ## Capability Composition
 
 Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
@@ -55,7 +59,9 @@ Provide a single command that ensures:
 
 ### Write Approval Gate
 
-Before the first mutation, resolve and preview the exact target task and constraint artifacts together with all planned task-generation, reconciliation, refactor, analysis-fix, and constraint-write operations. Obtain explicit user approval, then allow routine writes already previewed within this task phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval. **Caller approval**: when a calling skill passes an approval whose preview showed this phase's exact task and constraint artifacts and operations (for example `ag-governed-backlog`'s Gate Q), that approval satisfies this gate and is not asked again. It covers only what that preview showed; anything else still needs its own preview and approval.
+**Caller approval**: Accept an existing caller approval only for the identical action, phase, exact targets, and owning repository under `capability_composition`; it covers only what that preview showed. Distinct human decisions and material scope expansions still require approval.
+
+Before the first mutation, resolve and preview the exact target task and constraint artifacts together with all planned task-generation, reconciliation, refactor, analysis-fix, and constraint-write operations. Obtain explicit user approval, then allow routine writes already previewed within this task phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 
 ### Constitution Inputs
 
@@ -83,18 +89,7 @@ When Flash-Mem is available, use it first to gather the most relevant architectu
 If Flash-Mem is unavailable or the context is insufficient, rely on the Constitution Inputs loaded above before continuing with repository artifacts.
 
 **[OPTIONAL SUB-AGENT DELEGATION]**
-* **Capability Gate:** Detect a host synthesis/delegation capability independently of the adapter command map. If unavailable, execute inline regardless of size and report the degraded path.
-* **Trigger Condition:** When the capability is available, you **MUST** delegate memory retrieval and synthesis if:
-  - The Flash-Mem index contains $\ge 20$ memory documents.
-  - OR the project repository contains $\ge 15$ active ADRs/docs.
-  - Otherwise, you **MUST** execute inline.
-* **Execution:** Invoke the host capability directly with the handoff below and task-generation context. Do not append flags to {adapter_command:subagent-synthesize} or execute adapter fallback prose.
-* **Strict Handoff Template:** Format the sub-agent prompt exactly like this:
-  ```yaml
-  Task: Retrieve and synthesize relevant architecture constraints and ADRs.
-  Focus: Rules and conventions affecting implementation tasks.
-  Expected Output: Synthesized markdown summary of constraints to integrate directly into tasks.md.
-  ```
+Apply the shared `agent_execution` policy for relevant memory synthesis and invoke callable host delegation directly. Complete every applicable handoff field before dispatch; do not execute the adapter-defined "subagent-synthesize" fallback prose as a command.
 
 
 ---
@@ -111,13 +106,13 @@ You must orchestrate {adapter_command:create-tasks} workflow directly.
      - Localized verification: runnable unit/integration tests and lint/typecheck command execution.
      - Hygiene confirmation: clean workspace with no leftover `.tmp`, `.new`, or commented-out code.
    - If the same logic appears in multiple modules, create a single extraction task instead of parallel copy-paste tasks.
-   - **Claude Code Agent Teams Role Tagging** (only when Agent Teams mode is active): When Agent Teams mode is active for the current run or configured in `.architecture-guard/agents.yml`, the **Analyst Creator** MUST tag every task with the `task_tag` of an implementor role in that profile (by default `[BE]` Backend, `[FE]` Frontend, `[TEST]` Unit/Integration Test, plus any custom tag such as `[MOBILE]`) or with `[ORCHESTRATION]`. Use only tags of roles the profile contains: a backend-only roster has no `[FE]` tasks, and work with no matching implementor is tagged `[ORCHESTRATION]`. `[ORCHESTRATION]` tasks are lead-session tasks and MUST NOT be assigned concurrently to an implementor.
+   - **Coordinated Host Role Tagging** (only when coordinated implementation mode is active): When coordinated implementation is explicitly selected for the current run, load the active host profile defined by `agent_execution`, the **Analyst Creator** MUST tag every task with the `task_tag` of an implementor role in that profile (by default `[BE]` Backend, `[FE]` Frontend, `[TEST]` Unit/Integration Test, plus any custom tag such as `[MOBILE]`) or with `[ORCHESTRATION]`. Use only tags of roles the profile contains: a backend-only roster has no `[FE]` tasks, and work with no matching implementor is tagged `[ORCHESTRATION]`. `[ORCHESTRATION]` tasks are lead-session tasks and MUST NOT be assigned concurrently to an implementor.
 2. **Execute Tasks**: Run {adapter_command:create-tasks} to generate and save `{adapter_path:tasks}`.
 
    Follow the adapter-defined action; if it names a command that is not available, use the adapter's own inline fallback. When generating inline:
    - Read `{adapter_path:plan}`, `{adapter_path:spec}`, and the Constitution Inputs.
    - Use Flash-Mem context and `{adapter_path:security-constraints}` if available.
-   - Generate `{adapter_path:tasks}` directly, breaking down the plan into implementation-ready tasks with checkbox format. Enforce Ponytail minimalism, plus role tags when Agent Teams mode is active.
+   - Generate `{adapter_path:tasks}` directly, breaking down the plan into implementation-ready tasks with checkbox format. Enforce Ponytail minimalism, plus role tags when coordinated implementation mode is active.
    - Note in the Governance Summary that task generation was performed inline.
 
 3. The generated tasks MUST use the Constitution Inputs, the feature security constraints, and feature context. Use Flash-Mem first when available.

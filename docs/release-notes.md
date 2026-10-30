@@ -1,5 +1,13 @@
 ## Unreleased
 
+## Unreleased — Codex governed execution
+
+- Add opt-in native Codex role setup and explicit role sync targeting; preserve Claude defaults and user-owned configuration.
+- Share three execution modes, delegation thresholds, complete handoffs, ownership, and independent-review policy across canonical skills.
+- Reuse current context and exact-scope approvals while retaining separate human gates and external-effect approval.
+- Distinguish native feature reductions from behavioral guidance; parent sandbox, approval, and MCP settings are not per-role overrides.
+- Runtime Codex role discovery/enforcement and independent Security Review require separate evidence; fixture checks alone do not establish them.
+
 ## 3.4.0
 
 - **`ag-review-artifacts` checks what the artifacts claim about existing code**: a new read-only **Premise Grounding** step reads only the base-branch locations the spec, plan, and tasks cite or name (paths, `path:line` citations, named symbols, and "today the code does X" statements) and confirms or refutes each one. In a workspace with several repositories, it resolves the base branch and commit SHA for each owning repository separately (callers pass one base ref per repository), reports them per repository, and marks a repository's grounding unavailable rather than reading it at another repository's branch when its destination cannot be established. Paths the plan proposes to create are not premises: they are only checked for an existing file with the same name. It also checks that names the plan introduces do not collide with names already in that file or namespace, and reads the state of referenced pull requests or tickets through the forge's `pr-view` action or the tracker when available. It never checks out, fetches, writes, or posts, caps the inventory at 40 premises, and reports `Unavailable` rather than passed when git or a base ref is missing. Contradicted, stale, or unresolvable premises become **Premise Mismatch** findings, and the report gains a **Premise Grounding** section. The "No Implementation Code" rule is narrowed to "No Implementation Code Review": the skill still never reviews code quality or design.

@@ -145,3 +145,29 @@ test('resolves bundled generic artifact templates', () => {
     assert(res.content.length > 0);
   }
 });
+
+test('resource and manifest resolution and listing reject symlink escapes', () => {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-resolve-links-'));
+  try {
+    const root = path.join(base, 'workspace');
+    const templates = path.join(root, '.architecture-guard', 'templates');
+    fs.mkdirSync(templates, { recursive: true });
+    const outside = path.join(base, 'outside.md');
+    fs.writeFileSync(outside, 'private');
+    const link = path.join(templates, 'escape.md');
+    fs.symlinkSync(outside, link);
+    assert.throws(() => resolveResource('template', 'escape', { target: root }), /Symlink resource/);
+    assert.throws(() => listCategoryResources('template', { target: root }), /Symlink resource/);
+    fs.unlinkSync(link);
+    fs.symlinkSync(path.join(base, 'missing'), link);
+    assert.throws(() => resolveResource('template', 'escape', { target: root }), /Symlink resource/);
+    fs.unlinkSync(link);
+    fs.symlinkSync(outside, path.join(root, '.architecture-guard', 'config.yml'));
+    assert.throws(() => resolveResource('manifest', undefined, { target: root }), /Symlink resource/);
+    fs.rmSync(templates, { recursive: true });
+    fs.symlinkSync(base, templates);
+    assert.throws(() => resolveResource('template', 'outside', { target: root }), /Symlink resource/);
+  } finally {
+    fs.rmSync(base, { recursive: true, force: true });
+  }
+});

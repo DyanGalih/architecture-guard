@@ -331,3 +331,35 @@ test('archive CLI prints errors once without a stack trace and lists valid frame
         fs.rmSync(cwd, { recursive: true, force: true });
     }
 });
+
+test('generic and OpenSpec archive reject symlinked source and destination paths', async () => {
+    for (const framework of ['generic', 'openspec']) {
+        await inProject('ag-archive-links-', async (root) => {
+            const changes = framework === 'generic' ? path.join(root, 'changes') : path.join(root, 'openspec', 'changes');
+            const outside = path.join(root, 'outside');
+            fs.mkdirSync(outside, { recursive: true });
+            fs.mkdirSync(path.join(changes, 'item'), { recursive: true });
+            fs.writeFileSync(path.join(changes, 'item', 'spec.md'), 'preserve');
+            fs.symlinkSync(outside, path.join(changes, 'archive'));
+            await assert.rejects(() => runArchive('item', { framework }), /Symlink archive/);
+            assert.ok(fs.existsSync(path.join(changes, 'item', 'spec.md')));
+            assert.deepStrictEqual(fs.readdirSync(outside), []);
+            fs.unlinkSync(path.join(changes, 'archive'));
+            fs.symlinkSync(outside, path.join(changes, 'link'));
+            await assert.rejects(() => runArchive('link', { framework }), /Symlink archive/);
+            fs.unlinkSync(path.join(changes, 'link'));
+            fs.symlinkSync(path.join(root, 'missing'), path.join(changes, 'archive'));
+            await assert.rejects(() => runArchive('item', { framework }), /Symlink archive/);
+        });
+    }
+});
+
+test('archive rejects a symlinked changes parent', async () => {
+    await inProject('ag-archive-parent-', async (root) => {
+        const outside = path.join(root, 'outside');
+        fs.mkdirSync(path.join(outside, 'item'), { recursive: true });
+        fs.symlinkSync(outside, path.join(root, 'changes'));
+        await assert.rejects(() => runArchive('item', { framework: 'generic' }), /Symlink archive/);
+        assert.ok(fs.existsSync(path.join(outside, 'item')));
+    });
+});

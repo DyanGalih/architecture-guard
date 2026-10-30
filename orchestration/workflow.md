@@ -21,6 +21,14 @@ Architecture Guard engine resources are standalone package resources. Never sear
 
 Before continuing, resolve and apply the `ponytail_core` template with `architecture-guard resolve template ponytail_core` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Run Context Reuse
+
+Resolve and apply `budgeted_context_sdd` with `architecture-guard resolve template budgeted_context_sdd`. Its run-local reuse and invalidation rules apply to all context loading below.
+
+## Host Agent Execution
+
+Resolve and apply `agent_execution` with `architecture-guard resolve template agent_execution`. It owns mode activation, delegation decisions, complete handoffs, role restrictions, and ownership. Preserve phase-specific gates below. All retrieval instructions below accept current sufficient run-local context under `budgeted_context_sdd`: reuse it instead of repeating calls. An exposed memory tool is not usable when this run has recorded an absent store; reuse that unavailable outcome until tools or environment change.
+
 ## Capability Composition
 
 Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
@@ -31,15 +39,9 @@ Use this command as the end-to-end Architecture Guard entry point. Delegate each
 
 Resolve and apply the `repository_context` template with `architecture-guard resolve template repository_context`. When `.architecture-guard/config.yml` lists `repositories`, every git, branch, test, hygiene, commit, push, and code-host step in this skill runs in the repository that owns the files it concerns, as that template defines, and paths are workspace-relative; rules, constitutions, and configuration still come from the workspace. Without `repositories`, the workspace is the only repository and nothing changes.
 
-## Agent Teams Activation
+## Execution Activation
 
-Agent Teams mode is active only when all of the following are true:
-
-1. The host is Claude Code and exposes named teammate spawning and messaging.
-2. `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled in the active environment or `.claude/settings.json`.
-3. The user explicitly selects Agent Teams for this run, or the native command arguments explicitly request it.
-
-When the environment flag is present, explain that `.architecture-guard/agents.yml` is an Architecture Guard role profile, not a native Claude Code configuration file. Spawn each teammate from its generated Claude Code agent type (`agteam-<role>`, for example `agteam-code-reviewer`) when `.claude/agents/agteam-<role>.md` exists, so the role's tool limits apply; otherwise use the profile to shape named teammate prompts. Give every teammate the skill, artifact paths, change identifier, and constitutions in its spawn prompt, because teammates do not inherit the lead's conversation. If any activation condition is absent, run in single-agent mode without simulating teammates or claiming parallel execution.
+Use the shared `agent_execution` contract for sequential, read-only subagents, and coordinated implementation. The profile does not activate a mode. Claude Code Agent Teams keeps its native flag prerequisite; Codex does not require Claude configuration. Pass the full handoff and verify native role restrictions before spawning.
 
 ## Lifecycle
 
@@ -57,8 +59,8 @@ After discovery and specification (Step 1) succeed, present the specification an
 
 ### Step 2 - Governed Planning, Tasks, and Artifact Review Loop
 
-- When stakeholder User Story approval is required, run the registered `ag-governed-delivery-team` capability, in single-agent or Agent Teams mode.
-- Otherwise run the registered `ag-governed-delivery` capability (with the active team profile in Agent Teams mode).
+- When stakeholder User Story approval is required, run the registered `ag-governed-delivery-team` capability, in the selected sequential or coordinated host mode.
+- Otherwise run the registered `ag-governed-delivery` capability (with the active team profile in coordinated implementation mode).
 - Let the delegated delivery prompt perform its own plan, task, security, architecture, analysis, and write-approval gates. It also owns the Artifact Review Convergence Loop (`ag-review-artifacts` plus Security Review on the plan and tasks, repaired through `ag-apply`, until a pass is clean). When the user has stated the destination branch, pass it to the delivery prompt as the **Base ref** for that loop. Do not restate or rerun that loop here; report its status and pass count.
 
 ### Human Gate 1 - Approve Plan and Tasks
@@ -67,7 +69,7 @@ Present the resolved plan and task artifacts, the **Artifact Review** status (Cl
 
 ### Step 3 - Governed Implementation and Implementation Review Loop
 
-Run the registered `ag-governed-implement` capability. It owns the Implementation Review Convergence Loop (architecture review plus Security Review on the code, fixed and rerun until a pass is clean). Do not restate or rerun that loop here; report its status and pass count. In Agent Teams mode, the lead assigns non-overlapping task and file ownership before spawning implementors. If an overlap is discovered, pause one owner and coordinate a handoff; do not rely on an invented Git locking mechanism or allow concurrent edits to the same file.
+Run the registered `ag-governed-implement` capability. It owns the Implementation Review Convergence Loop (architecture review plus Security Review on the code, fixed and rerun until a pass is clean). Do not restate or rerun that loop here; report its status and pass count. In coordinated implementation mode, the lead assigns non-overlapping task and file ownership before spawning implementors. If an overlap is discovered, pause one owner and coordinate a handoff; do not rely on an invented Git locking mechanism or allow concurrent edits to the same file.
 
 ### Human Gate 2 - Review Implementation
 
@@ -92,12 +94,7 @@ Only after Gate 3 passes, present the final governance summary and suggest runni
 
 ## Execution Mode
 
-This workflow is host-neutral. Lifecycle steps depend on each other and on human gates, so run them in order in the current session by default.
-
-- **Sequential (default, any host)**: read each delegated capability file and execute it in the current session, as the capability composition contract requires.
-- **Subagents (only when the host exposes real dispatch of a fresh context)**: use them only for read-only work that does not depend on another running task: the review passes in the convergence loops and the Step 4 final review, and the architecture and Security Review halves of a single pass. Give each subagent the explicit artifact paths, change identifier, base ref, and constitutions; subagents do not inherit this conversation. Repairs, artifact writes, implementation, commits, and archival stay with one owner at a time. Merge subagent findings into the parent's single findings list before evaluating a pass.
-- **Agent Teams**: remains the Claude Code experimental mode described above.
-- Never claim parallel or subagent execution the host did not perform, never run two writers on the same file, and never let a subagent satisfy a human gate. When the host has no dispatch, run sequentially and report the mode.
+Report the actual sequential, read-only subagent, or coordinated implementation mode selected under `agent_execution`. Lifecycle steps and human gates remain ordered. Keep repairs with one owner per file; use independent fresh reviewers where authorized. Never claim parallel or subagent execution the host did not perform.
 
 ## Output
 
@@ -108,7 +105,7 @@ Return a concise lifecycle summary containing:
 - approvals obtained and approvals still required (Gates 0-3);
 - Artifact Review, Implementation Review, and final review status with pass counts;
 - destination branch and unresolved findings;
-- execution mode used (sequential, subagents, or Agent Teams);
+- execution mode used (sequential, read-only subagents, or coordinated implementation);
 - the next safe action.
 
 ## Guardrails

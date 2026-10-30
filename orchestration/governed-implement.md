@@ -25,6 +25,10 @@ Architecture Guard engine resources are standalone package resources. Never sear
 
 Before continuing, you **MUST** resolve and apply the `ponytail_core` template with `architecture-guard resolve template ponytail_core` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Host Agent Execution
+
+Resolve and apply `agent_execution` with `architecture-guard resolve template agent_execution`. It owns mode activation, delegation decisions, complete handoffs, role restrictions, and ownership. Preserve phase-specific gates below. All retrieval instructions below accept current sufficient run-local context under `budgeted_context_sdd`: reuse it instead of repeating calls. An exposed memory tool is not usable when this run has recorded an absent store; reuse that unavailable outcome until tools or environment change.
+
 ## Capability Composition
 
 Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
@@ -54,7 +58,9 @@ Provide a single command that ensures:
 
 ### Write Approval Gate
 
-Before the first mutation, resolve and preview the working branch and the exact code, test, and task artifacts together with all planned implementation, test, and task-checkbox operations. Obtain explicit user approval, then allow routine writes already previewed within this implementation phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval. **Caller approval**: when a calling skill passes an approval whose preview showed this phase's exact branch, code, test, and task files and operations (for example `ag-governed-backlog`'s Gate I), that approval satisfies this gate and is not asked again. It covers only what that preview showed; anything else still needs its own preview and approval.
+**Caller approval**: Accept an existing caller approval only for the identical action, phase, exact targets, and owning repository under `capability_composition`; it covers only what that preview showed. Distinct human decisions and material scope expansions still require approval.
+
+Before the first mutation, resolve and preview the working branch and the exact code, test, and task artifacts together with all planned implementation, test, and task-checkbox operations. Obtain explicit user approval, then allow routine writes already previewed within this implementation phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 
 ### Constitution Inputs
 
@@ -82,23 +88,12 @@ Check for the availability of:
 
 ### Step 2 — Flash-Mem MCP Context Retrieval (Optional)
 
-When Flash-Mem is available, execute both `get_project_summary` and `search_memory` scoped to the active feature, affected files, architecture boundaries, security-sensitive areas, prior decisions, and approved exceptions before implementation. Prefer summary-first context and load full entries only when those results are insufficient.
+When no current sufficient cached synthesis exists and Flash-Mem is usable under the run-local context contract, execute both `get_project_summary` and `search_memory` scoped to the active feature, affected files, architecture boundaries, security-sensitive areas, prior decisions, and approved exceptions before implementation. Prefer summary-first context and load full entries only when those results are insufficient.
 
 If Flash-Mem is unavailable or the context is insufficient, rely on the Constitution Inputs before continuing with repository artifacts.
 
 **[OPTIONAL SUB-AGENT DELEGATION]**
-* **Capability Gate:** Determine whether the host exposes a registered synthesis/delegation capability. If unavailable, execute inline regardless of size and report the degraded path.
-* **Trigger Condition:** When the capability is available, you **MUST** delegate memory retrieval and synthesis if:
-  - The Flash-Mem index contains $\ge 20$ memory documents.
-  - OR the project repository contains $\ge 15$ active ADRs/docs.
-  - Otherwise, you **MUST** execute inline.
-* **Execution Instruction:** When the capability is available, apply {adapter_command:subagent-synthesize} with implementation context. Do not append flags to descriptive adapter behavior.
-* **Strict Handoff Template:** Format the sub-agent prompt exactly like this:
-  ```yaml
-  Task: Retrieve and synthesize relevant architecture constraints and ADRs.
-  Focus: Rules and conventions affecting codebase implementation.
-  Expected Output: Synthesized markdown summary of constraints to guide coding and refactoring.
-  ```
+Apply the shared `agent_execution` policy for relevant memory synthesis and invoke callable host delegation directly. Complete every applicable handoff field before dispatch; do not execute the adapter-defined "subagent-synthesize" fallback prose as a command.
 
 
 ---
@@ -126,9 +121,9 @@ You must orchestrate {adapter_command:implement} (core implementation) workflow 
    - If implementation would expand beyond accepted spec/plan/task scope, stop and obtain explicit user approval before adding or executing that work. Record the approved expansion in the authoritative artifacts first.
 6. The implementation MUST follow current tasks and context. Use Flash-Mem first when available, and the Constitution Inputs alongside the active artifacts.
 
-#### Claude Code Agent Teams Coordination (When Active)
+#### Coordinated Host Roles (When Active)
 
-Activate this protocol only when the Claude Code host exposes named teammate spawning and messaging, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled, and the user opted into Agent Teams for the current run. Otherwise execute the same work in single-agent mode:
+Apply this coordination in the explicitly selected coordinated implementation mode defined by `agent_execution`. Claude retains its native activation prerequisites; Codex uses callable host capabilities and its own profile:
 - **Implementors (the profile's implementor roles, for example BE, FE, TEST)**:
   - Map role-tagged tasks to the matching named implementor; keep `[ORCHESTRATION]` work in the lead session.
   - Before spawning, the lead assigns non-overlapping tasks and explicit file ownership. If overlap is discovered, pause one owner and coordinate a handoff; never edit the same file concurrently.

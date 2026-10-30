@@ -181,6 +181,8 @@ When write-back is enabled and a `published` group's pull request has merged (St
 
 ## Execution Mode
 
+Resolve and apply `agent_execution` with `architecture-guard resolve template agent_execution` for host capability, handoff, and review constraints. This queue retains the sequential group and single-writer rules below.
+
 Run groups sequentially in the current session. When the host can dispatch a fresh context, the read-only review passes inside a group may run as subagents, as `ag-workflow` allows; implementation, artifact writes, commits, and archival stay with one owner at a time. Never claim parallel or subagent execution the host did not perform, and never let a subagent satisfy a human gate.
 
 ## Output

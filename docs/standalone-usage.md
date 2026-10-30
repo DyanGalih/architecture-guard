@@ -139,6 +139,7 @@ Flags:
 | `--framework` | `spec-kit \| openspec \| none` | Framework to target |
 | `--commands` | `all`, `review`, or `init,governed-plan` | Comma-separated canonical names, indices, or aliases |
 | `--overwrite` | `replace` (default) / `skip` / `keep-both` | Existing file policy with `--yes` |
+| `--codex-agents` | (none) | Optional: install native Codex roles for a selection including `codex`; does not activate coordinated execution. Without this flag, interactive CLI setup asks whether to install roles; `--yes` leaves them uninstalled. Interactive CLI setup interviews for the roster and model before writing a new profile. |
 | `--claude-agent-teams` | (none) | Enable Claude Code Agent Teams (Beta / Experimental): sets `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `.claude/settings.json` (an unreadable settings file is left unchanged) and generates one agent type per role in `.claude/agents/agteam-<role>.md` from `.architecture-guard/agents.yml` or the bundled role profile. `ag-init` interviews for the roster (for example no FE implementor on a backend-only API) and runs `architecture-guard sync-team-roles` to regenerate the files |
 
 Positional target:
@@ -201,3 +202,18 @@ SpecKit user switching to OpenSpec:
 - Spec Kit integration guide: [SPECKIT-INTEGRATION.md](../SPECKIT-INTEGRATION.md)
 - Governance workflows: [workflows.md](workflows.md)
 - Beginner guide: [beginner-guide.md](beginner-guide.md)
+
+## Codex Roles
+
+```bash
+architecture-guard init . --yes --agent codex --framework openspec --codex-agents
+architecture-guard sync-team-roles --agent codex
+```
+
+Customize `.architecture-guard/codex-agents.yml` from `architecture-guard resolve template codex_agents_template`. Roles generate `.codex/agents/agteam-<role>.toml`; a missing profile uses the bundled or local template. Keep only roles needed by the project. The legacy no-option `sync-team-roles` still targets Claude; `--agent claude` is explicit. Mixed installations use separate profiles and outputs. Reinstalling skills is a separate normal installer operation.
+
+Codex profiles use `version: 1`, `topology: codex-subagents`, and a `roles` mapping. Each role has `description`, `system_prompt`, an optional unique uppercase `task_tag`, optional `model` (`inherit` omits the native model override), and explicit `features` reductions. Supported feature names are `shell_tool`, `apps`, `plugins`, `memories`, and `request_permissions_tool`; each configured value must be `false`. Unknown fields and required controls are rejected rather than ignored. Do not copy Claude `allowed_tools` lists into this profile.
+
+The full profile and output namespace are validated before mutation. Invalid profiles, normalized name collisions, path/symlink escapes, and user-owned output conflicts fail without changing role files. Only marked generated files are replaced/removed; `skip`/`keep-both` preserve existing outputs. I/O failures list actual changes. Unrelated settings are untouched.
+
+Native roles inherit parent sandbox, approval, and MCP configuration; role prompts do not enforce permissions. Feature reductions do not prove a complete filesystem read-only boundary. Before activation verify supported role dispatch and required restrictions. If a restriction cannot be verified, do not activate that role and report an authorized sequential fallback. Explicit coordinated-mode selection is still required for each run. Live host discovery/enforcement must be checked separately from fixture tests; unavailable runtime verification is a release-readiness limitation. See [official Codex subagent configuration](https://learn.chatgpt.com/docs/agent-configuration/subagents).

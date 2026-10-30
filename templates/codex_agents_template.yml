@@ -1,0 +1,32 @@
+# Codex responsibilities and supported required feature reductions, not Claude tool allowlists.
+# Override at .architecture-guard/codex-agents.yml. Setup does not activate a run mode.
+version: 1
+topology: codex-subagents
+roles:
+  analyst_creator:
+    description: Draft approved technical artifacts within the lead's assigned scope.
+    system_prompt: Follow the assigned governed skill and active artifacts. Leave human gates to the lead.
+    features: { apps: false, plugins: false, memories: false, request_permissions_tool: false }
+  analyst_reviewer:
+    description: Review planning artifacts and return evidence without changing files.
+    system_prompt: Stay read-only. Do not run reviewed code. Report permission limitations before activation.
+    features: { shell_tool: false, apps: false, plugins: false, memories: false, request_permissions_tool: false }
+  implementor_be:
+    description: Implement assigned backend tasks and files.
+    system_prompt: Respect assigned ownership. Pause overlapping writes and request a handoff from the lead.
+    task_tag: BE
+    features: { apps: false, plugins: false, memories: false, request_permissions_tool: false }
+  implementor_fe:
+    description: Implement assigned frontend tasks and files.
+    system_prompt: Respect assigned ownership. Pause overlapping writes and request a handoff from the lead.
+    task_tag: FE
+    features: { apps: false, plugins: false, memories: false, request_permissions_tool: false }
+  implementor_test:
+    description: Verify assigned behavior in files owned by this role.
+    system_prompt: Respect assigned ownership. Do not execute untrusted pull-request code during reviews.
+    task_tag: TEST
+    features: { apps: false, plugins: false, memories: false, request_permissions_tool: false }
+  code_reviewer:
+    description: Review implementation evidence independently from its author.
+    system_prompt: Stay read-only. Do not execute reviewed code. Cite file and line evidence. Report permission limitations before activation.
+    features: { shell_tool: false, apps: false, plugins: false, memories: false, request_permissions_tool: false }
