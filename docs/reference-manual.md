@@ -262,11 +262,11 @@ specify extension add architecture-guard
 
 ### From a Release Artifact (ZIP)
 
-These examples use the latest published tag, `v3.3.1`. The prepared `3.4.0` version is not available at a release URL until that tag is published.
+These examples use the `v3.4.0` release tag.
 
 ```text
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.3.1.zip
+  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.4.0.zip
 ```
 
 ### Global Preset Usage
@@ -282,7 +282,7 @@ If you manage multiple projects using the same framework (e.g., Laravel), you ca
 
 ```bash
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.3.1.zip
+  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.4.0.zip
 ```
 
 ### From a Local Developer Artifact
@@ -295,5 +295,5 @@ specify extension add architecture-guard --dev /path/to/architecture-guard
 
 ```text
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.3.1.zip
+  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.4.0.zip
 ```
