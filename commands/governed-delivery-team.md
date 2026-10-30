@@ -98,6 +98,7 @@ Before engineering planning begins, generate a business-oriented User Story repr
    - Record `status: success` only after the provider returns and confirms a stable remote ID and URL. Persist that identity and target in `.architecture-guard/sync_status.json`; a missing or unconfirmed remote ID is a failed sync, not success.
    - If the push fails, write `{ "status": "failed" }` to `.architecture-guard/sync_status.json` and output a non-blocking warning. Do NOT stop the delivery workflow.
 7. If a previously approved User Story has been modified after engineering artifacts were generated, mark it `review-required`, warn the user, and require re-approval before proceeding.
+8. For multi-item backlog decomposition (`.architecture-guard/backlog.yml`), stopping after Phase 3 backlog/tracker breakdown, and queued multi-story delivery (`ag-governed-backlog`), direct the user to use the dedicated standalone `architecture-guard` CLI installation (`ag-governed-discover`, `ag-governed-delivery-team`, and `ag-governed-backlog`) rather than the legacy Spec Kit extension channel.
 
 ## Phase 5 — Spec & Proposal Gate
 
