@@ -3181,7 +3181,7 @@ test('review-artifacts inventories consumers, checks self-consistency and host c
     assert.match(prompt, /\*\*Consumer Inventory \(named symbols only\)\*\*/, dir);
     assert.match(prompt, /search only repositories whose roles include `code`, each at its own ref/, dir);
     assert.match(prompt, /never searched at another repository's ref/, dir);
-    // The revision must come before `--`; after it, git grep treats the SHA as a pathspec and searches the working tree
+    // Documented git grep order: -e <pattern> <revision> -- [<pathspec>]; the revision goes before `--`
     assert.match(prompt, /`git -C <repo> grep -n -F -e '<name>' <sha> --`/, dir);
     assert.doesNotMatch(prompt, /grep -n -F -- '<name>' <sha>/, dir);
     assert.match(prompt, /at most 10 names per review and 50 hits per name/, dir);
