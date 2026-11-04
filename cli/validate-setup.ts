@@ -35,6 +35,18 @@ function readability(projectRoot: string, file: string): 'readable' | 'outside' 
   return ignoredByOwningRepository(projectRoot, relative) ? 'ignored' : 'readable';
 }
 
+// The `governance:` block of the adapter's config, or nothing when the config is absent or invalid (reported later).
+function declaredGovernance(projectRoot: string, adapter: string): Record<string, unknown> {
+  const { path: config } = mappedPath(adapter, 'governance-config');
+  if (!config || !fs.existsSync(path.join(projectRoot, config))) return {};
+  try {
+    const governance = parse(fs.readFileSync(path.join(projectRoot, config), 'utf8'))?.governance;
+    return governance && typeof governance === 'object' && !Array.isArray(governance) ? governance : {};
+  } catch {
+    return {};
+  }
+}
+
 export function validateSetup(projectRoot: string): Check[] {
   const checks: Check[] = [];
   const add = (level: Level, message: string) => checks.push({ level, message });
@@ -74,12 +86,16 @@ export function validateSetup(projectRoot: string): Check[] {
     }
   }
 
-  for (const [key, label] of [['constitution', 'Governance constitution'], ['arch-constitution', 'Architecture constitution'], ['security-constitution', 'Security constitution']]) {
+  const declared = declaredGovernance(projectRoot, adapter);
+  for (const [key, label, documentName] of [['constitution', 'Governance constitution', 'constitution'], ['arch-constitution', 'Architecture constitution', 'architecture'], ['security-constitution', 'Security constitution', 'security']]) {
     const { path: file, optional } = mappedPath(adapter, key);
     const state = file ? readability(projectRoot, file) : null;
+    const replacement = declared[documentName];
     if (!file) add('info', `${label}: path is user-provided for this adapter; not checked`);
     else if (state === 'ignored' || state === 'outside') add('warn', `${label} is ${state === 'outside' ? 'outside the repository' : 'gitignored'} (${file}); reviewers cannot read it`);
     else if (state === 'readable') add('pass', `${label} found (${file})`);
+    // A readable document declared under `governance:` stands in for the adapter's default path. An unreadable one does not.
+    else if (typeof replacement === 'string' && replacement.trim() && readability(projectRoot, replacement) === 'readable') add('pass', `${label} provided by governance document "${documentName}" (${replacement})`);
     else if (key === 'constitution' && !optional) add('fail', `${label} missing (${file}). Run the init skill (ag-init) to create it.`);
     else add('warn', `${label} not found (${file})${optional ? ' — optional for this adapter' : ''}`);
   }

@@ -2674,6 +2674,34 @@ test('validate-setup warns when a governance document is gitignored, outside the
   );
 });
 
+test('validate-setup accepts a readable governance document in place of the default constitution paths', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  git(cwd, 'init', '-q');
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'], cwd);
+  const validate = () => spawnSync(process.execPath, [installer, 'validate-setup', cwd], { encoding: 'utf8' });
+  assert.match(validate().stdout, /Governance constitution missing/, 'with no governance block the default path is still required');
+
+  fs.mkdirSync(path.join(cwd, 'docs'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/config.yml'), [
+    'adapter: generic',
+    'governance:',
+    '  constitution: docs/constitution.md',
+    '  security: docs/security_constitution.md',
+    '',
+  ].join('\n'));
+  assert.match(validate().stdout, /Governance constitution missing/, 'a declared document that does not exist replaces nothing');
+
+  fs.writeFileSync(path.join(cwd, 'docs/constitution.md'), '# Governance');
+  fs.writeFileSync(path.join(cwd, 'docs/security_constitution.md'), '# Security');
+  fs.writeFileSync(path.join(cwd, '.gitignore'), 'docs/security_constitution.md\n');
+  const out = validate();
+  assert.match(out.stdout, /Governance constitution provided by governance document "constitution" \(docs\/constitution\.md\)/);
+  assert.doesNotMatch(out.stdout, /Governance constitution missing/);
+  assert.equal(out.status, 0, 'a readable governance constitution satisfies the required check');
+  assert.match(out.stdout, /Security constitution not found/, 'a gitignored document replaces nothing');
+  assert.match(out.stdout, /Architecture constitution not found/, 'an undeclared document replaces nothing');
+});
+
 test('detect-changed-files --security-sensitive lists only changed files matching security_sensitive_paths', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
   git(cwd, 'init', '-q', '-b', 'main');
