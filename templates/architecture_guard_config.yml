@@ -13,7 +13,8 @@ context:
 
 # Optional governance documents. Skills read these in addition to the adapter's constitution set, and
 # `architecture-guard validate-setup` warns when one is gitignored, outside the repository, or missing:
-# a rule that code or specs cite must be readable by every reviewer.
+# a rule that code or specs cite must be readable by every reviewer. A readable one named `constitution`,
+# `architecture`, or `security` also satisfies that check when the adapter's default file is missing.
 # governance:
 #   constitution: docs/constitution.md
 #   architecture: architecture_constitution.md

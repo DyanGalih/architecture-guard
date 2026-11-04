@@ -24,8 +24,8 @@ Use this forge for repositories hosted on GitHub (`github.com`, and GitHub Enter
 | thread-resolve | MCP pull_request_review_write (resolve_thread); CLI `gh api graphql -f query='mutation($t:ID!){resolveReviewThread(input:{threadId:$t}){thread{id isResolved}}}' -f t=<thread id>` |
 | pr-comment | MCP add_issue_comment on the pull request's number; CLI write the comment text to a comment file outside the repository, then `gh pr comment <n> --body-file <comment file>` |
 | checks-status | MCP pull_request_read (get_check_runs); CLI `gh pr checks <n> --json name,state,bucket,link,workflow` (bucket is pass, fail, pending, skipping, or cancel); older gh releases without `--json` (for example 2.45): `gh pr checks <n>` and read the table; a non-zero exit (8 means checks are pending) reports check status, not a command failure |
-| current-user | MCP get_me; CLI `gh api user --jq .login` (compare with the author's login from pr-view) |
-| pr-list | MCP list_pull_requests (state open); CLI `gh pr list -R <owner>/<repo> --state open --limit 200 --json number,title,author,isDraft,reviewDecision,baseRefName,headRefName,headRefOid,additions,deletions,statusCheckRollup,createdAt,url` (reviewDecision APPROVED means approved, and it can be empty; if exactly 200 come back, the list may be cut short) |
+| current-user | MCP get_me; CLI `gh api user --jq .login`, adding `--hostname <host>` when the remote is not on github.com (compare with the author's login from pr-view) |
+| pr-list | MCP list_pull_requests (state open); CLI `gh pr list -R <owner>/<repo>`, or `-R <host>/<owner>/<repo>` when the remote is not on github.com, with `--state open --limit 200 --json number,title,author,isDraft,reviewDecision,baseRefName,headRefName,headRefOid,additions,deletions,statusCheckRollup,createdAt,url` (reviewDecision APPROVED means approved, and it can be empty; if exactly 200 come back, the list may be cut short) |
 
 ## Notes
 

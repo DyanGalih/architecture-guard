@@ -2691,6 +2691,12 @@ test('validate-setup accepts a readable governance document in place of the defa
   ].join('\n'));
   assert.match(validate().stdout, /Governance constitution missing/, 'a declared document that does not exist replaces nothing');
 
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/config.yml'), 'adapter: generic\ngovernance:\n  constitution: ../outside.md\n');
+  const outside = validate();
+  assert.match(outside.stdout, /Governance constitution missing/, 'a document outside the repository replaces nothing');
+  assert.notEqual(outside.status, 0);
+
+  fs.writeFileSync(path.join(cwd, '.architecture-guard/config.yml'), 'adapter: generic\ngovernance:\n  constitution: docs/constitution.md\n  security: docs/security_constitution.md\n');
   fs.writeFileSync(path.join(cwd, 'docs/constitution.md'), '# Governance');
   fs.writeFileSync(path.join(cwd, 'docs/security_constitution.md'), '# Security');
   fs.writeFileSync(path.join(cwd, '.gitignore'), 'docs/security_constitution.md\n');
@@ -3178,6 +3184,37 @@ test('pr-queue scans a repository and filters only what it listed', () => {
 
   const gateQ = prompt.slice(prompt.indexOf('### Human Gate Q'), prompt.indexOf('### Step 4'));
   assert.match(gateQ, /the entries Step 3 set aside with each reason and the option to add any back/);
+});
+
+test('pr-queue validates resumed state and bounds what it may remove', () => {
+  const prompt = orchestrationPrompt('pr-queue.md');
+  assert.doesNotMatch(prompt, /base_checkout/, 'run state never names the source of rules');
+  const step1 = prompt.slice(prompt.indexOf('### Step 1'), prompt.indexOf('### Step 2'));
+  assert.match(step1, /Rules always come from the current checkout, never from a path in this file/);
+  assert.match(step1, /`invalid run state`, naming the field and using none of its paths/);
+  assert.match(step1, /`pr` is a positive integer/);
+  assert.match(step1, /appears in `git -C <owning repository> worktree list`/);
+  assert.match(step1, /<system temp directory>\/<directory>\/review/);
+  assert.ok(step1.indexOf('**Validate the loaded state**') < step1.indexOf('Resume each entry'), 'state is validated before anything resumes');
+
+  // Review worktrees use the same temp layout as ag-review-pr, and every exit path cleans up
+  const step4 = prompt.slice(prompt.indexOf('### Step 4'), prompt.indexOf('### Human Gate D'));
+  assert.match(step4, /worktree add --detach "\$\(mktemp -d\)\/review"/);
+  assert.match(prompt, /Whenever the entry becomes `parked` or `skipped`, run `ag-review-pr` Step 8/);
+  const step6 = prompt.slice(prompt.indexOf('### Step 6'), prompt.indexOf('## Execution Mode'));
+  assert.match(step6, /every `review` entry that still has a temporary worktree and is not parked as `invalid run state`, including one left at `awaiting-decision`/);
+  assert.match(prompt, /An entry parked as `invalid run state` is the exception: remove nothing/, 'an invalid path never reaches worktree remove --force');
+  assert.match(step6, /Never remove a checkout with `worktree_reused: true`/);
+  assert.match(prompt, /or `<pull request id>\.md` when `repository` is `\.`/, 'the workspace repository never makes a hidden draft file');
+  assert.match(prompt, /Keep only pull requests of the repository being scanned/);
+
+  const adapter = (name: string) => fs.readFileSync(path.join(repoRoot, 'adapters/forges', `${name}.md`), 'utf8');
+  assert.match(adapter('azure-devops'), /az repos pr list --repository '<repo>'[^\n]*--skip <n>/, 'azure lists one repository and pages');
+  assert.match(adapter('azure-devops'), /treat the identity as unavailable and ask/);
+  assert.match(adapter('bitbucket'), /'https:\/\/api\.bitbucket\.org\/2\.0\/repositories\/<workspace>\/<repo_slug>\/pullrequests\?state=OPEN&pagelen=50'/);
+  assert.match(adapter('bitbucket'), /only when it starts with `https:\/\/api\.bitbucket\.org\/2\.0\/`/, 'credentials never follow a foreign next link');
+  assert.match(adapter('github'), /-R <host>\/<owner>\/<repo>/);
+  assert.match(adapter('github'), /--hostname <host>/);
 });
 
 test('pr-queue prepares entries in parallel but keeps setup and every write with one owner', () => {

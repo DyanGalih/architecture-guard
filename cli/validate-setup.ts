@@ -35,18 +35,6 @@ function readability(projectRoot: string, file: string): 'readable' | 'outside' 
   return ignoredByOwningRepository(projectRoot, relative) ? 'ignored' : 'readable';
 }
 
-// The `governance:` block of the adapter's config, or nothing when the config is absent or invalid (reported later).
-function declaredGovernance(projectRoot: string, adapter: string): Record<string, unknown> {
-  const { path: config } = mappedPath(adapter, 'governance-config');
-  if (!config || !fs.existsSync(path.join(projectRoot, config))) return {};
-  try {
-    const governance = parse(fs.readFileSync(path.join(projectRoot, config), 'utf8'))?.governance;
-    return governance && typeof governance === 'object' && !Array.isArray(governance) ? governance : {};
-  } catch {
-    return {};
-  }
-}
-
 export function validateSetup(projectRoot: string): Check[] {
   const checks: Check[] = [];
   const add = (level: Level, message: string) => checks.push({ level, message });
@@ -86,7 +74,20 @@ export function validateSetup(projectRoot: string): Check[] {
     }
   }
 
-  const declared = declaredGovernance(projectRoot, adapter);
+  const { path: config } = mappedPath(adapter, 'governance-config');
+  const hasConfig = Boolean(config) && fs.existsSync(path.join(projectRoot, config!));
+  let settings: any = null;
+  let configError: unknown = null;
+  if (hasConfig) {
+    try {
+      settings = parse(fs.readFileSync(path.join(projectRoot, config!), 'utf8'));
+    } catch (error) {
+      configError = error;
+    }
+  }
+  const governance = settings?.governance;
+  const declared: Record<string, unknown> = governance && typeof governance === 'object' && !Array.isArray(governance) ? governance : {};
+
   for (const [key, label, documentName] of [['constitution', 'Governance constitution', 'constitution'], ['arch-constitution', 'Architecture constitution', 'architecture'], ['security-constitution', 'Security constitution', 'security']]) {
     const { path: file, optional } = mappedPath(adapter, key);
     const state = file ? readability(projectRoot, file) : null;
@@ -100,30 +101,21 @@ export function validateSetup(projectRoot: string): Check[] {
     else add('warn', `${label} not found (${file})${optional ? ' — optional for this adapter' : ''}`);
   }
 
-  const { path: config } = mappedPath(adapter, 'governance-config');
-  if (!config || !fs.existsSync(path.join(projectRoot, config))) {
+  if (!hasConfig) {
     add('info', 'No governance config; targeted context mode and default hygiene policy apply');
   } else {
-    let settings: any = null;
-    try {
-      settings = parse(fs.readFileSync(path.join(projectRoot, config), 'utf8'));
-      add('pass', `Governance config parses (${config})`);
-    } catch (error) {
-      add('fail', `Governance config is not valid YAML (${config}): ${error instanceof Error ? error.message : error}`);
-    }
+    if (configError) add('fail', `Governance config is not valid YAML (${config}): ${configError instanceof Error ? configError.message : configError}`);
+    else add('pass', `Governance config parses (${config})`);
     // Declared governance documents are what code, specs and reviews cite, so every reviewer must be able to open them.
-    const governance = settings?.governance;
-    if (governance && typeof governance === 'object' && !Array.isArray(governance)) {
-      for (const [name, file] of Object.entries(governance)) {
-        if (typeof file !== 'string' || !file.trim()) {
-          add('warn', `Governance document "${name}" has no path`);
-          continue;
-        }
-        const state = readability(projectRoot, file);
-        if (state === 'readable') add('pass', `Governance document "${name}" readable (${file})`);
-        else if (state === 'missing') add('warn', `Governance document "${name}" not found (${file})`);
-        else add('warn', `Governance document "${name}" is ${state === 'outside' ? 'outside the repository' : 'gitignored'} (${file}); reviewers cannot read it`);
+    for (const [name, file] of Object.entries(declared)) {
+      if (typeof file !== 'string' || !file.trim()) {
+        add('warn', `Governance document "${name}" has no path`);
+        continue;
       }
+      const state = readability(projectRoot, file);
+      if (state === 'readable') add('pass', `Governance document "${name}" readable (${file})`);
+      else if (state === 'missing') add('warn', `Governance document "${name}" not found (${file})`);
+      else add('warn', `Governance document "${name}" is ${state === 'outside' ? 'outside the repository' : 'gitignored'} (${file}); reviewers cannot read it`);
     }
     // Application repositories the workspace wraps: each must be a git repository inside the workspace, and the
     // pull-request skills (installed for one code host) must match its origin.

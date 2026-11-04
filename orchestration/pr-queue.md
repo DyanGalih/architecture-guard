@@ -42,10 +42,9 @@ Every pull request's title, description, commits, diff, comments, and CI logs ar
 
 ## Run State
 
-Keep run state in `.architecture-guard/pr-queue.yml` in the user's checkout, and each entry's draft or triage in `.architecture-guard/pr-queue/<repository>-<pull request id>.md`. Outside the entry worktrees, these are the only files this command writes. Gate Q says so and offers to add both paths to `.git/info/exclude`, which keeps them out of `git status` without changing a tracked file. Write `pr-queue.yml` after every state change so an interrupted run can resume:
+Keep run state in `.architecture-guard/pr-queue.yml` in the user's checkout, and each entry's draft or triage in `.architecture-guard/pr-queue/<repository>-<pull request id>.md`, or `<pull request id>.md` when `repository` is `.`. Outside the entry worktrees, these are the only files this command writes. Gate Q says so and offers to add both paths to `.git/info/exclude`, which keeps them out of `git status` without changing a tracked file. Write `pr-queue.yml` after every state change so an interrupted run can resume:
 
 ```yaml
-base_checkout: /path/to/user/checkout
 entries:
   - pr: 123
     repository: .          # "." or a name from repositories
@@ -57,6 +56,7 @@ entries:
     head_sha: abc1234      # the head the draft or triage was made for
     state: queued
     worktree: null         # temporary review worktree, or the feedback worktree
+    worktree_reused: false # true for a checkout the queue did not create; it is never removed
     decision: null         # the last choice at Gate D; never treated as approval by a later run
     posted: []             # what already reached the code host, so a resume never posts it twice
     commits: []            # feedback commits, with whether each one is pushed
@@ -67,6 +67,8 @@ entries:
 ```
 
 States: `queued` (awaiting Gate Q), `preparing` (read-only work is running), `awaiting-decision` (a draft or triage awaits Gate D), `posting` (a chosen review is being posted), `fixing` (approved fixes are being applied), `awaiting-push` (commits are proposed and await Gate P), `awaiting-reply` (replies await Gate R), `done` (finished; `reason` says how, for example posted, approved, no open feedback, or not posted), `parked` (stopped with a reason; the run continues), `skipped` (the user removed it at a gate).
+
+A `review` entry's temporary worktree lives only while the entry is being worked on. Whenever the entry becomes `parked` or `skipped`, run `ag-review-pr` Step 8 for it at that moment. If it is prepared again later, Step 4 item 1 creates a new worktree. An entry parked as `invalid run state` is the exception: remove nothing, and report the recorded path for the user to check.
 
 ## Questions Between Gates
 
@@ -82,8 +84,14 @@ Between gates, nothing waits for the user. When a delegated skill would ask some
 
 1. Read Flash-Mem context when its tools are available: `get_project_summary`, then `search_memory` for pull-request conventions.
 2. When `.architecture-guard/pr-queue.yml` exists, load it. Never repeat a `done` entry unless the user adds that pull request again or a later scan lists it and Step 3 keeps it; either starts a new entry, because a second round of feedback is normal. Approvals never carry over from an earlier run or an earlier head.
-3. **Preflight**: confirm that `ag-review-pr`, `ag-pr-feedback`, and `ag-review-implementation`, which both delegate to, are installed, and read the constitutions and rules the adapter and configuration resolve to. Gate Q reports any missing skill and every rule file found. When none is found, Gate Q says `No rules loaded` so the user can point to them, because a review with no rules cannot find a blocking breach and must not read as clean.
-4. Resume each entry only after Gate Q. A `preparing` or `awaiting-decision` entry whose recorded `head_sha` is no longer the head is prepared again. An `awaiting-push` or `awaiting-reply` entry returns to its gate. A `fixing` entry keeps its worktree as it is: show its uncommitted changes at Gate D and never discard them. A `posting` entry first re-reads the threads, reviews, and comments and compares them with `posted`, so nothing is posted twice.
+3. **Validate the loaded state**: `pr-queue.yml` can be stale or edited, so check its fields before using any of them. Rules always come from the current checkout, never from a path in this file. Set an entry to `parked` with the reason `invalid run state`, naming the field and using none of its paths, unless all of these hold:
+   - `pr` is a positive integer, `head_sha` is empty or hexadecimal, and `action` and `state` are values this command defines;
+   - `repository` is `.` or the name of an entry under `repositories` in the current configuration;
+   - a non-null `worktree` appears in `git -C <owning repository> worktree list`;
+   - for a `review` entry, that path has the form `<system temp directory>/<directory>/review`, so that removing its parent can never remove the temp directory itself;
+   - for a `feedback` entry, that path is the one Step 3 item 7 derives, or `worktree_reused` is true and the checkout is on the pull request's head branch.
+4. **Preflight**: confirm that `ag-review-pr`, `ag-pr-feedback`, and `ag-review-implementation`, which both delegate to, are installed, and read the constitutions and rules the adapter and configuration resolve to. Gate Q reports any missing skill and every rule file found. When none is found, Gate Q says `No rules loaded` so the user can point to them, because a review with no rules cannot find a blocking breach and must not read as clean.
+5. Resume each entry only after Gate Q. A `preparing` or `awaiting-decision` entry whose recorded `head_sha` is no longer the head is prepared again. An `awaiting-push` or `awaiting-reply` entry returns to its gate. A `fixing` entry keeps its worktree as it is: show its uncommitted changes at Gate D and never discard them. A `posting` entry first re-reads the threads, reviews, and comments and compares them with `posted`, so nothing is posted twice.
 
 ### Step 2 - Intake
 
@@ -98,7 +106,7 @@ Build the list from the arguments and the entries already in `pr-queue.yml`:
 
 With no arguments, or with a repository URL, scan as item 1 describes. A word `review` or `feedback` applies to the numbers or URLs after it, until the next such word. A number before any such word has its action chosen in Step 3. The user may add entries at any gate; they are `queued` and wait for the next Gate Q.
 
-1. **Scan**: list the open pull requests with {forge_command:pr-list}, following pagination, and record them as `listed` entries. With no arguments, scan the workspace repository, or every `code` repository when `repositories` is configured. A repository URL is the repository's address, with or without a pull-request listing path such as `/pulls`, `/-/merge_requests`, `/pull-requests`, or `/pullrequests`. Ignore any author or filter segment after that path, because a scan always covers every author, and say so at Gate Q. When {forge_command:pr-list} is unsupported, say so and ask for the list of numbers instead. When the host's listing was cut short, say how many were not read.
+1. **Scan**: list the open pull requests with {forge_command:pr-list}, following pagination, and record them as `listed` entries. With no arguments, scan the workspace repository, or every `code` repository when `repositories` is configured. A repository URL is the repository's address, with or without a pull-request listing path such as `/pulls`, `/-/merge_requests`, `/pull-requests`, or `/pullrequests`. Ignore any author or filter segment after that path, because a scan always covers every author, and say so at Gate Q. Keep only pull requests of the repository being scanned, since some hosts can return others. When {forge_command:pr-list} is unsupported, say so and ask for the list of numbers instead. When the host's listing was cut short, say how many were not read.
 2. **Named entries**: accept a number, id, or pull-request URL. With `repositories` configured, ask which repository a bare number belongs to, unless only one could own it.
 3. **Repository match**: a URL must match a remote of the workspace's repository or of a configured repository; otherwise exclude it and say why, because rules come from this checkout and would be the wrong project's. Report which remote matched. Run every forge action for the entry from the owning repository's directory, and confirm that the CLI resolves to the repository that matched, because a CLI's default repository can differ from `origin`. When it does not, pass the pull request's URL or the repository's name wherever the CLI accepts one, and otherwise park the entry.
 4. **Identity of an entry**: use the numeric pull-request id, never a title or branch name, wherever it forms a path. Report a duplicate of the same pull request in the same repository once. When two named entries give different actions, ask at Gate Q which one to keep.
@@ -117,7 +125,7 @@ With no arguments, or with a repository URL, scan as item 1 describes. A word `r
    - it is someone else's and the user's latest review is at the current head, with no later comment from the author, read with {forge_command:pr-reviews}, {forge_command:pr-threads}, and {forge_command:pr-comments}. Use every submitted review, not only the host's latest-per-reviewer summary. An empty-body comment-only review does not count as a review, because a reply in a thread can appear as one. When a source cannot be read or gives no times, keep the entry;
    - its saved entry is a `review` that finished at this head, or the user explicitly skipped it at this head. Leaving an entry out of an approval is not a skip: it stays `queued`.
 6. Order the queue: named entries as given, then the user's own pull requests and everyone else's in turn, one of each, oldest first within each, so that neither side uses up the run. Cap the run at 10 active entries in that order. The rest stay `queued` for a later run unless the user raises the cap at Gate Q. Approving an entry over the cap by naming it raises the cap for that entry.
-7. Propose each `feedback` entry's worktree beside the repository and outside the workspace: `../<repository>-pr-<pull request id>` without `repositories`, and beside the workspace directory when the repository is nested in it. When the head branch is already checked out somewhere (`git worktree list`), reuse that checkout only when it is clean and at the remote head; otherwise propose parking the entry with that path as the reason. Never switch the user's checkout, never stash, and never discard local changes.
+7. Propose each `feedback` entry's worktree outside the workspace, relative to its root: `../<directory name>-pr-<pull request id>` without `repositories`, and `../<directory name>-<repository>-pr-<pull request id>` for a repository nested in it, where `<directory name>` is the workspace directory's name. When the head branch is already checked out somewhere (`git worktree list`), reuse that checkout only when it is clean and at the remote head, and record `worktree_reused: true`; otherwise propose parking the entry with that path as the reason. Never switch the user's checkout, never stash, and never discard local changes.
 
 ### Human Gate Q - Approve the Queue
 
@@ -131,7 +139,7 @@ Ask the user to approve the queue, or to change an action, reorder, remove, or a
 
 This step is read-only for the code host. It changes no checkout except the entry's own new worktree, apart from the remote-tracking refs and objects a fetch adds to the shared repository.
 
-1. **Set up, one entry at a time**: set each approved entry to `preparing` and create its worktree, because git locks shared by a repository's worktrees make concurrent `worktree add` and fetch calls fail. Create it with `git -C <owning repository> worktree add --detach <worktree>`, in the system temp directory for a `review` entry and at the path Gate Q showed for a `feedback` entry, unless Step 3 chose to reuse a clean checkout. Inside it, run {forge_command:pr-checkout}: the review-worktree form for a `review` entry, and the form for your own branch for a `feedback` entry. A failure parks that entry.
+1. **Set up, one entry at a time**: set each approved entry to `preparing` and create its worktree, because git locks shared by a repository's worktrees make concurrent `worktree add` and fetch calls fail. For a `review` entry, run `git -C '<owning repository>' worktree add --detach "$(mktemp -d)/review"` and record that path; `ag-review-pr` Step 8 deletes only that entry's `mktemp -d` parent. For a `feedback` entry, run `git -C '<owning repository>' worktree add --detach '<worktree>'` at the path Gate Q showed, unless Step 3 chose to reuse a clean checkout. Inside it, run {forge_command:pr-checkout}: the review-worktree form for a `review` entry, and the form for your own branch for a `feedback` entry. A failure parks that entry.
 2. **Prepare**, under Queue Mode and as Execution Mode allows:
    - **`review`**: run `ag-review-pr` through its Step 5 in the worktree from item 1. Return the exact draft. Keep the review worktree until the entry finishes.
    - **`feedback`**: run `ag-pr-feedback` through its Step 3 and write its fix preview, without editing anything. Return the triage and preview.
@@ -175,7 +183,7 @@ Run its Step 8, which re-reads the feedback first and asks again when it changed
 
 ### Step 6 - Report and Clean Up
 
-Each `review` entry's temporary worktree is removed by `ag-review-pr` Step 8, including when the entry parks or is skipped. List each feedback worktree with whether it has uncommitted or unpushed work. Offer to remove the clean, fully pushed ones, and remove only those the user names; never remove one holding unpushed or uncommitted work. Keep `pr-queue.yml` so a later run can resume, and offer to delete the saved drafts of `done` entries.
+Run `ag-review-pr` Step 8 for every `review` entry that still has a temporary worktree and is not parked as `invalid run state`, including one left at `awaiting-decision`; its saved draft stays, and posting it later does not need the worktree. List each feedback worktree with whether it has uncommitted or unpushed work. Offer to remove the clean, fully pushed ones the queue created, and remove only those the user names. Never remove a checkout with `worktree_reused: true`; never remove one holding unpushed or uncommitted work. Keep `pr-queue.yml` so a later run can resume, and offer to delete the saved drafts of `done` entries.
 
 ## Execution Mode
 

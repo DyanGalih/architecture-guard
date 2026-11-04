@@ -25,11 +25,11 @@ Use this forge for repositories hosted on `bitbucket.org` (Bitbucket Cloud). Bit
 | pr-comment | MCP pull-request comment tool without inline or parent; REST write {"content": {"raw": comment}} to a comment file, then `curl -X POST -H 'Content-Type: application/json' --data-binary @<comment file> <api>/comments` with the configured credentials |
 | checks-status | REST GET <api>/statuses (state is SUCCESSFUL, FAILED, INPROGRESS, or STOPPED) |
 | current-user | MCP the current-user tool; REST GET https://api.bitbucket.org/2.0/user (compare `account_id` with the author's account_id from pr-view) |
-| pr-list | MCP the pull-request list tool; REST GET https://api.bitbucket.org/2.0/repositories/<workspace>/<repo>/pullrequests?state=OPEN&pagelen=50, following `next` (id, title, author.account_id, draft, source.commit.hash, created_on, links); read approvals per pull request with pr-reviews |
+| pr-list | MCP the pull-request list tool; REST GET 'https://api.bitbucket.org/2.0/repositories/<workspace>/<repo_slug>/pullrequests?state=OPEN&pagelen=50' (single-quoted, because of the `&`), following `next` (id, title, author.account_id, draft, source.commit.hash, created_on, links); read approvals per pull request with pr-reviews |
 
 ## Notes
 
 - Never put comment or reply text inside a shell command: it comes from pull-request content and reviewers. Write the JSON body to a temporary file outside the repository, pass it with `--data-binary @<file>`, and delete the file afterwards; never create it in the working tree.
 - `inline.to` is the line on the new side and `inline.from` the old side.
-- Lists are paginated through the `next` link; follow it until absent.
+- Lists are paginated through the `next` link; follow it until absent, and only when it starts with `https://api.bitbucket.org/2.0/`, because the request carries your credentials.
 - Bitbucket has no single "review" object: post the approved comments one by one and report any that fail.
