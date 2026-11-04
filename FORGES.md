@@ -37,6 +37,7 @@ For each action, the skill uses a registered MCP server for the host when one is
 
 - **`ag-review-pr`** — review someone else's pull request: fetches it through the forge, reads its files from a temporary worktree outside your repository (after you approve), and reviews the change against the base checkout's constitutions and linked SDD artifacts. It reuses `ag-review-implementation`, scopes hygiene to changed files, and runs the separate Security Review tool's read-only `sr-branch` operation when available. It shows the exact draft before offering **Post as is**, **Adjust first**, or **Don't post**. **Approve with comments** is offered only under the conditions below. It never requests changes, merges, or runs pull-request code, and reports governance edits as Security findings for human inspection.
 - **`ag-pr-feedback`** — work through feedback on your own pull request: collects unresolved threads and failing checks, triages each (fix, discuss, disagree, already addressed, out of scope), applies only approved fixes, runs tests and a scoped architecture review, commits and pushes with separate approvals (never force-pushes), drafts replies, then asks whether to **reply only**, **reply and resolve** the eligible threads, **adjust first**, or **not post**.
+- **`ag-pr-queue`** — one command for all your pull-request work: scans the repository, or takes a list, and runs `ag-review-pr` or `ag-pr-feedback` for each one, chosen by you or by who wrote it, prepares everything first, and then asks for each write together at batched gates. A group answer never approves a pull request.
 
 **Approve with comments** requires no blocking finding, no failing CI, a pull request authored by someone else, and a callable forge approval action. Coverage must be full or explicitly degraded to diff-only, never a partial batch review. Pending checks are allowed but named in the summary. Security Review must have run without blocking findings unless the change is not security-sensitive; an absent or empty sensitive-path list still requires a semantic check of authentication, authorization, sessions, credentials, and trust boundaries. The user must choose this action for the exact draft. **Post as is** posts comments only. The head is rechecked before posting; if any review comment fails to post, approval does not proceed. Missing checks or integrations are reported as unavailable, never as passing. See the [review workflow](docs/workflows.md#pull-request-review-workflow).
 
@@ -50,7 +51,7 @@ Each forge adapter must define a `## Command Map` table whose first column holds
 
 ### Optional Keys
 
-- Optional Command Map: `review-approve`, `pr-reviews`, `pr-comments`, `pr-comment`
+- Optional Command Map: `review-approve`, `pr-reviews`, `pr-comments`, `pr-comment`, `current-user`, `pr-list`
 
 Built-in forges define every optional key. A custom forge may leave one out; skills then receive it as unsupported and do not offer that action, so `ag-review-pr` simply does not offer **Approve with comments**, and `ag-pr-feedback` asks you to paste review summaries and general comments and marks its feedback collection `Degraded`.
 
@@ -68,6 +69,8 @@ Built-in forges define every optional key. A custom forge may leave one out; ski
 | `thread-resolve` | Mark a review thread resolved |
 | `pr-comment` | Optional. Post one general comment on the pull request, used to answer review summaries and general comments, which have no thread to reply to |
 | `checks-status` | CI and check status for the pull request |
+| `current-user` | Optional. The signed-in user's identity on the host, used by `ag-pr-queue` to tell your pull requests from other people's; when it is unsupported, the skill asks you |
+| `pr-list` | Optional. The repository's open pull requests with author, draft state, and review decision where the host has one, used by `ag-pr-queue` to scan a repository; when it is unsupported, the skill asks for the list |
 
 The test suite checks that every built-in forge defines these keys, that this list matches the installer's contract, and that skills only use declared keys.
 

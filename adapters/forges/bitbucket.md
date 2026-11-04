@@ -24,6 +24,8 @@ Use this forge for repositories hosted on `bitbucket.org` (Bitbucket Cloud). Bit
 | thread-resolve | REST POST <api>/comments/<root comment id>/resolve (DELETE reopens); fallback list the threads for the user to resolve |
 | pr-comment | MCP pull-request comment tool without inline or parent; REST write {"content": {"raw": comment}} to a comment file, then `curl -X POST -H 'Content-Type: application/json' --data-binary @<comment file> <api>/comments` with the configured credentials |
 | checks-status | REST GET <api>/statuses (state is SUCCESSFUL, FAILED, INPROGRESS, or STOPPED) |
+| current-user | MCP the current-user tool; REST GET https://api.bitbucket.org/2.0/user (compare `account_id` with the author's account_id from pr-view) |
+| pr-list | MCP the pull-request list tool; REST GET https://api.bitbucket.org/2.0/repositories/<workspace>/<repo>/pullrequests?state=OPEN&pagelen=50, following `next` (id, title, author.account_id, draft, source.commit.hash, created_on, links); read approvals per pull request with pr-reviews |
 
 ## Notes
 

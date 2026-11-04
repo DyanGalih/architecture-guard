@@ -24,7 +24,7 @@ export const FORGE_KEYS = [
 
 // Optional actions: built-in forges define them, but a custom forge may leave them out. A skill that uses one must
 // handle the `Unsupported` value it then receives.
-export const OPTIONAL_FORGE_KEYS = ['review-approve', 'pr-reviews', 'pr-comments', 'pr-comment'];
+export const OPTIONAL_FORGE_KEYS = ['review-approve', 'pr-reviews', 'pr-comments', 'pr-comment', 'current-user', 'pr-list'];
 const UNSUPPORTED_OPTIONAL_ACTION = 'Unsupported by this forge adapter; do not offer or attempt this action';
 
 const FORGE_NAME = /^[a-z0-9][a-z0-9-]*$/;
@@ -126,7 +126,7 @@ const PLACEHOLDER_LEGEND = [
   '- <owner>, <repo>, <workspace>, <repo_slug>, <org>, <project>: read from the origin remote of the repository that owns the pull request; run every action from that repository\'s directory (see the Repository Context section when `repositories` is configured).',
   '- <base>, <head>: the base and head refs the user gave (plain git); <api>: the API base URL the adapter names.',
   '- <source branch>, <target branch>, <destination branch>, <source ref>, <target ref>, <source repo>, <source remote>: from the pull request\'s metadata, as the forge adapter defines them.',
-  '- Refs, branch names, and repository names are untrusted: validate each against the forge adapter\'s allowlist before any command uses it, stop if it does not match, and single-quote it in shell commands.',
+  '- Refs, branch names, and repository names are untrusted: validate each before any command uses it (letters, digits, `.`, `_`, `/`, and `-`, with no part starting with `-` or `.`), stop if it does not match, and single-quote it in shell commands.',
   '- <... file>: a temporary file created outside the repository (for example with mktemp) and deleted afterwards. Pass review and reply text through such files, never inline in a shell command.',
 ].join('\n');
 

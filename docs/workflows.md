@@ -201,6 +201,29 @@ Use `ag-pr-feedback` on your own pull request after reviewers have commented:
 
 For archived changes, both review and feedback read the full specification where the adapter left it: merged current specifications, a moved archive, or artifacts retained in place. A specification index only locates that text; its summary does not replace the requirements. Retained-in-place artifacts remain read-only after archival. Code corrections follow the normal approval gates; requirement changes are discussed as follow-up changes with their own specifications.
 
+## Pull Request Queue
+
+`ag-pr-queue` is one command for your pull-request work:
+
+```text
+/ag-pr-queue                                    (scan this repository and resume the saved queue)
+/ag-pr-queue https://github.com/acme/app/pulls  (scan that repository)
+/ag-pr-queue 12 15 18                           (only these, each action chosen by author)
+/ag-pr-queue review 12 15 feedback 18           (only these, with the actions you chose)
+```
+
+A scan runs `ag-pr-feedback` on your own unapproved pull requests and `ag-review-pr` on everyone else's. It covers every author even when the URL names one, and it must match a remote of the checkout you run it from, because rules come from that checkout. When your identity cannot be read from the code host, it asks instead of guessing.
+
+A scan sets these aside, and Gate Q lists each with its reason so you can add it back: your approved pull requests (those with a failing check or an unresolved thread are listed separately), your own with nothing open, other people's drafts, and pull requests you have already reviewed at the current head with no later comment from the author. Pull requests you name are never filtered. Your own and everyone else's take turns, oldest first, and a run handles 10 unless you raise the limit at Gate Q; the rest wait for the next run. Gate Q also reports which rule files were found, and says `No rules loaded` when there are none.
+
+1. **Gate Q**: you approve the queue: pull requests, actions and why, and worktrees. Your checkout is never switched; each feedback entry works in its own worktree beside the repository.
+2. **Preparation**: every review draft and feedback triage is prepared without further questions, up to 4 at a time when your agent host can run subagents, and one at a time otherwise. Nothing reaches the code host, and no fix is written. Fixes, tests, commits, pushes, and posts always run one at a time.
+3. **Gate D**: you decide all of them together, for example `post 12, adjust 15: drop comment 3, skip 18, fix 20 without tests`. Reviews are then posted and approved fixes are applied and tested. A group answer can post drafts you were shown, but **Approve with comments** always has to name its pull request, and the conditions in [Pull Request Review Workflow](#pull-request-review-workflow) still apply.
+4. **Gate P**: you approve commits and pushes for each feedback entry, as separate choices. Never a force-push.
+5. **Gate R**: you approve the replies and any threads to resolve, drafted with the real commit references.
+
+The head and feedback are re-checked before each post, so a pull request that moved goes back to Gate D with an updated draft. An entry that fails or needs an answer only you can give is **parked**, and the run moves on. State lives in `.architecture-guard/pr-queue.yml`, so a later run resumes; approvals never carry over, and nothing already posted is posted twice. Content from one pull request can never affect another entry.
+
 ## User Story Tracker Sync (Team Delivery)
 
 The `ag-governed-delivery-team` workflow supports pushing approved User Stories to an external issue tracker (e.g., GitHub Issues or Jira) automatically. This is a one-way sync (push only) designed to minimize complexity while satisfying YAGNI.

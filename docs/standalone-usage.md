@@ -82,6 +82,7 @@ Pick from 22 governance commands:
 | `review-implementation` | Review implementation — security and architecture findings |
 | `review-pr` | Review someone else's pull request on any code host — drafts the review, posts only when you choose |
 | `pr-feedback` | Work through review feedback on your own pull request — triage, fix, reply, and optionally resolve, with approval at each step |
+| `pr-queue` | One command for your pull-request work — scans the repository and runs `pr-feedback` on your unapproved pull requests and `review-pr` on your team's, with batched approval gates |
 | `verify` | Final validation — tasks vs code evidence |
 | `e2e-testing` | Decide whether a feature needs end-to-end tests, then write them with Playwright (UI or API-only), or skip when the spec is not end-to-end |
 | `apply` | Apply approved refactors into plans/tasks |

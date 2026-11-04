@@ -24,6 +24,8 @@ Use this forge for repositories hosted on GitLab.com or a self-hosted GitLab (pa
 | thread-resolve | MCP save_merge_request_review (resolve_discussion); CLI `glab api -X PUT projects/:fullpath/merge_requests/<iid>/discussions/<discussion id> -f resolved=true` |
 | pr-comment | MCP the merge-request note tool (a general note, not a diff note); CLI write {"body": comment} to a comment file, then `glab api -X POST projects/:fullpath/merge_requests/<iid>/notes --input <comment file>` |
 | checks-status | MCP list_pipelines / get_pipeline; CLI `glab ci status -b <source branch> -F json`, or `glab api projects/:fullpath/merge_requests/<iid>/pipelines` |
+| current-user | MCP the current-user tool; CLI `glab api user` (compare `username` with the author's username from pr-view) |
+| pr-list | MCP the merge-request list tool (state opened); CLI `glab api 'projects/:fullpath/merge_requests?state=opened&per_page=100' --paginate` (iid, title, author.username, draft, sha, created_at, web_url); read `approved` per merge request from `projects/:fullpath/merge_requests/<iid>/approvals` |
 
 ## Notes
 

@@ -24,6 +24,8 @@ Use this forge for Azure Repos (`dev.azure.com`, `*.visualstudio.com`). Placehol
 | thread-resolve | MCP repo_pull_request_thread_write (update_status); REST PATCH <api>/threads/<thread id>?api-version=7.1 with {"status": "fixed"} (other statuses: active, wontFix, closed, byDesign, pending) |
 | pr-comment | MCP repo_pull_request_thread_write (create) without threadContext; REST write {"comments": [{"parentCommentId": 0, "content": comment, "commentType": 1}], "status": 1} to a thread file and POST it to <api>/threads?api-version=7.1 with az rest --body @<thread file> |
 | checks-status | CLI `az repos pr policy list --id <id> -o json` |
+| current-user | CLI `az account show --query user.name -o tsv` (compare with `createdBy.uniqueName` from pr-view) |
+| pr-list | MCP repo_pull_request (list); CLI `az repos pr list --status active --top 200 -o json` (pullRequestId, title, createdBy.uniqueName, isDraft, reviewers with vote, lastMergeSourceCommit, creationDate); a vote of 10 or 5 approves and -10 rejects |
 
 ## Notes
 
