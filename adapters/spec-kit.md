@@ -44,7 +44,7 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | create-change | Require or create the feature workspace following `.specify/init-options.json` numbering conventions before specification creation, and maintain `.specify/feature.json` |
 | archive | SpecKit has no native archive command; retain verified feature artifacts in place and incrementally update `{adapter_path:fallback-spec-index}` with explicit user approval |
 | verify | Use the registered Architecture Guard verification capability, or run the verification workflow inline |
-| clarify-spec | `/speckit.clarify`; if unavailable, ask and apply an inline ambiguity-resolution loop |
+| clarify-spec | `/speckit.clarify`; if unavailable, ask and apply an inline ambiguity-resolution loop, with a recommended answer for each question |
 | create-plan | `/speckit.plan`; if unavailable, create `{adapter_path:plan}` inline from the active spec |
 | create-tasks | `/speckit.tasks`; if unavailable, create `{adapter_path:tasks}` inline from the active plan |
 | implement | `/speckit.implement`; if unavailable, execute unchecked tasks inline and update their status |

@@ -69,7 +69,7 @@ Before generating the specification, you MUST ensure work happens on a feature b
 
 You must orchestrate the `/speckit.specify` workflow directly.
 
-1. **Seed from Discovery (if available)**: If a Discovery Summary Draft from `/speckit.architecture-guard.ag-governed-discover` is available, use it as the seed input for specification generation instead of starting from scratch. Carry forward its architecture alignment, rejected options, assumptions, and open questions.
+1. **Seed from Discovery (if available)**: If a Discovery Summary Draft from `/speckit.architecture-guard.ag-governed-discover` is available, use it as the seed input for specification generation instead of starting from scratch. Carry forward its architecture alignment, rejected options, assumptions, and open questions with their recommendations; add a recommendation to any question that lacks one.
 2. **Execute Specify**: Run `/speckit.specify` to generate and save `specs/<feature>/spec.md`.
 3. **Apply Ponytail Pragmatism**: Instruct the agent to prevent over-specified, "future-proofed" requirements. Keep the specification minimal and focused purely on the immediate needs (YAGNI).
 4. The specification process must incorporate the Project Constitution documents and memory synthesis. Use Flash-Mem first when available.
@@ -80,6 +80,7 @@ You must orchestrate the `/speckit.clarify` workflow directly.
 
 1. **Execute Clarify**: Run `/speckit.clarify` to resolve ambiguities in the newly generated `spec.md`.
 2. Ensure clarification reads the complete constitution set resolved from the selected configuration, including every declared or present governance, architecture, security, and layout Markdown file.
+3. **Recommend on Every Question**: Apply the Ponytail Core Open Questions rule to each question clarification asks and each ambiguity it leaves open. If the clarification workflow asks a question without a recommendation, give yours with it.
 
 ### Step 6 — Architecture Validation
 

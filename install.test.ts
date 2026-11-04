@@ -3463,3 +3463,39 @@ test('installed OpenSpec team delivery defers scope and container creation until
   assert.match(prompt, /openspec new change .*CHANGE_ID/);
   assert.doesNotMatch(prompt, /\{adapter_command:/);
 });
+
+test('every skill requires a recommendation on each Open Question', () => {
+  const root = path.join(__dirname, '..');
+  const core = fs.readFileSync(path.join(root, 'templates/ponytail_core.md'), 'utf8');
+  const rule = core.slice(core.indexOf('## Open Questions'), core.indexOf('## Severity Scale'));
+  assert.match(rule, /Never leave an Open Question empty/);
+  assert.match(rule, /\*\*Recommendation\*\*: the answer you would choose/);
+  assert.match(rule, /A recommendation does not decide the question/);
+  assert.match(rule, /write `None`/);
+
+  // The rule reaches a skill only through the shared contract, so every skill must load it.
+  for (const dir of ['orchestration', 'commands']) {
+    for (const file of fs.readdirSync(path.join(root, dir)).filter(name => name.endsWith('.md'))) {
+      assert.match(fs.readFileSync(path.join(root, dir, file), 'utf8'), /ponytail_core/, `${dir}/${file} must load the contract`);
+    }
+    const read = (name) => fs.readFileSync(path.join(root, dir, name), 'utf8');
+    const draft = read('governed-discover.md');
+    const section = draft.slice(draft.indexOf('## Open Questions'), draft.indexOf('## Security-Sensitive Areas'));
+    assert.match(section, /\*\*Recommendation\*\*/, `${dir} Discovery Summary must carry recommendations`);
+    assert.match(read('governed-delivery-team.md'), /Open questions, each with its recommendation/, `${dir} User Story`);
+    assert.match(read('governed-spec.md'), /Recommend on Every Question/, `${dir} clarification`);
+  }
+
+  // Run state and posted replies keep the recommendation until a gate presents it.
+  assert.match(orchestrationPrompt('governed-backlog.md'), /decisions: \[\] .*each with its recommendation/);
+  assert.match(orchestrationPrompt('pr-queue.md'), /decisions: \[\] .*each with its recommendation/);
+  assert.match(orchestrationPrompt('pr-feedback.md'), /\*\*Discuss\*\*: .*your recommendation/);
+  assert.match(orchestrationPrompt('e2e-testing.md'), /report it as a spec gap .*with the reading you recommend/);
+
+  // Adapters fill the clarification step when the SDD tool has none, so their loops must recommend too.
+  const adapter = (name) => fs.readFileSync(path.join(root, 'adapters', name), 'utf8');
+  for (const name of ['generic.md', 'openspec.md', 'spec-kit.md']) {
+    assert.match(adapter(name), /clarify-spec \|.*with a recommended answer for each question/, `adapters/${name}`);
+  }
+  assert.match(adapter('openspec.md'), /inline clarifications loop with the user, with a recommended answer for each question/);
+});

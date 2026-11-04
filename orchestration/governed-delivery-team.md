@@ -104,7 +104,7 @@ Before engineering planning begins, generate a business-oriented User Story (or 
    - Out of scope items
    - Assumptions
    - Risks
-   - Open questions
+   - Open questions, each with its recommendation as the Ponytail Core Open Questions rule requires, or `None`
 3. Ensure the User Story is understandable by technical and non-technical stakeholders.
 4. After the Write Approval Gate, when local story files were requested, persist the generated User Story as `<feature-name>.md` (or `<story-id>.md` per story in a multi-story breakdown) in the `<root>/user-stories/` directory with status `draft`. Otherwise present the proposed items without creating story files.
 5. Present the stories or backlog items for stakeholder review and stop before engineering planning until the user explicitly accepts them. Record `approved` in the story files only when those files were requested.

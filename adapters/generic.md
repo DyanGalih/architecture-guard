@@ -46,7 +46,7 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | create-change | Ensure `{adapter_path:change-root}` directory exists; use the flow-defined or user-selected artifact paths |
 | archive | Preview the destination, then after explicit user approval run `architecture-guard archive <changeName> --framework generic`, or move `{adapter_path:change-root}` to `changes/archive/{YYYY-MM-DD}-{change}/`; never run either without that approval |
 | verify | Run the Architecture Guard verification workflow against the active artifacts |
-| clarify-spec | Ask and apply an inline ambiguity-resolution loop |
+| clarify-spec | Ask and apply an inline ambiguity-resolution loop, with a recommended answer for each question |
 | create-plan | Resolve `architecture-guard resolve flow default` and `architecture-guard resolve template generic_plan`, then create `{adapter_path:plan}` inline following the flow-template guidance |
 | create-tasks | Resolve `architecture-guard resolve flow default` and `architecture-guard resolve template generic_tasks`, then create `{adapter_path:tasks}` inline following the flow-template guidance |
 | implement | Execute unchecked tasks inline and update their status |

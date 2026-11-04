@@ -190,7 +190,7 @@ Paths proposed for creation are checked for name collisions, not reported missin
 
 ### Ponytail Core
 
-All commands load `templates/ponytail_core.md`. The contract applies an ordered YAGNI-to-minimum-code ladder, requires root-cause caller tracing, preserves a correctness and safety floor, and requires a runnable check for non-trivial logic. Framework presets add vocabulary but cannot require a layer or dependency without repository evidence.
+All commands load `templates/ponytail_core.md`. The contract applies an ordered YAGNI-to-minimum-code ladder, requires root-cause caller tracing, preserves a correctness and safety floor, requires a runnable check for non-trivial logic, and requires a recommendation on every Open Question. Framework presets add vocabulary but cannot require a layer or dependency without repository evidence.
 
 See [Framework Presets](presets.md) for the supported built-in frameworks, init interview coverage, review boundaries, guardrails, and custom-preset structure.
 
