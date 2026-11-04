@@ -93,7 +93,7 @@ For each feedback item (thread, review-summary point, general comment, or failin
 | Category | Meaning | Default action |
 |---|---|---|
 | **Fix** | The comment is valid and a change is needed | Change the code, then reply with what changed |
-| **Discuss** | Unclear, needs a product or design decision, or changes a requirement of an archived change | Reply with a specific question or the options; no change yet |
+| **Discuss** | Unclear, needs a product or design decision, or changes a requirement of an archived change | Reply with a specific question and your recommended answer, or the options and the one you recommend; no change yet |
 | **Disagree** | The current code is right, or the suggestion conflicts with a constitution, spec, or security rule | Reply with the reasoning and evidence; no change |
 | **Already addressed** | A later commit already handles it | Reply pointing to the commit |
 | **Out of scope** | Valid but outside this pull request's story | Reply naming the ticket that covers it, or proposing follow-up work; no change |
@@ -123,7 +123,7 @@ Show each reviewer's latest verdict, the story used (or why none), and the triag
 Draft one reply per thread. Review-summary points and general comments have no thread to reply to: answer them in one general comment per reviewer, posted with {forge_command:pr-comment}, that quotes each point briefly and gives its reply in the same categories. On a host where general comments are themselves threads, reply in that thread instead. When {forge_command:pr-comment} is unsupported (a custom forge without it), still draft these replies: they go in the replies file (Step 7) under a **General** section for the user to post by hand, and posting is reported as `Degraded: general comments not supported by this forge`.
 
 - **Fix**: what changed and the commit that changed it (short SHA or link).
-- **Discuss**: the specific question or the options with trade-offs.
+- **Discuss**: the specific question or the options with trade-offs, and your recommendation.
 - **Disagree**: the reasoning and evidence (rule, spec, test, or data), stated respectfully and open to the reviewer's response.
 - **Already addressed**: the commit that handled it.
 - **Out of scope**: the ticket that already covers it (Jira key), or the proposed follow-up and where it will be tracked.

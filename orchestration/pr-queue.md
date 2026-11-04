@@ -62,7 +62,7 @@ entries:
     commits: []            # feedback commits, with whether each one is pushed
     review: null           # coverage, Security Review, and blocking counts
     assumptions: []        # {question, answer} pairs answered on the user's behalf, for the next gate
-    decisions: []          # open decisions and confirmations, for the next gate
+    decisions: []          # open decisions and confirmations, each with its recommendation, for the next gate
     reason: null           # why the entry is parked or skipped
 ```
 
@@ -75,8 +75,8 @@ A `review` entry's temporary worktree lives only while the entry is being worked
 Between gates, nothing waits for the user. When a delegated skill would ask something:
 
 - **Read-only and settled by the evidence** (for example how to split a very large diff into batches): choose the most conservative answer that adds no scope, continue, and record the question and answer in the entry's `assumptions`. Review every batch unless the host prevents it, and report coverage as it really was.
-- **A judgment only the user can make** (for example confirming a candidate Jira story, or a product decision): do not guess. Record it in `decisions` and carry on with the rest of the entry when the rest does not depend on it. The next gate presents it.
-- **Anything that writes outside what the last gate showed**: stop that entry, record the question, and park it with the reason `needs confirmation: <question>`. The next gate presents it, and the run continues with other entries.
+- **A judgment only the user can make** (for example confirming a candidate Jira story, or a product decision): do not guess the answer. Record it in `decisions` with your recommendation for the user to decide, and carry on with the rest of the entry when the rest does not depend on it. The next gate presents it.
+- **Anything that writes outside what the last gate showed**: stop that entry, record the question with your recommendation, and park it with the reason `needs confirmation: <question>`. The next gate presents it, and the run continues with other entries.
 
 ## Lifecycle
 
