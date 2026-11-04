@@ -3490,4 +3490,12 @@ test('every skill requires a recommendation on each Open Question', () => {
   assert.match(orchestrationPrompt('governed-backlog.md'), /decisions: \[\] .*each with its recommendation/);
   assert.match(orchestrationPrompt('pr-queue.md'), /decisions: \[\] .*each with its recommendation/);
   assert.match(orchestrationPrompt('pr-feedback.md'), /\*\*Discuss\*\*: .*your recommendation/);
+  assert.match(orchestrationPrompt('e2e-testing.md'), /report it as a spec gap .*with the reading you recommend/);
+
+  // Adapters fill the clarification step when the SDD tool has none, so their loops must recommend too.
+  const adapter = (name) => fs.readFileSync(path.join(root, 'adapters', name), 'utf8');
+  for (const name of ['generic.md', 'openspec.md', 'spec-kit.md']) {
+    assert.match(adapter(name), /clarify-spec \|.*with a recommended answer for each question/, `adapters/${name}`);
+  }
+  assert.match(adapter('openspec.md'), /inline clarifications loop with the user, with a recommended answer for each question/);
 });
