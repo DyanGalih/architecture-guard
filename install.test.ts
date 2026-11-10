@@ -3869,17 +3869,19 @@ test("OpenCode team roles render frontmatter and instructions with independent s
   runArgs(["sync-team-roles", "--agent", "opencode"], cwd);
 });
 
+function initGitRepo(repoPath, branch = "main") {
+  spawnSync("git", ["init", "-b", branch], { cwd: repoPath, stdio: "ignore" });
+  spawnSync("git", ["config", "user.name", "Test User"], { cwd: repoPath, stdio: "ignore" });
+  spawnSync("git", ["config", "user.email", "test@example.com"], { cwd: repoPath, stdio: "ignore" });
+  fs.writeFileSync(path.join(repoPath, "README.md"), "# Test Repo\n");
+  spawnSync("git", ["add", "README.md"], { cwd: repoPath, stdio: "ignore" });
+  spawnSync("git", ["commit", "-m", "Initial commit"], { cwd: repoPath, stdio: "ignore" });
+}
+
 test("Git worktree lifecycle helpers manage role worktrees with bounds checking", () => {
   const { createRoleWorktree, mergeRoleWorktree, cleanupRoleWorktrees, roleWorktreePath } = require("./cli/repositories");
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-worktree-test-"));
-  
-  // Initialize git repo
-  spawnSync("git", ["init"], { cwd, stdio: "ignore" });
-  spawnSync("git", ["config", "user.name", "Test User"], { cwd, stdio: "ignore" });
-  spawnSync("git", ["config", "user.email", "test@example.com"], { cwd, stdio: "ignore" });
-  fs.writeFileSync(path.join(cwd, "README.md"), "# Test Repo\n");
-  spawnSync("git", ["add", "README.md"], { cwd, stdio: "ignore" });
-  spawnSync("git", ["commit", "-m", "Initial commit"], { cwd, stdio: "ignore" });
+  initGitRepo(cwd);
 
   // 1. Create worktree for implementor_be
   const wt = createRoleWorktree(cwd, "implementor_be");
@@ -3949,12 +3951,7 @@ test("E2E init and sync across all four hosts (claude, codex, antigravity, openc
 test("Role worktrees inside linked worktree resolve to git common dir", () => {
   const { createRoleWorktree, mergeRoleWorktree, cleanupRoleWorktrees } = require("./cli/repositories");
   const mainRepo = fs.mkdtempSync(path.join(os.tmpdir(), "ag-wt-main-"));
-  spawnSync("git", ["init", "-b", "main"], { cwd: mainRepo, stdio: "ignore" });
-  spawnSync("git", ["config", "user.email", "test@example.com"], { cwd: mainRepo, stdio: "ignore" });
-  spawnSync("git", ["config", "user.name", "Test User"], { cwd: mainRepo, stdio: "ignore" });
-  fs.writeFileSync(path.join(mainRepo, "README.md"), "# Main Repo\n");
-  spawnSync("git", ["add", "README.md"], { cwd: mainRepo, stdio: "ignore" });
-  spawnSync("git", ["commit", "-m", "Initial commit"], { cwd: mainRepo, stdio: "ignore" });
+  initGitRepo(mainRepo);
 
   const linkedRepo = fs.mkdtempSync(path.join(os.tmpdir(), "ag-wt-linked-"));
   spawnSync("git", ["worktree", "add", "-b", "linked-feature", linkedRepo, "main"], { cwd: mainRepo, stdio: "ignore" });
@@ -3988,12 +3985,7 @@ test("Role worktrees inside linked worktree resolve to git common dir", () => {
 test("Role worktrees protect against uncommitted changes during recreate, merge, and cleanup", () => {
   const { createRoleWorktree, mergeRoleWorktree, cleanupRoleWorktrees } = require("./cli/repositories");
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-wt-dirty-"));
-  spawnSync("git", ["init", "-b", "main"], { cwd, stdio: "ignore" });
-  spawnSync("git", ["config", "user.email", "test@example.com"], { cwd, stdio: "ignore" });
-  spawnSync("git", ["config", "user.name", "Test User"], { cwd, stdio: "ignore" });
-  fs.writeFileSync(path.join(cwd, "README.md"), "# Repo\n");
-  spawnSync("git", ["add", "README.md"], { cwd, stdio: "ignore" });
-  spawnSync("git", ["commit", "-m", "Initial commit"], { cwd, stdio: "ignore" });
+  initGitRepo(cwd);
 
   const wt = createRoleWorktree(cwd, "implementor_fe");
   // Dirty the worktree with an uncommitted change
@@ -4023,12 +4015,7 @@ test("Role worktrees protect against uncommitted changes during recreate, merge,
 test("Role worktree validation rejects invalid role names and base branches", () => {
   const { createRoleWorktree } = require("./cli/repositories");
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-wt-validation-"));
-  spawnSync("git", ["init", "-b", "main"], { cwd, stdio: "ignore" });
-  spawnSync("git", ["config", "user.email", "test@example.com"], { cwd, stdio: "ignore" });
-  spawnSync("git", ["config", "user.name", "Test User"], { cwd, stdio: "ignore" });
-  fs.writeFileSync(path.join(cwd, "README.md"), "# Repo\n");
-  spawnSync("git", ["add", "README.md"], { cwd, stdio: "ignore" });
-  spawnSync("git", ["commit", "-m", "Initial commit"], { cwd, stdio: "ignore" });
+  initGitRepo(cwd);
 
   assert.throws(() => {
     createRoleWorktree(cwd, "implementor;echo");

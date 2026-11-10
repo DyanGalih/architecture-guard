@@ -233,6 +233,16 @@ export function roleWorktreePath(repoRoot: string, roleName: string): string {
   return wtPath;
 }
 
+export function isWorktreeDirty(wtPath: string): boolean {
+  if (!fs.existsSync(wtPath)) return false;
+  try {
+    const status = execFileSync('git', ['-C', wtPath, 'status', '--porcelain'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+    return status.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 export function createRoleWorktree(repoRoot: string, roleName: string, baseBranch?: string): RoleWorktreeResult {
   const root = path.resolve(repoRoot);
   if (baseBranch !== undefined) {
@@ -250,18 +260,11 @@ export function createRoleWorktree(repoRoot: string, roleName: string, baseBranc
   const sanitized = roleName.replace(/_/g, '-').replace(/[^a-zA-Z0-9-]/g, '-');
   const branchName = `agteam/${sanitized}`;
 
-  if (fs.existsSync(wtPath)) {
-    let isDirty = false;
-    try {
-      const status = execFileSync('git', ['-C', wtPath, 'status', '--porcelain'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-      if (status.length > 0) isDirty = true;
-    } catch {
-      // not a valid working tree
-    }
-    if (isDirty) {
-      throw new Error(`Cannot recreate role worktree at ${wtPath}: worktree has uncommitted changes.`);
-    }
+  if (isWorktreeDirty(wtPath)) {
+    throw new Error(`Cannot recreate role worktree at ${wtPath}: worktree has uncommitted changes.`);
+  }
 
+  if (fs.existsSync(wtPath)) {
     try {
       execFileSync('git', ['-C', root, 'worktree', 'remove', '--force', wtPath], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
     } catch {
@@ -293,15 +296,8 @@ export function mergeRoleWorktree(repoRoot: string, roleName: string): { success
   const sanitized = roleName.replace(/_/g, '-').replace(/[^a-zA-Z0-9-]/g, '-');
   const branchName = `agteam/${sanitized}`;
 
-  if (fs.existsSync(wtPath)) {
-    try {
-      const status = execFileSync('git', ['-C', wtPath, 'status', '--porcelain'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-      if (status.length > 0) {
-        return { success: false, merged: false, message: `Cannot merge ${branchName}: worktree has uncommitted changes.` };
-      }
-    } catch {
-      // ignore
-    }
+  if (isWorktreeDirty(wtPath)) {
+    return { success: false, merged: false, message: `Cannot merge ${branchName}: worktree has uncommitted changes.` };
   }
 
   const revCount = execFileSync('git', ['-C', root, 'rev-list', '--count', `HEAD..${branchName}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
@@ -336,15 +332,8 @@ export function cleanupRoleWorktrees(repoRoot: string, force = false): string[] 
     const wtPath = path.join(baseDir, entry);
     assertWorktreeBounds(adminDir, wtPath);
 
-    if (!force && fs.existsSync(wtPath)) {
-      try {
-        const status = execFileSync('git', ['-C', wtPath, 'status', '--porcelain'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-        if (status.length > 0) {
-          continue;
-        }
-      } catch {
-        // ignore
-      }
+    if (!force && isWorktreeDirty(wtPath)) {
+      continue;
     }
 
     try {

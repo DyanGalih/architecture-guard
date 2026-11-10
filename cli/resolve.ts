@@ -78,6 +78,49 @@ function rejectSymlinks(root: string, target: string): void {
   }
 }
 
+function resolveManifestResource(targetDir: string): ResolvedResource {
+  const candidatePaths = [
+    path.join(targetDir, '.architecture-guard', 'config.yml'),
+    path.join(targetDir, '.architecture-guard', 'config.yaml'),
+    path.join(targetDir, 'ag', 'config.yml'),
+    path.join(targetDir, '.architecture-guard', 'selected-adapter'),
+  ];
+
+  for (const candidate of candidatePaths) {
+    rejectSymlinks(targetDir, candidate);
+    if (fs.existsSync(candidate)) {
+      return {
+        category: 'manifest',
+        name: path.basename(candidate),
+        source: 'local',
+        path: candidate,
+        content: fs.readFileSync(candidate, 'utf8'),
+      };
+    }
+  }
+
+  throw new Error(`No configuration manifest found in ${targetDir} (.architecture-guard/config.yml)`);
+}
+
+function findCandidateResource(
+  dirs: string[],
+  cleanName: string,
+  extensions: string[],
+  allowedDirs: string[],
+  symlinkBase: string
+): string | null {
+  for (const dir of dirs) {
+    for (const ext of extensions) {
+      const candidate = path.join(dir, `${cleanName}${ext}`);
+      rejectSymlinks(symlinkBase, candidate);
+      if (ensureWithinBounds(candidate, allowedDirs) && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        return candidate;
+      }
+    }
+  }
+  return null;
+}
+
 export function resolveResource(
   rawCategory: string,
   rawName?: string,
@@ -99,27 +142,7 @@ export function resolveResource(
 
   // Handle manifest / config resolution
   if (normalizedCategory === 'manifest') {
-    const candidatePaths = [
-      path.join(targetDir, '.architecture-guard', 'config.yml'),
-      path.join(targetDir, '.architecture-guard', 'config.yaml'),
-      path.join(targetDir, 'ag', 'config.yml'),
-      path.join(targetDir, '.architecture-guard', 'selected-adapter'),
-    ];
-
-    for (const candidate of candidatePaths) {
-      rejectSymlinks(targetDir, candidate);
-      if (fs.existsSync(candidate)) {
-        return {
-          category: 'manifest',
-          name: path.basename(candidate),
-          source: 'local',
-          path: candidate,
-          content: fs.readFileSync(candidate, 'utf8'),
-        };
-      }
-    }
-
-    throw new Error(`No configuration manifest found in ${targetDir} (.architecture-guard/config.yml)`);
+    return resolveManifestResource(targetDir);
   }
 
   let name = rawName ? rawName.trim() : '';
@@ -145,35 +168,27 @@ export function resolveResource(
   const allowedDirs = [...localDirs, bundledDir, targetDir, ROOT_DIR];
 
   // 1. Check local workspace overrides first
-  for (const dir of localDirs) {
-    for (const ext of extensionsToTry) {
-      const candidate = path.join(dir, `${cleanName}${ext}`);
-      rejectSymlinks(targetDir, candidate);
-      if (ensureWithinBounds(candidate, allowedDirs) && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-        return {
-          category: normalizedCategory,
-          name: path.basename(candidate),
-          source: 'local',
-          path: candidate,
-          content: fs.readFileSync(candidate, 'utf8'),
-        };
-      }
-    }
+  const localCandidate = findCandidateResource(localDirs, cleanName, extensionsToTry, allowedDirs, targetDir);
+  if (localCandidate) {
+    return {
+      category: normalizedCategory,
+      name: path.basename(localCandidate),
+      source: 'local',
+      path: localCandidate,
+      content: fs.readFileSync(localCandidate, 'utf8'),
+    };
   }
 
   // 2. Fall back to bundled package resources
-  for (const ext of extensionsToTry) {
-    const candidate = path.join(bundledDir, `${cleanName}${ext}`);
-    rejectSymlinks(ROOT_DIR, candidate);
-    if (ensureWithinBounds(candidate, allowedDirs) && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-      return {
-        category: normalizedCategory,
-        name: path.basename(candidate),
-        source: 'bundled',
-        path: candidate,
-        content: fs.readFileSync(candidate, 'utf8'),
-      };
-    }
+  const bundledCandidate = findCandidateResource([bundledDir], cleanName, extensionsToTry, allowedDirs, ROOT_DIR);
+  if (bundledCandidate) {
+    return {
+      category: normalizedCategory,
+      name: path.basename(bundledCandidate),
+      source: 'bundled',
+      path: bundledCandidate,
+      content: fs.readFileSync(bundledCandidate, 'utf8'),
+    };
   }
 
   throw new Error(`Resource "${name}" not found in category "${normalizedCategory}" (checked local workspace and bundled resources)`);

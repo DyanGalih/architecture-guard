@@ -717,6 +717,20 @@ const isMapping = (value: unknown) => typeof value === 'object' && value !== nul
 
 // Checks the whole profile before anything is written or removed. A role file without `tools` inherits every
 // tool, so each role needs a non-empty allowlist; `roles: {}` is the only way to ask for an empty roster.
+function normalizeClaudeRoleTools(rawTools: unknown[] | undefined): { tools: string[]; dropped: string[] } {
+  const tools: string[] = [];
+  const dropped: string[] = [];
+  for (const tool of rawTools || []) {
+    const mapped = LEGACY_TOOL_NAMES[tool as string] || tool;
+    if (CLAUDE_ROLE_TOOLS.includes(mapped as string)) {
+      if (!tools.includes(mapped as string)) tools.push(mapped as string);
+    } else {
+      dropped.push(String(tool));
+    }
+  }
+  return { tools, dropped };
+}
+
 function validateRoleProfile(profile: unknown) {
   const errors = [];
   const roles = [];
@@ -747,16 +761,7 @@ function validateRoleProfile(profile: unknown) {
       errors.push(`role "${key}": allowed_tools must be a list`);
       continue;
     }
-    const tools = [];
-    const dropped = [];
-    for (const tool of role.allowed_tools || []) {
-      const mapped = LEGACY_TOOL_NAMES[tool] || tool;
-      if (CLAUDE_ROLE_TOOLS.includes(mapped)) {
-        if (!tools.includes(mapped)) tools.push(mapped);
-      } else {
-        dropped.push(String(tool));
-      }
-    }
+    const { tools, dropped } = normalizeClaudeRoleTools(role.allowed_tools);
     if (!tools.length) {
       errors.push(`role "${key}" has no Claude Code tools in allowed_tools (allowed: ${CLAUDE_ROLE_TOOLS.join(', ')}); without them the teammate would inherit every tool`);
       continue;
@@ -862,6 +867,12 @@ function hasHostSkills(targetDir: string, agentKey: string) {
   }
 }
 
+const HOST_ROLE_DESCRIPTORS: Record<string, { desc: any; label: string }> = {
+  codex: { desc: CODEX_ROLES, label: 'Codex' },
+  antigravity: { desc: AGY_ROLES, label: 'Antigravity (agy)' },
+  opencode: { desc: OPENCODE_ROLES, label: 'OpenCode' },
+};
+
 export function runSyncTeamRoles(target?: string, options: { agent?: string } = {}) {
   if (options.agent && !['claude', 'codex', 'antigravity', 'opencode'].includes(options.agent)) {
     console.error('Unknown role target; use --agent codex, --agent claude, --agent antigravity, or --agent opencode');
@@ -869,28 +880,14 @@ export function runSyncTeamRoles(target?: string, options: { agent?: string } = 
     return { written: [], removed: [], errors: ['Unknown role target'] };
   }
   const targetDir = target ? path.resolve(target) : process.cwd();
-  if (options.agent === 'codex') {
-    const result = installRoles(CODEX_ROLES, targetDir);
-    if (result.errors.length) process.exitCode = 1;
-    return result;
-  }
-  if (options.agent === 'antigravity') {
-    if (!hasHostSkills(targetDir, 'antigravity')) {
-      console.error(`No Antigravity (agy) skills are installed in ${path.relative(process.cwd(), targetDir) || '.'}; install agy skills before role setup.`);
+  if (options.agent && HOST_ROLE_DESCRIPTORS[options.agent]) {
+    const { desc, label } = HOST_ROLE_DESCRIPTORS[options.agent];
+    if (options.agent !== 'codex' && !hasHostSkills(targetDir, options.agent)) {
+      console.error(`No ${label} skills are installed in ${path.relative(process.cwd(), targetDir) || '.'}; install ${options.agent} skills before role setup.`);
       process.exitCode = 1;
-      return { written: [], removed: [], errors: ['No agy skills installed'] };
+      return { written: [], removed: [], errors: [`No ${options.agent} skills installed`] };
     }
-    const result = installRoles(AGY_ROLES, targetDir);
-    if (result.errors.length) process.exitCode = 1;
-    return result;
-  }
-  if (options.agent === 'opencode') {
-    if (!hasHostSkills(targetDir, 'opencode')) {
-      console.error(`No OpenCode skills are installed in ${path.relative(process.cwd(), targetDir) || '.'}; install opencode skills before role setup.`);
-      process.exitCode = 1;
-      return { written: [], removed: [], errors: ['No opencode skills installed'] };
-    }
-    const result = installRoles(OPENCODE_ROLES, targetDir);
+    const result = installRoles(desc, targetDir);
     if (result.errors.length) process.exitCode = 1;
     return result;
   }
@@ -978,6 +975,22 @@ function resolveSelectedForge(requested, targetDir, detectDirectory = targetDir)
   return requested && requested.toLowerCase() !== 'auto' ? resolveForge(requested, targetDir) : resolveForge('auto', detectDirectory);
 }
 
+function pruneDirectory(localDir: string, bundledDir: string, kept: string[], runtimeDir: string) {
+  for (const entry of fs.readdirSync(localDir, { withFileTypes: true })) {
+    const local = path.join(localDir, entry.name);
+    const bundled = path.join(bundledDir, entry.name);
+    if (entry.isDirectory()) {
+      pruneDirectory(local, bundled, kept, runtimeDir);
+      if (fs.readdirSync(local).length === 0) fs.rmdirSync(local);
+    } else if (entry.isFile() && fs.existsSync(bundled) && fs.statSync(bundled).isFile()
+      && fs.readFileSync(local).equals(fs.readFileSync(bundled))) {
+      fs.unlinkSync(local);
+    } else {
+      kept.push(path.relative(runtimeDir, local).split(path.sep).join('/'));
+    }
+  }
+}
+
 // Lean installs resolve engine resources from the CLI bundle, and cli/resolve.ts treats any
 // file under .architecture-guard/{templates,presets,sonar-rules} as a local override. Only
 // byte-identical copies left by an older vendored install are removed; user content is kept.
@@ -992,21 +1005,6 @@ function pruneVendoredCopies(runtimeDir, overwrite) {
     return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
   };
   const kept = [];
-  const prune = (localDir, bundledDir) => {
-    for (const entry of fs.readdirSync(localDir, { withFileTypes: true })) {
-      const local = path.join(localDir, entry.name);
-      const bundled = path.join(bundledDir, entry.name);
-      if (entry.isDirectory()) {
-        prune(local, bundled);
-        if (fs.readdirSync(local).length === 0) fs.rmdirSync(local);
-      } else if (entry.isFile() && fs.existsSync(bundled) && fs.statSync(bundled).isFile()
-        && fs.readFileSync(local).equals(fs.readFileSync(bundled))) {
-        fs.unlinkSync(local);
-      } else {
-        kept.push(path.relative(runtimeDir, local).split(path.sep).join('/'));
-      }
-    }
-  };
   for (const dir of ['templates', 'presets', 'sonar-rules']) {
     const localDir = path.join(runtimeDir, dir);
     const stat = fs.lstatSync(localDir, { throwIfNoEntry: false });
@@ -1016,7 +1014,7 @@ function pruneVendoredCopies(runtimeDir, overwrite) {
       continue;
     }
     if (!stat.isDirectory()) continue;
-    prune(localDir, path.join(ROOT_DIR, dir));
+    pruneDirectory(localDir, path.join(ROOT_DIR, dir), kept, runtimeDir);
     if (fs.readdirSync(localDir).length === 0) fs.rmdirSync(localDir);
   }
   if (kept.length) {
@@ -1072,7 +1070,7 @@ async function interviewHostRoles(desc, targetDir, overwrite) {
   return profile;
 }
 
-async function runInit(targetDir, opts) {
+async function resolveInitAgents(targetDir: string, opts: Record<string, any>): Promise<string[]> {
   if (opts.overwrite != null && !OVERWRITE_MODES.includes(opts.overwrite)) {
     throw new Error(`Invalid --overwrite mode "${opts.overwrite}". Use one of: ${OVERWRITE_MODES.join(', ')}.`);
   }
@@ -1097,14 +1095,14 @@ async function runInit(targetDir, opts) {
     ...undetectedAgents.map(a => ({ name: a, value: a }))
   ];
 
-  let selectedAgents;
+  let selectedAgents: string[];
   if (opts.agents) {
-    const requestedAgents = opts.agents.split(',').map(s => s.trim()).filter(Boolean);
-    const invalidAgents = requestedAgents.filter(agent => !AGENT_CONFIGS[agent]);
+    const requestedAgents = opts.agents.split(',').map((s: string) => s.trim()).filter(Boolean);
+    const invalidAgents = requestedAgents.filter((agent: string) => !AGENT_CONFIGS[agent]);
     if (invalidAgents.length > 0) {
       throw new Error(`Unknown agent selection: ${invalidAgents.join(', ')}. Use --help to see supported agent keys.`);
     }
-    selectedAgents = [...new Set(requestedAgents)];
+    selectedAgents = Array.from(new Set(requestedAgents));
   } else {
     selectedAgents = await ask('Select AI agent(s) to install commands for:', agentChoices, true);
   }
@@ -1134,6 +1132,10 @@ async function runInit(targetDir, opts) {
     process.exit(0);
   }
 
+  return selectedAgents;
+}
+
+async function resolveInitFramework(targetDir: string, opts: Record<string, any>): Promise<string> {
   const custom = customAdapters(targetDir);
   const frameworks = ['spec-kit', 'openspec', 'none (framework-agnostic)', ...custom.map(name => `${name} (custom adapter)`)];
   let selectedFramework = opts.framework;
@@ -1155,7 +1157,6 @@ async function runInit(targetDir, opts) {
   } else {
     const requested = selectedFramework === 'speckit' ? 'spec-kit' : selectedFramework === 'generic' ? 'none' : selectedFramework;
     const builtin = frameworks.slice(0, 3).find(f => f === requested || f.startsWith(requested));
-    // Anything that is not a built-in is a custom adapter, validated before any file is written.
     selectedFramework = builtin || resolveCustomAdapter(requested, targetDir);
   }
   if (selectedFramework && selectedFramework.endsWith(' (custom adapter)')) {
@@ -1172,50 +1173,14 @@ async function runInit(targetDir, opts) {
 
   const requestedAdapter = framework === "none" ? "generic" : framework;
   const existingAdapter = readPersistedAdapter(targetDir);
-  if (existingAdapter) {
-    if (existingAdapter !== requestedAdapter) {
-      if (opts.overwrite) {
-        if (opts.overwrite !== "replace") {
-          throw new Error("Cannot switch adapter from " + existingAdapter + " to " + requestedAdapter + " with --overwrite " + opts.overwrite + ". Use --overwrite replace so installed prompts are regenerated.");
-        }
-      }
-    }
+  if (existingAdapter && existingAdapter !== requestedAdapter && opts.overwrite && opts.overwrite !== "replace") {
+    throw new Error("Cannot switch adapter from " + existingAdapter + " to " + requestedAdapter + " with --overwrite " + opts.overwrite + ". Use --overwrite replace so installed prompts are regenerated.");
   }
 
-  // Code host for pull-request skills; resolved before any file is written so a bad custom forge fails early.
-  const workspaceRepositories = resolveWorkspaceRepositories(targetDir);
-  const { forge, reason: forgeReason } = resolveSelectedForge(opts.forge, targetDir, workspaceRepositories.codeDirectory || targetDir);
-  console.log(`Forge: ${forge} (${forgeReason})`);
+  return framework;
+}
 
-  let selectedCommands;
-  if (opts.commands) {
-    selectedCommands = parseCommandSelection(opts.commands);
-  } else {
-    selectedCommands = [...COMMANDS];
-  }
-
-  if (!selectedCommands || selectedCommands.length === 0) {
-    throw new Error("No commands selected. Use a canonical command name, index, or alias: all, review, pr.");
-  }
-
-  for (const agent of selectedAgents) {
-    const isAgy = agent === 'antigravity';
-    let cmdDir;
-    let workflowsDir = null;
-    
-    if (isAgy) {
-      cmdDir = path.join(targetDir, '.agent/skills');
-      workflowsDir = path.join(targetDir, '.agent/workflows');
-    } else {
-      const cfg = AGENT_CONFIGS[agent];
-      cmdDir = path.join(targetDir, cfg.dir);
-    }
-
-    for (const cmd of selectedCommands) {
-      await installCommand(agent, cmd, cmdDir, { ...opts, targetDir, forgeName: forge, adapterName: framework === 'none' ? 'generic' : framework }, isAgy ? workflowsDir : null);
-    }
-  }
-
+async function configureMultiHostTeamRoles(targetDir: string, selectedAgents: string[], opts: Record<string, any>): Promise<any | null> {
   const teamRoleHostCandidates = [
     { key: 'claude', name: 'Claude Code Agent Teams (roles + enables experimental Agent Teams setting)' },
     { key: 'codex', name: 'Codex (roles + coordinated execution auto-activation)' },
@@ -1268,50 +1233,60 @@ async function runInit(targetDir, opts) {
     }
   }
 
-  let agentTeamsConfig = null;
-  if (installedTeamHosts.length > 0) {
-    let teamActivation = opts.teamActivation;
-    let teamIsolation = opts.teamIsolation;
+  if (installedTeamHosts.length === 0) return null;
 
-    if (!teamActivation) {
-      if (opts.yes || anyTeamFlag) {
-        teamActivation = 'auto';
-      } else {
-        teamActivation = await ask(
-          '\nSelect agent team activation mode:',
-          [
-            { name: 'auto (activate parallel coordinated execution automatically when supported)', value: 'auto' },
-            { name: 'ask (prompt before activating coordinated execution on each workflow run)', value: 'ask' },
-            { name: 'manual (sequential execution by default; manual activation required)', value: 'manual' }
-          ],
-          false
-        ) || 'auto';
-      }
+  let teamActivation = opts.teamActivation;
+  let teamIsolation = opts.teamIsolation;
+
+  if (!teamActivation) {
+    if (opts.yes || anyTeamFlag) {
+      teamActivation = 'auto';
+    } else {
+      teamActivation = await ask(
+        '\nSelect agent team activation mode:',
+        [
+          { name: 'auto (activate parallel coordinated execution automatically when supported)', value: 'auto' },
+          { name: 'ask (prompt before activating coordinated execution on each workflow run)', value: 'ask' },
+          { name: 'manual (sequential execution by default; manual activation required)', value: 'manual' }
+        ],
+        false
+      ) || 'auto';
     }
-
-    if (!teamIsolation) {
-      if (opts.yes || anyTeamFlag) {
-        teamIsolation = 'auto';
-      } else {
-        teamIsolation = await ask(
-          '\nSelect parallel writer workspace isolation mode:',
-          [
-            { name: 'auto (use host-native workspace sharing or fall back to Git worktrees)', value: 'auto' },
-            { name: 'worktree (always isolate concurrent writer agents in dedicated Git worktrees)', value: 'worktree' },
-            { name: 'shared (run in workspace tree; tasks must touch disjoint files)', value: 'shared' }
-          ],
-          false
-        ) || 'auto';
-      }
-    }
-
-    agentTeamsConfig = {
-      enabled_hosts: installedTeamHosts,
-      activation: teamActivation,
-      isolation: teamIsolation
-    };
   }
 
+  if (!teamIsolation) {
+    if (opts.yes || anyTeamFlag) {
+      teamIsolation = 'auto';
+    } else {
+      teamIsolation = await ask(
+        '\nSelect parallel writer workspace isolation mode:',
+        [
+          { name: 'auto (use host-native workspace sharing or fall back to Git worktrees)', value: 'auto' },
+          { name: 'worktree (always isolate concurrent writer agents in dedicated Git worktrees)', value: 'worktree' },
+          { name: 'shared (run in workspace tree; tasks must touch disjoint files)', value: 'shared' }
+        ],
+        false
+      ) || 'auto';
+    }
+  }
+
+  return {
+    enabled_hosts: installedTeamHosts,
+    activation: teamActivation,
+    isolation: teamIsolation
+  };
+}
+
+async function finalizeWorkspaceInstall(
+  targetDir: string,
+  selectedAgents: string[],
+  framework: string,
+  forge: string,
+  workspaceRepositories: any,
+  agentTeamsConfig: any,
+  selectedCommands: string[],
+  opts: Record<string, any>
+) {
   const runtimeDir = path.join(targetDir, '.architecture-guard');
   fs.mkdirSync(runtimeDir, { recursive: true });
 
@@ -1353,6 +1328,32 @@ async function runInit(targetDir, opts) {
   console.log(`Adapter: .architecture-guard/adapters/${adapter}.md`);
   console.log(`Forge: .architecture-guard/forges/${forge}.md`);
   console.log('Resolution: .architecture-guard/adapters/resolve.md');
+}
+
+async function runInit(targetDir: string, opts: Record<string, any>) {
+  const selectedAgents = await resolveInitAgents(targetDir, opts);
+  const framework = await resolveInitFramework(targetDir, opts);
+
+  const workspaceRepositories = resolveWorkspaceRepositories(targetDir);
+  const { forge, reason: forgeReason } = resolveSelectedForge(opts.forge, targetDir, workspaceRepositories.codeDirectory || targetDir);
+  console.log(`Forge: ${forge} (${forgeReason})`);
+
+  const selectedCommands = opts.commands ? parseCommandSelection(opts.commands) : [...COMMANDS];
+  if (!selectedCommands || selectedCommands.length === 0) {
+    throw new Error("No commands selected. Use a canonical command name, index, or alias: all, review, pr.");
+  }
+
+  for (const agent of selectedAgents) {
+    const isAgy = agent === 'antigravity';
+    const cmdDir = isAgy ? path.join(targetDir, '.agent/skills') : path.join(targetDir, AGENT_CONFIGS[agent].dir);
+    const workflowsDir = isAgy ? path.join(targetDir, '.agent/workflows') : null;
+    for (const cmd of selectedCommands) {
+      await installCommand(agent, cmd, cmdDir, { ...opts, targetDir, forgeName: forge, adapterName: framework === 'none' ? 'generic' : framework }, workflowsDir);
+    }
+  }
+
+  const agentTeamsConfig = await configureMultiHostTeamRoles(targetDir, selectedAgents, opts);
+  await finalizeWorkspaceInstall(targetDir, selectedAgents, framework, forge, workspaceRepositories, agentTeamsConfig, selectedCommands, opts);
 }
 
 export async function runInstallCommand(target: any, opts: any) {

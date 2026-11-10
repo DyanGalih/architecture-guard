@@ -127,7 +127,7 @@ async function moveDirectory(sourceDir: string, targetDir: string) {
     }
 }
 
-async function finalizeSpecKitFeature(changeName: string, root: string, json: boolean) {
+async function resolveSpecKitFeatureDirectory(changeName: string, root: string): Promise<{ featureRoot: string; normalizedFeature: string }> {
     let featureDirectory = path.join('specs', changeName);
     const featureJson = path.join(root, '.specify', 'feature.json');
 
@@ -144,6 +144,20 @@ async function finalizeSpecKitFeature(changeName: string, root: string, json: bo
     }
 
     const normalizedFeature = relativeFeature.split(path.sep).join('/');
+    return { featureRoot, normalizedFeature };
+}
+
+function formatSpecKitContextEntry(normalizedFeature: string, specText: string, featureRoot: string): { marker: string; entry: string } {
+    const title = specText.match(/^#\s+(.+)$/m)?.[1] ?? path.basename(featureRoot);
+    const purpose = specText.replace(/\r\n/g, '\n').match(/^## Purpose[ \t]*\n+([\s\S]*?)(?=^## |(?![\s\S]))/m)?.[1].trim() || 'Completed SpecKit feature.';
+    const marker = `<!-- architecture-guard:feature=${normalizedFeature} -->`;
+    const specLink = `${path.posix.relative('specs', normalizedFeature)}/spec.md`;
+    const entry = `${marker}\n## ${title}\n${purpose}\n\n- Feature spec: [${specLink}](${specLink})`;
+    return { marker, entry };
+}
+
+async function finalizeSpecKitFeature(changeName: string, root: string, json: boolean) {
+    const { featureRoot, normalizedFeature } = await resolveSpecKitFeatureDirectory(changeName, root);
     const specPath = path.join(featureRoot, 'spec.md');
     if (!await exists(specPath)) {
         return finalizeIncomplete('skipped', normalizedFeature, `SpecKit feature spec not found: ${specPath}`, json);
@@ -151,13 +165,7 @@ async function finalizeSpecKitFeature(changeName: string, root: string, json: bo
 
     const indexPath = path.join(root, 'specs', 'system_context.md');
     const specText = await readFile(specPath, 'utf8');
-    const title = specText.match(/^#\s+(.+)$/m)?.[1] ?? path.basename(featureRoot);
-    // The Purpose section runs to the next level-2 heading or the true end of the spec.
-    const purpose = specText.replace(/\r\n/g, '\n').match(/^## Purpose[ \t]*\n+([\s\S]*?)(?=^## |(?![\s\S]))/m)?.[1].trim() || 'Completed SpecKit feature.';
-    const marker = `<!-- architecture-guard:feature=${normalizedFeature} -->`;
-    // Links inside specs/system_context.md resolve relative to the specs/ directory.
-    const specLink = `${path.posix.relative('specs', normalizedFeature)}/spec.md`;
-    const entry = `${marker}\n## ${title}\n${purpose}\n\n- Feature spec: [${specLink}](${specLink})`;
+    const { marker, entry } = formatSpecKitContextEntry(normalizedFeature, specText, featureRoot);
 
     try {
         await mkdir(path.dirname(indexPath), { recursive: true });

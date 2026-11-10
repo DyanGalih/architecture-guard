@@ -43,6 +43,49 @@ const tomlString = (value: string): string => JSON.stringify(value)
     escape === '\\b' ? '\\u0008' : escape === '\\f' ? '\\u000c' : escape)
   .replace(/\u007f/g, '\\u007f');
 
+export function isOwnedRoleFile(filePath: string, marker: string): boolean {
+  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) return false;
+  const content = fs.readFileSync(filePath, 'utf8');
+  return content.startsWith(`${marker}\n`) || content.includes(`\n${marker}\n`);
+}
+
+function validateCommonRoleFields(
+  key: string,
+  role: Record<string, unknown>,
+  allowedFields: Set<string>,
+  names: Set<string>,
+  tags: Set<string>
+): { name: string; description: string; instructions: string; taskTag?: string; model?: string } {
+  if (!/^[a-zA-Z0-9_-]+$/.test(key) || !mapping(role)) throw new Error(`Invalid role: ${key}`);
+  const name = roleAgentName(key);
+  if (name === 'agteam-' || names.has(name)) throw new Error(`Role name collision or empty name: ${key}`);
+  names.add(name);
+  for (const field of Object.keys(role)) {
+    if (!allowedFields.has(field)) throw new Error(`Unsupported role restriction or field: ${key}.${field}`);
+  }
+  if (typeof role.description !== 'string' || !role.description.trim() || typeof role.system_prompt !== 'string' || !role.system_prompt.trim()) {
+    throw new Error(`Role ${key} requires description and system_prompt`);
+  }
+  let taskTag: string | undefined;
+  if (role.task_tag !== undefined) {
+    if (typeof role.task_tag !== 'string' || !/^[A-Z][A-Z0-9_]*$/.test(role.task_tag) || role.task_tag === 'ORCHESTRATION' || tags.has(role.task_tag)) {
+      throw new Error(`Invalid or ambiguous task_tag: ${key}`);
+    }
+    taskTag = role.task_tag;
+    tags.add(taskTag);
+  }
+  if (role.model !== undefined && (typeof role.model !== 'string' || !role.model.trim())) {
+    throw new Error(`Invalid model: ${key}`);
+  }
+  return {
+    name,
+    description: role.description,
+    instructions: role.system_prompt,
+    taskTag,
+    model: role.model === 'inherit' ? undefined : (role.model as string | undefined)
+  };
+}
+
 export function validateProfile(profile: unknown): GenericRole[] {
   if (!mapping(profile) || !mapping(profile.roles)) throw new Error('roles must be a mapping');
   const topKeys = new Set(['version', 'topology', 'roles']);
@@ -50,33 +93,17 @@ export function validateProfile(profile: unknown): GenericRole[] {
   if (profile.version !== 1 || profile.topology !== 'codex-subagents') throw new Error('Expected version: 1 and topology: codex-subagents');
   const names = new Set<string>();
   const tags = new Set<string>();
+  const allowed = new Set(['description', 'system_prompt', 'task_tag', 'features', 'model']);
   return Object.entries(profile.roles).map(([key, role]) => {
-    if (!/^[a-zA-Z0-9_-]+$/.test(key) || !mapping(role)) throw new Error(`Invalid role: ${key}`);
-    const name = roleAgentName(key);
-    if (name === 'agteam-' || names.has(name)) throw new Error(`Role name collision or empty name: ${key}`);
-    names.add(name);
-    const allowed = new Set(['description', 'system_prompt', 'task_tag', 'features', 'model']);
-    for (const field of Object.keys(role)) if (!allowed.has(field)) throw new Error(`Unsupported role restriction or field: ${key}.${field}`);
-    if (typeof role.description !== 'string' || !role.description.trim() || typeof role.system_prompt !== 'string' || !role.system_prompt.trim()) {
-      throw new Error(`Role ${key} requires description and system_prompt`);
-    }
-    if (!mapping(role.features)) throw new Error(`Role ${key} requires explicit features reductions`);
+    const r = role as Record<string, unknown>;
+    const common = validateCommonRoleFields(key, r, allowed, names, tags);
+    if (!mapping(r.features)) throw new Error(`Role ${key} requires explicit features reductions`);
     const features: Record<string, false> = {};
-    for (const [feature, value] of Object.entries(role.features)) {
+    for (const [feature, value] of Object.entries(r.features as Record<string, unknown>)) {
       if (!featureNames.includes(feature) || value !== false) throw new Error(`Unsupported required feature reduction: ${key}.${feature}`);
       features[feature] = false;
     }
-    let taskTag: string | undefined;
-    if (role.task_tag !== undefined) {
-      if (typeof role.task_tag !== 'string' || !/^[A-Z][A-Z0-9_]*$/.test(role.task_tag) || role.task_tag === 'ORCHESTRATION' || tags.has(role.task_tag)) {
-        throw new Error(`Invalid or ambiguous task_tag: ${key}`);
-      }
-      taskTag = role.task_tag;
-      tags.add(taskTag);
-    }
-    if (role.model !== undefined && (typeof role.model !== 'string' || !role.model.trim())) throw new Error(`Invalid model: ${key}`);
-    return { name, description: role.description, instructions: role.system_prompt, features, taskTag,
-      model: role.model === 'inherit' ? undefined : role.model as string | undefined };
+    return { ...common, features };
   });
 }
 
@@ -99,35 +126,16 @@ function validateSubagentProfile(profile: unknown, expectedTopology: string): Ge
   }
   const names = new Set<string>();
   const tags = new Set<string>();
+  const allowed = new Set(['description', 'system_prompt', 'task_tag', 'read_only', 'model']);
   return Object.entries(profile.roles).map(([key, role]) => {
-    if (!/^[a-zA-Z0-9_-]+$/.test(key) || !mapping(role)) throw new Error(`Invalid role: ${key}`);
-    const name = roleAgentName(key);
-    if (name === 'agteam-' || names.has(name)) throw new Error(`Role name collision or empty name: ${key}`);
-    names.add(name);
-    const allowed = new Set(['description', 'system_prompt', 'task_tag', 'read_only', 'model']);
-    for (const field of Object.keys(role)) if (!allowed.has(field)) throw new Error(`Unsupported role restriction or field: ${key}.${field}`);
-    if (typeof role.description !== 'string' || !role.description.trim() || typeof role.system_prompt !== 'string' || !role.system_prompt.trim()) {
-      throw new Error(`Role ${key} requires description and system_prompt`);
-    }
-    if (typeof role.read_only !== 'boolean') {
+    const r = role as Record<string, unknown>;
+    const common = validateCommonRoleFields(key, r, allowed, names, tags);
+    if (typeof r.read_only !== 'boolean') {
       throw new Error(`Role ${key} requires explicit read_only boolean`);
     }
-    let taskTag: string | undefined;
-    if (role.task_tag !== undefined) {
-      if (typeof role.task_tag !== 'string' || !/^[A-Z][A-Z0-9_]*$/.test(role.task_tag) || role.task_tag === 'ORCHESTRATION' || tags.has(role.task_tag)) {
-        throw new Error(`Invalid or ambiguous task_tag: ${key}`);
-      }
-      taskTag = role.task_tag;
-      tags.add(taskTag);
-    }
-    if (role.model !== undefined && (typeof role.model !== 'string' || !role.model.trim())) throw new Error(`Invalid model: ${key}`);
     return {
-      name,
-      description: role.description,
-      instructions: role.system_prompt,
-      readOnly: role.read_only,
-      taskTag,
-      model: role.model === 'inherit' ? undefined : (role.model as string | undefined)
+      ...common,
+      readOnly: r.read_only
     };
   });
 }
@@ -258,8 +266,7 @@ export function planRoles(desc: HostRoleDescriptor, target: string, overwrite?: 
     const file = path.join(dir, entry);
     assertRolePath(root, file);
     if (!fs.existsSync(file)) continue;
-    const content = fs.readFileSync(file, 'utf8');
-    const owned = fs.statSync(file).isFile() && (content.startsWith(`${desc.marker}\n`) || content.includes(`\n${desc.marker}\n`));
+    const owned = isOwnedRoleFile(file, desc.marker);
     if (wanted.has(entry) && !owned) throw new Error(`User-owned role conflict: ${entry}`);
   }
   const outputs = roles.map(role => ({ name: role.name, file: path.join(dir, `${role.name}${desc.fileExt}`), content: desc.renderRole(role) }));
@@ -272,8 +279,7 @@ export function planRoles(desc: HostRoleDescriptor, target: string, overwrite?: 
   for (const entry of entries) {
     if (!entry.startsWith('agteam-') || !entry.endsWith(desc.fileExt) || wanted.has(entry)) continue;
     const file = path.join(dir, entry);
-    const content = fs.readFileSync(file, 'utf8');
-    const owned = fs.statSync(file).isFile() && (content.startsWith(`${desc.marker}\n`) || content.includes(`\n${desc.marker}\n`));
+    const owned = isOwnedRoleFile(file, desc.marker);
     if (owned && overwrite !== 'skip' && overwrite !== 'keep-both') remove.push(file);
     else retain.push(file);
   }
