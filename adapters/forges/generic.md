@@ -24,3 +24,5 @@ Files are named after the refs: `<slug>` is `<base>..<head>` with every `/` repl
 | thread-resolve | Unsupported; list the threads the user chose to resolve in the replies file so they can resolve them on the host |
 | pr-comment | Unsupported; add the approved comment to `.architecture-guard/reviews/<slug>-replies.md` under a General section for the user to post |
 | checks-status | Unsupported; ask the user for CI status. Running tests executes the change's code: only for your own change and only after the user approves; never when reviewing someone else's change |
+| current-user | Unsupported; plain git has no signed-in identity and `git config user.name` does not prove authorship, so ask the user |
+| pr-list | Unsupported; plain git has no list of pull requests, so ask the user for the refs |

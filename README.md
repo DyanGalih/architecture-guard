@@ -6,7 +6,7 @@
 
 > Keep AI-generated code aligned with your architecture, specs, and delivery workflow.
 
-[![Version](https://img.shields.io/badge/version-3.4.0-22c55e)](extension.yml)
+[![Version](https://img.shields.io/badge/version-3.6.0-22c55e)](extension.yml)
 [![OpenSpec](https://img.shields.io/badge/OpenSpec-compatible-8b5cf6)](https://github.com/Fission-AI/OpenSpec)
 [![Spec Kit](https://img.shields.io/badge/Spec%20Kit-compatible-2563eb)](https://spec-kit.dev)
 [![Non-blocking](https://img.shields.io/badge/style-non--blocking-10b981)](https://spec-kit.dev)
@@ -76,6 +76,7 @@ Instead of letting AI agents run wild, Architecture Guard provides structured en
 | **`ag-e2e-testing`** | Testing a feature end to end | Decides from the spec whether the feature needs end-to-end tests. If it does, it designs scenarios from the acceptance criteria and writes them with Playwright: browser tests for UI journeys, API-only tests for API scope. If the spec isn't end-to-end, it skips them and names the lower-level tests to write instead. |
 | **`ag-review-pr`** | Reviewing someone else's pull request | Fetches the pull request from your code host (GitHub, GitLab, Bitbucket, Azure DevOps, or plain git), reviews it against your architecture, security, and hygiene rules, runs Security Review (`sr-branch`) when that separate tool is installed, and drafts a comment-only review that is posted only when you choose. When no finding is blocking, you can instead approve it with comments asking the author to address the findings before merging. |
 | **`ag-pr-feedback`** | Feedback on your own pull request | Triages unresolved review threads and failing checks, applies the fixes you approve, drafts replies, and lets you choose to reply only or reply and resolve. |
+| **`ag-pr-queue`** | All your pull-request work in one command | Scans the repository's open pull requests, or takes a list, then runs `ag-pr-feedback` on your unapproved ones and `ag-review-pr` on your team's. It prepares every draft and triage first, then you decide them together at batched gates. Nothing is posted, pushed, or approved without your explicit choice. |
 
 *(Note: Granular commands like `ag-governed-spec`, `ag-governed-plan`, and `ag-governed-tasks` are still available if you want manual control. See the [Workflow Guide](docs/workflows.md).)*
 
@@ -94,6 +95,7 @@ Instead of letting AI agents run wild, Architecture Guard provides structured en
 ```text
 /ag-review-pr <number or URL>   (reviewing a teammate's pull request)
 /ag-pr-feedback                 (working through feedback on your own pull request)
+/ag-pr-queue                    (all of it in one command: feedback on your open pull requests, reviews for your team's)
 ```
 
 Both skills reach your code host through a [forge adapter](FORGES.md): a registered MCP server for the host, then its CLI (`gh`, `glab`, `az`), then plain git. Nothing is posted, pushed, or resolved without your approval.

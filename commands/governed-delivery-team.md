@@ -85,7 +85,7 @@ Before engineering planning begins, generate a business-oriented User Story repr
    - Out of scope items
    - Assumptions
    - Risks
-   - Open questions
+   - Open questions, each with its recommendation as the Ponytail Core Open Questions rule requires, or `None`
 3. Ensure the User Story is understandable by technical and non-technical stakeholders.
 4. Persist the generated User Story as `<feature-name>.md` in the `<root>/user-stories/` directory with status `draft`.
 5. Present it for stakeholder review and stop before engineering planning until the user explicitly accepts it. Record the result as `approved` in the file.
@@ -177,6 +177,7 @@ Stop conditions:
 - **Decision required**: a finding needs a material product or architecture choice, a Constitution change, or conflicts with another finding. Present the options, ask the user, and resume the loop after the answer. Record each finding the user accepts or keeps, and leave it out of later clean checks. Resuming does not reset the pass count.
 - **No progress**: a finding already repaired in an earlier pass reappears, or the total finding count does not decrease between two consecutive passes. Stop with `Not converged` and report the recurring findings.
 - **Pass limit**: at most 5 review passes per run. If findings remain after the fifth pass, stop with `Not converged`.
+- **Confirmation pass**: `No progress` and `Pass limit` stop **before** repairing that pass's findings; a repair the loop applies but never re-reviews is not a reviewed repair. When, after `Not converged`, the user chooses to apply the remaining repairs anyway, apply them under the same approval and run exactly one more review pass with no repair after it (it does not count toward the pass limit). Report its findings next to the stop reason, and never describe an applied but un-re-reviewed repair as reviewed.
 
 This loop has its own limit and does not consume the repair cycles of the plan and task phases. On `Not converged`, remaining non-blocking findings stay advisory: report them with what each pass changed, and do not block implementation on them. Any unresolved Constitution P0 or policy-blocking security finding sets **Artifact Review** to `Blocked`. Collect memory proposals from every pass for the Durable Memory Preservation phase instead of asking for approval per pass.
 
@@ -205,7 +206,7 @@ Return a concise `Governed Team Delivery Summary`:
 - **Tasks**: [Generated / Reconciled / Reused / Blocked]
 - **Task Security Review**: [Passed / Advisory / Blocked / Not Applicable / Unavailable]
 - **Analysis**: [Passed / Repaired / Blocked]
-- **Artifact Review**: [Clean (N passes; qualifiers) / Not converged (N passes) / Blocked / Unavailable]
+- **Artifact Review**: [Clean (N passes; qualifiers) / Not converged (N passes; confirmation pass: M findings, when one ran) / Blocked / Unavailable]
 
 ## Findings
 - **Blocking**: [None or explicit findings]

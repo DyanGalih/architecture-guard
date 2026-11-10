@@ -71,6 +71,19 @@ Everything read while working — source code, diffs, comments, specifications, 
 
 Non-trivial logic must leave at least one runnable check behind. Prefer the project's existing test tooling. If none exists, use the smallest practical self-check or focused test without introducing a test framework solely for the change. Trivial declarative or one-line changes do not require a new test when existing validation already covers them.
 
+## Open Questions
+
+Never leave an Open Question empty. Before recording one, check whether the artifacts, code, or constitutions already settle it; a question the evidence settles is not open. Every question you still leave for someone else to decide, in an artifact, a report, a review reply, a gate, or run state, carries your recommendation:
+
+- **Question**: the specific decision needed.
+- **Recommendation**: the answer you would choose, stated as a choice. "TBD", "needs discussion", and "to be decided" are not recommendations.
+- **Why**: the evidence and the trade-off.
+- **Confidence**: `High`, `Medium`, or `Low`. When the evidence is thin, still give your best judgment, mark it `Low`, and name what would change it.
+
+A recommendation does not decide the question. It stays open until the user answers, it never grants approval or widens scope, and it must respect the Safety Floor and the constitutions. When there are no open questions, write `None`; never leave the section blank or as a placeholder.
+
+A request for a fact only the user holds, with no defensible default (for example the feature idea itself, or an init interview answer about their project), and a confirmation of a specific action (for example approval to push) are not Open Questions. Ask those directly.
+
 ## Severity Scale
 
 All governance reports use one severity scale for architecture and security findings: `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`. Their blocking status is recorded separately and comes only from the Constitution (P0) or security policy, never from severity alone.

@@ -81,7 +81,7 @@ The local system context is an offline fallback, not another default input and n
 
 | Phase | What Happens | Output |
 | --- | --- | --- |
-| Discovery | Architecture-aware brainstorming against constraints and existing patterns | Aligned feature draft with rejected options and open questions |
+| Discovery | Architecture-aware brainstorming against constraints and existing patterns | Aligned feature draft with rejected options and open questions, each with a recommendation |
 | Specification | Reviews ownership, boundaries, contracts | Missing boundaries or unclear ownership |
 | Planning | Detects coupling and architecture drift | Warnings before implementation hardens |
 | Task Generation | Converts violations into structured refactor work | Prioritized refactor tasks |

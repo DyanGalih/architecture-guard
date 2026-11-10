@@ -72,7 +72,7 @@ Use the host command's native argument text as an optional explicit feature or a
 - **Ponytail**: Prefer no e2e test over a redundant one. A criterion that a unit, component, or integration test fully covers does not get an e2e test.
 - **Safe targets**: Run tests only against a local, ephemeral, or dedicated test environment. Never point a test at production, and never reset, truncate, or wipe a persistent or shared database to prepare test data.
 - **No secrets in files**: Credentials and tokens come from environment variables; never write them into tests, config, or fixtures.
-- **Artifact boundaries**: Do not edit the specification or plan, and never commit or push. If a criterion is too vague to test end to end, report it as a spec gap for the user or `ag-governed-spec` to clarify.
+- **Artifact boundaries**: Do not edit the specification or plan, and never commit or push. If a criterion is too vague to test end to end, report it as a spec gap for the user or `ag-governed-spec` to clarify, with the reading you recommend.
 
 ## Step 1 — Load Inputs
 

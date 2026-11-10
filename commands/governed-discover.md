@@ -72,7 +72,7 @@ Enter an interactive Q&A discussion with the user.
 
 1. **Acknowledge and Advise**: Briefly state your understanding of the user's idea and any immediate architectural considerations.
 2. **Warn on Violations**: If the user suggests an idea that conflicts with an architectural constraint (e.g., adding a new database when the constitution mandates a single shared database), you MUST warn them, identify whether the rule is blocking/P0 or non-blocking, and suggest an architecture-compliant alternative.
-3. **Refine**: Ask clarifying questions to flesh out edge cases, UX flows, and technical boundaries.
+3. **Refine**: Ask clarifying questions to flesh out edge cases, UX flows, and technical boundaries. Give your recommended answer and why with each question, as the Ponytail Core Open Questions rule requires.
 
 *Do not generate a full specification markdown file during this phase. Keep the interaction conversational and focused on alignment.*
 
@@ -115,7 +115,11 @@ When the discussion is concluded and aligned, the command MUST return:
 - [Options avoided because they conflict with architecture, add drift, or over-engineer the solution]
 
 ## Open Questions
-- [Non-blocking questions that can be resolved during governed-spec]
+- **Question**: [Non-blocking question that can be resolved during governed-spec]
+  - **Recommendation**: [The answer you would choose]
+  - **Why**: [Evidence and trade-off]
+  - **Confidence**: [High, Medium, or Low; for Low, what would change it]
+- [Or "None". Never leave a question without a recommendation.]
 
 ## Security-Sensitive Areas
 - [Auth, PII, secrets, trust boundaries, or data-exposure concerns; state "None identified" only after checking]

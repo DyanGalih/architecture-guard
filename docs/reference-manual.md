@@ -172,6 +172,7 @@ This injects refactor tasks into the technical design and task artifacts so the 
 | `governed-delivery-team` | Orchestration | Team delivery flow with an approved User Story before planning and task generation | Use when stakeholders need to approve business intent before engineering proceeds |
 | `governed-archive` | Finalization | Archives a completed feature after verification, with explicit approval for changelog, memory, Git, and cleanup actions | Use only after implementation is verified |
 | `governed-backlog` | Orchestration | Run report of a queue of groups from Jira, Beads, or `backlog.yml`: lane, state, pull request, and park reason per group, with resumable state in `.architecture-guard/queue.yml` | Use when several prioritized stories, bugs, and tasks should be delivered as one pull request per group |
+| `pr-queue` | Orchestration | Run report of a queue of pull requests: the action chosen and why, state, result, and park reason per entry, with resumable state in `.architecture-guard/pr-queue.yml` | Use when you have several pull requests to review or to answer feedback on |
 | `ag-workflow` | General Review | Violations, severity and priority, refactor tasks, evolution proposals | Entry point for end-to-end review; good for dashboards |
 | `ag-review-artifacts` | Validation | Validates planning artifacts (spec, plan) against constitution without reviewing code; reads only the base-branch locations the artifacts cite to confirm their premises | After `/specify` or `/plan` |
 | `ag-review-implementation` | Validation | Validates implementation codebase against planning artifacts and constitution | After `/implement` |
@@ -189,7 +190,7 @@ Paths proposed for creation are checked for name collisions, not reported missin
 
 ### Ponytail Core
 
-All commands load `templates/ponytail_core.md`. The contract applies an ordered YAGNI-to-minimum-code ladder, requires root-cause caller tracing, preserves a correctness and safety floor, and requires a runnable check for non-trivial logic. Framework presets add vocabulary but cannot require a layer or dependency without repository evidence.
+All commands load `templates/ponytail_core.md`. The contract applies an ordered YAGNI-to-minimum-code ladder, requires root-cause caller tracing, preserves a correctness and safety floor, requires a runnable check for non-trivial logic, and requires a recommendation on every Open Question. Framework presets add vocabulary but cannot require a layer or dependency without repository evidence.
 
 See [Framework Presets](presets.md) for the supported built-in frameworks, init interview coverage, review boundaries, guardrails, and custom-preset structure.
 
@@ -262,11 +263,11 @@ specify extension add architecture-guard
 
 ### From a Release Artifact (ZIP)
 
-These examples use the `v3.4.0` release tag.
+These examples use the `v3.6.0` release tag.
 
 ```text
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.4.0.zip
+  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.6.0.zip
 ```
 
 ### Global Preset Usage
@@ -282,7 +283,7 @@ If you manage multiple projects using the same framework (e.g., Laravel), you ca
 
 ```bash
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.4.0.zip
+  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.6.0.zip
 ```
 
 ### From a Local Developer Artifact
@@ -295,5 +296,5 @@ specify extension add architecture-guard --dev /path/to/architecture-guard
 
 ```text
 specify extension add architecture-guard --from \
-  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.4.0.zip
+  https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.6.0.zip
 ```

@@ -57,7 +57,7 @@ When this adapter is selected, establish one `CHANGE_ID` before running any Open
 | create-change | If the named change does not exist, run `openspec new change "$CHANGE_ID"` only after explicit user approval of the name; otherwise reuse it. For a change created as having no specification delta, add `skip_specs: true` to `openspec/changes/$CHANGE_ID/.openspec.yaml`, because validation rejects a change with zero deltas otherwise. That `skip_specs: true` is the change's no-specification-delta marker: governed tasks and verification then read the proposal's `## Stories` section in place of a spec |
 | archive | After explicit user approval and collision preflight, run `openspec archive "$CHANGE_ID" --yes`.|
 | verify | Run the installed `ag-verify` capability; if host dispatch is unavailable, run `openspec validate "$CHANGE_ID" --strict` and perform the inline task-to-code checks defined by `ag-verify`.|
-| clarify-spec | Unsupported natively; ask and apply an inline ambiguity-resolution loop |
+| clarify-spec | Unsupported natively; ask and apply an inline ambiguity-resolution loop, with a recommended answer for each question |
 | create-plan | Read `openspec instructions design --change "$CHANGE_ID" --json`, then create `{adapter_path:plan}` inline|
 | create-tasks | Read `openspec instructions tasks --change "$CHANGE_ID" --json`, then create `{adapter_path:tasks}` inline|
 | implement | Use the registered OpenSpec apply-change capability; if unavailable, execute unchecked tasks inline and update their status |
@@ -128,7 +128,7 @@ Trust boundaries, auth standards, data isolation, secrets management.
    - Fill: Before creating a change, check `git branch --show-current`. If on `main`/`master`/`dev`/`staging`, propose `git checkout -b "feature/{change-name}"` and run it only after explicit user approval; if the user declines or branch creation fails, stop before writing change artifacts.
 
 2. **Specification clarification** — OpenSpec has no `/speckit.clarify` equivalent.
-   - Fill: After creating specs, run an interactive inline clarifications loop with the user.
+   - Fill: After creating specs, run an interactive inline clarifications loop with the user, with a recommended answer for each question.
 
 3. **Architecture verify (task-to-code)** — OpenSpec validate checks structure, not implementation evidence.
    - Fill: The installed `ag-verify` capability reads tasks.md checkboxes and validates them against code.

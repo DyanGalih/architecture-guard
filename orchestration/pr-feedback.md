@@ -53,6 +53,17 @@ Resolve and apply the `repository_context` template with `architecture-guard res
 - **Never resolve a thread the user has not chosen to resolve**, and never resolve threads that are still under discussion or where you disagree.
 - **Minimal fixes**: change only what a thread or failing check requires; record anything larger as follow-up work instead.
 
+## Queue Mode
+
+When `ag-pr-queue` delegates a pull request to this skill, every rule here still applies, with these differences only:
+
+- **Worktree**: work only in the worktree the caller passes, on the pull request's head branch. It stands in for the local checkout in Step 1 and every later step. Never switch, pull into, or change the user's checkout. When the worktree does not match the remote head SHA, return that to the caller.
+- **Rules**: read constitutions, configuration, and rules from the user's checkout, not the worktree. In Step 4 item 5, match the changed files by hand against `security_sensitive_paths` from the user's checkout instead of running `detect-changed-files` in the worktree.
+- **Stop for each gate**: run Steps 1 to 3, then write the Step 4 item 1 preview without editing, and return the triage and preview instead of asking. Return Step 5's proposed commit messages the same way, and Step 6's replies instead of asking in Step 7. Return other questions to the caller, which handles them under its Questions Between Gates rules.
+- **Approvals**: an explicit choice at the queue's gate, for the exact content shown there, is this skill's approval for that action only: Gate D for the triage, the fixes, and the tests it names; Gate P for the commit and the push it names; Gate R for the replies and the threads it names. It covers nothing else, and a fix that grows beyond its preview still stops and asks.
+- **Someone else's pull request**: when the caller says this is not the user's own pull request, run its tests only when Gate D names that test command for this pull request.
+- **Posting**: Step 8 runs unchanged, including its re-read of the feedback. When it finds changes, return them to the caller, and it presents them at Gate R.
+
 ## Archived Changes
 
 The usual order is to finish the work locally, run `ag-governed-archive` (which verifies, archives, and then offers to open the pull request), and address review feedback here afterwards. A change is archived once {adapter_command:archive} has run for it: depending on the adapter, its artifacts were moved to an archive, merged into the current specifications, or retained in place and recorded in the specification index (`{adapter_path:fallback-spec-index}`).
@@ -90,7 +101,7 @@ For each feedback item (thread, review-summary point, general comment, or failin
 | Category | Meaning | Default action |
 |---|---|---|
 | **Fix** | The comment is valid and a change is needed | Change the code, then reply with what changed |
-| **Discuss** | Unclear, needs a product or design decision, or changes a requirement of an archived change | Reply with a specific question or the options; no change yet |
+| **Discuss** | Unclear, needs a product or design decision, or changes a requirement of an archived change | Reply with a specific question and your recommended answer, or the options and the one you recommend; no change yet |
 | **Disagree** | The current code is right, or the suggestion conflicts with a constitution, spec, or security rule | Reply with the reasoning and evidence; no change |
 | **Already addressed** | A later commit already handles it | Reply pointing to the commit |
 | **Out of scope** | Valid but outside this pull request's story | Reply naming the ticket that covers it, or proposing follow-up work; no change |
@@ -120,7 +131,7 @@ Show each reviewer's latest verdict, the story used (or why none), and the triag
 Draft one reply per thread. Review-summary points and general comments have no thread to reply to: answer them in one general comment per reviewer, posted with {forge_command:pr-comment}, that quotes each point briefly and gives its reply in the same categories. On a host where general comments are themselves threads, reply in that thread instead. When {forge_command:pr-comment} is unsupported (a custom forge without it), still draft these replies: they go in the replies file (Step 7) under a **General** section for the user to post by hand, and posting is reported as `Degraded: general comments not supported by this forge`.
 
 - **Fix**: what changed and the commit that changed it (short SHA or link).
-- **Discuss**: the specific question or the options with trade-offs.
+- **Discuss**: the specific question or the options with trade-offs, and your recommendation.
 - **Disagree**: the reasoning and evidence (rule, spec, test, or data), stated respectfully and open to the reviewer's response.
 - **Already addressed**: the commit that handled it.
 - **Out of scope**: the ticket that already covers it (Jira key), or the proposed follow-up and where it will be tracked.
