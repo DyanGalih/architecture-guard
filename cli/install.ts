@@ -851,27 +851,10 @@ function installClaudeRoleAgents(targetDir: string, overwrite?: string) {
   return { written, removed, errors: [] };
 }
 
-// Role files are Claude Code agent types, so they are only written where the Claude skills are installed.
-function hasAgySkills(targetDir: string) {
-  const skillsDir = path.join(targetDir, AGENT_CONFIGS.antigravity.dir);
-  try {
-    return fs.statSync(skillsDir).isDirectory() && fs.readdirSync(skillsDir).some(entry => entry.startsWith('ag-'));
-  } catch {
-    return false;
-  }
-}
-
-function hasOpencodeSkills(targetDir: string) {
-  const skillsDir = path.join(targetDir, AGENT_CONFIGS.opencode.dir);
-  try {
-    return fs.statSync(skillsDir).isDirectory() && fs.readdirSync(skillsDir).some(entry => entry.startsWith('ag-'));
-  } catch {
-    return false;
-  }
-}
-
-function hasClaudeSkills(targetDir: string) {
-  const skillsDir = path.join(targetDir, AGENT_CONFIGS.claude.dir);
+function hasHostSkills(targetDir: string, agentKey: string) {
+  const cfg = AGENT_CONFIGS[agentKey];
+  if (!cfg) return false;
+  const skillsDir = path.join(targetDir, cfg.dir);
   try {
     return fs.statSync(skillsDir).isDirectory() && fs.readdirSync(skillsDir).some(entry => entry.startsWith('ag-'));
   } catch {
@@ -892,7 +875,7 @@ export function runSyncTeamRoles(target?: string, options: { agent?: string } = 
     return result;
   }
   if (options.agent === 'antigravity') {
-    if (!hasAgySkills(targetDir)) {
+    if (!hasHostSkills(targetDir, 'antigravity')) {
       console.error(`No Antigravity (agy) skills are installed in ${path.relative(process.cwd(), targetDir) || '.'}; install agy skills before role setup.`);
       process.exitCode = 1;
       return { written: [], removed: [], errors: ['No agy skills installed'] };
@@ -902,7 +885,7 @@ export function runSyncTeamRoles(target?: string, options: { agent?: string } = 
     return result;
   }
   if (options.agent === 'opencode') {
-    if (!hasOpencodeSkills(targetDir)) {
+    if (!hasHostSkills(targetDir, 'opencode')) {
       console.error(`No OpenCode skills are installed in ${path.relative(process.cwd(), targetDir) || '.'}; install opencode skills before role setup.`);
       process.exitCode = 1;
       return { written: [], removed: [], errors: ['No opencode skills installed'] };
@@ -911,7 +894,7 @@ export function runSyncTeamRoles(target?: string, options: { agent?: string } = 
     if (result.errors.length) process.exitCode = 1;
     return result;
   }
-  if (!hasClaudeSkills(targetDir)) {
+  if (!hasHostSkills(targetDir, 'claude')) {
     console.log(`No Claude Code skills are installed in ${path.relative(process.cwd(), targetDir) || '.'}; teammate roles are Claude Code agent types, so nothing was written.`);
     return { written: [], removed: [], errors: [] };
   }
@@ -1089,14 +1072,6 @@ async function interviewHostRoles(desc, targetDir, overwrite) {
   return profile;
 }
 
-async function interviewCodexRoles(targetDir, overwrite) {
-  return interviewHostRoles(CODEX_ROLES, targetDir, overwrite);
-}
-
-async function interviewAgyRoles(targetDir, overwrite) {
-  return interviewHostRoles(AGY_ROLES, targetDir, overwrite);
-}
-
 async function runInit(targetDir, opts) {
   if (opts.overwrite != null && !OVERWRITE_MODES.includes(opts.overwrite)) {
     throw new Error(`Invalid --overwrite mode "${opts.overwrite}". Use one of: ${OVERWRITE_MODES.join(', ')}.`);
@@ -1243,9 +1218,9 @@ async function runInit(targetDir, opts) {
 
   const teamRoleHostCandidates = [
     { key: 'claude', name: 'Claude Code Agent Teams (roles + enables experimental Agent Teams setting)' },
-    { key: 'codex', name: 'Codex (installs roles only; does not activate coordinated execution)' },
-    { key: 'antigravity', name: 'Antigravity / agy (installs roles only; does not activate coordinated execution)' },
-    { key: 'opencode', name: 'OpenCode (installs roles only; does not activate coordinated execution)' },
+    { key: 'codex', name: 'Codex (roles + coordinated execution auto-activation)' },
+    { key: 'antigravity', name: 'Antigravity / agy (roles + coordinated execution auto-activation)' },
+    { key: 'opencode', name: 'OpenCode (roles + coordinated execution auto-activation)' },
   ];
   const eligibleTeamHosts = teamRoleHostCandidates.filter(h => selectedAgents.includes(h.key));
 
@@ -1265,37 +1240,36 @@ async function runInit(targetDir, opts) {
     ) || [];
   }
 
+  const installedTeamHosts: string[] = [];
+
   if (selectedTeamHosts.includes('claude')) {
     configureClaudeAgentTeams(targetDir);
-    installClaudeRoleAgents(targetDir, opts.overwrite);
+    const result = installClaudeRoleAgents(targetDir, opts.overwrite);
+    if (!result.errors.length) installedTeamHosts.push('claude');
   }
 
-  if (selectedTeamHosts.includes('codex')) {
-    const profile = opts.yes ? undefined : await interviewHostRoles(CODEX_ROLES, targetDir, opts.overwrite);
-    if (opts.yes || profile) {
-      const result = installRoles(CODEX_ROLES, targetDir, opts.overwrite, profile);
-      if (result.errors.length) process.exitCode = 1;
-    }
-  }
+  const hostRoleDescriptors = [
+    { key: 'codex', desc: CODEX_ROLES },
+    { key: 'antigravity', desc: AGY_ROLES },
+    { key: 'opencode', desc: OPENCODE_ROLES },
+  ];
 
-  if (selectedTeamHosts.includes('antigravity')) {
-    const profile = opts.yes ? undefined : await interviewHostRoles(AGY_ROLES, targetDir, opts.overwrite);
-    if (opts.yes || profile) {
-      const result = installRoles(AGY_ROLES, targetDir, opts.overwrite, profile);
-      if (result.errors.length) process.exitCode = 1;
-    }
-  }
-
-  if (selectedTeamHosts.includes('opencode')) {
-    const profile = opts.yes ? undefined : await interviewHostRoles(OPENCODE_ROLES, targetDir, opts.overwrite);
-    if (opts.yes || profile) {
-      const result = installRoles(OPENCODE_ROLES, targetDir, opts.overwrite, profile);
-      if (result.errors.length) process.exitCode = 1;
+  for (const { key, desc } of hostRoleDescriptors) {
+    if (selectedTeamHosts.includes(key)) {
+      const profile = opts.yes ? undefined : await interviewHostRoles(desc, targetDir, opts.overwrite);
+      if (opts.yes || profile) {
+        const result = installRoles(desc, targetDir, opts.overwrite, profile);
+        if (result.errors.length) {
+          process.exitCode = 1;
+        } else {
+          installedTeamHosts.push(key);
+        }
+      }
     }
   }
 
   let agentTeamsConfig = null;
-  if (selectedTeamHosts.length > 0) {
+  if (installedTeamHosts.length > 0) {
     let teamActivation = opts.teamActivation;
     let teamIsolation = opts.teamIsolation;
 
@@ -1332,7 +1306,7 @@ async function runInit(targetDir, opts) {
     }
 
     agentTeamsConfig = {
-      enabled_hosts: selectedTeamHosts,
+      enabled_hosts: installedTeamHosts,
       activation: teamActivation,
       isolation: teamIsolation
     };

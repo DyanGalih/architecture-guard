@@ -150,7 +150,11 @@ test('every referenced Architecture Guard skill and CLI operation is registered'
     .join('\n');
 
   const registeredSkills = new Set(require('./cli/install').COMMANDS.map(name => `ag-${name}`));
-  const referencedSkills = new Set([...prompts.matchAll(/\bag-[a-z][a-z-]+\b/g)].map(match => match[0]));
+  const referencedSkills = new Set(
+    [...prompts.matchAll(/\bag-[a-z][a-z-]+\b/g)]
+      .map(match => match[0])
+      .filter(skill => skill !== 'ag-worktrees' && skill !== 'ag-worktree-owner')
+  );
   for (const skill of referencedSkills) {
     assert.ok(registeredSkills.has(skill), `Unregistered Architecture Guard skill reference: ${skill}`);
   }
@@ -3940,4 +3944,124 @@ test("E2E init and sync across all four hosts (claude, codex, antigravity, openc
   for (const host of ["claude", "codex", "antigravity", "opencode"]) {
     runArgs(["sync-team-roles", "--agent", host], cwd);
   }
+});
+
+test("Role worktrees inside linked worktree resolve to git common dir", () => {
+  const { createRoleWorktree, mergeRoleWorktree, cleanupRoleWorktrees } = require("./cli/repositories");
+  const mainRepo = fs.mkdtempSync(path.join(os.tmpdir(), "ag-wt-main-"));
+  spawnSync("git", ["init", "-b", "main"], { cwd: mainRepo, stdio: "ignore" });
+  spawnSync("git", ["config", "user.email", "test@example.com"], { cwd: mainRepo, stdio: "ignore" });
+  spawnSync("git", ["config", "user.name", "Test User"], { cwd: mainRepo, stdio: "ignore" });
+  fs.writeFileSync(path.join(mainRepo, "README.md"), "# Main Repo\n");
+  spawnSync("git", ["add", "README.md"], { cwd: mainRepo, stdio: "ignore" });
+  spawnSync("git", ["commit", "-m", "Initial commit"], { cwd: mainRepo, stdio: "ignore" });
+
+  const linkedRepo = fs.mkdtempSync(path.join(os.tmpdir(), "ag-wt-linked-"));
+  spawnSync("git", ["worktree", "add", "-b", "linked-feature", linkedRepo, "main"], { cwd: mainRepo, stdio: "ignore" });
+
+  // linkedRepo/.git is a file pointing to mainRepo/.git/worktrees/...
+  assert.ok(fs.statSync(path.join(linkedRepo, ".git")).isFile());
+
+  const wt = createRoleWorktree(linkedRepo, "implementor_be");
+  // Worktree path should be located under mainRepo/.git/ag-worktrees/agteam-implementor-be
+  const expectedPath = path.join(mainRepo, ".git", "ag-worktrees", "agteam-implementor-be");
+  assert.equal(wt.worktreePath, expectedPath);
+  assert.ok(fs.existsSync(wt.worktreePath));
+
+  // Make change in role worktree and commit
+  fs.writeFileSync(path.join(wt.worktreePath, "backend.ts"), "export const val = 42;\n");
+  spawnSync("git", ["-C", wt.worktreePath, "add", "backend.ts"], { stdio: "ignore" });
+  spawnSync("git", ["-C", wt.worktreePath, "commit", "-m", "feat: backend change"], { stdio: "ignore" });
+
+  // Merge into linked repo
+  const mergeResult = mergeRoleWorktree(linkedRepo, "implementor_be");
+  assert.equal(mergeResult.success, true);
+  assert.equal(mergeResult.merged, true);
+  assert.ok(fs.existsSync(path.join(linkedRepo, "backend.ts")));
+
+  // Cleanup
+  const removed = cleanupRoleWorktrees(linkedRepo);
+  assert.equal(removed.length, 1);
+  assert.equal(fs.existsSync(wt.worktreePath), false);
+});
+
+test("Role worktrees protect against uncommitted changes during recreate, merge, and cleanup", () => {
+  const { createRoleWorktree, mergeRoleWorktree, cleanupRoleWorktrees } = require("./cli/repositories");
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-wt-dirty-"));
+  spawnSync("git", ["init", "-b", "main"], { cwd, stdio: "ignore" });
+  spawnSync("git", ["config", "user.email", "test@example.com"], { cwd, stdio: "ignore" });
+  spawnSync("git", ["config", "user.name", "Test User"], { cwd, stdio: "ignore" });
+  fs.writeFileSync(path.join(cwd, "README.md"), "# Repo\n");
+  spawnSync("git", ["add", "README.md"], { cwd, stdio: "ignore" });
+  spawnSync("git", ["commit", "-m", "Initial commit"], { cwd, stdio: "ignore" });
+
+  const wt = createRoleWorktree(cwd, "implementor_fe");
+  // Dirty the worktree with an uncommitted change
+  fs.writeFileSync(path.join(wt.worktreePath, "dirty.txt"), "uncommitted");
+
+  // 1. Recreating worktree when dirty throws
+  assert.throws(() => {
+    createRoleWorktree(cwd, "implementor_fe");
+  }, /uncommitted changes/);
+
+  // 2. Merging worktree when dirty fails gracefully
+  const mergeResult = mergeRoleWorktree(cwd, "implementor_fe");
+  assert.equal(mergeResult.success, false);
+  assert.match(mergeResult.message, /uncommitted changes/);
+
+  // 3. Normal cleanup skips dirty worktree
+  const removed = cleanupRoleWorktrees(cwd, false);
+  assert.equal(removed.length, 0);
+  assert.ok(fs.existsSync(wt.worktreePath));
+
+  // 4. Force cleanup removes even dirty worktree
+  const forceRemoved = cleanupRoleWorktrees(cwd, true);
+  assert.equal(forceRemoved.length, 1);
+  assert.equal(fs.existsSync(wt.worktreePath), false);
+});
+
+test("Role worktree validation rejects invalid role names and base branches", () => {
+  const { createRoleWorktree } = require("./cli/repositories");
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-wt-validation-"));
+  spawnSync("git", ["init", "-b", "main"], { cwd, stdio: "ignore" });
+  spawnSync("git", ["config", "user.email", "test@example.com"], { cwd, stdio: "ignore" });
+  spawnSync("git", ["config", "user.name", "Test User"], { cwd, stdio: "ignore" });
+  fs.writeFileSync(path.join(cwd, "README.md"), "# Repo\n");
+  spawnSync("git", ["add", "README.md"], { cwd, stdio: "ignore" });
+  spawnSync("git", ["commit", "-m", "Initial commit"], { cwd, stdio: "ignore" });
+
+  assert.throws(() => {
+    createRoleWorktree(cwd, "implementor;echo");
+  }, /Invalid role name/);
+
+  assert.throws(() => {
+    createRoleWorktree(cwd, "role with spaces");
+  }, /Invalid role name/);
+
+  assert.throws(() => {
+    createRoleWorktree(cwd, "implementor_fe", "-b");
+  }, /Invalid base branch/);
+
+  assert.throws(() => {
+    createRoleWorktree(cwd, "implementor_fe", "--exec");
+  }, /Invalid base branch/);
+
+  assert.throws(() => {
+    createRoleWorktree(cwd, "implementor_fe", "bad branch with spaces");
+  }, /Invalid base branch/);
+});
+
+test("Init without team agent flags does not write agent_teams to config.yml", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-init-no-teams-"));
+  runArgs([
+    "init", "--yes",
+    "--agent", "codex",
+    "--framework", "openspec",
+    "--commands", "init"
+  ], cwd);
+
+  const configPath = path.join(cwd, ".architecture-guard/config.yml");
+  assert.ok(fs.existsSync(configPath));
+  const config = require("yaml").parse(fs.readFileSync(configPath, "utf8"));
+  assert.equal(config.agent_teams, undefined);
 });

@@ -209,6 +209,10 @@ SpecKit user switching to OpenSpec:
 - Beginner guide: [beginner-guide.md](beginner-guide.md)
 
 
+## Team Roles
+
+Architecture Guard supports parallel agent team roles across Claude Code, OpenAI Codex, Google Antigravity (`agy`), and OpenCode.
+
 ## OpenCode Roles
 
 ```bash
@@ -240,4 +244,4 @@ Codex profiles use `version: 1`, `topology: codex-subagents`, and a `roles` mapp
 
 The full profile and output namespace are validated before mutation. Invalid profiles, normalized name collisions, path/symlink escapes, and user-owned output conflicts fail without changing role files. Only marked generated files are replaced/removed; `skip`/`keep-both` preserve existing outputs. I/O failures list actual changes. Unrelated settings are untouched.
 
-Native roles inherit parent sandbox, approval, and MCP configuration; role prompts do not enforce permissions. Feature reductions do not prove a complete filesystem read-only boundary. Before activation verify supported role dispatch and required restrictions. If a restriction cannot be verified, do not activate that role and report an authorized sequential fallback. Explicit coordinated-mode selection is still required for each run. Live host discovery/enforcement must be checked separately from fixture tests; unavailable runtime verification is a release-readiness limitation. See [official Codex subagent configuration](https://learn.chatgpt.com/docs/agent-configuration/subagents).
+Native roles inherit parent sandbox, approval, and MCP configuration; role prompts do not enforce permissions. Feature reductions do not prove a complete filesystem read-only boundary. Before activation verify supported role dispatch and required restrictions. If a restriction cannot be verified, do not activate that role and report an authorized sequential fallback. Coordinated implementation mode activates automatically when configured with `agent_teams.activation: auto` in `.architecture-guard/config.yml` or when explicitly selected for the run. Live host discovery/enforcement must be checked separately from fixture tests; unavailable runtime verification is a release-readiness limitation. See [official Codex subagent configuration](https://learn.chatgpt.com/docs/agent-configuration/subagents).

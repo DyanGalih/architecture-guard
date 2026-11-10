@@ -80,11 +80,23 @@ export function validateProfile(profile: unknown): GenericRole[] {
   });
 }
 
-export function validateAgyProfile(profile: unknown): GenericRole[] {
+function buildRoleInstructions(role: GenericRole): string {
+  return [
+    role.instructions,
+    'Use the lead-resolved Architecture Guard agent_execution contract supplied in the handoff. Refuse the task if required artifacts are unreadable or missing; do not enable tools to compensate. Obey parent session permissions. Role instructions are behavioral guidance, not a filesystem sandbox.',
+    'Only the user grants approval. Leave human gates and external side effects with the lead. Work only on tasks and files assigned by the lead.',
+    ...(role.readOnly ? ['This role is read-only. It must be dispatched with host-enforced write restrictions; refuse activation if write tools are enabled.'] : []),
+    ...(role.taskTag ? [`Task tag: [${role.taskTag}].`] : [])
+  ].join('\n\n');
+}
+
+function validateSubagentProfile(profile: unknown, expectedTopology: string): GenericRole[] {
   if (!mapping(profile) || !mapping(profile.roles)) throw new Error('roles must be a mapping');
   const topKeys = new Set(['version', 'topology', 'roles']);
   for (const key of Object.keys(profile)) if (!topKeys.has(key)) throw new Error(`Unsupported profile field: ${key}`);
-  if (profile.version !== 1 || profile.topology !== 'agy-subagents') throw new Error('Expected version: 1 and topology: agy-subagents');
+  if (profile.version !== 1 || profile.topology !== expectedTopology) {
+    throw new Error(`Expected version: 1 and topology: ${expectedTopology}`);
+  }
   const names = new Set<string>();
   const tags = new Set<string>();
   return Object.entries(profile.roles).map(([key, role]) => {
@@ -109,43 +121,23 @@ export function validateAgyProfile(profile: unknown): GenericRole[] {
       tags.add(taskTag);
     }
     if (role.model !== undefined && (typeof role.model !== 'string' || !role.model.trim())) throw new Error(`Invalid model: ${key}`);
-    return { name, description: role.description, instructions: role.system_prompt, readOnly: role.read_only, taskTag,
-      model: role.model === 'inherit' ? undefined : role.model as string | undefined };
+    return {
+      name,
+      description: role.description,
+      instructions: role.system_prompt,
+      readOnly: role.read_only,
+      taskTag,
+      model: role.model === 'inherit' ? undefined : (role.model as string | undefined)
+    };
   });
 }
 
+export function validateAgyProfile(profile: unknown): GenericRole[] {
+  return validateSubagentProfile(profile, 'agy-subagents');
+}
+
 export function validateOpencodeProfile(profile: unknown): GenericRole[] {
-  if (!mapping(profile) || !mapping(profile.roles)) throw new Error('roles must be a mapping');
-  const topKeys = new Set(['version', 'topology', 'roles']);
-  for (const key of Object.keys(profile)) if (!topKeys.has(key)) throw new Error(`Unsupported profile field: ${key}`);
-  if (profile.version !== 1 || profile.topology !== 'opencode-subagents') throw new Error('Expected version: 1 and topology: opencode-subagents');
-  const names = new Set<string>();
-  const tags = new Set<string>();
-  return Object.entries(profile.roles).map(([key, role]) => {
-    if (!/^[a-zA-Z0-9_-]+$/.test(key) || !mapping(role)) throw new Error(`Invalid role: ${key}`);
-    const name = roleAgentName(key);
-    if (name === 'agteam-' || names.has(name)) throw new Error(`Role name collision or empty name: ${key}`);
-    names.add(name);
-    const allowed = new Set(['description', 'system_prompt', 'task_tag', 'read_only', 'model']);
-    for (const field of Object.keys(role)) if (!allowed.has(field)) throw new Error(`Unsupported role restriction or field: ${key}.${field}`);
-    if (typeof role.description !== 'string' || !role.description.trim() || typeof role.system_prompt !== 'string' || !role.system_prompt.trim()) {
-      throw new Error(`Role ${key} requires description and system_prompt`);
-    }
-    if (typeof role.read_only !== 'boolean') {
-      throw new Error(`Role ${key} requires explicit read_only boolean`);
-    }
-    let taskTag: string | undefined;
-    if (role.task_tag !== undefined) {
-      if (typeof role.task_tag !== 'string' || !/^[A-Z][A-Z0-9_]*$/.test(role.task_tag) || role.task_tag === 'ORCHESTRATION' || tags.has(role.task_tag)) {
-        throw new Error(`Invalid or ambiguous task_tag: ${key}`);
-      }
-      taskTag = role.task_tag;
-      tags.add(taskTag);
-    }
-    if (role.model !== undefined && (typeof role.model !== 'string' || !role.model.trim())) throw new Error(`Invalid model: ${key}`);
-    return { name, description: role.description, instructions: role.system_prompt, readOnly: role.read_only, taskTag,
-      model: role.model === 'inherit' ? undefined : role.model as string | undefined };
-  });
+  return validateSubagentProfile(profile, 'opencode-subagents');
 }
 
 // Reject symlinks even when they point inside the workspace: never mutate another owner's alias.
@@ -164,10 +156,7 @@ export function assertRolePath(root: string, target: string): void {
 }
 
 function renderCodexRole(role: GenericRole): string {
-  const instructions = [role.instructions,
-    'Use the lead-resolved Architecture Guard agent_execution contract supplied in the handoff. Refuse the task if required artifacts are unreadable or missing; do not enable tools to compensate. Obey parent session permissions. Role instructions are behavioral guidance, not a filesystem sandbox.',
-    'Only the user grants approval. Leave human gates and external side effects with the lead. Work only on tasks and files assigned by the lead.',
-    ...(role.taskTag ? [`Task tag: [${role.taskTag}].`] : [])].join('\n\n');
+  const instructions = buildRoleInstructions(role);
   return [codexMarker, `name = ${tomlString(role.name)}`, `description = ${tomlString(role.description)}`,
     `developer_instructions = ${tomlString(instructions)}`,
     ...(role.model ? [`model = ${tomlString(role.model)}`] : []),
@@ -175,11 +164,7 @@ function renderCodexRole(role: GenericRole): string {
 }
 
 function renderAgyRole(role: GenericRole): string {
-  const instructions = [role.instructions,
-    'Use the lead-resolved Architecture Guard agent_execution contract supplied in the handoff. Refuse the task if required artifacts are unreadable or missing; do not enable tools to compensate. Obey parent session permissions. Role instructions are behavioral guidance, not a filesystem sandbox.',
-    'Only the user grants approval. Leave human gates and external side effects with the lead. Work only on tasks and files assigned by the lead.',
-    ...(role.readOnly ? ['This role is read-only. It must be dispatched with host-enforced write restrictions; refuse activation if write tools are enabled.'] : []),
-    ...(role.taskTag ? [`Task tag: [${role.taskTag}].`] : [])].join('\n\n');
+  const instructions = buildRoleInstructions(role);
 
   const frontmatter = [
     '---',
@@ -193,11 +178,7 @@ function renderAgyRole(role: GenericRole): string {
 }
 
 function renderOpencodeRole(role: GenericRole): string {
-  const instructions = [role.instructions,
-    'Use the lead-resolved Architecture Guard agent_execution contract supplied in the handoff. Refuse the task if required artifacts are unreadable or missing; do not enable tools to compensate. Obey parent session permissions. Role instructions are behavioral guidance, not a filesystem sandbox.',
-    'Only the user grants approval. Leave human gates and external side effects with the lead. Work only on tasks and files assigned by the lead.',
-    ...(role.readOnly ? ['This role is read-only. It must be dispatched with host-enforced write restrictions; refuse activation if write tools are enabled.'] : []),
-    ...(role.taskTag ? [`Task tag: [${role.taskTag}].`] : [])].join('\n\n');
+  const instructions = buildRoleInstructions(role);
 
   const tools = role.readOnly
     ? 'tools:\n  write: false\n  edit: false\n  bash: false'

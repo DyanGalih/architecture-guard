@@ -16,7 +16,7 @@ roles:
     system_prompt: |
       You are the Analyst Creator teammate. Your role is to formulate technical designs, specifications,
       and task breakdowns aligned with the project constitution and architecture standards.
-      Always annotate each implementation task with its target owner: [BE], [FE], [TEST], or [ORCHESTRATION].
+      Always annotate each implementation task with its target owner: [BE], [FE], [TEST], [E2E], or [ORCHESTRATION].
       [ORCHESTRATION] denotes a lead-session task that is not assigned concurrently to an implementor.
     model: inherit
     can_message:
@@ -41,6 +41,7 @@ roles:
       - implementor_be
       - implementor_fe
       - implementor_test
+      - implementor_e2e
     allowed_tools:
       - Read
       - Grep
