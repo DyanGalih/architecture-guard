@@ -98,6 +98,25 @@ roles:
       - Edit
       - Bash
 
+  implementor_e2e:
+    name: "Implementor - E2E"
+    description: "Executes end-to-end integration and browser journey tests."
+    system_prompt: |
+      You are the E2E Test Implementor teammate. You write and execute end-to-end tests
+      to verify cross-module workflows and user journeys.
+    task_tag: E2E
+    model: inherit
+    can_message:
+      - implementor_be
+      - implementor_fe
+      - implementor_test
+      - code_reviewer
+    allowed_tools:
+      - Read
+      - Write
+      - Edit
+      - Bash
+
   code_reviewer:
     name: "Code Reviewer"
     description: "Audits implemented code against design plans, architecture boundaries, and security rules."

@@ -152,8 +152,9 @@ The governed task phase must:
 
 #### Coordinated Host Roles (When Active)
 
-Apply this coordination in the explicitly selected coordinated implementation mode defined by `agent_execution`. Claude retains its native activation prerequisites; Codex uses callable host capabilities and its own profile:
-- **Analyst Creator** drafts the plan and role-annotated task breakdown. **Analyst Reviewer** audits it through host messaging and the shared task list. This path bypasses `delivery-team` User Story branching only when stakeholder story approval is not required.
+Apply this coordination when coordinated implementation mode is active under `agent_execution` (explicitly selected or configured via `agent_teams.activation: auto` in `.architecture-guard/config.yml`):
+- **Analyst Creator** drafts the plan and role-annotated task breakdown (`[BE]`, `[FE]`, `[TEST]`, `[E2E]`). **Analyst Reviewer** audits it through host messaging and the shared task list. This path bypasses `delivery-team` User Story branching only when stakeholder story approval is not required.
+- **Concurrent Review Passes**: In Phase 6 (Artifact Review Convergence Loop), dispatch `Analyst Reviewer` (`ag-review-artifacts`) and Plan/Task `Security Review` (`sr-plan` / `sr-tasks`) concurrently as read-only subagents. Merge findings before evaluating pass convergence.
 - **Human-in-the-Loop Gate**: Lead session presents the reconciled `{adapter_path:tasks}` and requires explicit human approval after the Artifact Review Convergence Loop, before concluding delivery or advancing to implementation.
 
 If analysis exposes a plan defect, mark the plan and tasks stale, return to the Plan Gate, and propagate the accepted correction back into tasks.

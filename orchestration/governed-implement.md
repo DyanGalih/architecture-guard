@@ -123,11 +123,14 @@ You must orchestrate {adapter_command:implement} (core implementation) workflow 
 
 #### Coordinated Host Roles (When Active)
 
-Apply this coordination in the explicitly selected coordinated implementation mode defined by `agent_execution`. Claude retains its native activation prerequisites; Codex uses callable host capabilities and its own profile:
-- **Implementors (the profile's implementor roles, for example BE, FE, TEST)**:
-  - Map role-tagged tasks to the matching named implementor; keep `[ORCHESTRATION]` work in the lead session.
-  - Before spawning, the lead assigns non-overlapping tasks and explicit file ownership. If overlap is discovered, pause one owner and coordinate a handoff; never edit the same file concurrently.
-- **Code Reviewer** audits code changes across boundaries, reviews security constraints, and verifies tests before handoff.
+Apply this coordination when coordinated implementation mode is active under `agent_execution` (explicitly selected or configured via `agent_teams.activation: auto` in `.architecture-guard/config.yml`):
+- **Implementors (the profile's implementor roles: `[BE]`, `[FE]`, `[TEST]`, `[E2E]`)**:
+  - Map role-tagged tasks to matching named implementor subagents; keep `[ORCHESTRATION]` work and human approval gates in the lead session.
+  - Apply tiered workspace isolation (`agent_execution`): host-native workspace sharing (`agy` `share`) or dedicated per-role Git worktrees (`.worktrees/agteam-<role>` or `.git/worktrees/agteam-<role>`) in the repository that owns the target files for shared-tree hosts (`codex`, `opencode`), or disjoint in-place writes.
+  - The lead reconciles and merges clean worktree commits back into the feature branch, stops on conflicts for lead/human resolution, and removes temporary worktrees before repository hygiene checks.
+- **Concurrent Verification Passes**:
+  - When completing implementation, dispatch **Code Reviewer** (`ag-review-implementation`), Implementation **Security Review** (`sr-branch`), and **E2E verification** (`ag-e2e-testing`) concurrently as read-only subagent passes where supported.
+  - The lead merges and deduplicates findings before evaluating the Implementation Review Convergence Loop.
 - **Human-in-the-Loop Gate**:
   - Lead session collects implementation evidence, presents the completed task checklist, and requires explicit user confirmation before concluding or advancing to the registered `ag-verify` capability.
 

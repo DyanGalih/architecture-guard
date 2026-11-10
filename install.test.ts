@@ -595,7 +595,7 @@ test('agent teams generates a Claude Code agent type per role with Claude tool n
   const agentsDir = path.join(cwd, '.claude', 'agents');
   assert.deepEqual(fs.readdirSync(agentsDir).sort(), [
     'agteam-analyst-creator.md', 'agteam-analyst-reviewer.md', 'agteam-code-reviewer.md',
-    'agteam-implementor-be.md', 'agteam-implementor-fe.md', 'agteam-implementor-test.md',
+    'agteam-implementor-be.md', 'agteam-implementor-e2e.md', 'agteam-implementor-fe.md', 'agteam-implementor-test.md',
   ]);
   const reviewer = fs.readFileSync(path.join(agentsDir, 'agteam-analyst-reviewer.md'), 'utf8');
   assert.match(reviewer, /^---\nname: agteam-analyst-reviewer\ndescription: ".*Agent Teams.*"\ntools: Read, Grep, Glob\nmodel: inherit\n---\n/);
@@ -676,7 +676,7 @@ test('sync-team-roles applies a backend-only roster and removes only generated r
   assert.match(output, /Removed teammate roles no longer in the profile: agteam-implementor-fe/);
   assert.deepEqual(fs.readdirSync(agentsDir).sort(), [
     'agteam-analyst-creator.md', 'agteam-analyst-reviewer.md', 'agteam-code-reviewer.md',
-    'agteam-implementor-be.md', 'agteam-implementor-test.md', 'agteam-my-helper.md', 'other-agent.md',
+    'agteam-implementor-be.md', 'agteam-implementor-e2e.md', 'agteam-implementor-test.md', 'agteam-my-helper.md', 'other-agent.md',
   ]);
   const be = fs.readFileSync(path.join(agentsDir, 'agteam-implementor-be.md'), 'utf8');
   assert.match(be, /You own tasks tagged `\[BE\]`/);
@@ -693,7 +693,7 @@ test('sync-team-roles leaves role files unchanged when the profile is invalid', 
   const profile = path.join(cwd, '.architecture-guard', 'agents.yml');
   const snapshot = () => Object.fromEntries(fs.readdirSync(agentsDir).sort().map(f => [f, fs.readFileSync(path.join(agentsDir, f), 'utf8')]));
   const before = snapshot();
-  assert.equal(Object.keys(before).length, 6);
+  assert.equal(Object.keys(before).length, 7);
 
   const role = (tools: string) => `    name: "Mobile"\n    system_prompt: "Build mobile UI."\n    allowed_tools: ${tools}\n`;
   const cases: [string, RegExp][] = [
@@ -3321,7 +3321,7 @@ test('Codex roles render native TOML with independent host configuration and inh
   assert.equal(fs.existsSync(path.join(cwd, '.claude')), false);
   const dir = path.join(cwd, '.codex/agents');
   const files = fs.readdirSync(dir).map(name => path.join(dir, name));
-  assert.equal(files.length, 6);
+  assert.equal(files.length, 7);
   const parsed = parseTomlFiles(files);
   if (parsed) for (const file of files) assert.equal(parsed[file].error, undefined);
   const role = fs.readFileSync(path.join(dir, 'agteam-code-reviewer.toml'), 'utf8');
@@ -3331,7 +3331,7 @@ test('Codex roles render native TOML with independent host configuration and inh
   const prompt = fs.readFileSync(path.join(cwd, '.codex/skills/ag-workflow/SKILL.md'), 'utf8');
   assert.match(prompt, /resolve template agent_execution/);
   assert.doesNotMatch(prompt, /\{adapter_/);
-  assert.match(runArgs(['sync-team-roles', '--agent', 'codex'], cwd), /Codex roles: wrote 6/);
+  assert.match(runArgs(['sync-team-roles', '--agent', 'codex'], cwd), /Codex roles: wrote 7/);
 });
 
 test('Codex validation rejects invalid restrictions and namespace conflicts before changing any role', () => {
@@ -3439,7 +3439,7 @@ test('Codex role installation works across adapters, custom mappings, and vendor
     const prompt = fs.readFileSync(path.join(cwd, '.codex/skills/ag-workflow/SKILL.md'), 'utf8');
     assert.match(prompt, /resolve template agent_execution/);
     assert.doesNotMatch(prompt, /\{adapter_/);
-    assert.equal(fs.readdirSync(path.join(cwd, '.codex/agents')).length, 6);
+    assert.equal(fs.readdirSync(path.join(cwd, '.codex/agents')).length, 7);
     if (adapter === 'none') assert.ok(fs.existsSync(path.join(cwd, '.architecture-guard/templates/codex_agents_template.yml')));
   }
 });
@@ -3517,7 +3517,7 @@ test('interactive Codex setup previews removals and preflights before profile wr
     assert.equal(decline.status, 0, decline.stderr);
     assert.match(decline.stdout, /remove: .*agteam-code-reviewer\.toml/);
     assert.equal(fs.existsSync(profile), false);
-    assert.equal(fs.readdirSync(dir).length, 6);
+    assert.equal(fs.readdirSync(dir).length, 7);
     const accept = spawnSync(process.execPath, [installer, ...args], { cwd, input: 'y\nanalyst_creator\n\ny\n', encoding: 'utf8' });
     assert.equal(accept.status, 0, accept.stderr);
     assert.deepEqual(fs.readdirSync(dir), ['agteam-analyst-creator.toml']);
@@ -3818,4 +3818,126 @@ test('every skill requires a recommendation on each Open Question', () => {
   }
   assert.match(adapter('openspec.md'), /inline clarifications loop with the user, with a recommended answer for each question/);
 });
+
+test("OpenCode team roles render frontmatter and instructions with independent setup and tool restrictions", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "architecture-guard-opencode-"));
+  
+  // Flag validation
+  assert.throws(() => {
+    runArgs(["init", "--yes", "--agent", "claude", "--framework", "openspec", "--commands", "init", "--opencode-agents"], cwd);
+  }, /--opencode-agents requires --agent opencode/);
+
+  assert.throws(() => {
+    runArgs(["init", "--yes", "--agent", "opencode", "--framework", "openspec", "--commands", "init", "--team-activation", "invalid"], cwd);
+  }, /Invalid --team-activation "invalid"/);
+
+  assert.throws(() => {
+    runArgs(["init", "--yes", "--agent", "opencode", "--framework", "openspec", "--commands", "init", "--team-isolation", "invalid"], cwd);
+  }, /Invalid --team-isolation "invalid"/);
+
+  // Setup opencode skills and roles
+  runArgs(["init", "--yes", "--agent", "opencode", "--framework", "openspec", "--commands", "workflow", "--opencode-agents"], cwd);
+  const agentsDir = path.join(cwd, ".opencode/agents");
+  assert.equal(fs.existsSync(agentsDir), true);
+  const agentFiles = fs.readdirSync(agentsDir).sort();
+  assert.equal(agentFiles.length, 7);
+  assert.ok(agentFiles.includes("agteam-code-reviewer.md"));
+  assert.ok(agentFiles.includes("agteam-implementor-e2e.md"));
+
+  const reviewer = fs.readFileSync(path.join(agentsDir, "agteam-code-reviewer.md"), "utf8");
+  assert.match(reviewer, /^---\n# Generated by architecture-guard: opencode role/);
+  assert.match(reviewer, /mode:\s*subagent/);
+  assert.match(reviewer, /tools:\n\s*write:\s*false\n\s*edit:\s*false\n\s*bash:\s*false/);
+  assert.match(reviewer, /This role is read-only/);
+
+  const e2e = fs.readFileSync(path.join(agentsDir, "agteam-implementor-e2e.md"), "utf8");
+  assert.match(e2e, /mode:\s*subagent/);
+  assert.match(e2e, /tools:\n\s*write:\s*true\n\s*edit:\s*true\n\s*bash:\s*true/);
+  assert.match(e2e, /Task tag:\s*\[E2E\]/);
+
+  // Verify config persistence
+  const config = require("yaml").parse(fs.readFileSync(path.join(cwd, ".architecture-guard/config.yml"), "utf8"));
+  assert.deepEqual(config.agent_teams.enabled_hosts, ["opencode"]);
+  assert.equal(config.agent_teams.activation, "auto");
+  assert.equal(config.agent_teams.isolation, "auto");
+
+  // Sync roles --agent opencode
+  runArgs(["sync-team-roles", "--agent", "opencode"], cwd);
+});
+
+test("Git worktree lifecycle helpers manage role worktrees with bounds checking", () => {
+  const { createRoleWorktree, mergeRoleWorktree, cleanupRoleWorktrees, roleWorktreePath } = require("./cli/repositories");
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-worktree-test-"));
+  
+  // Initialize git repo
+  spawnSync("git", ["init"], { cwd, stdio: "ignore" });
+  spawnSync("git", ["config", "user.name", "Test User"], { cwd, stdio: "ignore" });
+  spawnSync("git", ["config", "user.email", "test@example.com"], { cwd, stdio: "ignore" });
+  fs.writeFileSync(path.join(cwd, "README.md"), "# Test Repo\n");
+  spawnSync("git", ["add", "README.md"], { cwd, stdio: "ignore" });
+  spawnSync("git", ["commit", "-m", "Initial commit"], { cwd, stdio: "ignore" });
+
+  // 1. Create worktree for implementor_be
+  const wt = createRoleWorktree(cwd, "implementor_be");
+  assert.equal(wt.branchName, "agteam/implementor-be");
+  assert.ok(fs.existsSync(wt.worktreePath));
+  assert.equal(wt.worktreePath, roleWorktreePath(cwd, "implementor_be"));
+
+  // 2. Traversal attempt fails
+  assert.throws(() => {
+    createRoleWorktree(cwd, "../escaping-role");
+  }, /escapes target/);
+
+  // 3. Make change in worktree
+  fs.writeFileSync(path.join(wt.worktreePath, "backend.ts"), "export const be = 1;\n");
+  spawnSync("git", ["-C", wt.worktreePath, "add", "backend.ts"], { stdio: "ignore" });
+  spawnSync("git", ["-C", wt.worktreePath, "commit", "-m", "Add backend feature"], { stdio: "ignore" });
+
+  // 4. Merge worktree into root
+  const mergeResult = mergeRoleWorktree(cwd, "implementor_be");
+  assert.equal(mergeResult.success, true);
+  assert.equal(mergeResult.merged, true);
+  assert.ok(fs.existsSync(path.join(cwd, "backend.ts")));
+
+  // 5. Cleanup worktrees
+  const removed = cleanupRoleWorktrees(cwd);
+  assert.equal(removed.length, 1);
+  assert.equal(fs.existsSync(wt.worktreePath), false);
+});
+
+test("E2E init and sync across all four hosts (claude, codex, antigravity, opencode)", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-e2e-all-hosts-"));
+  runArgs([
+    "init", "--yes",
+    "--agent", "claude,codex,antigravity,opencode",
+    "--framework", "openspec",
+    "--commands", "init",
+    "--claude-agent-teams",
+    "--codex-agents",
+    "--agy-agents",
+    "--opencode-agents",
+    "--team-activation", "auto",
+    "--team-isolation", "auto"
+  ], cwd);
+
+  // All 4 hosts have their role directories created with 7 roles each
+  assert.equal(fs.readdirSync(path.join(cwd, ".claude/agents")).length, 7);
+  assert.equal(fs.readdirSync(path.join(cwd, ".codex/agents")).length, 7);
+  assert.equal(fs.readdirSync(path.join(cwd, ".agents/agents")).length, 7);
+  assert.equal(fs.readdirSync(path.join(cwd, ".opencode/agents")).length, 7);
+
+  // Claude settings configured
+  const settings = JSON.parse(fs.readFileSync(path.join(cwd, ".claude/settings.json"), "utf8"));
+  assert.equal(settings.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, "1");
+
+  // Config yml contains agent_teams with all 4 hosts
+  const config = require("yaml").parse(fs.readFileSync(path.join(cwd, ".architecture-guard/config.yml"), "utf8"));
+  assert.deepEqual(config.agent_teams.enabled_hosts, ["claude", "codex", "antigravity", "opencode"]);
+  assert.equal(config.agent_teams.activation, "auto");
+  assert.equal(config.agent_teams.isolation, "auto");
+
+  // Sync each host
+  for (const host of ["claude", "codex", "antigravity", "opencode"]) {
+    runArgs(["sync-team-roles", "--agent", host], cwd);
+  }
 });

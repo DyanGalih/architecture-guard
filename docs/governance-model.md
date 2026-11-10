@@ -36,7 +36,7 @@ Only rules explicitly marked as `P0` in the architecture constitution should blo
 
 ## Host Agent Execution
 
-The canonical `agent_execution` template defines three modes: sequential (default), read-only subagents, and coordinated implementation. Coordinated implementation requires explicit selection for the current run; installing roles does not activate it. Callable host capabilities and session policy govern every delegation. Claude keeps its native Agent Teams flag; Codex does not require Claude settings.
+The canonical `agent_execution` template defines three modes: sequential (default), read-only subagents, and coordinated implementation. Coordinated implementation activates when explicitly selected for the current run OR when `agent_teams.activation: auto` is configured in `.architecture-guard/config.yml` (provided callable host capabilities exist). Callable host capabilities and session policy govern every delegation across Claude Code, Codex, Antigravity (agy), and OpenCode. Claude Code additionally requires its native `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` setting; Codex, agy, and OpenCode do not require Claude settings. Concurrent writer roles (`[BE]`, `[FE]`, `[TEST]`, `[E2E]`) use tiered workspace isolation: host-native workspace sharing (`agy` `share`) -> per-role Git worktrees under `.git/ag-worktrees/agteam-<role>` in the owning repository -> disjoint in-place execution. Lead sessions reconcile worktrees and prune them before hygiene checks.
 
 | Work | Delegation threshold when permitted |
 | --- | --- |

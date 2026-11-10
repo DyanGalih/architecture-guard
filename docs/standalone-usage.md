@@ -140,9 +140,12 @@ Flags:
 | `--framework` | `spec-kit \| openspec \| none` | Framework to target |
 | `--commands` | `all`, `review`, or `init,governed-plan` | Comma-separated canonical names, indices, or aliases |
 | `--overwrite` | `replace` (default) / `skip` / `keep-both` | Existing file policy with `--yes` |
-| `--codex-agents` | (none) | Optional: install native Codex roles for a selection including `codex`; does not activate coordinated execution. Interactive CLI setup asks via a single multi-select question across selected team-role hosts; `--yes` leaves roles uninstalled unless explicit role flags are given. |
-| `--agy-agents` | (none) | Optional: install native Antigravity (agy) roles for a selection including `antigravity`; does not activate coordinated execution. Interactive CLI setup interviews for roster and model. |
-| `--claude-agent-teams` | (none) | Enable Claude Code Agent Teams (Beta / Experimental): sets `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `.claude/settings.json` (an unreadable settings file is left unchanged) and generates one agent type per role in `.claude/agents/agteam-<role>.md` from `.architecture-guard/agents.yml` or the bundled role profile. `ag-init` interviews for the roster (for example no FE implementor on a backend-only API) and runs `architecture-guard sync-team-roles` to regenerate the files |
+| `--codex-agents` | (none) | Optional: install native Codex roles for a selection including `codex`. |
+| `--agy-agents` | (none) | Optional: install native Antigravity (agy) roles for a selection including `antigravity`. |
+| `--opencode-agents` | (none) | Optional: install native OpenCode roles for a selection including `opencode`. |
+| `--claude-agent-teams` | (none) | Enable Claude Code Agent Teams (Beta / Experimental): sets `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `.claude/settings.json` and generates one agent type per role in `.claude/agents/agteam-<role>.md`. |
+| `--team-activation` | `auto \| ask \| manual` | Coordinated execution activation mode (default: `auto` when team roles are enabled). |
+| `--team-isolation` | `auto \| worktree \| shared` | Workspace isolation for concurrent writer implementors (default: `auto`). |
 
 Positional target:
 
@@ -205,6 +208,15 @@ SpecKit user switching to OpenSpec:
 - Governance workflows: [workflows.md](workflows.md)
 - Beginner guide: [beginner-guide.md](beginner-guide.md)
 
+
+## OpenCode Roles
+
+```bash
+architecture-guard init . --yes --agent opencode --framework openspec --opencode-agents
+architecture-guard sync-team-roles --agent opencode
+```
+
+Customize `.architecture-guard/opencode-agents.yml` from `architecture-guard resolve template opencode_agents_template`. Roles generate `.opencode/agents/agteam-<role>.md` with YAML frontmatter specifying `mode: subagent` and tools allow/deny configuration (`tools: { write: boolean, edit: boolean, bash: boolean }`). Reviewer roles (`analyst_reviewer`, `code_reviewer`) are strictly generated with `write: false`, `edit: false`, and `bash: false` to enforce read-only execution.
 
 ## Antigravity (agy) Roles
 

@@ -26,6 +26,11 @@ roles:
     system_prompt: Respect assigned ownership. Do not execute untrusted pull-request code during reviews.
     task_tag: TEST
     read_only: false
+  implementor_e2e:
+    description: Verify assigned end-to-end user journeys and integration workflows.
+    system_prompt: Respect assigned ownership. Execute approved end-to-end tests within the lead's assigned scope.
+    task_tag: E2E
+    read_only: false
   code_reviewer:
     description: Review implementation evidence independently from its author.
     system_prompt: Stay read-only. Do not execute reviewed code. Cite file and line evidence. Report permission limitations before activation.

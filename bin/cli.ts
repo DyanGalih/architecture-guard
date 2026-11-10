@@ -39,8 +39,11 @@ program
   .option('--full', 'Alias for --vendor')
   .option('--codex-agents', 'Install native Codex roles without activating coordinated execution')
   .option('--agy-agents', 'Install native Antigravity (agy) roles without activating coordinated execution')
+  .option('--opencode-agents', 'Install native OpenCode roles without activating coordinated execution')
   .option('--claude-agent-teams', 'Enable Claude Code Agent Teams (Beta / Experimental)')
   .option('--claude-teams', 'Alias for --claude-agent-teams')
+  .option('--team-activation <mode>', 'auto | ask | manual (default: auto when team roles selected)')
+  .option('--team-isolation <mode>', 'auto | worktree | shared (default: auto)')
   .action(async (target, options) => {
     try {
       if (options.claudeTeams) {
@@ -81,7 +84,7 @@ program
 program
   .command('sync-team-roles [target]')
   .description('Regenerate owned host role files (default: Claude)')
-  .option('--agent <name>', 'Role target: claude | codex | antigravity (default: claude)')
+  .option('--agent <name>', 'Role target: claude | codex | antigravity | opencode (default: claude)')
   .action((target, options) => { runSyncTeamRoles(target, options); });
 
 program

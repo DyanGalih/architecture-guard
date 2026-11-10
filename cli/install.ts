@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { roleAgentName, installCodexRoles, planCodexRoles, validateProfile, assertRolePath, CODEX_ROLES, AGY_ROLES, planRoles, installRoles } = require('./role-setup');
+const { roleAgentName, installCodexRoles, planCodexRoles, validateProfile, assertRolePath, CODEX_ROLES, AGY_ROLES, OPENCODE_ROLES, planRoles, installRoles } = require('./role-setup');
 
 const ROOT_DIR = path.join(__dirname, '..', '..');
 const { resolveForge, installForges, materializeForgeTokens } = require('./forge');
@@ -293,10 +293,10 @@ function resolveCustomAdapter(name, targetDir) {
 
 // config.yml is also the adapters' governance-config, so keep the user's settings
 // (context budget, repository_hygiene, presets) and only update the installer-owned keys.
-function writeInstallerConfig(configPath, adapter, repositories = null) {
+function writeInstallerConfig(configPath, adapter, repositories = null, agentTeams = null) {
   const YAML = require('yaml');
   if (!fs.existsSync(configPath)) {
-    const initial = { adapter, presets: [], ...(repositories ? { repositories } : {}) };
+    const initial = { adapter, presets: [], ...(repositories ? { repositories } : {}), ...(agentTeams ? { agent_teams: agentTeams } : {}) };
     fs.writeFileSync(configPath, YAML.stringify(initial));
     return;
   }
@@ -309,6 +309,7 @@ function writeInstallerConfig(configPath, adapter, repositories = null) {
   doc.set('adapter', adapter);
   if (!doc.has('presets')) doc.set('presets', []);
   if (repositories && !doc.has('repositories')) doc.set('repositories', repositories);
+  if (agentTeams) doc.set('agent_teams', agentTeams);
   fs.writeFileSync(configPath, String(doc));
 }
 
@@ -860,6 +861,15 @@ function hasAgySkills(targetDir: string) {
   }
 }
 
+function hasOpencodeSkills(targetDir: string) {
+  const skillsDir = path.join(targetDir, AGENT_CONFIGS.opencode.dir);
+  try {
+    return fs.statSync(skillsDir).isDirectory() && fs.readdirSync(skillsDir).some(entry => entry.startsWith('ag-'));
+  } catch {
+    return false;
+  }
+}
+
 function hasClaudeSkills(targetDir: string) {
   const skillsDir = path.join(targetDir, AGENT_CONFIGS.claude.dir);
   try {
@@ -870,8 +880,8 @@ function hasClaudeSkills(targetDir: string) {
 }
 
 export function runSyncTeamRoles(target?: string, options: { agent?: string } = {}) {
-  if (options.agent && !['claude', 'codex', 'antigravity'].includes(options.agent)) {
-    console.error('Unknown role target; use --agent codex, --agent claude, or --agent antigravity');
+  if (options.agent && !['claude', 'codex', 'antigravity', 'opencode'].includes(options.agent)) {
+    console.error('Unknown role target; use --agent codex, --agent claude, --agent antigravity, or --agent opencode');
     process.exitCode = 1;
     return { written: [], removed: [], errors: ['Unknown role target'] };
   }
@@ -888,6 +898,16 @@ export function runSyncTeamRoles(target?: string, options: { agent?: string } = 
       return { written: [], removed: [], errors: ['No agy skills installed'] };
     }
     const result = installRoles(AGY_ROLES, targetDir);
+    if (result.errors.length) process.exitCode = 1;
+    return result;
+  }
+  if (options.agent === 'opencode') {
+    if (!hasOpencodeSkills(targetDir)) {
+      console.error(`No OpenCode skills are installed in ${path.relative(process.cwd(), targetDir) || '.'}; install opencode skills before role setup.`);
+      process.exitCode = 1;
+      return { written: [], removed: [], errors: ['No opencode skills installed'] };
+    }
+    const result = installRoles(OPENCODE_ROLES, targetDir);
     if (result.errors.length) process.exitCode = 1;
     return result;
   }
@@ -1123,6 +1143,16 @@ async function runInit(targetDir, opts) {
   if (opts.agyAgents && !selectedAgents?.includes('antigravity')) {
     throw new Error('--agy-agents requires --agent antigravity (or a selection including antigravity)');
   }
+  if (opts.opencodeAgents && !selectedAgents?.includes('opencode')) {
+    throw new Error('--opencode-agents requires --agent opencode (or a selection including opencode)');
+  }
+
+  if (opts.teamActivation && !['auto', 'ask', 'manual'].includes(opts.teamActivation)) {
+    throw new Error(`Invalid --team-activation "${opts.teamActivation}". Use one of: auto, ask, manual.`);
+  }
+  if (opts.teamIsolation && !['auto', 'worktree', 'shared'].includes(opts.teamIsolation)) {
+    throw new Error(`Invalid --team-isolation "${opts.teamIsolation}". Use one of: auto, worktree, shared.`);
+  }
 
   if (!selectedAgents || selectedAgents.length === 0) {
     console.log('No agents selected. Exiting.');
@@ -1215,16 +1245,18 @@ async function runInit(targetDir, opts) {
     { key: 'claude', name: 'Claude Code Agent Teams (roles + enables experimental Agent Teams setting)' },
     { key: 'codex', name: 'Codex (installs roles only; does not activate coordinated execution)' },
     { key: 'antigravity', name: 'Antigravity / agy (installs roles only; does not activate coordinated execution)' },
+    { key: 'opencode', name: 'OpenCode (installs roles only; does not activate coordinated execution)' },
   ];
   const eligibleTeamHosts = teamRoleHostCandidates.filter(h => selectedAgents.includes(h.key));
 
   let selectedTeamHosts: string[] = [];
-  const anyTeamFlag = Boolean(opts.claudeAgentTeams || opts.codexAgents || opts.agyAgents);
+  const anyTeamFlag = Boolean(opts.claudeAgentTeams || opts.codexAgents || opts.agyAgents || opts.opencodeAgents);
 
   if (opts.yes || anyTeamFlag) {
     if (opts.claudeAgentTeams && selectedAgents.includes('claude')) selectedTeamHosts.push('claude');
     if (opts.codexAgents && selectedAgents.includes('codex')) selectedTeamHosts.push('codex');
     if (opts.agyAgents && selectedAgents.includes('antigravity')) selectedTeamHosts.push('antigravity');
+    if (opts.opencodeAgents && selectedAgents.includes('opencode')) selectedTeamHosts.push('opencode');
   } else if (eligibleTeamHosts.length > 0) {
     selectedTeamHosts = await ask(
       'Select AI agent(s) to set up team roles for:',
@@ -1254,6 +1286,58 @@ async function runInit(targetDir, opts) {
     }
   }
 
+  if (selectedTeamHosts.includes('opencode')) {
+    const profile = opts.yes ? undefined : await interviewHostRoles(OPENCODE_ROLES, targetDir, opts.overwrite);
+    if (opts.yes || profile) {
+      const result = installRoles(OPENCODE_ROLES, targetDir, opts.overwrite, profile);
+      if (result.errors.length) process.exitCode = 1;
+    }
+  }
+
+  let agentTeamsConfig = null;
+  if (selectedTeamHosts.length > 0) {
+    let teamActivation = opts.teamActivation;
+    let teamIsolation = opts.teamIsolation;
+
+    if (!teamActivation) {
+      if (opts.yes || anyTeamFlag) {
+        teamActivation = 'auto';
+      } else {
+        teamActivation = await ask(
+          '\nSelect agent team activation mode:',
+          [
+            { name: 'auto (activate parallel coordinated execution automatically when supported)', value: 'auto' },
+            { name: 'ask (prompt before activating coordinated execution on each workflow run)', value: 'ask' },
+            { name: 'manual (sequential execution by default; manual activation required)', value: 'manual' }
+          ],
+          false
+        ) || 'auto';
+      }
+    }
+
+    if (!teamIsolation) {
+      if (opts.yes || anyTeamFlag) {
+        teamIsolation = 'auto';
+      } else {
+        teamIsolation = await ask(
+          '\nSelect parallel writer workspace isolation mode:',
+          [
+            { name: 'auto (use host-native workspace sharing or fall back to Git worktrees)', value: 'auto' },
+            { name: 'worktree (always isolate concurrent writer agents in dedicated Git worktrees)', value: 'worktree' },
+            { name: 'shared (run in workspace tree; tasks must touch disjoint files)', value: 'shared' }
+          ],
+          false
+        ) || 'auto';
+      }
+    }
+
+    agentTeamsConfig = {
+      enabled_hosts: selectedTeamHosts,
+      activation: teamActivation,
+      isolation: teamIsolation
+    };
+  }
+
   const runtimeDir = path.join(targetDir, '.architecture-guard');
   fs.mkdirSync(runtimeDir, { recursive: true });
 
@@ -1267,7 +1351,7 @@ async function runInit(targetDir, opts) {
   const adapter = framework === "none" ? "generic" : framework;
   installAdapters(targetDir, opts.overwrite === "skip" || opts.overwrite === "keep-both");
 
-  writeInstallerConfig(path.join(runtimeDir, 'config.yml'), adapter, workspaceRepositories.record);
+  writeInstallerConfig(path.join(runtimeDir, 'config.yml'), adapter, workspaceRepositories.record, agentTeamsConfig);
   for (const message of workspaceRepositories.messages) console.log(message);
   fs.writeFileSync(path.join(runtimeDir, 'selected-adapter'), `${adapter}\n`);
   installForges(targetDir, opts.overwrite === "skip" || opts.overwrite === "keep-both");
