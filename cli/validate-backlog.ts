@@ -24,6 +24,7 @@ const itemSchema = z.object({
   description: z.string().optional(),
   acceptance: z.array(z.string().min(1)).optional(),
   group: id.optional(),
+  parent: id.optional(),
   depends_on: z.array(id).optional(),
   size: z.enum(['xs', 's', 'm', 'l', 'xl']).optional(),
 }).strict();

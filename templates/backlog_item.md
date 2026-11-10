@@ -25,17 +25,33 @@ Read `sync.yml` and `backlog.yml` from the user's checkout. When `sync.yml` exis
 | `description` | description | `description` | `description` |
 | `acceptance` | acceptance criteria field, otherwise the description section that lists them | `acceptance_criteria` when present, otherwise the description section that lists them | `acceptance` |
 | `group` | from `story_scope` grouping (below) | parent from `parent-child` dependencies | `group` |
+| `parent` | parent issue key or Epic link | parent from `parent-child` dependencies | `parent` |
 | `depends_on` | from `story_scope` grouping (below) | beads it depends on (`blocks` dependencies) | `depends_on` |
 | `size` | story points: ≤1 xs, 2 s, 3-5 m, 8 l, more xl | `estimate` minutes: ≤60 xs, ≤240 s, ≤960 m, ≤2400 l, more xl | `size` |
 
 A missing field stays empty; never invent acceptance criteria. An item with no acceptance criteria is shown as such at Gate Q; in a fix-lane or light-lane group, which has no specification to supply them, the user must approve criteria for it there before the group starts (see `ag-governed-backlog`).
+
+## Story Items
+
+When generating, persisting, or syncing user stories (in `ag-governed-discover` and `ag-governed-delivery-team`):
+
+1. **One User Story per Item**: Each story item represents exactly one user story statement ("As a... I want... so that..."), its own acceptance criteria, size, priority, dependencies, and open questions (each with its recommendation).
+2. **Multi-Story Features**: When a feature contains more than one user story, shared business context (business objective, business rules, out of scope items, assumptions, risks, and open questions) lives in one feature-level parent. Each story item sets `parent` to the feature identifier.
+3. **Single-Story Features**: A feature with exactly one user story remains a single document and single tracker item without a parent or Epic.
+4. **File Layout**:
+   - Multi-story features: parent `<root>/user-stories/<feature>.md` (containing shared context and listing child stories) and child stories `<root>/user-stories/<feature>/<story-id>.md` linking to the parent.
+   - Single-story features: `<root>/user-stories/<feature>.md`.
+5. **Story Identifier Normalization**: `<story-id>` uses lowercase kebab-case (matching group id rules: lowercase `[a-z0-9-]+`, no `#` or `/`).
+6. **Tracker Mapping**:
+   - **Jira**: Feature parent maps to an Epic; each story item maps to a Story issue linked to that Epic. When `sync.yml` sets `jira.epic: false`, child stories carry a copy of the shared context and no Epic is created.
+   - **GitHub**: Feature parent maps to a tracking parent Issue; each story item maps to an Issue referencing the parent tracking issue.
 
 ## Grouping
 
 - **Jira**: run the `story_scope` template in Planning Mode once per candidate main story, highest priority first. Each accepted **Bundle now** ticket joins that story's group, and a ticket already claimed by a higher-priority group is not reconsidered. **Do next** makes the later group depend on the earlier one. **Conflicts** orders the two groups by priority and is shown at Gate Q. **Owned elsewhere** tickets are excluded and listed at Gate Q.
 - **Beads**: beads under the same parent epic form one group, named after the epic. A bead with no parent forms its own group. Epics themselves are groups, not items.
 - **Local file**: items with the same `group` form one group. An item with no `group` forms its own group, named after its id.
-- **Every source**: when two code-writing groups are likely to touch the same expected files, propose merging or ordering them at Gate Q. Never merge groups without the user's choice.
+- **Every source**: when two code-writing groups are likely to touch the same expected files, propose merging or ordering them at Gate Q. Never merge groups without the user's choice. A shared parent or Epic alone is never a reason to bundle items into one group; Gate Q offers to merge siblings that share a parent.
 
 A group's **expected files** are the files named in its items' text, plus the files of the modules or directories its items' terms match by name. When they cannot be worked out, Gate Q shows the group as having unclear expected files and asks the user to confirm its lane.
 

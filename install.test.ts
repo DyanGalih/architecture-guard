@@ -150,7 +150,11 @@ test('every referenced Architecture Guard skill and CLI operation is registered'
     .join('\n');
 
   const registeredSkills = new Set(require('./cli/install').COMMANDS.map(name => `ag-${name}`));
-  const referencedSkills = new Set([...prompts.matchAll(/\bag-[a-z][a-z-]+\b/g)].map(match => match[0]));
+  const referencedSkills = new Set(
+    [...prompts.matchAll(/\bag-[a-z][a-z-]+\b/g)]
+      .map(match => match[0])
+      .filter(skill => skill !== 'ag-worktree-owner')
+  );
   for (const skill of referencedSkills) {
     assert.ok(registeredSkills.has(skill), `Unregistered Architecture Guard skill reference: ${skill}`);
   }
@@ -1046,6 +1050,30 @@ test('validate-sync-config accepts the backlog block and rejects bad values', ()
   }
 });
 
+test('validate-sync-config accepts the jira block and rejects bad values', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-jira-'));
+  fs.writeFileSync(path.join(cwd, 'jira-default.yml'), 'provider: jira\nproject: PROJ\n');
+  const def = spawnSync(process.execPath, [installer, 'validate-sync-config', 'jira-default.yml'], { cwd, encoding: 'utf8' });
+  assert.equal(def.status, 0, def.stderr);
+  assert.equal(JSON.parse(def.stdout).jira, undefined);
+
+  fs.writeFileSync(path.join(cwd, 'jira-false.yml'), 'provider: jira\nproject: PROJ\njira:\n  epic: false\n');
+  const falseEpic = spawnSync(process.execPath, [installer, 'validate-sync-config', 'jira-false.yml'], { cwd, encoding: 'utf8' });
+  assert.equal(falseEpic.status, 0, falseEpic.stderr);
+  assert.deepEqual(JSON.parse(falseEpic.stdout).jira, { epic: false });
+
+  for (const [name, yaml] of [
+    ['github-jira.yml', 'provider: github\nrepo: org/repo\njira:\n  epic: false\n'],
+    ['github-empty-jira.yml', 'provider: github\nrepo: org/repo\njira: {}\n'],
+    ['bad-type.yml', 'provider: jira\nproject: PROJ\njira:\n  epic: "no"\n'],
+    ['unknown-key.yml', 'provider: jira\nproject: PROJ\njira:\n  unknown: true\n'],
+  ]) {
+    fs.writeFileSync(path.join(cwd, name), yaml);
+    const result = spawnSync(process.execPath, [installer, 'validate-sync-config', name], { cwd, encoding: 'utf8' });
+    assert.notEqual(result.status, 0, `${name} must be rejected`);
+  }
+});
+
 test('validate-backlog accepts the example and rejects invalid backlogs', () => {
   const example = path.join(__dirname, '..', 'examples', 'backlog.yml');
   const ok = spawnSync(process.execPath, [installer, 'validate-backlog', example], { encoding: 'utf8' });
@@ -1083,6 +1111,10 @@ test('validate-backlog accepts the example and rejects invalid backlogs', () => 
   fs.writeFileSync(path.join(cwd, 'same-group.yml'), `items:\n${item('A', '    group: g1\n    depends_on: [B]\n')}${item('B', '    group: g1\n')}`);
   const sameGroup = spawnSync(process.execPath, [installer, 'validate-backlog', 'same-group.yml'], { cwd, encoding: 'utf8' });
   assert.equal(sameGroup.status, 0, sameGroup.stderr);
+  fs.writeFileSync(path.join(cwd, 'parent.yml'), `items:\n${item('A', '    parent: feature-1\n')}`);
+  const parentOk = spawnSync(process.execPath, [installer, 'validate-backlog', 'parent.yml'], { cwd, encoding: 'utf8' });
+  assert.equal(parentOk.status, 0, parentOk.stderr);
+  assert.equal(JSON.parse(parentOk.stdout).items[0].parent, 'feature-1');
   const missing = spawnSync(process.execPath, [installer, 'validate-backlog', 'nope.yml'], { cwd, encoding: 'utf8' });
   assert.notEqual(missing.status, 0);
   assert.match(missing.stderr, /Backlog not found/);
@@ -1936,6 +1968,15 @@ test('review-pr reviews from a worktree outside the repository and takes rules o
   const cleanup = prompt.indexOf('## Step 8 — Clean Up');
   assert.ok(cleanup > post, 'cleanup runs last');
   assert.match(prompt.slice(cleanup), /Whatever the outcome/);
+  assert.match(prompt, /\.ag-worktree-owner\.json/);
+  assert.match(prompt, /rev-parse --git-dir.*ag-worktree-owner\.json/);
+  assert.match(prompt, /"creator":\s*"ag-review-pr"/);
+  assert.match(prompt, /"mode":\s*"review"/);
+  const cleanupPrompt = prompt.slice(cleanup);
+  assert.match(cleanupPrompt, /Verify linked worktree status/);
+  assert.match(cleanupPrompt, /Verify ownership provenance/);
+  assert.match(cleanupPrompt, /creator.*in.*ag-review-pr.*ag-pr-queue/);
+  assert.match(cleanupPrompt, /abort removal, leave the directory untouched/);
 });
 
 test('review-implementation honors the caller review root and runs the scoped hygiene runner', () => {
@@ -3194,16 +3235,27 @@ test('pr-queue validates resumed state and bounds what it may remove', () => {
   assert.match(step1, /`invalid run state`, naming the field and using none of its paths/);
   assert.match(step1, /`pr` is a positive integer/);
   assert.match(step1, /appears in `git -C <owning repository> worktree list`/);
+  assert.match(step1, /differs from the owning repository's and workspace's primary checkouts/);
+  assert.match(step1, /git -C <owning repository> rev-parse --show-toplevel/);
+  assert.match(step1, /ag-worktree-owner\.json/);
   assert.match(step1, /<system temp directory>\/<directory>\/review/);
   assert.ok(step1.indexOf('**Validate the loaded state**') < step1.indexOf('Resume each entry'), 'state is validated before anything resumes');
 
   // Review worktrees use the same temp layout as ag-review-pr, and every exit path cleans up
   const step4 = prompt.slice(prompt.indexOf('### Step 4'), prompt.indexOf('### Human Gate D'));
   assert.match(step4, /worktree add --detach "\$\(mktemp -d\)\/review"/);
+  assert.match(step4, /\.ag-worktree-owner\.json/);
+  assert.match(step4, /differs from primary checkouts/);
   assert.match(prompt, /Whenever the entry becomes `parked` or `skipped`, run `ag-review-pr` Step 8/);
   const step6 = prompt.slice(prompt.indexOf('### Step 6'), prompt.indexOf('## Execution Mode'));
   assert.match(step6, /every `review` entry that still has a temporary worktree and is not parked as `invalid run state`, including one left at `awaiting-decision`/);
   assert.match(prompt, /An entry parked as `invalid run state` is the exception: remove nothing/, 'an invalid path never reaches worktree remove --force');
+  assert.match(step6, /Explicitly exclude the owning repository's and workspace's primary checkouts/);
+  assert.match(step6, /git -C "\$WORKTREE_DIR" status --porcelain --untracked-files=all/);
+  assert.match(step6, /fetch --no-tags/);
+  assert.match(step6, /merge-base --is-ancestor HEAD/);
+  assert.match(step6, /Run both checks again immediately before removal/);
+  assert.match(step6, /preserve the worktree on disk/);
   assert.match(step6, /Never remove a checkout with `worktree_reused: true`/);
   assert.match(prompt, /or `<pull request id>\.md` when `repository` is `\.`/, 'the workspace repository never makes a hidden draft file');
   assert.match(prompt, /Keep only pull requests of the repository being scanned/);
@@ -3247,11 +3299,99 @@ test('review-pr and pr-feedback accept the queue gates without weakening their o
   const feedback = orchestrationPrompt('pr-feedback.md');
   const feedbackMode = feedback.slice(feedback.indexOf('## Queue Mode'), feedback.indexOf('## Archived Changes'));
   assert.match(feedbackMode, /Never switch, pull into, or change the user's checkout/);
+  assert.match(feedbackMode, /differs from the owning repository's and workspace's primary checkouts/);
+  assert.match(feedbackMode, /Delegate to its ownership, clean-status, and fresh-remote verification gate/);
+  assert.doesNotMatch(feedbackMode, /test -z "\$\(git/);
   assert.match(feedbackMode, /read constitutions, configuration, and rules from the user's checkout, not the worktree/);
   assert.match(feedbackMode, /is this skill's approval for that action only/);
   assert.match(feedbackMode, /a fix that grows beyond its preview still stops and asks/);
   assert.match(feedbackMode, /Step 8 runs unchanged/);
   assert.match(feedback, /Each of fix, commit, push, reply, and resolve needs its own explicit approval/, 'the guardrail stays');
+});
+
+test('pr-queue fails closed on changed feedback and halts completion on post failure', () => {
+  const prompt = orchestrationPrompt('pr-queue.md');
+  const step5 = prompt.slice(prompt.indexOf('### Step 5'), prompt.indexOf('### Human Gate P'));
+  assert.match(step5, /When that step finds a new head or new feedback, return the entry to `preparing` with what changed \(do not run Step 8 or set status `done`\)/);
+  assert.match(step5, /If posting fails mid-way, transition the entry to `parked` with the error/);
+
+  const gateR = prompt.slice(prompt.indexOf('### Human Gate R'), prompt.indexOf('### Step 6'));
+  assert.match(gateR, /When feedback or head commits have changed since triage, return the entry to `preparing` \(or Gate R\) with what changed; do not post replies or set status `done`/);
+  assert.match(gateR, /If posting any reply or resolving any thread fails, stop and transition that entry to `parked` with the error; do not set status `done`/);
+  assert.match(gateR, /Immediately after each successful reply or thread resolution.*write `pr-queue.yml` before attempting the next operation/);
+  assert.match(gateR, /retain every successful record when parking/);
+  assert.match(gateR, /reconcile `posted` with the current code-host replies and thread states, and retry only outstanding operations/);
+  assert.doesNotMatch(gateR, /Only when all.*record each post/);
+});
+
+test('pr-queue cleanup gate verifies fresh remote backup and fails closed on Git errors', () => {
+  const prompt = orchestrationPrompt('pr-queue.md');
+  const step6 = prompt.slice(prompt.indexOf('### Step 6'), prompt.indexOf('## Execution Mode'));
+  const gate = step6.match(/```sh\n([\s\S]*?)\n```/)?.[1];
+  assert.ok(gate, 'the documented cleanup gate is executable');
+  assert.match(step6, /approved push destination, including forks/);
+  assert.match(step6, /verify they match a configured remote/);
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-backup-'));
+  const remote = path.join(cwd, 'remote.git');
+  const checkout = path.join(cwd, 'checkout');
+  function runGit(directory, ...args) {
+    const result = git(directory, ...args);
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  }
+  function checkGate(overrides = {}) {
+    return spawnSync('sh', ['-c', gate], {
+      encoding: 'utf8',
+      env: { ...process.env, WORKTREE_DIR: checkout, BACKUP_REMOTE: 'origin', BACKUP_BRANCH: 'main', ...overrides },
+    });
+  }
+  try {
+    runGit(cwd, 'init', '--bare', remote);
+    runGit(cwd, 'init', '--initial-branch=main', checkout);
+    runGit(checkout, 'config', 'user.name', 'Fixture');
+    runGit(checkout, 'config', 'user.email', 'fixture@example.invalid');
+    runGit(checkout, 'commit', '--allow-empty', '-m', 'first');
+    const first = runGit(checkout, 'rev-parse', 'HEAD');
+    runGit(checkout, 'remote', 'add', 'origin', remote);
+    runGit(checkout, 'push', '-u', 'origin', 'main');
+    assert.equal(checkGate().status, 0, 'clean, backed-up checkout passes');
+    fs.writeFileSync(path.join(checkout, 'untracked.txt'), 'local work');
+    assert.notEqual(checkGate().status, 0, 'untracked work preserves checkout');
+    fs.unlinkSync(path.join(checkout, 'untracked.txt'));
+    runGit(checkout, 'commit', '--allow-empty', '-m', 'second');
+    const second = runGit(checkout, 'rev-parse', 'HEAD');
+    assert.notEqual(checkGate().status, 0, 'unpushed commit preserves checkout');
+    runGit(checkout, 'push', 'origin', 'main');
+    assert.equal(checkGate().status, 0);
+    // Only this disposable local remote is rewritten or deleted; the checkout is preserved.
+    runGit(remote, 'update-ref', 'refs/heads/main', first);
+    assert.equal(runGit(checkout, 'rev-parse', '@{u}'), second, 'cached upstream still includes local HEAD');
+    assert.notEqual(checkGate().status, 0, 'fresh remote rewind cannot pass via stale upstream');
+    runGit(remote, 'update-ref', '-d', 'refs/heads/main');
+    assert.notEqual(checkGate().status, 0, 'deleted remote branch preserves checkout');
+    runGit(remote, 'update-ref', 'refs/heads/main', second);
+    assert.equal(checkGate().status, 0, 'remote backup restored');
+    const shimDir = path.join(cwd, 'bin');
+    fs.mkdirSync(shimDir);
+    const realGit = spawnSync('sh', ['-c', 'command -v git'], { encoding: 'utf8' });
+    assert.equal(realGit.status, 0);
+    fs.writeFileSync(path.join(shimDir, 'git'), '#!/bin/sh\nif [ "$3" = "$FAIL_GIT_COMMAND" ]; then exit 1; fi\nexec "$REAL_GIT" "$@"\n', { mode: 0o755 });
+    for (const command of ['fetch', 'rev-parse', 'merge-base', 'status']) {
+      assert.notEqual(checkGate({
+        PATH: `${shimDir}${path.delimiter}${process.env.PATH}`,
+        REAL_GIT: realGit.stdout.trim(),
+        FAIL_GIT_COMMAND: command,
+      }).status, 0, `${command} failure with empty stdout must preserve checkout`);
+    }
+    assert.notEqual(checkGate({ BACKUP_BRANCH: 'missing' }).status, 0);
+    assert.notEqual(checkGate({ BACKUP_REMOTE: 'missing' }).status, 0);
+    assert.notEqual(checkGate({ WORKTREE_DIR: path.join(cwd, 'missing') }).status, 0);
+    runGit(checkout, 'remote', 'set-url', 'origin', path.join(cwd, 'unavailable.git'));
+    assert.notEqual(checkGate().status, 0, 'unreachable intended remote never falls back to cached refs');
+    assert.equal(runGit(checkout, 'rev-parse', 'HEAD'), second, 'gate never deletes local commits');
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
 });
 
 test('pr-queue asks instead of guessing on a forge without current-user', () => {
@@ -3498,4 +3638,34 @@ test('every skill requires a recommendation on each Open Question', () => {
     assert.match(adapter(name), /clarify-spec \|.*with a recommended answer for each question/, `adapters/${name}`);
   }
   assert.match(adapter('openspec.md'), /inline clarifications loop with the user, with a recommended answer for each question/);
+});
+
+test('user stories decompose and sync per individual item with parent/Epic linkage', () => {
+  const template = fs.readFileSync(path.join(repoRoot, 'templates/backlog_item.md'), 'utf8');
+  assert.match(template, /^## Story Items$/m);
+  assert.match(template, /One User Story per Item/);
+  assert.match(template, /A shared parent or Epic alone is never a reason to bundle items into one group; Gate Q offers to merge siblings that share a parent\./);
+
+  const discover = orchestrationPrompt('governed-discover.md');
+  assert.match(discover, /contains more than one user story/);
+  assert.match(discover, /items of one feature name that feature as `parent`/);
+  assert.match(discover, /For a single feature with exactly one user story, run `ag-governed-spec`/);
+  assert.match(discover, /When the draft includes a populated \*\*Backlog Breakdown\*\*/);
+
+  const team = orchestrationPrompt('governed-delivery-team.md');
+  assert.match(team, /including User Story files \(`<root>\/user-stories\/\*\*\/\*\.md`\)/);
+  assert.match(team, /inspect existing feature files \(`<feature>\.md`\) and child directories \(`<feature>\/\*\.md`\)/);
+  assert.match(team, /persist the parent as `<feature-name>\.md` and each child story as `<feature-name>\/<story-id>\.md`/);
+  assert.match(team, /pointing to the delivered story's own file: `<root>\/user-stories\/<feature>\/<story-id>\.md` for a child story or `<root>\/user-stories\/<feature>\.md` for a single-story feature/);
+  assert.match(team, /record `role: parent` \(for the parent\) or `role: story` \(for child stories\) in `\.architecture-guard\/sync_status\.json`/);
+  assert.match(team, /Feature parent maps to an Epic; each child story maps to a Story issue linked to that Epic/);
+  assert.match(team, /If `jira\.epic: false`, do not create an Epic; each Story is created carrying a copy of the shared context/);
+  assert.match(team, /treat it as a legacy combined issue: do NOT edit or rewrite it unless the user explicitly approves/);
+
+  const legacyTeam = fs.readFileSync(path.join(repoRoot, 'commands/governed-delivery-team.md'), 'utf8');
+  assert.match(legacyTeam, /User story \(exactly one; for more than one, follow item 8\)/);
+  assert.match(legacyTeam, /more than one user story per feature/);
+
+  const legacyDiscover = fs.readFileSync(path.join(repoRoot, 'commands/governed-discover.md'), 'utf8');
+  assert.match(legacyDiscover, /more than one user story per feature/);
 });

@@ -135,7 +135,7 @@ You can now run:
 2. Then choose a delivery workflow with this Discovery Summary Draft as input:
    - For solo developers: run `/speckit.architecture-guard.ag-governed-delivery` or `/speckit.architecture-guard.ag-governed-spec`.
    - For teams: run `/speckit.architecture-guard.ag-governed-delivery-team` to generate a User Story for business review first.
-   - For multi-item backlog decomposition (`.architecture-guard/backlog.yml`) and queued backlog delivery (`ag-governed-backlog`), use the dedicated standalone `architecture-guard` CLI installation instead of the legacy Spec Kit extension channel.
+   - For multi-item backlog decomposition (`.architecture-guard/backlog.yml`), more than one user story per feature, and queued backlog delivery (`ag-governed-backlog`), use the dedicated standalone `architecture-guard` CLI installation instead of the legacy Spec Kit extension channel.
 ```
 
 ## Guardrails
