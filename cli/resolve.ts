@@ -61,7 +61,10 @@ function ensureWithinBounds(targetPath: string, allowedDirs: string[]): boolean 
 }
 
 // Treat the workspace/package root as the trusted anchor; reject links that escape it or dangle.
-function rejectSymlinks(root: string, target: string): void {
+// When allowCategorySymlink is true, category directories under .architecture-guard or ag
+// (e.g. templates -> /shared/templates) are allowed as local override directories. Files
+// inside must stay within that directory.
+function rejectSymlinks(root: string, target: string, allowCategorySymlink = false): void {
   const realRoot = fs.existsSync(root) ? fs.realpathSync(root) : path.resolve(root);
   const realPkg = fs.existsSync(ROOT_DIR) ? fs.realpathSync(ROOT_DIR) : ROOT_DIR;
   const relative = path.relative(root, target);
@@ -69,21 +72,33 @@ function rejectSymlinks(root: string, target: string): void {
     throw new Error(`Resource path escapes root: ${target}`);
   }
   let current = root;
-  for (const part of relative.split(path.sep).filter(Boolean)) {
+  let currentAnchor = realRoot;
+  const parts = relative.split(path.sep).filter(Boolean);
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
     current = path.join(current, part);
     try {
       if (fs.lstatSync(current).isSymbolicLink()) {
         try {
           const real = fs.realpathSync(current);
-          const relReal = path.relative(realRoot, real);
+          const isCategoryDir = allowCategorySymlink &&
+            i === 1 &&
+            (parts[0] === '.architecture-guard' || parts[0] === 'ag') &&
+            fs.statSync(current).isDirectory();
+          if (isCategoryDir) {
+            currentAnchor = real;
+            continue;
+          }
+          const relAnchor = path.relative(currentAnchor, real);
           const relPkg = path.relative(realPkg, real);
-          const escapesRoot = relReal === '..' || relReal.startsWith(`..${path.sep}`) || path.isAbsolute(relReal);
+          const escapesAnchor = relAnchor === '..' || relAnchor.startsWith(`..${path.sep}`) || path.isAbsolute(relAnchor);
           const escapesPkg = relPkg === '..' || relPkg.startsWith(`..${path.sep}`) || path.isAbsolute(relPkg);
-          if (escapesRoot && escapesPkg) {
+          if (escapesAnchor && escapesPkg) {
             throw new Error(`Symlink resource path is not allowed: ${current}`);
           }
-        } catch {
-          throw new Error(`Symlink resource path is not allowed: ${current}`);
+        } catch (e) {
+          if (e instanceof Error && e.message.startsWith('Symlink resource path is not allowed:')) throw e;
+          throw new Error(`Symlink resource path is not allowed: ${current}`, { cause: e });
         }
       }
     } catch (error) {
@@ -133,7 +148,8 @@ function findCandidateResource(
   cleanName: string,
   extensions: string[],
   allowedDirs: string[],
-  symlinkBase: string
+  symlinkBase: string,
+  allowCategorySymlink = false
 ): string | null {
   for (const dir of dirs) {
     for (const ext of extensions) {
@@ -141,7 +157,7 @@ function findCandidateResource(
       if (!candidateExistsOrIsSymlink(candidate)) {
         continue;
       }
-      rejectSymlinks(symlinkBase, candidate);
+      rejectSymlinks(symlinkBase, candidate, allowCategorySymlink);
       if (ensureWithinBounds(candidate, allowedDirs) && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
         return candidate;
       }
@@ -197,7 +213,7 @@ export function resolveResource(
   const allowedDirs = [...localDirs, bundledDir, targetDir, ROOT_DIR];
 
   // 1. Check local workspace overrides first
-  const localCandidate = findCandidateResource(localDirs, cleanName, extensionsToTry, allowedDirs, targetDir);
+  const localCandidate = findCandidateResource(localDirs, cleanName, extensionsToTry, allowedDirs, targetDir, true);
   if (localCandidate) {
     return {
       category: normalizedCategory,
@@ -259,11 +275,13 @@ export function listCategoryResources(
     path.join(targetDir, 'ag', normalizedCategory),
   ];
   for (const localDir of localDirs) {
-    rejectSymlinks(targetDir, localDir);
+    if (!fs.existsSync(localDir) && !candidateExistsOrIsSymlink(localDir)) continue;
+    rejectSymlinks(targetDir, localDir, true);
     if (fs.existsSync(localDir)) {
       for (const file of fs.readdirSync(localDir)) {
-        rejectSymlinks(targetDir, path.join(localDir, file));
-        if (fs.statSync(path.join(localDir, file)).isFile()) {
+        const filePath = path.join(localDir, file);
+        rejectSymlinks(targetDir, filePath, true);
+        if (fs.statSync(filePath).isFile()) {
           items.add(file);
         }
       }

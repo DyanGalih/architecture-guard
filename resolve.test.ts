@@ -170,10 +170,21 @@ test('resource and manifest resolution and listing reject symlink escapes', () =
     assert.equal(validManifest.content, 'valid: true');
     fs.rmSync(templates, { recursive: true });
     fs.symlinkSync(base, templates);
-    assert.throws(() => resolveResource('template', 'outside', { target: root }), /Symlink resource/);
+    // Symlinked override folder resolves local override files directly
+    const local = resolveResource('template', 'outside', { target: root });
+    assert.equal(local.source, 'local');
+    assert.equal(local.content, 'private');
+    // Category listing includes files from symlinked override folder
+    const listed = listCategoryResources('template', { target: root });
+    assert.ok(listed.includes('outside.md'));
     // When override folder is a symlink, resolving a bundled resource still falls through cleanly
     const bundled = resolveResource('template', 'ponytail_core', { target: root });
     assert.equal(bundled.source, 'bundled');
+    // An escaping symlink inside the symlinked override directory is still rejected
+    const evil = path.join(base, 'evil.md');
+    fs.symlinkSync(path.join(os.tmpdir(), 'nonexistent-evil'), evil);
+    assert.throws(() => resolveResource('template', 'evil', { target: root }), /Symlink resource/);
+    fs.unlinkSync(evil);
 
     // Workspace reached through a symlink resolves internal files without false rejection
     const symRoot = path.join(base, 'sym-workspace');

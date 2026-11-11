@@ -4261,7 +4261,7 @@ test("cleanupRoleWorktrees removes non-worktree or empty stale directories", () 
   assert.equal(fs.existsSync(staleDir), false);
 });
 
-test("sync-team-roles adds host to agent_teams.enabled_hosts in config.yml", () => {
+test("sync-team-roles adds host to agent_teams.enabled_hosts in config.yml or creates it with defaults", () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-sync-hosts-"));
   runArgs(["init", "--yes", "--agent", "codex", "--framework", "openspec", "--commands", "init", "--codex-agents"], cwd);
 
@@ -4277,6 +4277,34 @@ test("sync-team-roles adds host to agent_teams.enabled_hosts in config.yml", () 
 
   config = require("yaml").parse(fs.readFileSync(configPath, "utf8"));
   assert.ok(config.agent_teams.enabled_hosts.includes("opencode"));
+
+  // When agent_teams block is removed from config.yml, sync-team-roles creates it with defaults
+  delete config.agent_teams;
+  fs.writeFileSync(configPath, require("yaml").stringify(config));
+  runArgs(["sync-team-roles", "--agent", "opencode"], cwd);
+  config = require("yaml").parse(fs.readFileSync(configPath, "utf8"));
+  assert.deepEqual(config.agent_teams, {
+    activation: "auto",
+    isolation: "auto",
+    enabled_hosts: ["opencode"]
+  });
+});
+
+test("Host role installation failures during init omit host from enabled_hosts while keeping init status 0", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-host-init-error-"));
+  try {
+    const base = path.join(cwd, ".architecture-guard");
+    fs.mkdirSync(base, { recursive: true });
+    // Corrupt agents profile for Claude
+    fs.writeFileSync(path.join(base, "agents.yml"), "roles:\n  invalid:\n    system_prompt: missing description\n");
+    const result = spawnSync(process.execPath, [installer, "init", "--yes", "--agent", "claude", "--framework", "openspec", "--commands", "init", "--claude-agent-teams"], { cwd, encoding: "utf8" });
+    assert.equal(result.status, 0);
+    // sync-team-roles for the same corrupt profile fails with status 1
+    const syncRes = spawnSync(process.execPath, [installer, "sync-team-roles"], { cwd, encoding: "utf8" });
+    assert.equal(syncRes.status, 1);
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
 });
 
 test("writeInstallerConfig preserves custom keys and comments on existing agent_teams node", () => {

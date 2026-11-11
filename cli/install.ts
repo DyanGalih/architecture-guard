@@ -140,15 +140,22 @@ const COMMAND_ALIASES = {
   pr: ['review-pr', 'pr-feedback', 'pr-queue', 'review-implementation'],
 };
 
-async function ask(promptText, choices, multi = false) {
+async function ask(promptText, choices, options: boolean | { multi?: boolean; yesMeansAll?: boolean } = false) {
+  const multi = typeof options === 'boolean' ? options : Boolean(options && options.multi);
+  const yesMeansAll = typeof options === 'object' && options !== null ? Boolean(options.yesMeansAll) : false;
   // Use old logic if reading from piped stdin (e.g. tests)
   if (_inputLines !== null) {
     const input = await nextLine();
     if (!choices) return input;
     if (multi) {
-      if (input.trim().toLowerCase() === 'all') return choices.map(c => typeof c === 'string' ? c : c.value);
-      if (['y', 'yes'].includes(input.trim().toLowerCase()) && promptText.toLowerCase().includes('agent')) return choices.map(c => typeof c === 'string' ? c : c.value);
-      if (['n', 'no'].includes(input.trim().toLowerCase())) return [];
+      const trimmed = input.trim().toLowerCase();
+      if (trimmed === 'all') return choices.map(c => typeof c === 'string' ? c : c.value);
+      if (['y', 'yes'].includes(trimmed)) {
+        if (choices.length === 1 || yesMeansAll) {
+          return choices.map(c => typeof c === 'string' ? c : c.value);
+        }
+      }
+      if (['n', 'no'].includes(trimmed)) return [];
       const indices = input.split(',').map(s => parseInt(s.trim()) - 1).filter(i => i >= 0 && i < choices.length);
       return indices.map(i => typeof choices[i] === 'string' ? choices[i] : choices[i].value);
     }
@@ -913,9 +920,16 @@ function updateEnabledHostInConfig(targetDir: string, hostKey: string): void {
           fs.writeFileSync(configPath, String(doc));
         }
       }
+    } else {
+      doc.set('agent_teams', {
+        activation: 'auto',
+        isolation: 'auto',
+        enabled_hosts: [hostKey]
+      });
+      fs.writeFileSync(configPath, String(doc));
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    console.warn(`  ! Warning: could not update agent_teams in config.yml: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
@@ -1280,9 +1294,7 @@ async function configureMultiHostTeamRoles(targetDir: string, selectedAgents: st
       const profile = opts.yes ? undefined : await interviewHostRoles(desc, targetDir, opts.overwrite);
       if (opts.yes || profile) {
         const result = installRoles(desc, targetDir, opts.overwrite, profile);
-        if (result.errors.length) {
-          process.exitCode = 1;
-        } else {
+        if (!result.errors.length) {
           installedTeamHosts.push(key);
         }
       }

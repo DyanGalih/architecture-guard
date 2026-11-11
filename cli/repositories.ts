@@ -319,7 +319,7 @@ export function createRoleWorktree(repoRoot: string, roleName: string, baseBranc
     try {
       execFileSync('git', ['-C', root, 'branch', '-D', branchName], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
     } catch (err) {
-      throw new Error(`Failed to reset branch ${branchName}: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(`Failed to reset branch ${branchName}: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
     }
   }
 
