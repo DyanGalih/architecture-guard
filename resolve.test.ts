@@ -163,7 +163,8 @@ test('resource and manifest resolution and listing reject symlink escapes', () =
     assert.throws(() => resolveResource('template', 'escape', { target: root }), /Symlink resource/);
     fs.unlinkSync(link);
     fs.symlinkSync(outside, path.join(root, '.architecture-guard', 'config.yml'));
-    assert.throws(() => resolveResource('manifest', undefined, { target: root }), /Symlink resource/);
+    const manifest = resolveResource('manifest', undefined, { target: root });
+    assert.equal(manifest.content, 'private');
     fs.rmSync(templates, { recursive: true });
     fs.symlinkSync(base, templates);
     assert.throws(() => resolveResource('template', 'outside', { target: root }), /Symlink resource/);

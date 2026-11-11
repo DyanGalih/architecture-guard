@@ -4053,6 +4053,28 @@ test("Init without team agent flags does not write agent_teams to config.yml", (
   assert.equal(config.agent_teams, undefined);
 });
 
+test("Fresh init with team agent flags writes clean agent_teams without internal flags", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-init-clean-teams-"));
+  runArgs([
+    "init", "--yes",
+    "--agent", "opencode",
+    "--opencode-agents",
+    "--framework", "openspec",
+    "--commands", "init"
+  ], cwd);
+
+  const configPath = path.join(cwd, ".architecture-guard/config.yml");
+  assert.ok(fs.existsSync(configPath));
+  const raw = fs.readFileSync(configPath, "utf8");
+  assert.doesNotMatch(raw, /_explicit/);
+  const config = require("yaml").parse(raw);
+  assert.deepEqual(config.agent_teams, {
+    enabled_hosts: ["opencode"],
+    activation: "auto",
+    isolation: "auto",
+  });
+});
+
 test("Role worktrees protect against unmerged commits during recreate and cleanup", () => {
   const { createRoleWorktree, cleanupRoleWorktrees, hasUnmergedRoleCommits } = require("./cli/repositories");
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-wt-unmerged-"));

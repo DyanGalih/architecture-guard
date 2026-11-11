@@ -1,5 +1,5 @@
 # OpenCode responsibilities and native subagent permission restrictions.
-# Override at .architecture-guard/opencode-agents.yml. Setup does not activate a run mode.
+# Override at .architecture-guard/opencode-agents.yml. Runtime activation is configured via agent_teams.activation in .architecture-guard/config.yml (defaults to auto).
 version: 1
 topology: opencode-subagents
 roles:

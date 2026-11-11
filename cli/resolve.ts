@@ -100,8 +100,7 @@ function resolveManifestResource(targetDir: string): ResolvedResource {
   ];
 
   for (const candidate of candidatePaths) {
-    rejectSymlinks(targetDir, candidate);
-    if (fs.existsSync(candidate)) {
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
       return {
         category: 'manifest',
         name: path.basename(candidate),

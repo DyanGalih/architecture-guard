@@ -295,8 +295,13 @@ function resolveCustomAdapter(name, targetDir) {
 // (context budget, repository_hygiene, presets) and only update the installer-owned keys.
 function writeInstallerConfig(configPath, adapter, repositories = null, agentTeams = null) {
   const YAML = require('yaml');
+  let cleanAgentTeams = null;
+  if (agentTeams) {
+    const { _explicitActivation, _explicitIsolation, ...rest } = agentTeams;
+    cleanAgentTeams = rest;
+  }
   if (!fs.existsSync(configPath)) {
-    const initial = { adapter, presets: [], ...(repositories ? { repositories } : {}), ...(agentTeams ? { agent_teams: agentTeams } : {}) };
+    const initial = { adapter, presets: [], ...(repositories ? { repositories } : {}), ...(cleanAgentTeams ? { agent_teams: cleanAgentTeams } : {}) };
     fs.writeFileSync(configPath, YAML.stringify(initial));
     return;
   }
@@ -322,7 +327,6 @@ function writeInstallerConfig(configPath, adapter, repositories = null, agentTea
         isolation
       });
     } else {
-      const { _explicitActivation, _explicitIsolation, ...cleanAgentTeams } = agentTeams;
       doc.set('agent_teams', cleanAgentTeams);
     }
   }
@@ -1253,11 +1257,14 @@ async function configureMultiHostTeamRoles(targetDir: string, selectedAgents: st
 
   let teamActivation = opts.teamActivation;
   let teamIsolation = opts.teamIsolation;
+  let explicitActivation = Boolean(opts.teamActivation);
+  let explicitIsolation = Boolean(opts.teamIsolation);
 
   if (!teamActivation) {
     if (opts.yes || anyTeamFlag) {
       teamActivation = 'auto';
     } else {
+      explicitActivation = true;
       teamActivation = await ask(
         '\nSelect agent team activation mode:',
         [
@@ -1274,6 +1281,7 @@ async function configureMultiHostTeamRoles(targetDir: string, selectedAgents: st
     if (opts.yes || anyTeamFlag) {
       teamIsolation = 'auto';
     } else {
+      explicitIsolation = true;
       teamIsolation = await ask(
         '\nSelect parallel writer workspace isolation mode:',
         [
@@ -1290,8 +1298,8 @@ async function configureMultiHostTeamRoles(targetDir: string, selectedAgents: st
     enabled_hosts: installedTeamHosts,
     activation: teamActivation,
     isolation: teamIsolation,
-    _explicitActivation: Boolean(opts.teamActivation),
-    _explicitIsolation: Boolean(opts.teamIsolation)
+    _explicitActivation: explicitActivation,
+    _explicitIsolation: explicitIsolation
   };
 }
 

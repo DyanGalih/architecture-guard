@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'yaml';
@@ -258,11 +258,15 @@ export function hasUnmergedRoleCommits(repoRoot: string, roleName: string, baseB
   const root = path.resolve(repoRoot);
   const sanitized = roleName.replace(/_/g, '-').replace(/[^a-zA-Z0-9-]/g, '-');
   const branchName = `agteam/${sanitized}`;
+  const checkBranch = spawnSync('git', ['-C', root, 'show-ref', '--verify', '--quiet', `refs/heads/${branchName}`], { stdio: 'ignore' });
+  if (checkBranch.status !== 0) {
+    return false;
+  }
   try {
     const revCount = execFileSync('git', ['-C', root, 'rev-list', '--count', `${baseBranch}..${branchName}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
     return parseInt(revCount, 10) > 0;
   } catch {
-    return false;
+    return true;
   }
 }
 
