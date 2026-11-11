@@ -94,7 +94,7 @@ Enter an interactive Q&A discussion with the user.
 1. **Acknowledge and Advise**: Briefly state your understanding of the user's idea and any immediate architectural considerations.
 2. **Warn on Violations**: If the user suggests an idea that conflicts with an architectural constraint (e.g., adding a new database when the constitution mandates a single shared database), you MUST warn them, identify whether the rule is blocking/P0 or non-blocking, and suggest an architecture-compliant alternative.
 3. **Refine**: Ask clarifying questions to flesh out edge cases, UX flows, and technical boundaries. Give your recommended answer and why with each question, as the Ponytail Core Open Questions rule requires.
-4. **Idea-to-Backlog Decomposition (when requested or multi-item)**: When the user's idea spans multiple stories, bugs, tasks, or spikes, or the user asks to break an idea down into a backlog or user stories, resolve and apply the `backlog_item` template with `architecture-guard resolve template backlog_item` and decompose the idea into proposed backlog items (`id`, `type`, `priority`, `size`, `group`, `depends_on`, `title`, `description`, `acceptance`) for the handoff draft. Keep this decomposition strictly read-only.
+4. **Idea-to-Backlog Decomposition (when requested or multi-item)**: When the user's idea spans multiple stories, bugs, tasks, or spikes, contains more than one user story, or the user asks to break an idea down into a backlog or user stories, resolve and apply the `backlog_item` template with `architecture-guard resolve template backlog_item` and decompose the idea into proposed backlog items (`id`, `type`, `priority`, `size`, `group`, `parent`, `depends_on`, `title`, `description`, `acceptance`) conforming to `## Story Items` for the handoff draft. Each story item holds exactly one user story statement with its own acceptance criteria, and items of one feature name that feature as `parent`. Keep this decomposition strictly read-only.
 
 *Do not generate a full specification markdown file during this phase. Keep the interaction conversational and focused on alignment.*
 
@@ -123,7 +123,7 @@ If the discussion surfaced new architectural decisions, rejected alternatives, o
 Once you and the user are aligned on the feature details and any blocking/P0 conflicts are resolved:
 1. Conclude the discussion.
 2. Generate a structured **Discovery Summary Draft**.
-3. For a multi-item breakdown, recommend team delivery as described below; otherwise hand the draft to the adapter-registered governed-spec capability as its seed input.
+3. For a populated Backlog Breakdown (including any feature with more than one user story), recommend team delivery as described below; only for a feature with exactly one user story, hand the draft to the adapter-registered governed-spec capability as its seed input.
 
 ## Output Structure
 
@@ -151,7 +151,7 @@ When the discussion is concluded and aligned, the command MUST return:
 - **Owned elsewhere**: [KEY: summary (assignee), coordinate with] or None
 
 ## Backlog Breakdown
-- [Proposed items using the `backlog_item` template shape (`id`, `type`, `priority`, `size`, `group`, `depends_on`, `title`, `description`, `acceptance`) when decomposing a multi-item idea into a backlog or user stories; or "Single feature (none)"]
+- [Proposed items using the `backlog_item` template shape (`id`, `type`, `priority`, `size`, `group`, `parent`, `depends_on`, `title`, `description`, `acceptance`) when decomposing a multi-item idea, a feature with more than one user story, or a requested backlog breakdown; or "Single feature (none)" only when the feature has exactly one user story]
 
 ## Rejected Options
 - [Options avoided because they conflict with architecture, add drift, or over-engineer the solution]
@@ -176,9 +176,9 @@ When the discussion is concluded and aligned, the command MUST return:
 - [Proposed decision/constraint/lesson, rationale, and intended Flash-Mem type; or "None"]
 
 ## Recommended Next Step
-For a single feature, run `ag-governed-spec` with this Discovery Summary Draft as its seed (suggested change name: `<suggested-feature-name>`); it records the Story Set in the change. It establishes the change through {adapter_command:create-change} after its branch and write-approval gates, then writes and validates the specification.
+For a single feature with exactly one user story, run `ag-governed-spec` with this Discovery Summary Draft as its seed (suggested change name: `<suggested-feature-name>`); it records the Story Set in the change. It establishes the change through {adapter_command:create-change} after its branch and write-approval gates, then writes and validates the specification.
 
-When the draft includes a multi-item **Backlog Breakdown** (or the user wants to store the breakdown as User Stories in `<root>/user-stories/`, `.architecture-guard/backlog.yml`, GitHub Issues, or Jira before engineering planning):
+When the draft includes a populated **Backlog Breakdown** (any feature with more than one user story, a multi-item idea, or when the user wants to store the breakdown as User Stories in `<root>/user-stories/`, `.architecture-guard/backlog.yml`, GitHub Issues, or Jira before engineering planning):
 - Run `ag-governed-delivery-team` with this Discovery Summary Draft to approve and persist the requested outputs, optionally sync them to GitHub Issues or Jira, and stop after Phase 3. Hand off to `ag-governed-backlog` only after confirming a supported source contains the approved items.
 
 After the specification is accepted, choose a delivery workflow:

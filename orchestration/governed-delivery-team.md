@@ -61,7 +61,7 @@ Produce an approved User Story and an implementation-ready `{adapter_path:tasks}
 
 Accept an existing caller approval only for the identical action, phase, exact targets, and owning repository under `capability_composition`; distinct human decisions and material scope expansions still require approval.
 
-Before the first mutation, resolve and preview the exact branch and requested Phase 3 targets, including User Story files (`<root>/user-stories/*.md`) and local backlog (`.architecture-guard/backlog.yml`) when selected, together with all planned operations. Obtain explicit user approval, then allow routine writes already previewed within this team-delivery phase scope without per-file prompts. If the run continues to Phase 4, preview the exact change container, plan and task artifacts and planned operations, and obtain approval before their first mutation. Newly discovered material scope or any new target path requires a new preview and renewed approval.
+Before the first mutation, resolve and preview the exact branch and requested Phase 3 targets, including User Story files (`<root>/user-stories/**/*.md`) and local backlog (`.architecture-guard/backlog.yml`) when selected, together with all planned operations. Obtain explicit user approval, then allow routine writes already previewed within this team-delivery phase scope without per-file prompts. If the run continues to Phase 4, preview the exact change container, plan and task artifacts and planned operations, and obtain approval before their first mutation. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 
 ## Mandatory Branch Preflight
 
@@ -101,25 +101,34 @@ Before engineering planning begins, generate a business-oriented User Story (or 
 
 `<root>` is the project root (the directory containing `.architecture-guard/`).
 
-1. Determine the requested outputs independently: local User Story files, local backlog, and external tracker sync. For a normal single-feature run retain the User Story file workflow. For a breakdown, do not create unrequested outputs; if the intended outputs are unclear, ask. Only when User Story files are requested, look in `<root>/user-stories/`: if none exist, create a new story or stories; if one or more exist, ask whether to reuse or create the relevant stories.
-2. If creating a new story (or multi-story breakdown), analyze the Discovery context and generate each User Story containing:
-   - Business objective
-   - User stories
-   - Acceptance criteria
-   - Business rules
-   - Out of scope items
-   - Assumptions
-   - Risks
-   - Open questions, each with its recommendation as the Ponytail Core Open Questions rule requires, or `None`
+1. Determine the requested outputs independently: local User Story files, local backlog, and external tracker sync. For a normal single-feature run retain the User Story file workflow. For a breakdown, do not create unrequested outputs; if the intended outputs are unclear, ask. Only when User Story files are requested, look in `<root>/user-stories/`: inspect existing feature files (`<feature>.md`) and child directories (`<feature>/*.md`). If none exist, create a new story or stories; if one or more exist, ask whether to reuse or create the relevant stories.
+2. If creating a new story (or multi-story breakdown), analyze the Discovery context and generate the User Story artifacts conforming to `## Story Items` in the `backlog_item` template:
+   - For a feature with more than one user story: generate a feature-level parent containing the shared business context:
+     - Business objective
+     - Business rules
+     - Out of scope items
+     - Assumptions
+     - Risks
+     - Open questions, each with its recommendation as the Ponytail Core Open Questions rule requires, or `None`
+     and generate each child story item containing exactly one user story statement ("As a... I want... so that..."), its own acceptance criteria, size, priority, dependencies (`parent` set to the feature), and its own open questions (each with its recommendation, or `None`).
+   - For a single-story feature: generate a single User Story document containing the business objective, the single user story, its acceptance criteria, business rules, out of scope items, assumptions, risks, and open questions, each with its recommendation as the Ponytail Core Open Questions rule requires, or `None`.
 3. Ensure the User Story is understandable by technical and non-technical stakeholders.
-4. After the Write Approval Gate, when local story files were requested, persist the generated User Story as `<feature-name>.md` (or `<story-id>.md` per story in a multi-story breakdown) in the `<root>/user-stories/` directory with status `draft`. Otherwise present the proposed items without creating story files.
+4. After the Write Approval Gate, when local story files were requested:
+   - For a multi-story feature: persist the parent as `<feature-name>.md` and each child story as `<feature-name>/<story-id>.md` (linking to the parent) in the `<root>/user-stories/` directory with status `draft`.
+   - For a single-story feature: persist the User Story as `<feature-name>.md` in the `<root>/user-stories/` directory with status `draft`.
+   Otherwise present the proposed items without creating story files.
 5. Present the stories or backlog items for stakeholder review and stop before engineering planning until the user explicitly accepts them. Record `approved` in the story files only when those files were requested.
 5b. **Local Backlog Persistence (when breaking down into a backlog)**: Only when the user selected `.architecture-guard/backlog.yml` as an output in item 1, resolve and apply the `backlog_item` template with `architecture-guard resolve template backlog_item` and write or update `.architecture-guard/backlog.yml` after the Write Approval Gate and stakeholder acceptance in item 5. A Discovery Summary Draft proposes outputs; the user's selection controls. When the `architecture-guard` CLI is installed, validate the written file with `architecture-guard validate-backlog .architecture-guard/backlog.yml`; a non-zero exit means invalid and must be repaired and re-validated before continuing or stopping.
 6. Once the User Story (or breakdown) is approved, check for `.architecture-guard/sync.yml` for a normal single-feature run, or for a breakdown only if tracker sync was selected in item 1. If the file is absent, report sync as skipped. If it is disabled, report disabled and do not push. If it is enabled, offer synchronization; external synchronization is a separate side effect and requires explicit approval of the resolved provider, repository/project, and target before the first push:
    - When the `architecture-guard` CLI is installed, run `architecture-guard validate-sync-config .architecture-guard/sync.yml` to strictly validate the configuration; a non-zero exit means invalid and no remote write happens. Never fetch the CLI on demand (for example through a package runner); if it is not installed, skip sync and record `Unavailable`.
-   - If valid, enabled, and approved, use the recorded external ID/URL for each story when present and update that item instead of creating a duplicate. Otherwise create one item per approved story and persist its provider, target, ID/URL, stable item identity, story path when present, and content fingerprint in `.architecture-guard/sync_status.json`.
-   - Skip a push when the same target and content fingerprint already succeeded.
-   - On validation, approval, or provider failure, do not create/update an external item. Record `disabled`, `approval-required`, or `failed` with the target and error; warn without blocking local delivery. Never report success without a confirmed external ID/URL.
+   - If valid, enabled, and approved, sync items parent-first (if multi-story) so child stories can link to their remote parent:
+     - **Jira**: Feature parent maps to an Epic; each child story maps to a Story issue linked to that Epic. Treat an absent `jira` block in `sync.yml` as `epic: true` by default. If `jira.epic: false`, do not create an Epic; each Story is created carrying a copy of the shared context.
+     - **GitHub**: Feature parent maps to a tracking parent Issue; each child story maps to an Issue referencing the parent tracking issue.
+     - **Single-story feature**: Sync as a single Story/Issue without a parent or Epic.
+   - For each synced item, record `role: parent` (for the parent) or `role: story` (for child stories and single-story features) in `.architecture-guard/sync_status.json` with its `provider`, `target`, confirmed remote `id`, `url`, `story_path`, content `fingerprint`, and stable identity (`<feature>` for the parent or single-story feature, `<feature>#<story-id>` for child stories).
+   - If `.architecture-guard/sync_status.json` records an existing entry matching the feature (by key `<feature>` or recorded path `<root>/user-stories/<feature>.md`) without a `role` field, treat it as a legacy combined issue: do NOT edit or rewrite it unless the user explicitly approves converting it into the parent issue; if the user declines, do not create remote child items and record child status as `approval-required` with a warning without stopping local delivery.
+   - Use the recorded external ID/URL for each item when present and update that item instead of creating a duplicate. Skip a push when the same target and content fingerprint already succeeded.
+   - On validation, approval, or provider failure, do not create/update an external item. Record `disabled`, `approval-required`, or `failed` with the target and error under the target item key in `.architecture-guard/sync_status.json`; warn without blocking local delivery. Never report success without a confirmed external ID/URL.
 7. If a previously approved User Story has been modified after engineering artifacts were generated, mark it `review-required`, warn the user, and require re-approval before proceeding.
 8. **Phase 3 Stop / Handoff Gate (Backlog & Multi-Story Breakdown)**: Once the requested breakdown outputs are saved or synced, if the user requested a backlog/story breakdown only or if multiple groups/stories were produced, stop cleanly here before Phase 4 (`Specification Gate`). Return the `Governed Team Delivery Summary` (marking `Plan`, `Tasks`, `Analysis`, and `Artifact Review` as `Skipped (breakdown-only)`). Resolve the `backlog_item` contract and confirm a supported source (Jira, Beads, or local backlog) contains the approved items before you recommend running `ag-governed-backlog` to deliver the queued items. Story files and GitHub Issues alone are not queue sources. If source contents cannot be confirmed, report the handoff as unavailable or unverified and explain that the items must first be added to a supported source; do not claim they are queued. Only continue to Phase 4 when the user wants immediate single-feature specification, planning, and task generation.
 
@@ -159,7 +168,7 @@ If the plan is `blocked`, report the blocking findings, set **Plan** to `Blocked
 
 If the plan is `review-required`, reuse it and run the applicable security plan review plus the adapter-registered violation-detection capability. Do not regenerate a plan merely because review is needed.
 
-- **Linkage metadata for every plan state**: Resolve the actual plan path and selected story path, then validate `Story:` against their normalized relative path (or an absolute path when no relative representation is possible). Add or correct stale linkage only after showing the change and receiving approval. Never assume a fixed directory depth.
+- **Linkage metadata for every plan state**: Resolve the actual plan path and selected story path (pointing to the delivered story's own file: `<root>/user-stories/<feature>/<story-id>.md` for a child story or `<root>/user-stories/<feature>.md` for a single-story feature), then validate `Story:` against their normalized relative path (or an absolute path when no relative representation is possible). Add or correct stale linkage only after showing the change and receiving approval. Never assume a fixed directory depth.
 
 - Continue automatically when there are no blocking findings.
 - Record advisory architecture drift without stopping.

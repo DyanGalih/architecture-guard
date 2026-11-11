@@ -79,7 +79,7 @@ Before engineering planning begins, generate a business-oriented User Story repr
 1. Look in the root `<root>/user-stories/` directory. If multiple stories exist, use an interactive prompt to ask the user which User Story they are fulfilling, or if they want to create a new one.
 2. If creating a new story, analyze the Discovery context and generate a User Story containing:
    - Business objective
-   - User stories
+   - User story (exactly one; for more than one, follow item 8)
    - Acceptance criteria
    - Business rules
    - Out of scope items
@@ -98,7 +98,7 @@ Before engineering planning begins, generate a business-oriented User Story repr
    - Record `status: success` only after the provider returns and confirms a stable remote ID and URL. Persist that identity and target in `.architecture-guard/sync_status.json`; a missing or unconfirmed remote ID is a failed sync, not success.
    - If the push fails, write `{ "status": "failed" }` to `.architecture-guard/sync_status.json` and output a non-blocking warning. Do NOT stop the delivery workflow.
 7. If a previously approved User Story has been modified after engineering artifacts were generated, mark it `review-required`, warn the user, and require re-approval before proceeding.
-8. For multi-item backlog decomposition (`.architecture-guard/backlog.yml`), stopping after Phase 3 backlog/tracker breakdown, and queued multi-story delivery (`ag-governed-backlog`), direct the user to use the dedicated standalone `architecture-guard` CLI installation (`ag-governed-discover`, `ag-governed-delivery-team`, and `ag-governed-backlog`) rather than the legacy Spec Kit extension channel.
+8. For multi-item backlog decomposition (`.architecture-guard/backlog.yml`), stopping after Phase 3 backlog/tracker breakdown, more than one user story per feature, and queued multi-story delivery (`ag-governed-backlog`), direct the user to use the dedicated standalone `architecture-guard` CLI installation (`ag-governed-discover`, `ag-governed-delivery-team`, and `ag-governed-backlog`) rather than the legacy Spec Kit extension channel.
 
 ## Phase 5 — Spec & Proposal Gate
 
