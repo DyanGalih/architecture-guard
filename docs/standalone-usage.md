@@ -64,7 +64,7 @@ Override the persisted adapter for one installed command with its `--adapter` in
 
 ## 4. Choose Your Commands
 
-Pick from 22 governance commands:
+Pick from 23 governance commands:
 
 | Command | When |
 | :--- | :--- |

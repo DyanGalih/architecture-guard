@@ -23,7 +23,15 @@ The bundled rule set used by the `ag-review-implementation` skill during its opt
 - **Dependency** — long parameter lists and, for Java and PHP, class coupling.
 - **Structure** — duplicated literals and loose casts that often encode a rule or contract value with no single owner.
 
-Every `key`, `name`, and `severity` matches SonarSource's own rule metadata (sonar-java, SonarJS, sonar-python, sonar-php), verified on 2026-11-11. `severity` is SonarSource's default severity; the review maps it onto Architecture Guard's shared severity scale. `tags` are Architecture Guard categories used to group findings, not SonarSource tags. `description` explains the architecture signal and is Architecture Guard's own text.
+Every `key`, `name`, and `severity` matches SonarSource's own rule metadata ([sonar-java](https://github.com/SonarSource/sonar-java), [SonarJS](https://github.com/SonarSource/SonarJS), [sonar-python](https://github.com/SonarSource/sonar-python), [sonar-php](https://github.com/SonarSource/sonar-php)), verified against [rules.sonarsource.com](https://rules.sonarsource.com) on 2026-11-11. `severity` is SonarSource's default severity; the review maps it onto Architecture Guard's shared severity scale. `tags` are Architecture Guard categories used to group findings, not SonarSource tags. `description` explains the architecture signal and is Architecture Guard's own text.
+
+| Language | Rule Count | Included Rule Keys |
+|---|---:|---|
+| **Java** (`java`) | 9 | `S3776`, `S1541`, `S138`, `S107`, `S1200`, `S1448`, `S1192`, `S1186`, `S112` |
+| **JavaScript** (`javascript`) | 7 | `S3776`, `S1541`, `S138`, `S104`, `S107`, `S1192`, `S1066` |
+| **PHP** (`php`) | 6 | `S3776`, `S138`, `S107`, `S1192`, `S1066`, `S1186` |
+| **Python** (`python`) | 7 | `S3776`, `S138`, `S104`, `S107`, `S1192`, `S1066`, `S1186` |
+| **TypeScript** (`typescript`) | 8 | `S3776`, `S1541`, `S138`, `S104`, `S107`, `S1192`, `S1066`, `S4325` |
 
 Style rules (formatting, naming) and TODO tracking are deliberately excluded; TODO markers are covered by the `todo-comments` hygiene rule.
 
