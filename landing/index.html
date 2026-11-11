@@ -18,6 +18,48 @@
 
     <!-- Tailwind CSS with class dark mode support -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            950: '#050814',
+                            900: '#070C1E',
+                            850: '#0B132B',
+                            800: '#111C3A',
+                            700: '#1C2B54',
+                        },
+                        brand: {
+                            cyan: '#00E5FF',
+                            blue: '#0066FF',
+                            purple: '#7C3AED',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'spin-slow': 'spin 20s linear infinite',
+                        'glow': 'glow 3s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-12px)' },
+                        },
+                        glow: {
+                            '0%': { filter: 'drop-shadow(0 0 15px rgba(0, 229, 255, 0.4))' },
+                            '100%': { filter: 'drop-shadow(0 0 35px rgba(0, 102, 255, 0.8))' },
+                        }
+                    }
+                }
+            }
+        };
+    </script>
     
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

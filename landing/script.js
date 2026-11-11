@@ -1,58 +1,13 @@
-tailwind.config = {
-    darkMode: 'class',
-    theme: {
-        extend: {
-            colors: {
-                navy: {
-                    950: '#050814',
-                    900: '#070C1E',
-                    850: '#0B132B',
-                    800: '#111C3A',
-                    700: '#1C2B54',
-                },
-                brand: {
-                    cyan: '#00E5FF',
-                    blue: '#0066FF',
-                    purple: '#7C3AED',
-                }
-            },
-            fontFamily: {
-                sans: ['Inter', 'sans-serif'],
-            },
-            animation: {
-                'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                'float': 'float 6s ease-in-out infinite',
-                'spin-slow': 'spin 20s linear infinite',
-                'glow': 'glow 3s ease-in-out infinite alternate',
-            },
-            keyframes: {
-                float: {
-                    '0%, 100%': { transform: 'translateY(0px)' },
-                    '50%': { transform: 'translateY(-12px)' },
-                },
-                glow: {
-                    '0%': { filter: 'drop-shadow(0 0 15px rgba(0, 229, 255, 0.4))' },
-                    '100%': { filter: 'drop-shadow(0 0 35px rgba(0, 102, 255, 0.8))' },
-                }
-            }
-        }
-    }
-};
-
 // Theme Controller (Light-First Default with Dark Mode Toggle)
 function updateThemeIcons(isDark) {
     const iconDesktop = document.getElementById('theme-toggle-icon');
     const iconMobile = document.getElementById('theme-toggle-icon-mobile');
-    const labelMobile = document.getElementById('theme-label-mobile');
 
     if (iconDesktop) {
         iconDesktop.className = isDark ? 'fa-solid fa-sun text-amber-400' : 'fa-solid fa-moon text-slate-600';
     }
     if (iconMobile) {
         iconMobile.className = isDark ? 'fa-solid fa-sun text-amber-400' : 'fa-solid fa-moon text-slate-600';
-    }
-    if (labelMobile) {
-        labelMobile.textContent = isDark ? 'Light Theme' : 'Dark Theme';
     }
 }
 
@@ -109,7 +64,7 @@ if (mobileBtn && mobileMenu) {
     });
 }
 
-// GitHub Star & Release Tag Fetch
+// GitHub Star Counter Fetch
 fetch('https://api.github.com/repos/DyanGalih/architecture-guard')
     .then(res => {
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -125,11 +80,7 @@ fetch('https://api.github.com/repos/DyanGalih/architecture-guard')
         }
     })
     .catch(() => {
-        // Graceful silent fallback to static counters if GitHub API is unavailable
-        const heroVersionEl = document.getElementById('hero-version-text');
-        if (heroVersionEl && !heroVersionEl.textContent.trim()) {
-            heroVersionEl.textContent = 'Latest Release v3.7.0: Light-First Theme, Flagship Skills & Multi-Host Teams';
-        }
+        // Silent fallback: static counters preserved in HTML
     });
 
 // How It Works Dynamic Steps Dictionary
@@ -180,92 +131,6 @@ function selectStep(stepNum) {
         titleEl.textContent = stepDetails[stepNum].title;
         descEl.textContent = stepDetails[stepNum].desc;
     }
-}
-
-// Interactive Workflow Walkthrough Dictionary
-const workflowData = {
-    workflow: {
-        badge: "ALL-IN-ONE HERO CONDUCTOR",
-        title: "/ag-workflow — Complete Governed Lifecycle",
-        desc: "Single-command interactive conductor: drives discovery, specification, delivery, implementation, deep verification, and archival with 4 structured human gates and agent teams coordination.",
-        code: `# Run the full end-to-end SDD lifecycle in one interactive command
-/ag-workflow "Add real-time notifications with webhook fallback"
-
-# Structured Human Gates:
-# Gate 0: Approve specification & clarified acceptance criteria
-# Gate 1: Approve technical design, task list, and artifact review
-# Gate 2: Review multi-agent implementation evidence & test outputs
-# Gate 3: Sign off on final verification against destination branch (base=main)`
-    },
-    backlog: {
-        badge: "AUTONOMOUS SPRINT & QUEUE DELIVERY",
-        title: "/ag-governed-backlog — Multi-Item Queue Engine",
-        desc: "Deliver prioritized work items from Jira JQL, Beads (bd), or backlog.yml across Full, Fix, Light, and Research lanes with isolated worktrees and one PR per group.",
-        code: `# 1. Validate backlog dependencies and cycle safety
-architecture-guard validate-backlog .architecture-guard/backlog.yml
-
-# 2. Run backlog delivery queue across matched lanes:
-#    - Full: Stories & Features (spec -> plan -> tasks -> code)
-#    - Fix: Bugs (failing test reproduced before fix)
-#    - Light: Chores & Tasks (direct task execution)
-#    - Research: Spikes (discovery only)
-/ag-governed-backlog
-
-# Batched Gates:
-# Gate Q: Approve queue, lane mapping, and git worktrees
-# Gate S: Approve all generated specifications together
-# Gate I: Approve exact implementation file scopes
-# Gate P: Approve push and create Pull Requests`
-    },
-    pr: {
-        badge: "AUTONOMOUS PULL REQUEST OPS",
-        title: "/ag-pr-queue — Review & Feedback Automation",
-        desc: "Scan repository pull requests, triage review comments in isolated worktrees, and conduct team code reviews with batched human decisions across GitHub, GitLab, Bitbucket, Azure DevOps.",
-        code: `# Scan repository and resume active PR queue
-/ag-pr-queue
-
-# Or target specific pull requests across any code host:
-/ag-pr-queue https://github.com/org/repo/pull/142
-
-# Batched Decision Gates:
-# Gate D: Decide review drafts and minimal bug fixes
-# Gate P: Approve commits and pushes (never force-pushes)
-# Gate R: Post replies and resolve eligible review threads`
-    }
-};
-
-let currentWorkflowKey = 'workflow';
-
-function selectWorkflowTab(tabKey) {
-    if (!workflowData[tabKey]) return;
-    currentWorkflowKey = tabKey;
-
-    const tabs = ['workflow', 'backlog', 'pr'];
-    tabs.forEach(key => {
-        const btn = document.getElementById(`wf-tab-${key}`);
-        if (btn) {
-            if (key === tabKey) {
-                btn.className = "px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-cyan-600 text-white dark:bg-cyan-500 dark:text-slate-950 shadow-md shadow-cyan-500/20";
-            } else {
-                btn.className = "px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800/60";
-            }
-        }
-    });
-
-    const badgeEl = document.getElementById('wf-badge');
-    const titleEl = document.getElementById('wf-title');
-    const descEl = document.getElementById('wf-desc');
-    const codeEl = document.getElementById('wf-code');
-
-    if (badgeEl) badgeEl.textContent = workflowData[tabKey].badge;
-    if (titleEl) titleEl.textContent = workflowData[tabKey].title;
-    if (descEl) descEl.textContent = workflowData[tabKey].desc;
-    if (codeEl) codeEl.textContent = workflowData[tabKey].code;
-}
-
-function copyWorkflowCode() {
-    const codeText = workflowData[currentWorkflowKey].code;
-    copyToClipboard(codeText, "Workflow CLI commands copied!");
 }
 
 function copySnippet(cmdText) {
