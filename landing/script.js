@@ -1,4 +1,5 @@
 tailwind.config = {
+    darkMode: 'class',
     theme: {
         extend: {
             colors: {
@@ -37,6 +38,60 @@ tailwind.config = {
         }
     }
 };
+
+// Theme Controller (Light-First Default with Dark Mode Toggle)
+function updateThemeIcons(isDark) {
+    const iconDesktop = document.getElementById('theme-toggle-icon');
+    const iconMobile = document.getElementById('theme-toggle-icon-mobile');
+    const labelMobile = document.getElementById('theme-label-mobile');
+
+    if (iconDesktop) {
+        iconDesktop.className = isDark ? 'fa-solid fa-sun text-amber-400' : 'fa-solid fa-moon text-slate-600';
+    }
+    if (iconMobile) {
+        iconMobile.className = isDark ? 'fa-solid fa-sun text-amber-400' : 'fa-solid fa-moon text-slate-600';
+    }
+    if (labelMobile) {
+        labelMobile.textContent = isDark ? 'Light Theme' : 'Dark Theme';
+    }
+}
+
+function applyTheme(isDark) {
+    if (isDark) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+    updateThemeIcons(isDark);
+}
+
+function toggleTheme() {
+    const isCurrentlyDark = document.documentElement.classList.contains('dark');
+    const nextDark = !isCurrentlyDark;
+    applyTheme(nextDark);
+    try {
+        localStorage.setItem('ag-theme', nextDark ? 'dark' : 'light');
+    } catch {
+        // Ignore localStorage restrictions
+    }
+}
+
+// Initial theme setup: default is light unless explicitly saved as 'dark'
+(function initTheme() {
+    let savedTheme = null;
+    try {
+        savedTheme = localStorage.getItem('ag-theme');
+    } catch {
+        // Ignore
+    }
+    const isDark = savedTheme === 'dark';
+    applyTheme(isDark);
+})();
+
+const themeBtn = document.getElementById('theme-toggle-btn');
+const themeBtnMobile = document.getElementById('theme-toggle-btn-mobile');
+if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
+if (themeBtnMobile) themeBtnMobile.addEventListener('click', toggleTheme);
 
 // Mobile Navigation Menu Toggle
 const mobileBtn = document.getElementById('mobile-menu-btn');
@@ -108,11 +163,11 @@ const stepDetails = {
 function selectStep(stepNum) {
     document.querySelectorAll('.step-card').forEach((card, index) => {
         if (index + 1 === stepNum) {
-            card.classList.add('border-cyan-400');
-            card.classList.remove('border-white/10');
+            card.classList.add('border-cyan-500', 'ring-2', 'ring-cyan-500/20');
+            card.classList.remove('border-slate-200', 'dark:border-white/10');
         } else {
-            card.classList.remove('border-cyan-400');
-            card.classList.add('border-white/10');
+            card.classList.remove('border-cyan-500', 'ring-2', 'ring-cyan-500/20');
+            card.classList.add('border-slate-200', 'dark:border-white/10');
         }
     });
 
@@ -129,54 +184,47 @@ function selectStep(stepNum) {
 
 // Interactive Workflow Walkthrough Dictionary
 const workflowData = {
-    streamlined: {
-        badge: "RECOMMENDED FOR FEATURES",
-        title: "Streamlined Governed Delivery",
-        desc: "Single-feature end-to-end flow: automatically chains Spec, Plan, and Task generation with auto-fixing review loops before implementation.",
-        code: `# 1. Explore idea with architecture context & story scope
-/ag-governed-discover "Real-time analytics dashboard"
+    workflow: {
+        badge: "ALL-IN-ONE HERO CONDUCTOR",
+        title: "/ag-workflow — Complete Governed Lifecycle",
+        desc: "Single-command interactive conductor: drives discovery, specification, delivery, implementation, deep verification, and archival with 4 structured human gates and agent teams coordination.",
+        code: `# Run the full end-to-end SDD lifecycle in one interactive command
+/ag-workflow "Add real-time notifications with webhook fallback"
 
-# 2. Automatically generate Spec, Plan, and Tasks with artifact repair loops
-/ag-governed-delivery
-
-# 3. Implement tasks within strict architecture boundaries
-/ag-governed-implement
-
-# 4. Verify against destination branch (same checks as PR review)
-/ag-verify base=main
-
-# 5. Open PR and manage feedback queue
-/ag-pr-queue`
+# Structured Human Gates:
+# Gate 0: Approve specification & clarified acceptance criteria
+# Gate 1: Approve technical design, task list, and artifact review
+# Gate 2: Review multi-agent implementation evidence & test outputs
+# Gate 3: Sign off on final verification against destination branch (base=main)`
     },
     backlog: {
-        badge: "QUEUE-DRIVEN DELIVERY",
-        title: "Governed Backlog Delivery Queue",
-        desc: "Deliver an entire backlog from Jira, Beads (bd), or local backlog.yml through 4 batched human approval gates and dedicated lanes.",
+        badge: "AUTONOMOUS SPRINT & QUEUE DELIVERY",
+        title: "/ag-governed-backlog — Multi-Item Queue Engine",
+        desc: "Deliver prioritized work items from Jira JQL, Beads (bd), or backlog.yml across Full, Fix, Light, and Research lanes with isolated worktrees and one PR per group.",
         code: `# 1. Validate backlog dependencies and cycle safety
 architecture-guard validate-backlog .architecture-guard/backlog.yml
 
 # 2. Run backlog delivery queue across matched lanes:
-#    - Full: Stories & Features
-#    - Fix: Bugs (failing test created before fix)
-#    - Light: Chores & Tasks
-#    - Research: Spikes
+#    - Full: Stories & Features (spec -> plan -> tasks -> code)
+#    - Fix: Bugs (failing test reproduced before fix)
+#    - Light: Chores & Tasks (direct task execution)
+#    - Research: Spikes (discovery only)
 /ag-governed-backlog
 
 # Batched Gates:
-# Gate 1: Approve queue and worktrees
-# Gate 2: Approve all generated specifications
-# Gate 3: Approve exact implementation file scopes
-# Gate 4: Approve git push and Pull Requests`
+# Gate Q: Approve queue, lane mapping, and git worktrees
+# Gate S: Approve all generated specifications together
+# Gate I: Approve exact implementation file scopes
+# Gate P: Approve push and create Pull Requests`
     },
     pr: {
         badge: "AUTONOMOUS PULL REQUEST OPS",
-        title: "Pull Request Queue & Reviews",
-        desc: "Scan repository pull requests, triage review comments in isolated worktrees, and conduct team code reviews with batched human decisions.",
+        title: "/ag-pr-queue — Review & Feedback Automation",
+        desc: "Scan repository pull requests, triage review comments in isolated worktrees, and conduct team code reviews with batched human decisions across GitHub, GitLab, Bitbucket, Azure DevOps.",
         code: `# Scan repository and resume active PR queue
 /ag-pr-queue
 
 # Or target specific pull requests across any code host:
-# GitHub, GitLab, Bitbucket, Azure DevOps
 /ag-pr-queue https://github.com/org/repo/pull/142
 
 # Batched Decision Gates:
@@ -186,20 +234,20 @@ architecture-guard validate-backlog .architecture-guard/backlog.yml
     }
 };
 
-let currentWorkflowKey = 'streamlined';
+let currentWorkflowKey = 'workflow';
 
 function selectWorkflowTab(tabKey) {
     if (!workflowData[tabKey]) return;
     currentWorkflowKey = tabKey;
 
-    const tabs = ['streamlined', 'backlog', 'pr'];
+    const tabs = ['workflow', 'backlog', 'pr'];
     tabs.forEach(key => {
         const btn = document.getElementById(`wf-tab-${key}`);
         if (btn) {
             if (key === tabKey) {
-                btn.className = "px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20";
+                btn.className = "px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-cyan-600 text-white dark:bg-cyan-500 dark:text-slate-950 shadow-md shadow-cyan-500/20";
             } else {
-                btn.className = "px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white hover:bg-slate-800/60";
+                btn.className = "px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800/60";
             }
         }
     });
@@ -218,6 +266,10 @@ function selectWorkflowTab(tabKey) {
 function copyWorkflowCode() {
     const codeText = workflowData[currentWorkflowKey].code;
     copyToClipboard(codeText, "Workflow CLI commands copied!");
+}
+
+function copySnippet(cmdText) {
+    copyToClipboard(cmdText, "Command copied to clipboard!");
 }
 
 // Modal Handlers
