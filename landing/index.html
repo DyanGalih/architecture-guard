@@ -808,7 +808,7 @@
             
             <div class="flex items-center gap-3">
                 <i class="fa-solid fa-shield-halved text-cyan-400 text-base"></i>
-                <span>Architecture Guard v3.6.0 under the <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener" class="text-slate-300 hover:text-cyan-400 underline underline-offset-2">MIT License</a></span>
+                <span>Architecture Guard v3.6.0 under the <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener" class="text-slate-300 hover:text-cyan-400 underline underline-offset-2">MIT License</a> · Built for <a href="https://github.com/Fission-AI/OpenSpec" target="_blank" rel="noopener noreferrer" class="text-slate-300 hover:text-cyan-400 underline underline-offset-2">OpenSpec</a> &amp; <a href="https://github.com/github/spec-kit" target="_blank" rel="noopener noreferrer" class="text-slate-300 hover:text-cyan-400 underline underline-offset-2">Spec Kit</a> · Inspired by <a href="https://github.com/DietrichGebert/ponytail" target="_blank" rel="noopener noreferrer" class="text-slate-300 hover:text-cyan-400 underline underline-offset-2">Ponytail</a></span>
             </div>
 
             <div class="flex items-center gap-6 font-medium">
@@ -901,20 +901,30 @@
 
                     <div class="space-y-1.5">
                         <h4 class="font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-circle-dot text-cyan-400 text-xs"></i> 3. Deep Verification & Premise Grounding
+                            <i class="fa-solid fa-circle-dot text-cyan-400 text-xs"></i> 3. Deep Verification, Premise Grounding &amp; 37 SonarLint Rules
                         </h4>
                         <p class="text-xs leading-relaxed text-slate-400">
-                            Unlike standard linting, Architecture Guard verifies that planning artifacts cite true base-branch code (Premise Grounding), detects unlisted file readers/writers (Consumer Inventory), verifies artifact self-consistency, and enforces Sonar cognitive and hygiene rules before code is pushed.
+                            Unlike standard linting, Architecture Guard verifies that planning artifacts cite true base-branch code (Premise Grounding), detects unlisted file readers/writers (Consumer Inventory), verifies artifact self-consistency, and enforces 37 architecture-focused SonarLint rules across Java, JavaScript, TypeScript, Python, and PHP alongside repository hygiene rules before code is pushed.
                         </p>
                     </div>
 
                     <div class="space-y-1.5">
                         <h4 class="font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-circle-dot text-cyan-400 text-xs"></i> 4. Backlog Queues & Multi-Forge PR Automation
+                            <i class="fa-solid fa-circle-dot text-cyan-400 text-xs"></i> 4. Backlog Queues, Per-Story Decomposition &amp; Multi-Forge PR Automation
                         </h4>
                         <p class="text-xs leading-relaxed text-slate-400">
-                            • <code class="text-slate-200">/ag-governed-backlog</code>: Ingests Jira, Beads, or YAML backlogs and executes queue items across Full, Fix, Light, and Research lanes.
+                            • <code class="text-slate-200">/ag-governed-delivery-team</code>: Decomposes features into parent and per-item child User Stories (<code class="text-slate-200">user-stories/&lt;feature&gt;/&lt;story-id&gt;.md</code>) and syncs to Jira Epics/Stories or GitHub Issues.
+                            <br>• <code class="text-slate-200">/ag-governed-backlog</code>: Ingests Jira, Beads (<code class="text-slate-200">bd</code>), or YAML backlogs and executes queue items across Full, Fix, Light, and Research lanes.
                             <br>• <code class="text-slate-200">/ag-pr-queue</code>: Manages pull request reviews and feedback triage across GitHub, GitLab, Bitbucket, and Azure DevOps in isolated worktrees with batched human gates.
+                        </p>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <h4 class="font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-circle-dot text-cyan-400 text-xs"></i> 5. Credits &amp; Ecosystem References
+                        </h4>
+                        <p class="text-xs leading-relaxed text-slate-400">
+                            Built with and inspired by <a href="https://github.com/Fission-AI/OpenSpec" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">OpenSpec</a>, <a href="https://github.com/github/spec-kit" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Spec Kit</a>, <a href="https://github.com/DietrichGebert/ponytail" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Ponytail Pragmatism Skill</a>, <a href="https://github.com/DyanGalih/flash-mem" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Flash-Mem</a>, <a href="https://github.com/DyanGalih/security-review" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Security Review</a>, <a href="https://rules.sonarsource.com" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">SonarSource Rules</a>, <a href="https://github.com/steveyegge/beads" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Beads (bd)</a>, and <a href="https://playwright.dev" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Playwright</a>.
                         </p>
                     </div>
 

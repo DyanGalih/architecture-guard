@@ -4,7 +4,7 @@ This document explains what Architecture Guard is and why it exists.
 
 ## What Is This?
 
-Architecture Guard is a modular architecture governance orchestration layer for Spec Kit. It helps AI follow the architectural rules you define and keeps those rules visible while the team works.
+Architecture Guard is a modular, technology-agnostic **SDD Tools Orchestration layer** for AI-assisted development across **OpenSpec**, **Spec Kit**, and generic Markdown workflows. It helps AI agents follow the architectural rules you define and keeps those rules visible across the entire delivery lifecycle.
 
 It reviews specifications, plans, task lists, and implementations against your project's architecture standards and turns the results into:
 
@@ -38,6 +38,9 @@ Architecture Guard stands out because it combines a few practical capabilities i
 - **DRY Cleanup Guidance:** Helps brownfield projects find duplicated business logic, validation, DTO mapping, and orchestration, then turn them into small refactor tasks instead of copy-paste drift.
 - **Brownfield Discovery + Verification:** Maps the current codebase, surfaces architectural drift early, and confirms approved refactors actually made it into the final work.
 - **Repository Hygiene Guard:** Automatically detects stray `*-copy.ts` drafts, orphaned code, and debug artifacts before they hit your main branch. [Learn more →](repository-hygiene.md)
+- **SonarLint Code Quality Bundle:** Evaluates 37 architecture-relevant rules across Java, JavaScript, TypeScript, Python, and PHP (derived from [SonarSource](https://rules.sonarsource.com)) to detect cognitive/cyclomatic complexity, oversized functions/classes, coupling, and loose boundary casts. [Sonar rules →](../sonar-rules/README.md)
+- **Multi-Host Parallel Agent Teams:** Coordinates specialist subagents across Claude Code, OpenAI Codex, Google Antigravity (`agy`), and OpenCode with tiered workspace isolation (`share` or per-role Git worktrees). [Team roles →](standalone-usage.md#team-roles)
+- **Backlog & Pull-Request Queues:** Delivers prioritized work items from Jira, [Beads (`bd`)](https://github.com/steveyegge/beads), or `.architecture-guard/backlog.yml` (`ag-governed-backlog`) and orchestrates PR reviews and feedback triage across GitHub, GitLab, Bitbucket, and Azure DevOps (`ag-pr-queue`). [Workflows →](workflows.md)
 
 ## The Problem It Solves
 
@@ -184,3 +187,12 @@ Do not use Architecture Guard when the overhead would outweigh the value:
 - replacing benchmarking or profiling workflows
 
 If you can fully manage architecture mentally and the project is truly small, this extension may be unnecessary overhead.
+
+## Credits & Ecosystem References
+
+Architecture Guard integrates with and builds upon open-source projects across the SDD and AI-engineering ecosystem:
+
+- **SDD Frameworks**: [Spec Kit](https://github.com/github/spec-kit) ([spec-kit.dev](https://spec-kit.dev)) and [OpenSpec](https://github.com/Fission-AI/OpenSpec)
+- **Engineering Pragmatism**: [Ponytail Pragmatism Skill](https://github.com/DietrichGebert/ponytail) (inspiring `templates/ponytail_core.md`)
+- **Companion Extensions**: [Flash-Mem](https://github.com/DyanGalih/flash-mem) (durable SQLite/MCP memory), [Security Review](https://github.com/DyanGalih/security-review) (whitebox security governance), and [Spec-Kit E2E Stream](https://github.com/DyanGalih/spec-kit-e2e-stream) / [Playwright](https://playwright.dev)
+- **Code Quality & Backlog Tooling**: [SonarSource Rules Catalog](https://rules.sonarsource.com) ([sonar-java](https://github.com/SonarSource/sonar-java), [SonarJS](https://github.com/SonarSource/SonarJS), [sonar-python](https://github.com/SonarSource/sonar-python), [sonar-php](https://github.com/SonarSource/sonar-php)), [Beads (`bd`)](https://github.com/steveyegge/beads), and [Model Context Protocol (MCP)](https://modelcontextprotocol.io)
