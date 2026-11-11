@@ -1,10 +1,11 @@
 {
-  "version": "2.0.0",
-  "generated_at": "2026-10-13T00:00:00Z",
-  "source": "Rule keys, titles, and default severities verified against SonarSource analyzer metadata (sonar-java, SonarJS, sonar-python) on 2026-10-13. Descriptions explain the architecture signal and are Architecture Guard's own.",
+  "version": "2.1.0",
+  "generated_at": "2026-11-11T00:00:00Z",
+  "source": "Rule keys, titles, and default severities verified against SonarSource analyzer metadata (sonar-java, SonarJS, sonar-python, sonar-php) on 2026-11-11. Descriptions explain the architecture signal and are Architecture Guard's own.",
   "language_support": [
     "java",
     "javascript",
+    "php",
     "python",
     "typescript"
   ],
@@ -14,6 +15,6 @@
     "dependency",
     "structure"
   ],
-  "total_rules": 24,
-  "architecture_rules_count": 24
+  "total_rules": 37,
+  "architecture_rules_count": 37
 }

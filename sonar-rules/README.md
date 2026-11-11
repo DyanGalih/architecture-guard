@@ -17,13 +17,13 @@ The bundled rule set used by the `ag-review-implementation` skill during its opt
 
 ## What Is Bundled
 
-24 rules for Java, JavaScript, TypeScript, and Python that signal architecture problems rather than style:
+37 rules for Java, JavaScript, PHP, Python, and TypeScript that signal architecture problems rather than style:
 
 - **Brain overload / complexity** — cognitive and cyclomatic complexity, long functions, oversized files and classes.
-- **Dependency** — long parameter lists and, for Java, class coupling.
-- **Structure** — duplicated literals that often encode a rule or contract value with no single owner.
+- **Dependency** — long parameter lists and, for Java and PHP, class coupling.
+- **Structure** — duplicated literals and loose casts that often encode a rule or contract value with no single owner.
 
-Every `key`, `name`, and `severity` matches SonarSource's own rule metadata (sonar-java, SonarJS, sonar-python), verified on 2026-10-13. `severity` is SonarSource's default severity; the review maps it onto Architecture Guard's shared severity scale. `tags` are Architecture Guard categories used to group findings, not SonarSource tags. `description` explains the architecture signal and is Architecture Guard's own text.
+Every `key`, `name`, and `severity` matches SonarSource's own rule metadata (sonar-java, SonarJS, sonar-python, sonar-php), verified on 2026-11-11. `severity` is SonarSource's default severity; the review maps it onto Architecture Guard's shared severity scale. `tags` are Architecture Guard categories used to group findings, not SonarSource tags. `description` explains the architecture signal and is Architecture Guard's own text.
 
 Style rules (formatting, naming) and TODO tracking are deliberately excluded; TODO markers are covered by the `todo-comments` hygiene rule.
 

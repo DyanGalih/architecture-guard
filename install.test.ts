@@ -1767,7 +1767,7 @@ test('Sonar rules bundle is consistent with its manifest and README', () => {
   const rules = JSON.parse(fs.readFileSync(path.join(dir, 'sonarlint-rules.json'), 'utf8'));
   const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'rules-manifest.json'), 'utf8'));
   const readme = fs.readFileSync(path.join(dir, 'README.md'), 'utf8');
-  const repos = ['java', 'javascript', 'typescript', 'python'];
+  const repos = ['java', 'javascript', 'php', 'python', 'typescript'];
 
   assert.equal(new Set(rules.map(rule => rule.key)).size, rules.length, 'duplicate rule keys');
   for (const rule of rules) {
