@@ -36,6 +36,18 @@
     "description": "Long functions tend to mix orchestration with business rules; split along the boundary they cross."
   },
   {
+    "key": "java:S104",
+    "name": "Files should not have too many lines of code",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "java",
+    "tags": [
+      "brain-overload",
+      "structure"
+    ],
+    "description": "Oversized files often hold several classes or modules' responsibilities; split by ownership boundary."
+  },
+  {
     "key": "java:S1448",
     "name": "Classes should not have too many methods",
     "type": "CODE_SMELL",
@@ -82,6 +94,17 @@
       "structure"
     ],
     "description": "High efferent coupling signals cross-module leakage or a missing abstraction at a boundary."
+  },
+  {
+    "key": "java:S1192",
+    "name": "String literals should not be duplicated",
+    "type": "CODE_SMELL",
+    "severity": "CRITICAL",
+    "lang": "java",
+    "tags": [
+      "structure"
+    ],
+    "description": "Repeated literals often encode a business rule or contract value that should have one owner."
   },
   {
     "key": "javascript:S3776",
@@ -226,6 +249,17 @@
     "description": "Repeated literals often encode a business rule or contract value that should have one owner."
   },
   {
+    "key": "typescript:S4325",
+    "name": "Redundant type casts should not be used",
+    "type": "CODE_SMELL",
+    "severity": "MINOR",
+    "lang": "typescript",
+    "tags": [
+      "structure"
+    ],
+    "description": "Loose or redundant type assertions bypass compiler checks and hide boundary contract violations."
+  },
+  {
     "key": "python:S3776",
     "name": "Cognitive Complexity of functions should not be too high",
     "type": "CODE_SMELL",
@@ -236,6 +270,18 @@
       "complexity"
     ],
     "description": "High cognitive complexity usually means one unit is coordinating several concerns; look for a hidden boundary to extract."
+  },
+  {
+    "key": "python:S1541",
+    "name": "Cyclomatic Complexity of functions should not be too high",
+    "type": "CODE_SMELL",
+    "severity": "CRITICAL",
+    "lang": "python",
+    "tags": [
+      "brain-overload",
+      "complexity"
+    ],
+    "description": "High cyclomatic complexity signals branching logic that may belong in separate policies or a domain service."
   },
   {
     "key": "python:S138",
@@ -262,6 +308,18 @@
     "description": "Oversized files often hold several modules' responsibilities; split by ownership boundary."
   },
   {
+    "key": "python:S1820",
+    "name": "Classes should not have too many fields",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "python",
+    "tags": [
+      "brain-overload",
+      "structure"
+    ],
+    "description": "Many fields indicate a class aggregating state that belongs to several components."
+  },
+  {
     "key": "python:S107",
     "name": "Functions, methods and lambdas should not have too many parameters",
     "type": "CODE_SMELL",
@@ -283,5 +341,100 @@
       "structure"
     ],
     "description": "Repeated literals often encode a business rule or contract value that should have one owner."
+  },
+  {
+    "key": "php:S3776",
+    "name": "Cognitive Complexity of methods should not be too high",
+    "type": "CODE_SMELL",
+    "severity": "CRITICAL",
+    "lang": "php",
+    "tags": [
+      "brain-overload",
+      "complexity"
+    ],
+    "description": "High cognitive complexity usually means one unit is coordinating several concerns; look for a hidden boundary to extract."
+  },
+  {
+    "key": "php:S1541",
+    "name": "Cyclomatic Complexity of methods should not be too high",
+    "type": "CODE_SMELL",
+    "severity": "CRITICAL",
+    "lang": "php",
+    "tags": [
+      "brain-overload",
+      "complexity"
+    ],
+    "description": "High cyclomatic complexity signals branching logic that may belong in separate policies or a domain service."
+  },
+  {
+    "key": "php:S138",
+    "name": "Methods should not have too many lines of code",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "php",
+    "tags": [
+      "brain-overload",
+      "structure"
+    ],
+    "description": "Long functions tend to mix orchestration with business rules; split along the boundary they cross."
+  },
+  {
+    "key": "php:S104",
+    "name": "Files should not have too many lines of code",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "php",
+    "tags": [
+      "brain-overload",
+      "structure"
+    ],
+    "description": "Oversized files often hold several modules' responsibilities; split by ownership boundary."
+  },
+  {
+    "key": "php:S107",
+    "name": "Methods should not have too many parameters",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "php",
+    "tags": [
+      "brain-overload",
+      "dependency"
+    ],
+    "description": "Long parameter lists suggest a missing contract or value object at the boundary."
+  },
+  {
+    "key": "php:S1192",
+    "name": "String literals should not be duplicated",
+    "type": "CODE_SMELL",
+    "severity": "CRITICAL",
+    "lang": "php",
+    "tags": [
+      "structure"
+    ],
+    "description": "Repeated literals often encode a business rule or contract value that should have one owner."
+  },
+  {
+    "key": "php:S1448",
+    "name": "Classes should not have too many methods",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "php",
+    "tags": [
+      "brain-overload",
+      "structure"
+    ],
+    "description": "Classes with many methods usually own more than one responsibility; split along the boundary."
+  },
+  {
+    "key": "php:S1200",
+    "name": "Classes should not be coupled to too many other classes",
+    "type": "CODE_SMELL",
+    "severity": "MAJOR",
+    "lang": "php",
+    "tags": [
+      "dependency",
+      "structure"
+    ],
+    "description": "High efferent coupling signals cross-module leakage or a missing abstraction at a boundary."
   }
 ]
