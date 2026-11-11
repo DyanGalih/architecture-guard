@@ -301,7 +301,7 @@ export function installRoles(desc: HostRoleDescriptor, target: string, overwrite
       fs.unlinkSync(file);
       removed.push(path.basename(file, desc.fileExt));
     }
-    console.log(`${desc.label} roles: wrote ${written.length}, removed ${removed.length}. Role setup does not activate coordinated execution. Parent permissions still apply.`);
+    console.log(`${desc.label} roles: wrote ${written.length}, removed ${removed.length}. Parent permissions still apply; team execution activates when configured in config.yml (activation: auto).`);
     return { written, removed, errors: [] as string[] };
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);

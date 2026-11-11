@@ -2,7 +2,7 @@
 
 import { Command } from 'commander';
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import path, { join } from 'node:path';
 
 const packageJsonPath =
   [join(__dirname, '..', 'package.json'), join(__dirname, '..', '..', 'package.json')]
@@ -25,6 +25,7 @@ import { runCreateContextBudgetFixtures } from '../cli/create-context-budget-fix
 import { runReviewArtifacts } from '../cli/review-artifacts';
 import { runReviewImplementation } from '../cli/review-implementation';
 import { runArchive } from '../cli/archive';
+import { createRoleWorktree, mergeRoleWorktree, cleanupRoleWorktrees } from '../cli/repositories';
 
 program
   .command('init [target]')
@@ -86,6 +87,58 @@ program
   .description('Regenerate owned host role files (default: Claude)')
   .option('--agent <name>', 'Role target: claude | codex | antigravity | opencode (default: claude)')
   .action((target, options) => { runSyncTeamRoles(target, options); });
+
+program
+  .command('worktree <action> [role]')
+  .description('Manage per-role Git worktrees for parallel agent execution (create, merge, cleanup)')
+  .option('--target <dir>', 'Target repository root (default: current directory)', '.')
+  .option('--base <branch>', 'Base branch to branch from for create')
+  .option('--force', 'Force cleanup or recreation even if dirty/unmerged', false)
+  .option('--json', 'Output machine-readable JSON result', false)
+  .action((action, role, options) => {
+    const root = path.resolve(options.target || '.');
+    try {
+      if (action === 'create') {
+        if (!role) {
+          throw new Error('Role name is required for worktree create');
+        }
+        const result = createRoleWorktree(root, role, options.base, options.force);
+        if (options.json) {
+          process.stdout.write(JSON.stringify({ status: 'success', action, ...result }) + '\n');
+        } else {
+          console.log(`Created role worktree for ${role} at ${result.worktreePath} (branch: ${result.branchName})`);
+        }
+      } else if (action === 'merge') {
+        if (!role) {
+          throw new Error('Role name is required for worktree merge');
+        }
+        const result = mergeRoleWorktree(root, role);
+        if (options.json) {
+          process.stdout.write(JSON.stringify(result) + '\n');
+        } else {
+          console.log(result.message);
+        }
+        if (!result.success) process.exitCode = 1;
+      } else if (action === 'cleanup') {
+        const removed = cleanupRoleWorktrees(root, options.force);
+        if (options.json) {
+          process.stdout.write(JSON.stringify({ status: 'success', action, removed }) + '\n');
+        } else {
+          console.log(`Cleaned up ${removed.length} role worktree(s).`);
+        }
+      } else {
+        throw new Error(`Unknown worktree action: "${action}". Valid actions: create, merge, cleanup.`);
+      }
+    } catch (err: any) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (options.json) {
+        process.stdout.write(JSON.stringify({ status: 'error', message: msg }) + '\n');
+      } else {
+        console.error(`Error: ${msg}`);
+      }
+      process.exitCode = 1;
+    }
+  });
 
 program
   .command('create-fixtures <target>')

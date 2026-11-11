@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
-const { spawnSync } = require('node:child_process');
+const { spawnSync, execFileSync } = require('node:child_process');
 
 const installer = path.join(__dirname, 'bin', 'cli.js');
 
@@ -153,7 +153,7 @@ test('every referenced Architecture Guard skill and CLI operation is registered'
   const referencedSkills = new Set(
     [...prompts.matchAll(/\bag-[a-z][a-z-]+\b/g)]
       .map(match => match[0])
-      .filter(skill => skill !== 'ag-worktrees' && skill !== 'ag-worktree-owner')
+      .filter(skill => skill !== 'ag-worktrees')
   );
   for (const skill of referencedSkills) {
     assert.ok(registeredSkills.has(skill), `Unregistered Architecture Guard skill reference: ${skill}`);
@@ -4051,4 +4051,95 @@ test("Init without team agent flags does not write agent_teams to config.yml", (
   assert.ok(fs.existsSync(configPath));
   const config = require("yaml").parse(fs.readFileSync(configPath, "utf8"));
   assert.equal(config.agent_teams, undefined);
+});
+
+test("Role worktrees protect against unmerged commits during recreate and cleanup", () => {
+  const { createRoleWorktree, cleanupRoleWorktrees, hasUnmergedRoleCommits } = require("./cli/repositories");
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-wt-unmerged-"));
+  initGitRepo(cwd);
+
+  const wt = createRoleWorktree(cwd, "implementor_be");
+  // Add a commit inside the worktree
+  fs.writeFileSync(path.join(wt.worktreePath, "feature.txt"), "done");
+  execFileSync('git', ['-C', wt.worktreePath, 'add', 'feature.txt']);
+  execFileSync('git', ['-C', wt.worktreePath, 'commit', '-m', 'feat: role work']);
+
+  assert.equal(hasUnmergedRoleCommits(cwd, "implementor_be"), true);
+
+  // Recreating worktree without force refuses
+  assert.throws(() => {
+    createRoleWorktree(cwd, "implementor_be");
+  }, /unmerged commits/);
+
+  // Normal cleanup skips worktree with unmerged commit
+  const removed = cleanupRoleWorktrees(cwd, false);
+  assert.equal(removed.length, 0);
+  assert.ok(fs.existsSync(wt.worktreePath));
+
+  // Force cleanup removes even unmerged worktree
+  const forceRemoved = cleanupRoleWorktrees(cwd, true);
+  assert.equal(forceRemoved.length, 1);
+  assert.equal(fs.existsSync(wt.worktreePath), false);
+});
+
+test("architecture-guard worktree CLI creates, merges, and cleans up worktrees", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-wt-cli-"));
+  initGitRepo(cwd);
+
+  // 1. Create worktree via CLI
+  runArgs(["worktree", "create", "implementor_fe", "--target", cwd], cwd);
+  const wtPath = path.join(cwd, ".git", "ag-worktrees", "agteam-implementor-fe");
+  assert.ok(fs.existsSync(wtPath));
+
+  // 2. Commit in worktree
+  fs.writeFileSync(path.join(wtPath, "ui.txt"), "button");
+  execFileSync('git', ['-C', wtPath, 'add', 'ui.txt']);
+  execFileSync('git', ['-C', wtPath, 'commit', '-m', 'feat: ui work']);
+
+  // 3. Merge worktree via CLI
+  runArgs(["worktree", "merge", "implementor_fe", "--target", cwd], cwd);
+  const mainUiFile = path.join(cwd, "ui.txt");
+  assert.ok(fs.existsSync(mainUiFile));
+  assert.equal(fs.readFileSync(mainUiFile, "utf8"), "button");
+
+  // 4. Cleanup via CLI
+  runArgs(["worktree", "cleanup", "--target", cwd], cwd);
+  assert.equal(fs.existsSync(wtPath), false);
+});
+
+test("Re-running init preserves custom agent_teams activation and merges enabled_hosts", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-init-preserve-teams-"));
+  // First init with codex
+  runArgs([
+    "init", "--yes",
+    "--agent", "codex",
+    "--framework", "openspec",
+    "--codex-agents",
+    "--commands", "init"
+  ], cwd);
+
+  const configPath = path.join(cwd, ".architecture-guard/config.yml");
+  let config = require("yaml").parse(fs.readFileSync(configPath, "utf8"));
+  assert.equal(config.agent_teams.activation, "auto");
+  assert.deepEqual(config.agent_teams.enabled_hosts, ["codex"]);
+
+  // User manually edits config to manual
+  config.agent_teams.activation = "manual";
+  fs.writeFileSync(configPath, require("yaml").stringify(config));
+
+  // Re-run init with opencode (without explicit --team-activation)
+  runArgs([
+    "init", "--yes",
+    "--agent", "codex,opencode",
+    "--framework", "openspec",
+    "--opencode-agents",
+    "--commands", "init"
+  ], cwd);
+
+  config = require("yaml").parse(fs.readFileSync(configPath, "utf8"));
+  // Custom manual activation is preserved!
+  assert.equal(config.agent_teams.activation, "manual");
+  // Both hosts are merged!
+  assert.ok(config.agent_teams.enabled_hosts.includes("codex"));
+  assert.ok(config.agent_teams.enabled_hosts.includes("opencode"));
 });

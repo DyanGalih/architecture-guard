@@ -309,7 +309,23 @@ function writeInstallerConfig(configPath, adapter, repositories = null, agentTea
   doc.set('adapter', adapter);
   if (!doc.has('presets')) doc.set('presets', []);
   if (repositories && !doc.has('repositories')) doc.set('repositories', repositories);
-  if (agentTeams) doc.set('agent_teams', agentTeams);
+  if (agentTeams) {
+    if (doc.has('agent_teams')) {
+      const existingNode: any = doc.get('agent_teams');
+      const existing = existingNode && typeof existingNode.toJSON === 'function' ? existingNode.toJSON() : (existingNode || {});
+      const mergedHosts = Array.from(new Set([...(Array.isArray(existing.enabled_hosts) ? existing.enabled_hosts : []), ...(agentTeams.enabled_hosts || [])]));
+      const activation = agentTeams._explicitActivation ? agentTeams.activation : (existing.activation || agentTeams.activation);
+      const isolation = agentTeams._explicitIsolation ? agentTeams.isolation : (existing.isolation || agentTeams.isolation);
+      doc.set('agent_teams', {
+        enabled_hosts: mergedHosts,
+        activation,
+        isolation
+      });
+    } else {
+      const { _explicitActivation, _explicitIsolation, ...cleanAgentTeams } = agentTeams;
+      doc.set('agent_teams', cleanAgentTeams);
+    }
+  }
   fs.writeFileSync(configPath, String(doc));
 }
 
@@ -1273,7 +1289,9 @@ async function configureMultiHostTeamRoles(targetDir: string, selectedAgents: st
   return {
     enabled_hosts: installedTeamHosts,
     activation: teamActivation,
-    isolation: teamIsolation
+    isolation: teamIsolation,
+    _explicitActivation: Boolean(opts.teamActivation),
+    _explicitIsolation: Boolean(opts.teamIsolation)
   };
 }
 

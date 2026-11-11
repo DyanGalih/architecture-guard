@@ -126,8 +126,8 @@ You must orchestrate {adapter_command:implement} (core implementation) workflow 
 Apply this coordination when coordinated implementation mode is active under `agent_execution` (explicitly selected or configured via `agent_teams.activation: auto` in `.architecture-guard/config.yml`):
 - **Implementors (the profile's implementor roles: `[BE]`, `[FE]`, `[TEST]`, `[E2E]`)**:
   - Map role-tagged tasks to matching named implementor subagents; keep `[ORCHESTRATION]` work and human approval gates in the lead session.
-  - Apply tiered workspace isolation (`agent_execution`): host-native workspace sharing (`agy` `share`) or dedicated per-role Git worktrees (`.git/ag-worktrees/agteam-<role>`) in the repository that owns the target files for shared-tree hosts (`codex`, `opencode`), or disjoint in-place writes.
-  - The lead reconciles and merges clean worktree commits back into the feature branch, stops on conflicts for lead/human resolution, and removes temporary worktrees before repository hygiene checks.
+  - Apply tiered workspace isolation (`agent_execution`): host-native workspace sharing (`agy` `share`) or dedicated per-role Git worktrees via `architecture-guard worktree create <role>` in the repository that owns the target files for shared-tree hosts (`codex`, `opencode`), or disjoint in-place writes.
+  - The lead reconciles and merges clean worktree commits back into the feature branch via `architecture-guard worktree merge <role>`, stops on conflicts for lead/human resolution, and removes temporary worktrees via `architecture-guard worktree cleanup` before repository hygiene checks.
 - **Concurrent Verification Passes**:
   - When completing implementation, dispatch **Code Reviewer** (`ag-review-implementation`), Implementation **Security Review** (`sr-branch`), and **E2E verification** (`ag-e2e-testing`) concurrently as read-only subagent passes where supported.
   - The lead merges and deduplicates findings before evaluating the Implementation Review Convergence Loop.

@@ -60,7 +60,7 @@ function ensureWithinBounds(targetPath: string, allowedDirs: string[]): boolean 
   });
 }
 
-// Treat the workspace/package root as the trusted anchor; reject links below it, including dangling links.
+// Treat the workspace/package root as the trusted anchor; reject links that escape it or dangle.
 function rejectSymlinks(root: string, target: string): void {
   const relative = path.relative(root, target);
   if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
@@ -70,7 +70,20 @@ function rejectSymlinks(root: string, target: string): void {
   for (const part of relative.split(path.sep).filter(Boolean)) {
     current = path.join(current, part);
     try {
-      if (fs.lstatSync(current).isSymbolicLink()) throw new Error(`Symlink resource path is not allowed: ${current}`);
+      if (fs.lstatSync(current).isSymbolicLink()) {
+        try {
+          const real = fs.realpathSync(current);
+          const relReal = path.relative(root, real);
+          const relPkg = path.relative(ROOT_DIR, real);
+          const escapesRoot = relReal === '..' || relReal.startsWith(`..${path.sep}`) || path.isAbsolute(relReal);
+          const escapesPkg = relPkg === '..' || relPkg.startsWith(`..${path.sep}`) || path.isAbsolute(relPkg);
+          if (escapesRoot && escapesPkg) {
+            throw new Error(`Symlink resource path is not allowed: ${current}`);
+          }
+        } catch {
+          throw new Error(`Symlink resource path is not allowed: ${current}`);
+        }
+      }
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
       throw error;
