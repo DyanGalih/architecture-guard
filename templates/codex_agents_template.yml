@@ -1,5 +1,5 @@
 # Codex responsibilities and supported required feature reductions, not Claude tool allowlists.
-# Override at .architecture-guard/codex-agents.yml. Runtime activation is configured via agent_teams.activation in .architecture-guard/config.yml (defaults to auto).
+# Override at .architecture-guard/codex-agents.yml. Runtime activation is configured via agent_teams.activation in .architecture-guard/config.yml (configured as auto when enabled during init).
 version: 1
 topology: codex-subagents
 roles:

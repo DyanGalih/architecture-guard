@@ -1,5 +1,5 @@
 # Antigravity (agy) responsibilities and required write/execution restrictions.
-# Override at .architecture-guard/agy-agents.yml. Runtime activation is configured via agent_teams.activation in .architecture-guard/config.yml (defaults to auto).
+# Override at .architecture-guard/agy-agents.yml. Runtime activation is configured via agent_teams.activation in .architecture-guard/config.yml (configured as auto when enabled during init).
 version: 1
 topology: agy-subagents
 roles:
