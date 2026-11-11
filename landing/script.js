@@ -128,7 +128,7 @@ fetch('https://api.github.com/repos/DyanGalih/architecture-guard')
         // Graceful silent fallback to static counters if GitHub API is unavailable
         const heroVersionEl = document.getElementById('hero-version-text');
         if (heroVersionEl && !heroVersionEl.textContent.trim()) {
-            heroVersionEl.textContent = 'Latest Release v3.6.0: Multi-Host Agent Teams & PR Queue';
+            heroVersionEl.textContent = 'Latest Release v3.7.0: Light-First Theme, Flagship Skills & Multi-Host Teams';
         }
     });
 

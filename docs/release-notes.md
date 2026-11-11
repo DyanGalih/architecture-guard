@@ -1,4 +1,4 @@
-## Unreleased — Multi-host Parallel Agent Teams (Claude, Codex, Antigravity, OpenCode)
+## 3.7.0
 
 - Add unified team-role setup and synchronization across Claude Code, Codex, Antigravity (`agy`), and OpenCode (`.opencode/agents/agteam-<role>.md`).
 - Add optional `implementor_e2e` (`[E2E]`) role across bundled role templates with read-only reviewer permission guarantees.
