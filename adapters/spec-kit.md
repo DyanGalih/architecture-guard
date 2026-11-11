@@ -55,7 +55,7 @@ Use this adapter when `.architecture-guard/config.yml` or `.architecture-guard/s
 | security-review-plan | Unsupported in standalone SDD orchestration; report `Unavailable`. Current SpecKit extension integration exists only in the legacy `commands/` delivery channel |
 | security-review-tasks | Unsupported in standalone SDD orchestration; report `Unavailable`. Current SpecKit extension integration exists only in the legacy `commands/` delivery channel |
 | security-review-branch | Unsupported in standalone SDD orchestration; report `Unavailable`. Current SpecKit extension integration exists only in the legacy `commands/` delivery channel |
-| subagent-synthesize | `/speckit.subagent.synthesize` when registered; otherwise synthesize inline |
+| subagent-synthesize | Use callable host delegation under the agent_execution contract when authorized; otherwise synthesize inline. SDD-native command availability does not determine host capability |
 | list-specs | Enumerate files matching `{adapter_path:spec}` in normalized path order |
 | consolidate-specs | Build `{adapter_path:fallback-spec-index}` inline from `list-specs` results |
 | architecture-apply | Apply plan/tasks findings directly inline; after confirmation, use an explicit host update capability when available, otherwise run the AG-native inline artifact-fix against the resolved `spec.md` path; do not invoke `/speckit.specify` for updates |

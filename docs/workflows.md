@@ -140,8 +140,7 @@ When you want a single unified command that drives the complete lifecycle intera
 ```
 
 **How it works:**
-1. **Interactive Teammate Detection**: If `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is configured in `.claude/settings.json`, `/ag-workflow` prompts:
-   > *"Claude Code Agent Teams configuration detected. Would you like to orchestrate this workflow using multi-agent Teammates (Author, Reviewer, Implementers, Quality Gate) or standard single-agent mode?"*
+1. **Execution Selection**: sequential is the default. Read-only subagents require callable tools and session permission. Coordinated implementation requires explicit selection for this run. Claude also requires its native Agent Teams flag; Codex uses its own profile and callable host tools. Profile presence never activates execution.
 2. **Phase 1: Discovery and Specification**: runs `ag-governed-discover` when the request is exploratory, then `ag-governed-spec`.
    - **🛑 Human Gate 0**: approve the specification.
 3. **Phase 2: Delivery**: runs `ag-governed-delivery`, which generates the plan and tasks, then runs `ag-review-artifacts` and Security Review (when installed) and applies fixes until a pass is clean (at most 5 passes).
@@ -153,7 +152,7 @@ When you want a single unified command that drives the complete lifecycle intera
    - In the SpecKit extension channel (`/speckit.architecture-guard.ag-workflow`), the registered `ag-verify` does not take `base=` or apply the change checks, so the final review reports Change Checks as `Unavailable` and points to the standalone `ag-verify base=<branch>` or `ag-review-pr`.
 6. **Archive**: only after Gate 3, the workflow suggests `ag-governed-archive`.
 
-**Subagents:** the workflow runs sequentially by default on every host. When the host can dispatch a fresh subagent, read-only reviews (loop passes and the final review) may run in one, and the architecture and security halves of a pass may run side by side. Subagents never write artifacts or code, never satisfy a human gate, and are used only when the host really provides them.
+**Subagents:** follow the shared `agent_execution` contract. Reviews can use fresh read-only contexts; coordinated implementors can write only their assigned tasks/files under explicit mode selection and verified role restrictions. The lead serializes overlapping edits and retains human gates. A parent already in a fresh review context does not redelegate the same scope. Setup is described in [standalone usage](standalone-usage.md); delegation thresholds and context/approval reuse are described in [governance model](governance-model.md).
 
 If you are specifically cleaning up duplicated logic (Brownfield), follow the [DRY Cleanup Guide](dry-cleanup.md) after your initialization pass. This keeps architecture concerns visible throughout the delivery lifecycle instead of concentrating them at the end.
 

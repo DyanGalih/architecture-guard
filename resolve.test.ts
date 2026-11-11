@@ -145,3 +145,53 @@ test('resolves bundled generic artifact templates', () => {
     assert(res.content.length > 0);
   }
 });
+
+test('resource and manifest resolution and listing reject symlink escapes', () => {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-resolve-links-'));
+  try {
+    const root = path.join(base, 'workspace');
+    const templates = path.join(root, '.architecture-guard', 'templates');
+    fs.mkdirSync(templates, { recursive: true });
+    const outside = path.join(base, 'outside.md');
+    fs.writeFileSync(outside, 'private');
+    const link = path.join(templates, 'escape.md');
+    fs.symlinkSync(outside, link);
+    assert.throws(() => resolveResource('template', 'escape', { target: root }), /Symlink resource/);
+    assert.throws(() => listCategoryResources('template', { target: root }), /Symlink resource/);
+    fs.unlinkSync(link);
+    fs.symlinkSync(path.join(base, 'missing'), link);
+    assert.throws(() => resolveResource('template', 'escape', { target: root }), /Symlink resource/);
+    fs.unlinkSync(link);
+    fs.symlinkSync(outside, path.join(root, '.architecture-guard', 'config.yml'));
+    assert.throws(() => resolveResource('manifest', undefined, { target: root }), /Symlink resource/);
+    fs.unlinkSync(path.join(root, '.architecture-guard', 'config.yml'));
+    fs.writeFileSync(path.join(root, '.architecture-guard', 'config.yml'), 'valid: true');
+    const validManifest = resolveResource('manifest', undefined, { target: root });
+    assert.equal(validManifest.content, 'valid: true');
+    fs.rmSync(templates, { recursive: true });
+    fs.symlinkSync(base, templates);
+    // Symlinked override folder resolves local override files directly
+    const local = resolveResource('template', 'outside', { target: root });
+    assert.equal(local.source, 'local');
+    assert.equal(local.content, 'private');
+    // Category listing includes files from symlinked override folder
+    const listed = listCategoryResources('template', { target: root });
+    assert.ok(listed.includes('outside.md'));
+    // When override folder is a symlink, resolving a bundled resource still falls through cleanly
+    const bundled = resolveResource('template', 'ponytail_core', { target: root });
+    assert.equal(bundled.source, 'bundled');
+    // An escaping symlink inside the symlinked override directory is still rejected
+    const evil = path.join(base, 'evil.md');
+    fs.symlinkSync(path.join(os.tmpdir(), 'nonexistent-evil'), evil);
+    assert.throws(() => resolveResource('template', 'evil', { target: root }), /Symlink resource/);
+    fs.unlinkSync(evil);
+
+    // Workspace reached through a symlink resolves internal files without false rejection
+    const symRoot = path.join(base, 'sym-workspace');
+    fs.symlinkSync(root, symRoot);
+    const fromSym = resolveResource('manifest', undefined, { target: symRoot });
+    assert.equal(fromSym.content, 'valid: true');
+  } finally {
+    fs.rmSync(base, { recursive: true, force: true });
+  }
+});

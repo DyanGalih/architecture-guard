@@ -21,6 +21,14 @@ Architecture Guard engine resources are standalone package resources. Never sear
 
 Before continuing, you **MUST** resolve and apply the `ponytail_core` template with `architecture-guard resolve template ponytail_core` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Run Context Reuse
+
+Resolve and apply `budgeted_context_sdd` with `architecture-guard resolve template budgeted_context_sdd`. Its run-local reuse and invalidation rules apply to all context loading below.
+
+## Host Agent Execution
+
+Resolve and apply `agent_execution` with `architecture-guard resolve template agent_execution`. It owns mode activation, delegation decisions, complete handoffs, role restrictions, and ownership. Preserve phase-specific gates below. All retrieval instructions below accept current sufficient run-local context under `budgeted_context_sdd`: reuse it instead of repeating calls. An exposed memory tool is not usable when this run has recorded an absent store; reuse that unavailable outcome until tools or environment change.
+
 ## Capability Composition
 
 Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
@@ -470,7 +478,13 @@ How will development be delivered on this project?
 - Claude Code Agent Teams (a lead session plus teammate roles sized to this project: analysts, one implementor per stack layer, and a code reviewer)
 ```
 
-Offer the Claude Code Agent Teams option only when this session runs in Claude Code. On any other host, ask with the first two options only and do not create `.architecture-guard/agents.yml` or `.claude/agents/` files; the governed skills run there in their normal single-agent flow.
+Offer the Claude Code Agent Teams option only when this session runs in Claude Code. On Codex, also offer coordinated Codex roles as described below. On other hosts offer the first two options and use only callable host capabilities under `agent_execution`. Do not create Claude configuration on a non-Claude host.
+
+If the user selects Codex roles:
+1. Resolve `codex_agents_template` with `architecture-guard resolve template codex_agents_template`. Recommend roles from actual frontend, backend, and test evidence; omit unsupported layers and use unique task tags. Keep unmatched work with the lead.
+2. Preview `.architecture-guard/codex-agents.yml` and the generated `.codex/agents/agteam-<role>.toml` targets before writes. Confirm the roster and inherited model defaults. Native feature reductions are required controls; system prompts are behavioral guidance.
+3. After approval, write only the confirmed roster and run `architecture-guard sync-team-roles --agent codex`. Do not translate Claude tool allowlists, set Claude flags, or override parent sandbox/approval/MCP settings.
+4. Report setup separately from run activation: coordinated implementation requires explicit selection each run, callable tools, and verified required restrictions. Reject unsupported restrictions; do not silently substitute unrestricted roles.
 
 If the user selects Team Development:
 1. Record `Mode: Team` for the proposed governance changes.

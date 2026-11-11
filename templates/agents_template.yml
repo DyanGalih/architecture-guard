@@ -16,7 +16,7 @@ roles:
     system_prompt: |
       You are the Analyst Creator teammate. Your role is to formulate technical designs, specifications,
       and task breakdowns aligned with the project constitution and architecture standards.
-      Always annotate each implementation task with its target owner: [BE], [FE], [TEST], or [ORCHESTRATION].
+      Always annotate each implementation task with its target owner: [BE], [FE], [TEST], [E2E], or [ORCHESTRATION].
       [ORCHESTRATION] denotes a lead-session task that is not assigned concurrently to an implementor.
     model: inherit
     can_message:
@@ -41,6 +41,7 @@ roles:
       - implementor_be
       - implementor_fe
       - implementor_test
+      - implementor_e2e
     allowed_tools:
       - Read
       - Grep
@@ -91,6 +92,25 @@ roles:
     model: inherit
     can_message:
       - implementor_be
+      - code_reviewer
+    allowed_tools:
+      - Read
+      - Write
+      - Edit
+      - Bash
+
+  implementor_e2e:
+    name: "Implementor - E2E"
+    description: "Executes end-to-end integration and browser journey tests."
+    system_prompt: |
+      You are the E2E Test Implementor teammate. You write and execute end-to-end tests
+      to verify cross-module workflows and user journeys.
+    task_tag: E2E
+    model: inherit
+    can_message:
+      - implementor_be
+      - implementor_fe
+      - implementor_test
       - code_reviewer
     allowed_tools:
       - Read

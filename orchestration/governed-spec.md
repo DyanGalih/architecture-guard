@@ -21,6 +21,10 @@ Architecture Guard engine resources are standalone package resources. Never sear
 
 Before continuing, you **MUST** resolve and apply the `ponytail_core` template with `architecture-guard resolve template ponytail_core` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Host Agent Execution
+
+Resolve and apply `agent_execution` with `architecture-guard resolve template agent_execution`. It owns mode activation, delegation decisions, complete handoffs, role restrictions, and ownership. Preserve phase-specific gates below. All retrieval instructions below accept current sufficient run-local context under `budgeted_context_sdd`: reuse it instead of repeating calls. An exposed memory tool is not usable when this run has recorded an absent store; reuse that unavailable outcome until tools or environment change.
+
 ## Capability Composition
 
 Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
@@ -49,6 +53,8 @@ Provide a single command that ensures:
 ## Orchestration Flow
 
 ### Write Approval Gate
+
+Accept an existing caller approval only for the identical action, phase, exact targets, and owning repository under `capability_composition`; distinct human decisions and material scope expansions still require approval.
 
 Before the first mutation, resolve and preview the exact branch, derived change name, and target artifacts for change creation, specification generation, clarification updates, and any fallback-index refresh, together with the planned operations. Obtain explicit user approval, then allow routine writes already previewed within this specification phase without per-file prompts. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 

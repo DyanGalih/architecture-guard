@@ -57,3 +57,14 @@ context:
 #   ignore:
 #     paths:
 #       - docs/archive/**
+
+# Optional agent team coordination and workspace isolation across Claude, Codex, Antigravity, and OpenCode.
+# Configured interactively during `init` or via --team-activation / --team-isolation.
+# agent_teams:
+#   enabled_hosts:
+#     - antigravity
+#     - codex
+#     - opencode
+#     - claude
+#   activation: auto       # auto | ask | manual
+#   isolation: auto        # auto | worktree | shared

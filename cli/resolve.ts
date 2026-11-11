@@ -60,6 +60,112 @@ function ensureWithinBounds(targetPath: string, allowedDirs: string[]): boolean 
   });
 }
 
+// Treat the workspace/package root as the trusted anchor; reject links that escape it or dangle.
+// When allowCategorySymlink is true, category directories under .architecture-guard or ag
+// (e.g. templates -> /shared/templates) are allowed as local override directories. Files
+// inside must stay within that directory.
+function rejectSymlinks(root: string, target: string, allowCategorySymlink = false): void {
+  const realRoot = fs.existsSync(root) ? fs.realpathSync(root) : path.resolve(root);
+  const realPkg = fs.existsSync(ROOT_DIR) ? fs.realpathSync(ROOT_DIR) : ROOT_DIR;
+  const relative = path.relative(root, target);
+  if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error(`Resource path escapes root: ${target}`);
+  }
+  let current = root;
+  let currentAnchor = realRoot;
+  const parts = relative.split(path.sep).filter(Boolean);
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    current = path.join(current, part);
+    try {
+      if (fs.lstatSync(current).isSymbolicLink()) {
+        try {
+          const real = fs.realpathSync(current);
+          const isCategoryDir = allowCategorySymlink &&
+            i === 1 &&
+            (parts[0] === '.architecture-guard' || parts[0] === 'ag') &&
+            fs.statSync(current).isDirectory();
+          if (isCategoryDir) {
+            currentAnchor = real;
+            continue;
+          }
+          const relAnchor = path.relative(currentAnchor, real);
+          const relPkg = path.relative(realPkg, real);
+          const escapesAnchor = relAnchor === '..' || relAnchor.startsWith(`..${path.sep}`) || path.isAbsolute(relAnchor);
+          const escapesPkg = relPkg === '..' || relPkg.startsWith(`..${path.sep}`) || path.isAbsolute(relPkg);
+          if (escapesAnchor && escapesPkg) {
+            throw new Error(`Symlink resource path is not allowed: ${current}`);
+          }
+        } catch (e) {
+          if (e instanceof Error && e.message.startsWith('Symlink resource path is not allowed:')) throw e;
+          throw new Error(`Symlink resource path is not allowed: ${current}`, { cause: e });
+        }
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+      throw error;
+    }
+  }
+}
+
+function candidateExistsOrIsSymlink(filePath: string): boolean {
+  try {
+    const lstat = fs.lstatSync(filePath);
+    return lstat.isFile() || lstat.isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+function resolveManifestResource(targetDir: string): ResolvedResource {
+  const candidatePaths = [
+    path.join(targetDir, '.architecture-guard', 'config.yml'),
+    path.join(targetDir, '.architecture-guard', 'config.yaml'),
+    path.join(targetDir, 'ag', 'config.yml'),
+    path.join(targetDir, '.architecture-guard', 'selected-adapter'),
+  ];
+
+  for (const candidate of candidatePaths) {
+    if (candidateExistsOrIsSymlink(candidate)) {
+      rejectSymlinks(targetDir, candidate);
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        return {
+          category: 'manifest',
+          name: path.basename(candidate),
+          source: 'local',
+          path: candidate,
+          content: fs.readFileSync(candidate, 'utf8'),
+        };
+      }
+    }
+  }
+
+  throw new Error(`No configuration manifest found in ${targetDir} (.architecture-guard/config.yml)`);
+}
+
+function findCandidateResource(
+  dirs: string[],
+  cleanName: string,
+  extensions: string[],
+  allowedDirs: string[],
+  symlinkBase: string,
+  allowCategorySymlink = false
+): string | null {
+  for (const dir of dirs) {
+    for (const ext of extensions) {
+      const candidate = path.join(dir, `${cleanName}${ext}`);
+      if (!candidateExistsOrIsSymlink(candidate)) {
+        continue;
+      }
+      rejectSymlinks(symlinkBase, candidate, allowCategorySymlink);
+      if (ensureWithinBounds(candidate, allowedDirs) && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        return candidate;
+      }
+    }
+  }
+  return null;
+}
+
 export function resolveResource(
   rawCategory: string,
   rawName?: string,
@@ -81,26 +187,7 @@ export function resolveResource(
 
   // Handle manifest / config resolution
   if (normalizedCategory === 'manifest') {
-    const candidatePaths = [
-      path.join(targetDir, '.architecture-guard', 'config.yml'),
-      path.join(targetDir, '.architecture-guard', 'config.yaml'),
-      path.join(targetDir, 'ag', 'config.yml'),
-      path.join(targetDir, '.architecture-guard', 'selected-adapter'),
-    ];
-
-    for (const candidate of candidatePaths) {
-      if (fs.existsSync(candidate)) {
-        return {
-          category: 'manifest',
-          name: path.basename(candidate),
-          source: 'local',
-          path: candidate,
-          content: fs.readFileSync(candidate, 'utf8'),
-        };
-      }
-    }
-
-    throw new Error(`No configuration manifest found in ${targetDir} (.architecture-guard/config.yml)`);
+    return resolveManifestResource(targetDir);
   }
 
   let name = rawName ? rawName.trim() : '';
@@ -126,33 +213,27 @@ export function resolveResource(
   const allowedDirs = [...localDirs, bundledDir, targetDir, ROOT_DIR];
 
   // 1. Check local workspace overrides first
-  for (const dir of localDirs) {
-    for (const ext of extensionsToTry) {
-      const candidate = path.join(dir, `${cleanName}${ext}`);
-      if (ensureWithinBounds(candidate, allowedDirs) && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-        return {
-          category: normalizedCategory,
-          name: path.basename(candidate),
-          source: 'local',
-          path: candidate,
-          content: fs.readFileSync(candidate, 'utf8'),
-        };
-      }
-    }
+  const localCandidate = findCandidateResource(localDirs, cleanName, extensionsToTry, allowedDirs, targetDir, true);
+  if (localCandidate) {
+    return {
+      category: normalizedCategory,
+      name: path.basename(localCandidate),
+      source: 'local',
+      path: localCandidate,
+      content: fs.readFileSync(localCandidate, 'utf8'),
+    };
   }
 
   // 2. Fall back to bundled package resources
-  for (const ext of extensionsToTry) {
-    const candidate = path.join(bundledDir, `${cleanName}${ext}`);
-    if (ensureWithinBounds(candidate, allowedDirs) && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-      return {
-        category: normalizedCategory,
-        name: path.basename(candidate),
-        source: 'bundled',
-        path: candidate,
-        content: fs.readFileSync(candidate, 'utf8'),
-      };
-    }
+  const bundledCandidate = findCandidateResource([bundledDir], cleanName, extensionsToTry, allowedDirs, ROOT_DIR);
+  if (bundledCandidate) {
+    return {
+      category: normalizedCategory,
+      name: path.basename(bundledCandidate),
+      source: 'bundled',
+      path: bundledCandidate,
+      content: fs.readFileSync(bundledCandidate, 'utf8'),
+    };
   }
 
   throw new Error(`Resource "${name}" not found in category "${normalizedCategory}" (checked local workspace and bundled resources)`);
@@ -178,8 +259,10 @@ export function listCategoryResources(
 
   // Bundled
   const bundledDir = path.join(ROOT_DIR, normalizedCategory);
+  rejectSymlinks(ROOT_DIR, bundledDir);
   if (fs.existsSync(bundledDir)) {
     for (const file of fs.readdirSync(bundledDir)) {
+      rejectSymlinks(ROOT_DIR, path.join(bundledDir, file));
       if (fs.statSync(path.join(bundledDir, file)).isFile()) {
         items.add(file);
       }
@@ -192,9 +275,13 @@ export function listCategoryResources(
     path.join(targetDir, 'ag', normalizedCategory),
   ];
   for (const localDir of localDirs) {
+    if (!fs.existsSync(localDir) && !candidateExistsOrIsSymlink(localDir)) continue;
+    rejectSymlinks(targetDir, localDir, true);
     if (fs.existsSync(localDir)) {
       for (const file of fs.readdirSync(localDir)) {
-        if (fs.statSync(path.join(localDir, file)).isFile()) {
+        const filePath = path.join(localDir, file);
+        rejectSymlinks(targetDir, filePath, true);
+        if (fs.statSync(filePath).isFile()) {
           items.add(file);
         }
       }

@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'yaml';
@@ -189,4 +189,235 @@ export function locateWorkspace(cwd: string) {
 
 export function gitToplevel(directory: string) {
   return execFileSync('git', ['-C', directory, 'rev-parse', '--show-toplevel'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+}
+
+function gitAdminDir(repoRoot: string): string {
+  const root = path.resolve(repoRoot);
+  try {
+    const commonDir = execFileSync('git', ['-C', root, 'rev-parse', '--git-common-dir'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+    return path.resolve(root, commonDir);
+  } catch {
+    return path.join(root, '.git');
+  }
+}
+
+function assertWorktreeBounds(baseDir: string, targetPath: string): void {
+  const root = path.resolve(baseDir);
+  const target = path.resolve(targetPath);
+  const relative = path.relative(root, target);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error(`Role path escapes target: ${targetPath}`);
+  }
+}
+
+export interface RoleWorktreeResult {
+  worktreePath: string;
+  branchName: string;
+}
+
+export function assertValidRoleName(roleName: string): void {
+  if (!roleName || typeof roleName !== 'string') {
+    throw new Error(`Invalid role name: "${roleName}"`);
+  }
+  if (roleName.includes('..') || roleName.includes('/') || roleName.includes('\\') || path.isAbsolute(roleName)) {
+    throw new Error(`Role path escapes target: ${roleName}`);
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(roleName)) {
+    throw new Error(`Invalid role name: "${roleName}". Must be alphanumeric with underscores or dashes.`);
+  }
+}
+
+export function assertValidBranchRef(branch: string): void {
+  if (typeof branch !== 'string' || !/^[a-zA-Z0-9._/-]+$/.test(branch) || branch.startsWith('-') || branch.includes('..')) {
+    throw new Error(`Invalid base branch: ${branch}`);
+  }
+}
+
+export function sanitizeRoleName(roleName: string): string {
+  assertValidRoleName(roleName);
+  return roleName.replace(/_/g, '-').replace(/[^a-zA-Z0-9-]/g, '-');
+}
+
+export function roleBranchName(roleName: string): string {
+  return `agteam/${sanitizeRoleName(roleName)}`;
+}
+
+export function roleWorktreePath(repoRoot: string, roleName: string): string {
+  const root = path.resolve(repoRoot);
+  const adminDir = gitAdminDir(root);
+  const sanitized = sanitizeRoleName(roleName);
+  const wtPath = path.join(adminDir, 'ag-worktrees', `agteam-${sanitized}`);
+  assertWorktreeBounds(adminDir, wtPath);
+  return wtPath;
+}
+
+export function isWorktreeDirty(wtPath: string): boolean {
+  if (!fs.existsSync(wtPath)) return false;
+  const gitFile = path.join(wtPath, '.git');
+  if (!fs.existsSync(gitFile)) {
+    // Not a valid git worktree (stale or empty folder); not dirty
+    return false;
+  }
+  try {
+    const status = execFileSync('git', ['-C', wtPath, 'status', '--porcelain'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+    return status.length > 0;
+  } catch {
+    return true;
+  }
+}
+
+export function hasUnmergedRoleCommits(repoRoot: string, roleName: string, baseBranch = 'HEAD'): boolean {
+  const root = path.resolve(repoRoot);
+  const branchName = roleBranchName(roleName);
+  const checkBranch = spawnSync('git', ['-C', root, 'show-ref', '--verify', '--quiet', `refs/heads/${branchName}`], { stdio: 'ignore' });
+  if (checkBranch.status !== 0) {
+    return false;
+  }
+  try {
+    const revCount = execFileSync('git', ['-C', root, 'rev-list', '--count', `${baseBranch}..${branchName}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+    return parseInt(revCount, 10) > 0;
+  } catch {
+    return true;
+  }
+}
+
+export function createRoleWorktree(repoRoot: string, roleName: string, baseBranch?: string, force = false): RoleWorktreeResult {
+  const root = path.resolve(repoRoot);
+  if (baseBranch !== undefined) {
+    assertValidBranchRef(baseBranch);
+  }
+
+  const wtPath = roleWorktreePath(root, roleName);
+  const branchName = roleBranchName(roleName);
+  const base = baseBranch || 'HEAD';
+
+  if (!force && isWorktreeDirty(wtPath)) {
+    throw new Error(`Cannot recreate role worktree at ${wtPath}: worktree has uncommitted changes.`);
+  }
+
+  if (!force && hasUnmergedRoleCommits(root, roleName, base)) {
+    throw new Error(`Cannot recreate role worktree at ${wtPath}: branch ${branchName} has unmerged commits.`);
+  }
+
+  // Prune stale worktree registrations from git metadata
+  try {
+    execFileSync('git', ['-C', root, 'worktree', 'prune'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch {
+    // ignore
+  }
+
+  if (fs.existsSync(wtPath)) {
+    try {
+      execFileSync('git', ['-C', root, 'worktree', 'remove', '--force', wtPath], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch {
+      fs.rmSync(wtPath, { recursive: true, force: true });
+    }
+  }
+
+  const checkBranch = spawnSync('git', ['-C', root, 'show-ref', '--verify', '--quiet', `refs/heads/${branchName}`], { stdio: 'ignore' });
+  if (checkBranch.status === 0) {
+    try {
+      execFileSync('git', ['-C', root, 'branch', '-D', branchName], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch (err) {
+      throw new Error(`Failed to reset branch ${branchName}: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
+    }
+  }
+
+  fs.mkdirSync(path.dirname(wtPath), { recursive: true });
+  execFileSync('git', ['-C', root, 'worktree', 'add', '-b', branchName, wtPath, base], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+
+  return {
+    worktreePath: wtPath,
+    branchName
+  };
+}
+
+export function mergeRoleWorktree(repoRoot: string, roleName: string): { success: boolean; merged: boolean; message: string } {
+  const root = path.resolve(repoRoot);
+  const wtPath = roleWorktreePath(root, roleName);
+  const branchName = roleBranchName(roleName);
+
+  if (isWorktreeDirty(root)) {
+    return { success: false, merged: false, message: `Cannot merge ${branchName}: main repository has uncommitted changes.` };
+  }
+
+  try {
+    execFileSync('git', ['-C', root, 'rev-parse', '--verify', `refs/heads/${branchName}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch {
+    return { success: false, merged: false, message: `Branch ${branchName} does not exist.` };
+  }
+
+  if (isWorktreeDirty(wtPath)) {
+    return { success: false, merged: false, message: `Cannot merge ${branchName}: worktree has uncommitted changes.` };
+  }
+
+  const revCount = execFileSync('git', ['-C', root, 'rev-list', '--count', `HEAD..${branchName}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  if (parseInt(revCount, 10) === 0) {
+    return { success: true, merged: false, message: `No commits to merge from ${branchName}` };
+  }
+
+  try {
+    execFileSync('git', ['-C', root, 'merge', '--no-ff', '-m', `Merge parallel role changes from ${branchName}`, branchName], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    return { success: true, merged: true, message: `Merged ${branchName} successfully` };
+  } catch (err: any) {
+    try {
+      execFileSync('git', ['-C', root, 'merge', '--abort'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch {
+      // ignore
+    }
+    const errMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, merged: false, message: `Merge conflict on ${branchName}: ${errMsg}` };
+  }
+}
+
+export function cleanupRoleWorktrees(repoRoot: string, force = false): string[] {
+  const root = path.resolve(repoRoot);
+  const adminDir = gitAdminDir(root);
+  const baseDir = path.join(adminDir, 'ag-worktrees');
+  if (!fs.existsSync(baseDir)) return [];
+
+  const removed: string[] = [];
+  const entries = fs.readdirSync(baseDir);
+
+  for (const entry of entries) {
+    const wtPath = path.join(baseDir, entry);
+    assertWorktreeBounds(adminDir, wtPath);
+    const roleSuffix = entry.startsWith('agteam-') ? entry.slice('agteam-'.length) : entry;
+    const branchName = roleBranchName(roleSuffix);
+
+    if (!force) {
+      if (isWorktreeDirty(wtPath)) {
+        continue;
+      }
+      if (hasUnmergedRoleCommits(root, roleSuffix)) {
+        continue;
+      }
+    }
+
+    try {
+      execFileSync('git', ['-C', root, 'worktree', 'remove', '--force', wtPath], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+      removed.push(wtPath);
+    } catch {
+      try {
+        fs.rmSync(wtPath, { recursive: true, force: true });
+        removed.push(wtPath);
+      } catch {
+        // ignore
+      }
+    }
+
+    try {
+      execFileSync('git', ['-C', root, 'branch', '-D', branchName], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch {
+      // ignore
+    }
+  }
+
+  try {
+    execFileSync('git', ['-C', root, 'worktree', 'prune'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch {
+    // ignore
+  }
+
+  return removed;
 }

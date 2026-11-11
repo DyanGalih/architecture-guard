@@ -1,4 +1,15 @@
-## Unreleased
+## Unreleased — Multi-host Parallel Agent Teams (Claude, Codex, Antigravity, OpenCode)
+
+- Add unified team-role setup and synchronization across Claude Code, Codex, Antigravity (`agy`), and OpenCode (`.opencode/agents/agteam-<role>.md`).
+- Add optional `implementor_e2e` (`[E2E]`) role across bundled role templates with read-only reviewer permission guarantees.
+- Support interactive `architecture-guard init` team-role auto-activation and configure `agent_teams` (`enabled_hosts`, `activation: auto | ask | manual`, `isolation: auto | worktree | shared`) in `.architecture-guard/config.yml`.
+- Add tiered workspace isolation for parallel implementor subagents: host-native workspace sharing (`agy` `share`) -> per-role Git worktrees (`.git/ag-worktrees/agteam-<role>`) managed via CLI helpers in the owning repository (with manual unmanaged fallback outside `.git` for read-only sandboxes) -> disjoint in-place writes.
+- Share execution modes, delegation thresholds, complete handoffs, ownership, and independent-review policy across canonical skills.
+- Orchestrate parallel lifecycle phases across spec review, implementation, code review, security review (`sr-branch`), and E2E verification.
+- Distinguish native feature reductions from behavioral guidance; parent sandbox, approval, and MCP settings are not per-role overrides. Read-only reviewer permissions are declared natively via tools in OpenCode (`tools: { write: false }`), while Codex (disabling `shell_tool`) and Antigravity CLI govern reviewer roles via prompt contracts and human approval gates.
+- Protect resource and archive paths against path traversal escapes (CWE-22), while permitting readable external symlinks specifically for .architecture-guard/config.yml.
+- During interactive or scripted `init`, role installation failures log warnings and omit the failed host from `agent_teams.enabled_hosts` while allowing the rest of the workspace install (framework, presets, commands) to finish with exit code 0. Explicit `sync-team-roles` continues to exit with status 1 on role installation errors.
+- Runtime Codex/agy/OpenCode role discovery/enforcement and independent Security Review require separate evidence; fixture checks alone do not establish them.
 
 ## 3.6.0
 

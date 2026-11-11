@@ -1,5 +1,11 @@
 # Budgeted Architecture Context Contract
 
+## Reuse and invalidation in every context mode
+
+Keep a run-local manifest in conversation context: selected adapter, trusted policy root, resolved contract/constitution paths, loaded content or content fingerprints, active artifact paths, named gaps, and optional-service outcomes. Before a new phase relies on cached inputs, compare their current content/fingerprints and trust root. Reuse unchanged loaded content; reload changed inputs and reassess dependent evidence. A changed trust root invalidates its cached rules. Active artifacts always remain authoritative. After compaction or context loss, reload required sources rather than assuming a summary contains the full rules.
+
+Reuse sufficient memory synthesis within the run. If registered memory tools report an absent store or another persistent unavailable condition, record that outcome and use repository governance without repeating the identical failing probes in child phases. Retry only when the tools or environment change. Never initialize a memory store implicitly. Expand only for named unresolved conflicts or missing inputs; do not traverse all history to decide whether to delegate. These reuse rules do not change targeted or budgeted retrieval limits below.
+
 Use `{adapter_path:governance-config}` when present. Missing, malformed, or unknown values preserve targeted, Flash-Mem-first behavior and produce a warning rather than blocking the workflow.
 
 When `context.mode` is `budgeted`, load context in this order:

@@ -25,6 +25,10 @@ Architecture Guard engine resources are standalone package resources. Never sear
 
 Before continuing, you **MUST** resolve and apply the `ponytail_core` template with `architecture-guard resolve template ponytail_core` as the authoritative shared contract. Phase instructions may narrow but not weaken its safety or verification floor.
 
+## Host Agent Execution
+
+Resolve and apply `agent_execution` with `architecture-guard resolve template agent_execution`. It owns mode activation, delegation decisions, complete handoffs, role restrictions, and ownership. Preserve phase-specific gates below. All retrieval instructions below accept current sufficient run-local context under `budgeted_context_sdd`: reuse it instead of repeating calls. An exposed memory tool is not usable when this run has recorded an absent store; reuse that unavailable outcome until tools or environment change.
+
 ## Capability Composition
 
 Resolve and apply the `capability_composition` template with `architecture-guard resolve template capability_composition` before delegating to another Architecture Guard capability. Resolve and read the installed sibling skill or command file directly; do not treat a capability name or Markdown path as an invocation.
@@ -55,6 +59,8 @@ Produce an approved User Story and an implementation-ready `{adapter_path:tasks}
 
 ## Write Approval Gate
 
+Accept an existing caller approval only for the identical action, phase, exact targets, and owning repository under `capability_composition`; distinct human decisions and material scope expansions still require approval.
+
 Before the first mutation, resolve and preview the exact branch and requested Phase 3 targets, including User Story files (`<root>/user-stories/**/*.md`) and local backlog (`.architecture-guard/backlog.yml`) when selected, together with all planned operations. Obtain explicit user approval, then allow routine writes already previewed within this team-delivery phase scope without per-file prompts. If the run continues to Phase 4, preview the exact change container, plan and task artifacts and planned operations, and obtain approval before their first mutation. Newly discovered material scope or any new target path requires a new preview and renewed approval.
 
 ## Mandatory Branch Preflight
@@ -82,7 +88,7 @@ Before creating, planning, or modifying any active change:
 
 ## Phase 2 — Mandatory Memory Preflight When Available
 
-When Flash-Mem is available, execute both operations before planning, reviewing, or generating tasks:
+When no current sufficient cached synthesis exists and Flash-Mem is usable under the run-local context contract, execute both operations before planning, reviewing, or generating tasks:
 
 1. `get_project_summary`
 2. `search_memory` scoped to the active feature, architecture boundaries, security-sensitive areas, prior decisions, approved exceptions, and related files
@@ -198,7 +204,7 @@ Only enter this phase after tasks are accepted and no blocking finding stopped t
 
 Repeat until a stop condition is met:
 
-1. **Review**: Run the registered `ag-review-artifacts` capability in `architecture` mode over the complete active artifact set: `{adapter_path:spec}` (plus the proposal when the adapter defines one), `{adapter_path:plan}`, and `{adapter_path:tasks}`. Tell it that this skill is the Security Review owner. When this run knows the branch the change will merge into (for example a destination branch `ag-workflow` passed), pass it as the **Base ref** so Premise Grounding reads the artifacts' cited code at that branch. When the change spans several repositories, pass one Base ref per repository, naming each, because each repository merges into its own branch. In the same pass, run Security Review on the plan through {adapter_command:security-review-plan} and on the tasks through {adapter_command:security-review-tasks}. When the host can run a fresh subagent, run each review pass in a fresh context so a pass does not grade its own repairs.
+1. **Review**: Run the registered `ag-review-artifacts` capability in `architecture` mode over the complete active artifact set: `{adapter_path:spec}` (plus the proposal when the adapter defines one), `{adapter_path:plan}`, and `{adapter_path:tasks}`. Tell it that this skill is the Security Review owner. When this run knows the branch the change will merge into (for example a destination branch `ag-workflow` passed), pass it as the **Base ref** so Premise Grounding reads the artifacts' cited code at that branch. When the change spans several repositories, pass one Base ref per repository, naming each, because each repository merges into its own branch. In the same pass, run Security Review on the plan through {adapter_command:security-review-plan} and on the tasks through {adapter_command:security-review-tasks}. When coordinated execution is active or `agent_teams.activation: auto` is configured, dispatch `Analyst Reviewer` (`ag-review-artifacts`) and Plan/Task `Security Review` (`sr-plan` / `sr-tasks`) concurrently as read-only subagents. Merge findings before evaluating pass convergence. When the host can run a fresh subagent, run each review pass in a fresh context so a pass does not grade its own repairs.
 2. **Evaluate**: A pass is clean only when its violation table is empty, **Task Synchronization** is `Synced` with no missing coverage or planning gaps, its hygiene report has no findings on the planning artifacts, and every Security Review that ran reports no findings. An `Unavailable` hygiene runner or Security Review never makes a pass clean on its own; it only qualifies the result. Findings of every severity count, advisory ones included.
 3. **Repair**: Pass architecture findings to {adapter_command:architecture-apply}. Fix hygiene findings on the planning artifacts directly. Security findings belong to the Security Review tool, because `ag-apply` does not apply security changes: pass them to that tool's own apply operation (for example `sr-apply`) only when it is registered and callable; otherwise record them as open security findings, report them, and leave them out of the clean check. Plan/tasks edits and upstream delegations previewed and approved under the Write Approval Gate need no per-pass confirmation; a new target path or material scope requires renewed approval. When a repair materially changes the specification, rerun {adapter_command:validate-spec} and reconcile (never regenerate) the plan through `ag-governed-plan`; when the specification or plan changed materially, reconcile tasks through `ag-governed-tasks` before the next pass.
 4. **Repeat** from step 1.
