@@ -232,10 +232,18 @@ The `ag-governed-delivery-team` workflow supports pushing approved User Stories 
 
 Create a file at `.architecture-guard/sync.yml` in your workspace:
 
+**GitHub Example:**
+```yaml
+# Supported providers: github, jira
+provider: github
+repo: my-org/my-repo
+enabled: true
+```
+
+**Jira Example:**
 ```yaml
 # Supported providers: github, jira
 provider: jira
-# Project key for Jira or repo for GitHub (e.g., repo: my-org/my-repo)
 project: MYPROJ
 enabled: true
 # Optional Jira provider settings (absent defaults to epic: true)
@@ -253,10 +261,10 @@ The configuration is strictly validated during the workflow using `architecture-
    - **Jira**: The feature parent creates an Epic and each child story creates a Story linked to that Epic. When `jira.epic: false`, child stories carry a copy of the shared context and no Epic is created.
    - **GitHub**: The feature parent creates a parent tracking Issue and each child story creates an Issue referencing the parent tracking issue.
    - **Single-story feature**: Synchronizes as a single Story/Issue without a parent or Epic.
-5. The result is recorded locally in `.architecture-guard/sync_status.json` per item, keyed `<feature>` for the parent and `<feature>#<story-id>` for child stories, with its role (e.g., `{ "role": "story", "status": "success", "issue_url": "..." }`).
+5. The result is recorded locally in `.architecture-guard/sync_status.json` per item, keyed `<feature>` for the parent or single-story feature and `<feature>#<story-id>` for child stories, with its role (e.g., `{ "role": "story", "status": "success", "issue_url": "..." }`). Single-story features also record `role: story` to distinguish them from unversioned legacy entries.
 6. **Phase 3 Stop / Handoff Gate**: For a breakdown-only request or multiple groups/stories, team delivery stops after Phase 3. It recommends `/ag-governed-backlog` when a supported source contains the approved items. Story files and GitHub Issues alone are not queue sources; first add the items to a local backlog, Jira, or Beads.
 
-If the push fails, the workflow gracefully degrades by logging a warning and writing `{ "status": "failed" }` to the status file without blocking local delivery.
+If the push fails, the workflow gracefully degrades by logging a warning and recording `{ "status": "failed", "error": "..." }` under the target item key in the status file without blocking local delivery.
 
 ## Backlog Queue
 

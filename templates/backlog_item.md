@@ -25,7 +25,7 @@ Read `sync.yml` and `backlog.yml` from the user's checkout. When `sync.yml` exis
 | `description` | description | `description` | `description` |
 | `acceptance` | acceptance criteria field, otherwise the description section that lists them | `acceptance_criteria` when present, otherwise the description section that lists them | `acceptance` |
 | `group` | from `story_scope` grouping (below) | parent from `parent-child` dependencies | `group` |
-| `parent` | parent issue key or Epic link | parent from `parent-child` dependencies | `parent` |
+| `parent` | parent issue key or Epic link (must not equal id) | parent from `parent-child` dependencies (must not equal id) | `parent` (names the feature/parent entity; must not equal item id) |
 | `depends_on` | from `story_scope` grouping (below) | beads it depends on (`blocks` dependencies) | `depends_on` |
 | `size` | story points: ≤1 xs, 2 s, 3-5 m, 8 l, more xl | `estimate` minutes: ≤60 xs, ≤240 s, ≤960 m, ≤2400 l, more xl | `size` |
 
@@ -36,7 +36,7 @@ A missing field stays empty; never invent acceptance criteria. An item with no a
 When generating, persisting, or syncing user stories (in `ag-governed-discover` and `ag-governed-delivery-team`):
 
 1. **One User Story per Item**: Each story item represents exactly one user story statement ("As a... I want... so that..."), its own acceptance criteria, size, priority, dependencies, and open questions (each with its recommendation).
-2. **Multi-Story Features**: When a feature contains more than one user story, shared business context (business objective, business rules, out of scope items, assumptions, risks, and open questions) lives in one feature-level parent. Each story item sets `parent` to the feature identifier.
+2. **Multi-Story Features**: When a feature contains more than one user story, shared business context (business objective, business rules, out of scope items, assumptions, risks, and open questions) lives in one feature-level parent. Each story item sets `parent` to the feature identifier (naming the parent entity; `parent` must not be the item's own `id`).
 3. **Single-Story Features**: A feature with exactly one user story remains a single document and single tracker item without a parent or Epic.
 4. **File Layout**:
    - Multi-story features: parent `<root>/user-stories/<feature>.md` (containing shared context and listing child stories) and child stories `<root>/user-stories/<feature>/<story-id>.md` linking to the parent.

@@ -46,6 +46,9 @@ const backlogSchema = z.object({
     }
   }
   backlog.items.forEach((item, index) => {
+    if (item.parent !== undefined && item.parent === item.id) {
+      ctx.addIssue({ code: 'custom', path: ['items', index, 'parent'], message: `${item.id} cannot be its own parent` });
+    }
     (item.depends_on ?? []).forEach((target, depIndex) => {
       if (target === item.id || target === item.group) {
         ctx.addIssue({ code: 'custom', path: ['items', index, 'depends_on', depIndex], message: `${item.id} depends on itself` });
