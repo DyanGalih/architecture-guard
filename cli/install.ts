@@ -140,9 +140,7 @@ const COMMAND_ALIASES = {
   pr: ['review-pr', 'pr-feedback', 'pr-queue', 'review-implementation'],
 };
 
-async function ask(promptText, choices, options: boolean | { multi?: boolean; yesMeansAll?: boolean } = false) {
-  const multi = typeof options === 'boolean' ? options : Boolean(options && options.multi);
-  const yesMeansAll = typeof options === 'object' && options !== null ? Boolean(options.yesMeansAll) : false;
+async function ask(promptText, choices, multi: boolean = false) {
   // Use old logic if reading from piped stdin (e.g. tests)
   if (_inputLines !== null) {
     const input = await nextLine();
@@ -151,7 +149,7 @@ async function ask(promptText, choices, options: boolean | { multi?: boolean; ye
       const trimmed = input.trim().toLowerCase();
       if (trimmed === 'all') return choices.map(c => typeof c === 'string' ? c : c.value);
       if (['y', 'yes'].includes(trimmed)) {
-        if (choices.length === 1 || yesMeansAll) {
+        if (choices.length === 1) {
           return choices.map(c => typeof c === 'string' ? c : c.value);
         }
       }
