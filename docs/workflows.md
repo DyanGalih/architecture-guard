@@ -232,25 +232,39 @@ The `ag-governed-delivery-team` workflow supports pushing approved User Stories 
 
 Create a file at `.architecture-guard/sync.yml` in your workspace:
 
+**GitHub Example:**
 ```yaml
 # Supported providers: github, jira
 provider: github
-# Optional repository or project mapping
 repo: my-org/my-repo
 enabled: true
+```
+
+**Jira Example:**
+```yaml
+# Supported providers: github, jira
+provider: jira
+project: MYPROJ
+enabled: true
+# Optional Jira provider settings (absent defaults to epic: true)
+jira:
+  epic: true
 ```
 
 The configuration is strictly validated during the workflow using `architecture-guard validate-sync-config` to ensure security constraints on untrusted input are met.
 
 ### How it Works
 1. Run `/ag-governed-delivery-team` (either directly or seeded with a `Discovery Summary Draft` from `/ag-governed-discover`).
-2. One or more User Stories (`user-stories/*.md`) and/or a local backlog breakdown (`.architecture-guard/backlog.yml`, validated with `architecture-guard validate-backlog`) are generated and proposed for stakeholder review.
+2. User Stories (`user-stories/<feature>.md` parent and child stories `user-stories/<feature>/<story-id>.md` for multi-story features, or `user-stories/<feature>.md` for a single-story feature) and/or a local backlog breakdown (`.architecture-guard/backlog.yml`, validated with `architecture-guard validate-backlog`) are generated and proposed for stakeholder review.
 3. For single-feature delivery, the agent checks `sync.yml` after story approval. For a breakdown, it checks only when tracker sync was selected.
-4. If sync is enabled, the agent offers synchronization. With your separate approval of the provider and target, it uses its MCP tools (e.g., `github-mcp-server` or Jira) to create or update the issues in your tracker.
-5. The result is recorded locally in `.architecture-guard/sync_status.json` (e.g., `{ "status": "success", "issue_url": "..." }`).
+4. If sync is enabled, the agent offers synchronization. With your separate approval of the provider and target, it uses its MCP tools (e.g., `github-mcp-server` or Jira) to create or update the issues in your tracker:
+   - **Jira**: The feature parent creates an Epic and each child story creates a Story linked to that Epic. When `jira.epic: false`, child stories carry a copy of the shared context and no Epic is created.
+   - **GitHub**: The feature parent creates a parent tracking Issue and each child story creates an Issue referencing the parent tracking issue.
+   - **Single-story feature**: Synchronizes as a single Story/Issue without a parent or Epic.
+5. The result is recorded locally in `.architecture-guard/sync_status.json` per item, keyed `<feature>` for the parent or single-story feature and `<feature>#<story-id>` for child stories, with its role (e.g., `{ "role": "story", "status": "success", "issue_url": "..." }`). Single-story features also record `role: story` to distinguish them from unversioned legacy entries.
 6. **Phase 3 Stop / Handoff Gate**: For a breakdown-only request or multiple groups/stories, team delivery stops after Phase 3. It recommends `/ag-governed-backlog` when a supported source contains the approved items. Story files and GitHub Issues alone are not queue sources; first add the items to a local backlog, Jira, or Beads.
 
-If the push fails, the workflow gracefully degrades by logging a warning and writing `{ "status": "failed" }` to the status file without blocking local delivery.
+If the push fails, the workflow gracefully degrades by logging a warning and recording `{ "status": "failed", "error": "..." }` under the target item key in the status file without blocking local delivery.
 
 ## Backlog Queue
 

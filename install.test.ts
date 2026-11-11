@@ -1046,6 +1046,30 @@ test('validate-sync-config accepts the backlog block and rejects bad values', ()
   }
 });
 
+test('validate-sync-config accepts the jira block and rejects bad values', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-jira-'));
+  fs.writeFileSync(path.join(cwd, 'jira-default.yml'), 'provider: jira\nproject: PROJ\n');
+  const def = spawnSync(process.execPath, [installer, 'validate-sync-config', 'jira-default.yml'], { cwd, encoding: 'utf8' });
+  assert.equal(def.status, 0, def.stderr);
+  assert.equal(JSON.parse(def.stdout).jira, undefined);
+
+  fs.writeFileSync(path.join(cwd, 'jira-false.yml'), 'provider: jira\nproject: PROJ\njira:\n  epic: false\n');
+  const falseEpic = spawnSync(process.execPath, [installer, 'validate-sync-config', 'jira-false.yml'], { cwd, encoding: 'utf8' });
+  assert.equal(falseEpic.status, 0, falseEpic.stderr);
+  assert.deepEqual(JSON.parse(falseEpic.stdout).jira, { epic: false });
+
+  for (const [name, yaml] of [
+    ['github-jira.yml', 'provider: github\nrepo: org/repo\njira:\n  epic: false\n'],
+    ['github-empty-jira.yml', 'provider: github\nrepo: org/repo\njira: {}\n'],
+    ['bad-type.yml', 'provider: jira\nproject: PROJ\njira:\n  epic: "no"\n'],
+    ['unknown-key.yml', 'provider: jira\nproject: PROJ\njira:\n  unknown: true\n'],
+  ]) {
+    fs.writeFileSync(path.join(cwd, name), yaml);
+    const result = spawnSync(process.execPath, [installer, 'validate-sync-config', name], { cwd, encoding: 'utf8' });
+    assert.notEqual(result.status, 0, `${name} must be rejected`);
+  }
+});
+
 test('validate-backlog accepts the example and rejects invalid backlogs', () => {
   const example = path.join(__dirname, '..', 'examples', 'backlog.yml');
   const ok = spawnSync(process.execPath, [installer, 'validate-backlog', example], { encoding: 'utf8' });
@@ -1083,6 +1107,14 @@ test('validate-backlog accepts the example and rejects invalid backlogs', () => 
   fs.writeFileSync(path.join(cwd, 'same-group.yml'), `items:\n${item('A', '    group: g1\n    depends_on: [B]\n')}${item('B', '    group: g1\n')}`);
   const sameGroup = spawnSync(process.execPath, [installer, 'validate-backlog', 'same-group.yml'], { cwd, encoding: 'utf8' });
   assert.equal(sameGroup.status, 0, sameGroup.stderr);
+  fs.writeFileSync(path.join(cwd, 'parent.yml'), `items:\n${item('A', '    parent: feature-1\n')}`);
+  const parentOk = spawnSync(process.execPath, [installer, 'validate-backlog', 'parent.yml'], { cwd, encoding: 'utf8' });
+  assert.equal(parentOk.status, 0, parentOk.stderr);
+  assert.equal(JSON.parse(parentOk.stdout).items[0].parent, 'feature-1');
+  fs.writeFileSync(path.join(cwd, 'self-parent.yml'), `items:\n${item('A', '    parent: A\n')}`);
+  const selfParent = spawnSync(process.execPath, [installer, 'validate-backlog', 'self-parent.yml'], { cwd, encoding: 'utf8' });
+  assert.notEqual(selfParent.status, 0, 'self-parenting must be rejected');
+  assert.match(selfParent.stderr, /cannot be its own parent/);
   const missing = spawnSync(process.execPath, [installer, 'validate-backlog', 'nope.yml'], { cwd, encoding: 'utf8' });
   assert.notEqual(missing.status, 0);
   assert.match(missing.stderr, /Backlog not found/);
@@ -3498,4 +3530,34 @@ test('every skill requires a recommendation on each Open Question', () => {
     assert.match(adapter(name), /clarify-spec \|.*with a recommended answer for each question/, `adapters/${name}`);
   }
   assert.match(adapter('openspec.md'), /inline clarifications loop with the user, with a recommended answer for each question/);
+});
+
+test('user stories decompose and sync per individual item with parent/Epic linkage', () => {
+  const template = fs.readFileSync(path.join(repoRoot, 'templates/backlog_item.md'), 'utf8');
+  assert.match(template, /^## Story Items$/m);
+  assert.match(template, /One User Story per Item/);
+  assert.match(template, /A shared parent or Epic alone is never a reason to bundle items into one group; Gate Q offers to merge siblings that share a parent\./);
+
+  const discover = orchestrationPrompt('governed-discover.md');
+  assert.match(discover, /contains more than one user story/);
+  assert.match(discover, /items of one feature name that feature as `parent`/);
+  assert.match(discover, /For a single feature with exactly one user story, run `ag-governed-spec`/);
+  assert.match(discover, /When the draft includes a populated \*\*Backlog Breakdown\*\*/);
+
+  const team = orchestrationPrompt('governed-delivery-team.md');
+  assert.match(team, /including User Story files \(`<root>\/user-stories\/\*\*\/\*\.md`\)/);
+  assert.match(team, /inspect existing feature files \(`<feature>\.md`\) and child directories \(`<feature>\/\*\.md`\)/);
+  assert.match(team, /persist the parent as `<feature-name>\.md` and each child story as `<feature-name>\/<story-id>\.md`/);
+  assert.match(team, /pointing to the delivered story's own file: `<root>\/user-stories\/<feature>\/<story-id>\.md` for a child story or `<root>\/user-stories\/<feature>\.md` for a single-story feature/);
+  assert.match(team, /record `role: parent` \(for the parent\) or `role: story` \(for child stories and single-story features\) in `\.architecture-guard\/sync_status\.json`/);
+  assert.match(team, /Feature parent maps to an Epic; each child story maps to a Story issue linked to that Epic/);
+  assert.match(team, /If `jira\.epic: false`, do not create an Epic; each Story is created carrying a copy of the shared context/);
+  assert.match(team, /treat it as a legacy combined issue: do NOT edit or rewrite it unless the user explicitly approves/);
+
+  const legacyTeam = fs.readFileSync(path.join(repoRoot, 'commands/governed-delivery-team.md'), 'utf8');
+  assert.match(legacyTeam, /User story \(exactly one; for more than one, follow item 8\)/);
+  assert.match(legacyTeam, /more than one user story per feature/);
+
+  const legacyDiscover = fs.readFileSync(path.join(repoRoot, 'commands/governed-discover.md'), 'utf8');
+  assert.match(legacyDiscover, /more than one user story per feature/);
 });

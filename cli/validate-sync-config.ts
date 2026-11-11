@@ -20,7 +20,14 @@ const syncSchema = z.object({
     lanes: z.record(z.string().regex(/^[a-z][a-z0-9_-]*$/), z.enum(['full', 'fix', 'light', 'research'])).optional(),
     max_groups: z.number().int().min(1).max(50).default(10),
   }).strict().optional(),
+  // Jira provider options
+  jira: z.object({
+    epic: z.boolean().default(true),
+  }).strict().optional(),
 }).superRefine((config, ctx) => {
+  if (config.jira !== undefined && config.provider !== 'jira') {
+    ctx.addIssue({ code: 'custom', path: ['jira'], message: 'jira block needs provider jira' });
+  }
   if (config.scope_check?.enabled && config.provider !== 'jira') {
     ctx.addIssue({ code: 'custom', path: ['scope_check'], message: 'scope_check supports provider jira only' });
   }
