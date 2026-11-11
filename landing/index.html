@@ -5,8 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Architecture Guard - Protect Architecture. Orchestrate Delivery.</title>
     
-    <!-- Tailwind CSS -->
+    <!-- Theme Preflight Script (prevents theme flash on reload) -->
+    <script>
+        try {
+            if (localStorage.getItem('ag-theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        } catch (_) {}
+    </script>
+
+    <!-- Tailwind CSS with class dark mode support -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            950: '#050814',
+                            900: '#070C1E',
+                            850: '#0B132B',
+                            800: '#111C3A',
+                            700: '#1C2B54',
+                        },
+                        brand: {
+                            cyan: '#00E5FF',
+                            blue: '#0066FF',
+                            purple: '#7C3AED',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'spin-slow': 'spin 20s linear infinite',
+                        'glow': 'glow 3s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-12px)' },
+                        },
+                        glow: {
+                            '0%': { filter: 'drop-shadow(0 0 15px rgba(0, 229, 255, 0.4))' },
+                            '100%': { filter: 'drop-shadow(0 0 35px rgba(0, 102, 255, 0.8))' },
+                        }
+                    }
+                }
+            }
+        };
+    </script>
     
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,71 +72,85 @@
 <body class="antialiased selection:bg-cyan-500 selection:text-black">
 
     <!-- Navigation Header -->
-    <header class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-white/5 bg-navy-950/80">
+    <header class="fixed top-0 left-0 right-0 z-50 adaptive-nav border-b border-slate-200 dark:border-white/5 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
             
             <!-- Logo -->
             <a href="#" class="flex items-center gap-3 group">
                 <div class="w-10 h-10 group-hover:scale-105 transition-transform">
-                    <img src="ag_logo.png" alt="Architecture Guard Logo" class="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(0,229,255,0.4)]">
+                    <img src="ag_logo.png" alt="Architecture Guard Logo" class="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(2,132,199,0.3)] dark:drop-shadow-[0_0_10px_rgba(0,229,255,0.4)]">
                 </div>
                 <div class="flex flex-col">
-                    <span class="font-bold text-lg tracking-tight text-white flex items-center gap-1.5">
-                        Architecture <span class="text-cyan-400">Guard</span>
+                    <span class="font-bold text-lg tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
+                        Architecture <span class="text-cyan-600 dark:text-cyan-400">Guard</span>
                     </span>
-                    <span class="text-[10px] text-cyan-400 font-mono tracking-wider uppercase -mt-1 font-semibold">v3.6.0 Governance</span>
+                    <span class="text-[10px] text-cyan-700 dark:text-cyan-400 font-mono tracking-wider uppercase -mt-1 font-semibold">v3.7.0 Governance</span>
                 </div>
             </a>
 
             <!-- Desktop Nav Links -->
-            <nav class="hidden lg:flex items-center gap-7 text-sm font-medium text-slate-300">
-                <a href="#overview" class="hover:text-cyan-400 transition-colors">Overview</a>
-                <a href="#pipeline" class="hover:text-cyan-400 transition-colors">Pipeline Graph</a>
-                <a href="#ecosystem" class="hover:text-cyan-400 transition-colors">Agent Ecosystem</a>
-                <a href="#workflows" class="hover:text-cyan-400 transition-colors">Workflows</a>
-                <a href="#features" class="hover:text-cyan-400 transition-colors">Features</a>
-                <a href="#integrations" class="hover:text-cyan-400 transition-colors">Integrations</a>
-                <a href="#docs" onclick="openDocsModal()" class="hover:text-cyan-400 transition-colors">Docs</a>
+            <nav class="hidden lg:flex items-center gap-7 text-sm font-medium text-slate-600 dark:text-slate-300">
+                <a href="#overview" class="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">Overview</a>
+                <a href="#flagship" class="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">Flagship Skills</a>
+                <a href="#pipeline" class="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">Pipeline</a>
+                <a href="#how-to-use" class="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">How to Use</a>
+                <a href="#ecosystem" class="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">Agent Hosts</a>
+                <a href="#credits" class="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">Credits</a>
+                <a href="#docs" onclick="openDocsModal()" class="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">Docs</a>
             </nav>
 
-            <!-- Action Buttons -->
-            <div class="hidden md:flex items-center gap-4">
+            <!-- Action Buttons & Theme Toggle -->
+            <div class="hidden md:flex items-center gap-3">
+                <!-- Theme Toggle Button -->
+                <button id="theme-toggle-btn" 
+                        class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-amber-400 hover:border-slate-400 dark:hover:border-slate-700 transition-all shadow-sm" 
+                        aria-label="Toggle Theme" title="Toggle Light/Dark Theme">
+                    <i id="theme-toggle-icon" class="fa-solid fa-moon text-base"></i>
+                </button>
+
                 <!-- GitHub Star Button -->
                 <a href="https://github.com/DyanGalih/architecture-guard" target="_blank" rel="noopener noreferrer" 
                    id="github-star-btn"
-                   class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg glass-card hover:bg-slate-800 text-xs font-semibold text-slate-200 border border-slate-700/60 transition-all hover:border-slate-500">
+                   class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 transition-all hover:border-slate-400 dark:hover:border-slate-600 shadow-sm">
                     <i class="fa-brands fa-github text-base"></i>
                     <span>Star</span>
-                    <span class="bg-slate-800 px-2 py-0.5 rounded text-[11px] text-cyan-400 font-mono border border-slate-700" id="star-count">...</span>
+                    <span class="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[11px] text-cyan-600 dark:text-cyan-400 font-mono border border-slate-200 dark:border-slate-700" id="star-count">...</span>
                 </a>
 
                 <!-- Get Started CTA -->
                 <button onclick="openModal()" 
-                   class="px-5 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-sm shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all transform hover:-translate-y-0.5">
+                   class="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-500 dark:to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-sm shadow-md shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all transform hover:-translate-y-0.5">
                     Get Started
                 </button>
             </div>
 
             <!-- Mobile Menu Toggle Button -->
-            <button id="mobile-menu-btn" class="lg:hidden text-slate-300 hover:text-white p-2" aria-label="Toggle Menu">
-                <i class="fa-solid fa-bars text-xl"></i>
-            </button>
+            <div class="flex items-center gap-2 lg:hidden">
+                <button id="theme-toggle-btn-mobile" 
+                        class="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-amber-400 text-sm">
+                    <i id="theme-toggle-icon-mobile" class="fa-solid fa-moon"></i>
+                </button>
+                <button id="mobile-menu-btn" class="text-slate-700 dark:text-slate-300 hover:text-black dark:hover:text-white p-2" aria-label="Toggle Menu">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
         </div>
 
         <!-- Mobile Navigation Menu -->
-        <div id="mobile-menu" class="hidden lg:hidden glass-card border-t border-white/10 px-4 pt-3 pb-6 space-y-3">
-            <a href="#overview" class="block py-2 text-slate-300 hover:text-cyan-400 font-medium">Overview</a>
-            <a href="#pipeline" class="block py-2 text-slate-300 hover:text-cyan-400 font-medium">Pipeline Graph</a>
-            <a href="#ecosystem" class="block py-2 text-slate-300 hover:text-cyan-400 font-medium">Agent Ecosystem</a>
-            <a href="#workflows" class="block py-2 text-slate-300 hover:text-cyan-400 font-medium">Workflows</a>
-            <a href="#features" class="block py-2 text-slate-300 hover:text-cyan-400 font-medium">Features</a>
-            <a href="#integrations" class="block py-2 text-slate-300 hover:text-cyan-400 font-medium">Integrations</a>
-            <a href="#docs" onclick="openDocsModal()" class="block py-2 text-slate-300 hover:text-cyan-400 font-medium">Documentation</a>
+        <div id="mobile-menu" class="hidden lg:hidden glass-card border-t border-slate-200 dark:border-white/10 px-4 pt-3 pb-6 space-y-3">
+            <a href="#overview" class="block py-2 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 font-medium">Overview</a>
+            <a href="#flagship" class="block py-2 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 font-medium">Flagship Skills</a>
+            <a href="#pipeline" class="block py-2 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 font-medium">Pipeline Graph</a>
+            <a href="#how-to-use" class="block py-2 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 font-medium">How to Use</a>
+            <a href="#ecosystem" class="block py-2 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 font-medium">Agent Hosts</a>
+            <a href="#credits" class="block py-2 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 font-medium">Credits &amp; References</a>
+            <a href="#docs" onclick="openDocsModal()" class="block py-2 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 font-medium">Documentation</a>
+            
             <div class="pt-4 flex flex-col gap-3">
                 <a href="https://github.com/DyanGalih/architecture-guard" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 py-2.5 rounded-lg glass-card text-sm font-semibold">
                     <i class="fa-brands fa-github"></i> Star on GitHub (<span id="star-count-mobile">...</span>)
                 </a>
-                <button onclick="openModal()" class="w-full py-2.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold text-sm">
+                <button onclick="openModal()" class="w-full py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-semibold text-sm">
                     Get Started
                 </button>
             </div>
@@ -91,10 +158,10 @@
     </header>
 
     <!-- HERO SECTION -->
-    <section id="overview" class="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden">
+    <section id="overview" class="relative pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden">
         <!-- Background Glowing Orbs -->
-        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/15 rounded-full blur-[140px] pointer-events-none"></div>
-        <div class="absolute top-1/3 right-10 w-[400px] h-[400px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 dark:bg-blue-600/15 rounded-full blur-[140px] pointer-events-none"></div>
+        <div class="absolute top-1/3 right-10 w-[400px] h-[400px] bg-cyan-400/10 dark:bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
@@ -103,37 +170,37 @@
                 <div class="lg:col-span-7 space-y-8 text-center lg:text-left">
                     
                     <!-- Milestone Version Badge -->
-                    <div id="hero-version-tag" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-card border border-cyan-400/40 text-xs font-semibold text-cyan-300 shadow-md shadow-cyan-500/10">
-                        <span class="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                        <span id="hero-version-text">Latest Release v3.6.0: Multi-Host Agent Teams & PR Queue</span>
+                    <div id="hero-version-tag" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-card border border-cyan-500/30 text-xs font-semibold text-cyan-700 dark:text-cyan-300 shadow-sm">
+                        <span class="flex h-2 w-2 rounded-full bg-cyan-600 dark:bg-cyan-400 animate-pulse"></span>
+                        <span id="hero-version-text">Latest Release v3.7.0: Light-First Theme, Flagship Skills &amp; Multi-Host Teams</span>
                     </div>
 
-                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.15]">
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.15]">
                         Protect Architecture.<br>
                         Orchestrate Delivery.<br>
                         Ship with <span class="gradient-text">Confidence.</span>
                     </h1>
 
-                    <p class="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
-                        Architecture Guard is an SDD governance & orchestration engine that unifies your backlog, specifications, multi-agent implementation, and PR queue across any code host — keeping AI development disciplined, verified, and aligned.
+                    <p class="text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
+                        Architecture Guard is an SDD governance &amp; orchestration engine that unifies your backlog, specifications, multi-agent implementation, and PR queue across any code host — keeping AI development disciplined, verified, and aligned.
                     </p>
 
                     <!-- Feature Badges -->
-                    <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs sm:text-sm font-medium text-slate-300">
-                        <div class="flex items-center gap-2 bg-navy-850/80 border border-slate-800 rounded-full px-3.5 py-1.5 shadow-inner">
-                            <i class="fa-solid fa-people-group text-purple-400"></i>
+                    <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+                        <div class="flex items-center gap-2 bg-slate-100 dark:bg-navy-850/80 border border-slate-200 dark:border-slate-800 rounded-full px-3.5 py-1.5 shadow-sm">
+                            <i class="fa-solid fa-people-group text-purple-600 dark:text-purple-400"></i>
                             <span>Multi-Agent Teams</span>
                         </div>
-                        <div class="flex items-center gap-2 bg-navy-850/80 border border-slate-800 rounded-full px-3.5 py-1.5 shadow-inner">
-                            <i class="fa-solid fa-code-compare text-cyan-400"></i>
+                        <div class="flex items-center gap-2 bg-slate-100 dark:bg-navy-850/80 border border-slate-200 dark:border-slate-800 rounded-full px-3.5 py-1.5 shadow-sm">
+                            <i class="fa-solid fa-code-compare text-cyan-600 dark:text-cyan-400"></i>
                             <span>Multi-Forge PR Queue</span>
                         </div>
-                        <div class="flex items-center gap-2 bg-navy-850/80 border border-slate-800 rounded-full px-3.5 py-1.5 shadow-inner">
-                            <i class="fa-solid fa-shield-halved text-blue-400"></i>
+                        <div class="flex items-center gap-2 bg-slate-100 dark:bg-navy-850/80 border border-slate-200 dark:border-slate-800 rounded-full px-3.5 py-1.5 shadow-sm">
+                            <i class="fa-solid fa-shield-halved text-blue-600 dark:text-blue-400"></i>
                             <span>Deep Verification</span>
                         </div>
-                        <div class="flex items-center gap-2 bg-navy-850/80 border border-slate-800 rounded-full px-3.5 py-1.5 shadow-inner">
-                            <i class="fa-solid fa-feather text-emerald-400"></i>
+                        <div class="flex items-center gap-2 bg-slate-100 dark:bg-navy-850/80 border border-slate-200 dark:border-slate-800 rounded-full px-3.5 py-1.5 shadow-sm">
+                            <i class="fa-solid fa-feather text-emerald-600 dark:text-emerald-400"></i>
                             <span>Ponytail Pragmatism</span>
                         </div>
                     </div>
@@ -141,21 +208,21 @@
                     <!-- CTA Group -->
                     <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
                         <button onclick="openModal()" 
-                           class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-base shadow-lg shadow-cyan-500/25 hover:shadow-cyan-400/40 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 group">
+                           class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-cyan-600 dark:bg-cyan-500 hover:bg-cyan-500 dark:hover:bg-cyan-400 text-white dark:text-slate-950 font-bold text-base shadow-lg shadow-cyan-600/20 dark:shadow-cyan-500/25 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 group">
                             <span>Get Started In Minutes</span>
                             <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
                         </button>
 
-                        <a href="#pipeline" 
-                           class="w-full sm:w-auto px-7 py-3.5 rounded-xl glass-card hover:bg-slate-800/80 text-white font-semibold text-base border border-slate-700/80 transition-all flex items-center justify-center gap-2.5">
-                            <i class="fa-solid fa-diagram-project text-cyan-400"></i>
-                            <span>Explore Pipeline Graph</span>
+                        <a href="#flagship" 
+                           class="w-full sm:w-auto px-7 py-3.5 rounded-xl glass-card hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-white font-semibold text-base border border-slate-300 dark:border-slate-700/80 transition-all flex items-center justify-center gap-2.5">
+                            <i class="fa-solid fa-bolt text-cyan-600 dark:text-cyan-400"></i>
+                            <span>View Flagship Skills</span>
                         </a>
                     </div>
 
                     <!-- Footer Note -->
-                    <p class="text-xs text-slate-400 font-mono tracking-wide pt-1">
-                        Open source <span class="text-cyan-500">•</span> Works with Claude Code, Antigravity, OpenCode & Codex <span class="text-cyan-500">•</span> MIT License
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-mono tracking-wide pt-1">
+                        Open source <span class="text-cyan-500">•</span> Works with Claude Code, Antigravity, OpenCode &amp; Codex <span class="text-cyan-500">•</span> MIT License
                     </p>
                 </div>
 
@@ -172,27 +239,27 @@
                             
                             <!-- Glowing Shield Graphic -->
                             <div class="relative w-48 h-56 flex items-center justify-center">
-                                <img src="ag_logo.png" alt="Architecture Guard Shield" class="w-full h-full object-contain filter drop-shadow-[0_0_15px_rgba(0,229,255,0.5)] z-10 relative">
+                                <img src="ag_logo.png" alt="Architecture Guard Shield" class="w-full h-full object-contain filter drop-shadow-[0_0_15px_rgba(2,132,199,0.4)] dark:drop-shadow-[0_0_15px_rgba(0,229,255,0.5)] z-10 relative">
                                 
-                                <svg class="w-full h-full text-blue-600/40 animate-pulse-slow absolute inset-0 z-0" viewBox="0 0 200 240" fill="currentColor">
+                                <svg class="w-full h-full text-blue-500/20 dark:text-blue-600/40 animate-pulse-slow absolute inset-0 z-0" viewBox="0 0 200 240" fill="currentColor">
                                     <path d="M100 0 L190 40 V110 C190 170 100 230 100 230 C100 230 10 170 10 110 V40 L100 0 Z" />
                                 </svg>
                             </div>
 
                             <!-- Floating Satellite Badges around Shield -->
-                            <div class="absolute -top-3 -left-3 glass-card p-2.5 rounded-xl border border-cyan-400/40 text-cyan-400 shadow-lg flex items-center gap-1.5 text-xs font-semibold">
+                            <div class="absolute -top-3 -left-3 glass-card p-2.5 rounded-xl border border-cyan-400/40 text-cyan-600 dark:text-cyan-400 shadow-lg flex items-center gap-1.5 text-xs font-semibold">
                                 <i class="fa-solid fa-shield-check"></i>
                                 <span>Guardrails</span>
                             </div>
-                            <div class="absolute -top-3 -right-3 glass-card p-2.5 rounded-xl border border-purple-400/40 text-purple-400 shadow-lg flex items-center gap-1.5 text-xs font-semibold">
+                            <div class="absolute -top-3 -right-3 glass-card p-2.5 rounded-xl border border-purple-400/40 text-purple-600 dark:text-purple-400 shadow-lg flex items-center gap-1.5 text-xs font-semibold">
                                 <i class="fa-solid fa-users-gear"></i>
                                 <span>Agent Teams</span>
                             </div>
-                            <div class="absolute -bottom-3 -left-3 glass-card p-2.5 rounded-xl border border-blue-400/40 text-blue-400 shadow-lg flex items-center gap-1.5 text-xs font-semibold">
+                            <div class="absolute -bottom-3 -left-3 glass-card p-2.5 rounded-xl border border-blue-400/40 text-blue-600 dark:text-blue-400 shadow-lg flex items-center gap-1.5 text-xs font-semibold">
                                 <i class="fa-solid fa-list-check"></i>
                                 <span>Backlog Queue</span>
                             </div>
-                            <div class="absolute -bottom-3 -right-3 glass-card p-2.5 rounded-xl border border-emerald-400/40 text-emerald-400 shadow-lg flex items-center gap-1.5 text-xs font-semibold">
+                            <div class="absolute -bottom-3 -right-3 glass-card p-2.5 rounded-xl border border-emerald-400/40 text-emerald-600 dark:text-emerald-400 shadow-lg flex items-center gap-1.5 text-xs font-semibold">
                                 <i class="fa-solid fa-code-pull-request"></i>
                                 <span>PR Queue</span>
                             </div>
@@ -205,127 +272,237 @@
         </div>
     </section>
 
+    <!-- FLAGSHIP HERO SPOTLIGHT SECTION -->
+    <section id="flagship" class="py-16 border-y border-slate-200 dark:border-white/5 bg-slate-100/70 dark:bg-navy-900/40 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-12 space-y-3">
+                <span class="text-xs uppercase tracking-widest text-cyan-600 dark:text-cyan-400 font-bold">The Flagship Skills</span>
+                <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
+                    Two Commands That Change How You Build
+                </h2>
+                <p class="text-slate-600 dark:text-slate-400 text-sm sm:text-base">
+                    Instead of memorizing a dozen manual steps, Architecture Guard centers on two primary high-level orchestrators: one for single features, and one for entire backlogs.
+                </p>
+            </div>
+
+            <!-- Spotlight Split Cards -->
+            <div class="grid lg:grid-cols-2 gap-8">
+                
+                <!-- Card 1: /ag-workflow -->
+                <div class="glass-card rounded-2xl p-7 sm:p-8 border-2 border-cyan-500/40 relative overflow-hidden flex flex-col justify-between shadow-xl">
+                    <div class="space-y-5">
+                        <div class="flex items-center justify-between">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-cyan-100 text-cyan-800 dark:bg-cyan-500/20 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-400/30">
+                                Hero Skill 01 · Single Feature
+                            </span>
+                            <span class="text-xs font-mono text-slate-500 dark:text-slate-400">Interactive Conductor</span>
+                        </div>
+
+                        <div>
+                            <h3 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <code>/ag-workflow</code>
+                            </h3>
+                            <p class="text-sm text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">
+                                The all-in-one interactive conductor. Drives discovery, specification, planning, task generation, multi-agent implementation, and deep verification in one continuous, governed lifecycle with 4 structured human approval gates (Gates 0–3).
+                            </p>
+                        </div>
+
+                        <!-- Highlights List -->
+                        <ul class="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                            <li class="flex items-center gap-2">
+                                <i class="fa-solid fa-circle-check text-cyan-600 dark:text-cyan-400"></i>
+                                <span><strong>Single Entrypoint:</strong> No need to remember 6 separate phase commands</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <i class="fa-solid fa-circle-check text-cyan-600 dark:text-cyan-400"></i>
+                                <span><strong>Human Control:</strong> Pauses at 4 mandatory gates for review and approval</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <i class="fa-solid fa-circle-check text-cyan-600 dark:text-cyan-400"></i>
+                                <span><strong>Agent Teams:</strong> Coordinates parallel implementor roles and fresh review passes</span>
+                            </li>
+                        </ul>
+
+                        <!-- Command Box -->
+                        <div class="bg-slate-900 dark:bg-navy-950 p-4 rounded-xl border border-slate-700/60 font-mono text-xs text-cyan-300 flex items-center justify-between group">
+                            <code>/ag-workflow "Add real-time notifications with webhook fallback"</code>
+                            <button onclick="copySnippet('/ag-workflow \"Add real-time notifications with webhook fallback\"')" class="text-slate-400 hover:text-cyan-400 p-1.5 rounded bg-slate-800 border border-slate-700" title="Copy Command">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: /ag-governed-backlog -->
+                <div class="glass-card rounded-2xl p-7 sm:p-8 border-2 border-purple-500/40 relative overflow-hidden flex flex-col justify-between shadow-xl">
+                    <div class="space-y-5">
+                        <div class="flex items-center justify-between">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 border border-purple-300 dark:border-purple-400/30">
+                                Hero Skill 02 · Sprint / Queue
+                            </span>
+                            <span class="text-xs font-mono text-slate-500 dark:text-slate-400">Autonomous Queue Engine</span>
+                        </div>
+
+                        <div>
+                            <h3 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <code>/ag-governed-backlog</code>
+                            </h3>
+                            <p class="text-sm text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">
+                                The autonomous multi-item delivery queue. Reads stories, bugs, and tasks from Jira JQL, Beads (<code class="text-slate-700 dark:text-slate-200">bd</code>), or local <code class="text-slate-700 dark:text-slate-200">backlog.yml</code>, groups related items, executes them across Full/Fix/Light/Research lanes in isolated Git worktrees, and publishes 1 PR per group.
+                            </p>
+                        </div>
+
+                        <!-- Highlights List -->
+                        <ul class="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                            <li class="flex items-center gap-2">
+                                <i class="fa-solid fa-circle-check text-purple-600 dark:text-purple-400"></i>
+                                <span><strong>Batched Approvals:</strong> 4 batched gates (Queue, Specs, Scope, Pull Requests)</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <i class="fa-solid fa-circle-check text-purple-600 dark:text-purple-400"></i>
+                                <span><strong>Isolated Git Worktrees:</strong> Work on your checkout is never disturbed</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <i class="fa-solid fa-circle-check text-purple-600 dark:text-purple-400"></i>
+                                <span><strong>Resumable State:</strong> Tracks progress in <code class="text-slate-700 dark:text-slate-200">.architecture-guard/queue.yml</code></span>
+                            </li>
+                        </ul>
+
+                        <!-- Command Box -->
+                        <div class="bg-slate-900 dark:bg-navy-950 p-4 rounded-xl border border-slate-700/60 font-mono text-xs text-purple-300 flex items-center justify-between group">
+                            <code>/ag-governed-backlog</code>
+                            <button onclick="copySnippet('/ag-governed-backlog')" class="text-slate-400 hover:text-purple-400 p-1.5 rounded bg-slate-800 border border-slate-700" title="Copy Command">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
     <!-- PIPELINE GRAPH SECTION -->
-    <section id="pipeline" class="py-20 border-y border-white/5 bg-navy-900/60 relative">
+    <section id="pipeline" class="py-20 relative">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <div class="text-center max-w-3xl mx-auto mb-14 space-y-4">
-                <span class="text-xs uppercase tracking-widest text-cyan-400 font-bold">End-to-End Governance</span>
-                <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+                <span class="text-xs uppercase tracking-widest text-cyan-600 dark:text-cyan-400 font-bold">End-to-End Governance</span>
+                <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
                     The Governed Delivery Pipeline
                 </h2>
-                <p class="text-slate-400 text-sm sm:text-base">
+                <p class="text-slate-600 dark:text-slate-400 text-sm sm:text-base">
                     From raw backlog intent to autonomous pull request management, every phase is grounded by your architecture constitution and verified against drift.
                 </p>
             </div>
 
             <!-- Responsive Visual Pipeline Graph -->
-            <div class="glass-card rounded-2xl p-6 sm:p-8 border border-white/10 relative overflow-hidden">
+            <div class="glass-card rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-white/10 relative overflow-hidden">
                 
                 <!-- Desktop Connection Ribbon -->
-                <div class="hidden xl:block absolute top-[90px] left-[6%] right-[6%] h-1 bg-gradient-to-r from-purple-500 via-cyan-400 via-blue-500 to-emerald-400 z-0 opacity-40"></div>
+                <div class="hidden xl:block absolute top-[90px] left-[6%] right-[6%] h-1 bg-gradient-to-r from-purple-500 via-cyan-500 via-blue-500 to-emerald-500 z-0 opacity-40"></div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 relative z-10">
                     
                     <!-- Node 1: Backlog & Discover -->
-                    <div onclick="selectStep(1)" id="step-card-1" class="step-card cursor-pointer glass-card p-5 rounded-2xl border border-cyan-400 text-center space-y-3 relative group hover:border-purple-400 transition-all">
-                        <div class="w-14 h-14 mx-auto rounded-2xl bg-purple-600/20 border border-purple-500/50 flex items-center justify-center text-purple-400 text-2xl shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform">
+                    <div onclick="selectStep(1)" id="step-card-1" class="step-card cursor-pointer glass-card p-5 rounded-2xl border border-cyan-500 ring-2 ring-cyan-500/20 text-center space-y-3 relative group transition-all">
+                        <div class="w-14 h-14 mx-auto rounded-2xl bg-purple-500/10 dark:bg-purple-600/20 border border-purple-500/50 flex items-center justify-center text-purple-600 dark:text-purple-400 text-2xl shadow-sm group-hover:scale-105 transition-transform">
                             <i class="fa-solid fa-lightbulb"></i>
                         </div>
                         <div>
-                            <span class="text-[10px] font-mono text-purple-400 font-bold uppercase tracking-wider block">Phase 1</span>
-                            <h4 class="text-sm font-bold text-white">Backlog & Discover</h4>
+                            <span class="text-[10px] font-mono text-purple-600 dark:text-purple-400 font-bold uppercase tracking-wider block">Phase 1</span>
+                            <h4 class="text-sm font-bold text-slate-900 dark:text-white">Backlog &amp; Discover</h4>
                         </div>
-                        <p class="text-slate-400 text-xs leading-relaxed">
+                        <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
                             Brainstorm with Flash-Mem memory context and Jira/Beads story scope.
                         </p>
-                        <div class="pt-2 border-t border-white/5">
-                            <code class="text-[11px] text-purple-300 font-mono">/ag-governed-discover</code>
+                        <div class="pt-2 border-t border-slate-200 dark:border-white/5">
+                            <code class="text-[11px] text-purple-700 dark:text-purple-300 font-mono">/ag-governed-discover</code>
                         </div>
                     </div>
 
                     <!-- Node 2: Spec & Grounding -->
-                    <div onclick="selectStep(2)" id="step-card-2" class="step-card cursor-pointer glass-card p-5 rounded-2xl border border-white/10 text-center space-y-3 relative group hover:border-blue-400 transition-all">
-                        <div class="w-14 h-14 mx-auto rounded-2xl bg-blue-600/20 border border-blue-500/50 flex items-center justify-center text-blue-400 text-2xl shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                    <div onclick="selectStep(2)" id="step-card-2" class="step-card cursor-pointer glass-card p-5 rounded-2xl border border-slate-200 dark:border-white/10 text-center space-y-3 relative group hover:border-blue-500 transition-all">
+                        <div class="w-14 h-14 mx-auto rounded-2xl bg-blue-500/10 dark:bg-blue-600/20 border border-blue-500/50 flex items-center justify-center text-blue-600 dark:text-blue-400 text-2xl shadow-sm group-hover:scale-105 transition-transform">
                             <i class="fa-solid fa-file-contract"></i>
                         </div>
                         <div>
-                            <span class="text-[10px] font-mono text-blue-400 font-bold uppercase tracking-wider block">Phase 2</span>
-                            <h4 class="text-sm font-bold text-white">Spec & Grounding</h4>
+                            <span class="text-[10px] font-mono text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider block">Phase 2</span>
+                            <h4 class="text-sm font-bold text-slate-900 dark:text-white">Spec &amp; Grounding</h4>
                         </div>
-                        <p class="text-slate-400 text-xs leading-relaxed">
+                        <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
                             Schema delta specs verified against base-branch code with Premise Grounding.
                         </p>
-                        <div class="pt-2 border-t border-white/5">
-                            <code class="text-[11px] text-blue-300 font-mono">/ag-governed-spec</code>
+                        <div class="pt-2 border-t border-slate-200 dark:border-white/5">
+                            <code class="text-[11px] text-blue-700 dark:text-blue-300 font-mono">/ag-governed-spec</code>
                         </div>
                     </div>
 
                     <!-- Node 3: Plan & Guardrails -->
-                    <div onclick="selectStep(3)" id="step-card-3" class="step-card cursor-pointer glass-card p-5 rounded-2xl border border-white/10 text-center space-y-3 relative group hover:border-cyan-400 transition-all">
-                        <div class="w-14 h-14 mx-auto rounded-2xl bg-cyan-600/20 border border-cyan-500/50 flex items-center justify-center text-cyan-400 text-2xl shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
+                    <div onclick="selectStep(3)" id="step-card-3" class="step-card cursor-pointer glass-card p-5 rounded-2xl border border-slate-200 dark:border-white/10 text-center space-y-3 relative group hover:border-cyan-500 transition-all">
+                        <div class="w-14 h-14 mx-auto rounded-2xl bg-cyan-500/10 dark:bg-cyan-600/20 border border-cyan-500/50 flex items-center justify-center text-cyan-600 dark:text-cyan-400 text-2xl shadow-sm group-hover:scale-105 transition-transform">
                             <i class="fa-solid fa-layer-group"></i>
                         </div>
                         <div>
-                            <span class="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider block">Phase 3</span>
-                            <h4 class="text-sm font-bold text-white">Plan & Guardrails</h4>
+                            <span class="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-bold uppercase tracking-wider block">Phase 3</span>
+                            <h4 class="text-sm font-bold text-slate-900 dark:text-white">Plan &amp; Guardrails</h4>
                         </div>
-                        <p class="text-slate-400 text-xs leading-relaxed">
+                        <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
                             Technical design and task breakdowns enforcing Ponytail minimalism.
                         </p>
-                        <div class="pt-2 border-t border-white/5">
-                            <code class="text-[11px] text-cyan-300 font-mono">/ag-governed-plan</code>
+                        <div class="pt-2 border-t border-slate-200 dark:border-white/5">
+                            <code class="text-[11px] text-cyan-700 dark:text-cyan-300 font-mono">/ag-governed-plan</code>
                         </div>
                     </div>
 
                     <!-- Node 4: Multi-Agent Implement -->
-                    <div onclick="selectStep(4)" id="step-card-4" class="step-card cursor-pointer glass-card p-5 rounded-2xl border border-white/10 text-center space-y-3 relative group hover:border-teal-400 transition-all">
-                        <div class="w-14 h-14 mx-auto rounded-2xl bg-teal-600/20 border border-teal-500/50 flex items-center justify-center text-teal-400 text-2xl shadow-lg shadow-teal-500/20 group-hover:scale-105 transition-transform">
+                    <div onclick="selectStep(4)" id="step-card-4" class="step-card cursor-pointer glass-card p-5 rounded-2xl border border-slate-200 dark:border-white/10 text-center space-y-3 relative group hover:border-teal-500 transition-all">
+                        <div class="w-14 h-14 mx-auto rounded-2xl bg-teal-500/10 dark:bg-teal-600/20 border border-teal-500/50 flex items-center justify-center text-teal-600 dark:text-teal-400 text-2xl shadow-sm group-hover:scale-105 transition-transform">
                             <i class="fa-solid fa-users-gear"></i>
                         </div>
                         <div>
-                            <span class="text-[10px] font-mono text-teal-400 font-bold uppercase tracking-wider block">Phase 4</span>
-                            <h4 class="text-sm font-bold text-white">Multi-Agent Build</h4>
+                            <span class="text-[10px] font-mono text-teal-600 dark:text-teal-400 font-bold uppercase tracking-wider block">Phase 4</span>
+                            <h4 class="text-sm font-bold text-slate-900 dark:text-white">Multi-Agent Build</h4>
                         </div>
-                        <p class="text-slate-400 text-xs leading-relaxed">
-                            Parallel implementation via Claude Teammates, OpenCode, or Antigravity.
+                        <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
+                            Parallel implementation via Claude Teammates, OpenCode, agy, or Codex.
                         </p>
-                        <div class="pt-2 border-t border-white/5">
-                            <code class="text-[11px] text-teal-300 font-mono">/ag-governed-implement</code>
+                        <div class="pt-2 border-t border-slate-200 dark:border-white/5">
+                            <code class="text-[11px] text-teal-700 dark:text-teal-300 font-mono">/ag-governed-implement</code>
                         </div>
                     </div>
 
                     <!-- Node 5: Deep Verification -->
-                    <div onclick="selectStep(5)" id="step-card-5" class="step-card cursor-pointer glass-card p-5 rounded-2xl border border-white/10 text-center space-y-3 relative group hover:border-amber-400 transition-all">
-                        <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-600/20 border border-amber-500/50 flex items-center justify-center text-amber-400 text-2xl shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
+                    <div onclick="selectStep(5)" id="step-card-5" class="step-card cursor-pointer glass-card p-5 rounded-2xl border border-slate-200 dark:border-white/10 text-center space-y-3 relative group hover:border-amber-500 transition-all">
+                        <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-500/10 dark:bg-amber-600/20 border border-amber-500/50 flex items-center justify-center text-amber-600 dark:text-amber-400 text-2xl shadow-sm group-hover:scale-105 transition-transform">
                             <i class="fa-solid fa-circle-check"></i>
                         </div>
                         <div>
-                            <span class="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-wider block">Phase 5</span>
-                            <h4 class="text-sm font-bold text-white">Deep Verification</h4>
+                            <span class="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider block">Phase 5</span>
+                            <h4 class="text-sm font-bold text-slate-900 dark:text-white">Deep Verification</h4>
                         </div>
-                        <p class="text-slate-400 text-xs leading-relaxed">
-                            Consumer inventory, hygiene runner, Sonar rules, and change checks.
+                        <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
+                            Consumer inventory, hygiene runner, 37 SonarLint rules, and change checks.
                         </p>
-                        <div class="pt-2 border-t border-white/5">
-                            <code class="text-[11px] text-amber-300 font-mono">/ag-verify base=main</code>
+                        <div class="pt-2 border-t border-slate-200 dark:border-white/5">
+                            <code class="text-[11px] text-amber-700 dark:text-amber-300 font-mono">/ag-verify base=main</code>
                         </div>
                     </div>
 
                     <!-- Node 6: PR Queue & Forges -->
-                    <div onclick="selectStep(6)" id="step-card-6" class="step-card cursor-pointer glass-card p-5 rounded-2xl border border-white/10 text-center space-y-3 relative group hover:border-emerald-400 transition-all">
-                        <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-600/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400 text-2xl shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                    <div onclick="selectStep(6)" id="step-card-6" class="step-card cursor-pointer glass-card p-5 rounded-2xl border border-slate-200 dark:border-white/10 text-center space-y-3 relative group hover:border-emerald-500 transition-all">
+                        <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/10 dark:bg-emerald-600/20 border border-emerald-500/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-2xl shadow-sm group-hover:scale-105 transition-transform">
                             <i class="fa-solid fa-code-pull-request"></i>
                         </div>
                         <div>
-                            <span class="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider block">Phase 6</span>
-                            <h4 class="text-sm font-bold text-white">PR Queue & Forges</h4>
+                            <span class="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider block">Phase 6</span>
+                            <h4 class="text-sm font-bold text-slate-900 dark:text-white">PR Queue &amp; Forges</h4>
                         </div>
-                        <p class="text-slate-400 text-xs leading-relaxed">
+                        <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
                             Autonomous PR triage across GitHub, GitLab, Bitbucket, and Azure DevOps.
                         </p>
-                        <div class="pt-2 border-t border-white/5">
-                            <code class="text-[11px] text-emerald-300 font-mono">/ag-pr-queue</code>
+                        <div class="pt-2 border-t border-slate-200 dark:border-white/5">
+                            <code class="text-[11px] text-emerald-700 dark:text-emerald-300 font-mono">/ag-pr-queue</code>
                         </div>
                     </div>
 
@@ -333,29 +510,114 @@
 
                 <!-- Dynamic Step Detail Preview Panel -->
                 <div id="step-detail-box" class="mt-8 glass-card p-6 rounded-2xl border border-cyan-500/30 max-w-3xl mx-auto text-center space-y-2">
-                    <span class="text-xs uppercase tracking-widest text-cyan-400 font-bold" id="detail-step-num">STEP 1 HIGHLIGHT</span>
-                    <h3 class="text-lg font-bold text-white" id="detail-title">1. Discover & Backlog Shaping</h3>
-                    <p class="text-sm text-slate-300" id="detail-desc">
+                    <span class="text-xs uppercase tracking-widest text-cyan-600 dark:text-cyan-400 font-bold" id="detail-step-num">STEP 1 HIGHLIGHT</span>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white" id="detail-title">1. Discover &amp; Backlog Shaping</h3>
+                    <p class="text-sm text-slate-600 dark:text-slate-300" id="detail-desc">
                         Brainstorm features with Flash-Mem historical context and Jira/Beads story scope. Architecture Guard warns on architectural drift early and decomposes multi-item initiatives into clean backlog items.
                     </p>
                 </div>
 
                 <!-- Pipeline Highlights Bottom Row -->
-                <div class="mt-8 pt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-300">
+                <div class="mt-8 pt-6 border-t border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-600 dark:text-slate-300">
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-rotate text-cyan-400"></i>
+                        <i class="fa-solid fa-rotate text-cyan-600 dark:text-cyan-400"></i>
                         <span>Auto-Repair Artifact Loops (at most 5 passes)</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-hand text-amber-400"></i>
+                        <i class="fa-solid fa-hand text-amber-600 dark:text-amber-400"></i>
                         <span>Batched Human Approval Gates (Decide, Push, Resolve)</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-cubes text-purple-400"></i>
+                        <i class="fa-solid fa-cubes text-purple-600 dark:text-purple-400"></i>
                         <span>Isolated Worktree Execution</span>
                     </div>
                 </div>
 
+            </div>
+        </div>
+    </section>
+
+    <!-- ACTIONABLE HOW TO USE SECTION -->
+    <section id="how-to-use" class="py-20 border-t border-slate-200 dark:border-white/5 bg-slate-100/50 dark:bg-navy-900/30 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-14 space-y-3">
+                <span class="text-xs uppercase tracking-widest text-cyan-600 dark:text-cyan-400 font-bold">Practical Guidance</span>
+                <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
+                    The Recommended Way to Use Architecture Guard
+                </h2>
+                <p class="text-slate-600 dark:text-slate-400 text-sm sm:text-base">
+                    Choose the right flow based on your immediate engineering scope:
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Path 1 -->
+                <div class="glass-card rounded-2xl p-6 border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-6">
+                    <div class="space-y-4">
+                        <div class="w-12 h-12 rounded-xl bg-cyan-100 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center text-xl font-bold">
+                            01
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white">Single-Feature Delivery</h3>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Best for building or refactoring a specific feature. Use <code class="text-slate-800 dark:text-slate-200">/ag-workflow</code> to run the entire guided lifecycle in one continuous conversation.
+                        </p>
+                        
+                        <div class="space-y-2 text-xs font-mono bg-slate-900 dark:bg-navy-950 p-4 rounded-xl text-slate-200 border border-slate-700/60">
+                            <div class="text-cyan-400"># Start interactive delivery:</div>
+                            <div>/ag-workflow "Feature Goal"</div>
+                            <div class="text-slate-500 pt-2"># Or granular:</div>
+                            <div>/ag-governed-discover</div>
+                            <div>/ag-governed-delivery</div>
+                            <div>/ag-verify base=main</div>
+                        </div>
+                    </div>
+                    <span class="text-[11px] font-semibold text-cyan-700 dark:text-cyan-400">Recommended for daily feature work →</span>
+                </div>
+
+                <!-- Path 2 -->
+                <div class="glass-card rounded-2xl p-6 border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-6">
+                    <div class="space-y-4">
+                        <div class="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl font-bold">
+                            02
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white">Sprint &amp; Backlog Queues</h3>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Best for processing a prioritized queue of multiple bugs, tasks, and stories from Jira JQL, Beads (<code class="text-slate-800 dark:text-slate-200">bd</code>), or <code class="text-slate-800 dark:text-slate-200">backlog.yml</code>.
+                        </p>
+                        
+                        <div class="space-y-2 text-xs font-mono bg-slate-900 dark:bg-navy-950 p-4 rounded-xl text-slate-200 border border-slate-700/60">
+                            <div class="text-purple-400"># Validate backlog format:</div>
+                            <div>architecture-guard validate-backlog</div>
+                            <div class="text-purple-400 pt-2"># Run the backlog queue:</div>
+                            <div>/ag-governed-backlog</div>
+                            <div class="text-slate-500"># Batched Gates: Q, S, I, P</div>
+                        </div>
+                    </div>
+                    <span class="text-[11px] font-semibold text-purple-700 dark:text-purple-400">Recommended for sprint delivery →</span>
+                </div>
+
+                <!-- Path 3 -->
+                <div class="glass-card rounded-2xl p-6 border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-6">
+                    <div class="space-y-4">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold">
+                            03
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white">PR Review &amp; Feedback</h3>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Best for managing all team pull requests and handling incoming feedback on your own PRs across GitHub, GitLab, Bitbucket, and Azure DevOps.
+                        </p>
+                        
+                        <div class="space-y-2 text-xs font-mono bg-slate-900 dark:bg-navy-950 p-4 rounded-xl text-slate-200 border border-slate-700/60">
+                            <div class="text-emerald-400"># Scan &amp; triage all open PRs:</div>
+                            <div>/ag-pr-queue</div>
+                            <div class="text-emerald-400 pt-2"># Or review specific PR:</div>
+                            <div>/ag-review-pr 124</div>
+                            <div class="text-emerald-400 pt-2"># Or address PR feedback:</div>
+                            <div>/ag-pr-feedback</div>
+                        </div>
+                    </div>
+                    <span class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">Recommended for code review ops →</span>
+                </div>
             </div>
         </div>
     </section>
@@ -365,11 +627,11 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <div class="text-center max-w-3xl mx-auto mb-16 space-y-4">
-                <span class="text-xs uppercase tracking-widest text-cyan-400 font-bold">Multi-Agent Host Support</span>
-                <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-                    Native Execution Across Top AI Coding Hosts
+                <span class="text-xs uppercase tracking-widest text-cyan-600 dark:text-cyan-400 font-bold">Multi-Agent Host Support</span>
+                <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
+                    Optimized Across Top AI Coding Hosts
                 </h2>
-                <p class="text-slate-400 text-sm sm:text-base">
+                <p class="text-slate-600 dark:text-slate-400 text-sm sm:text-base">
                     Architecture Guard avoids vendor lock-in. It coordinates native teammates and subagents on your preferred AI platform under one unified safety floor.
                 </p>
             </div>
@@ -378,291 +640,265 @@
             <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                 
                 <!-- Claude Code -->
-                <div class="glass-card glass-card-hover p-6 rounded-2xl border border-white/5 flex flex-col justify-between h-full">
+                <div class="glass-card glass-card-hover p-6 rounded-2xl border border-slate-200 dark:border-white/5 flex flex-col justify-between h-full">
                     <div class="space-y-4">
-                        <div class="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-400 text-2xl">
+                        <div class="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-600 dark:text-orange-400 text-2xl">
                             <i class="fa-solid fa-terminal"></i>
                         </div>
                         <div>
-                            <span class="text-[10px] font-mono text-orange-400 font-bold uppercase tracking-wider">Anthropic</span>
-                            <h3 class="text-lg font-bold text-white">Claude Code</h3>
+                            <span class="text-[10px] font-mono text-orange-600 dark:text-orange-400 font-bold uppercase tracking-wider">Anthropic</span>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Claude Code</h3>
                         </div>
-                        <div class="inline-block px-2.5 py-1 rounded-md bg-orange-500/10 border border-orange-500/20 text-[11px] font-semibold text-orange-300">
+                        <div class="inline-block px-2.5 py-1 rounded-md bg-orange-100 text-orange-800 dark:bg-orange-500/10 dark:text-orange-300 border border-orange-200 dark:border-orange-500/20 text-[11px] font-semibold">
                             Agent Teams (Teammates)
                         </div>
-                        <p class="text-slate-400 text-xs leading-relaxed">
-                            Generates <code class="text-slate-200">agteam-*.md</code> specialist roles (Author, Reviewer, Implementers, Quality Gate) with task ownership and peer messaging.
+                        <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
+                            Generates <code class="text-slate-800 dark:text-slate-200">agteam-*.md</code> specialist roles (Author, Reviewer, Implementers, Quality Gate) with task ownership and peer messaging.
                         </p>
                     </div>
-                    <div class="pt-4 mt-4 border-t border-white/5 text-[11px] text-slate-400 flex items-center justify-between">
+                    <div class="pt-4 mt-4 border-t border-slate-200 dark:border-white/5 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
                         <span>Coordination:</span>
-                        <span class="text-slate-200 font-medium">Native Teammate Mesh</span>
+                        <span class="text-slate-900 dark:text-slate-200 font-medium">Native Teammate Mesh</span>
                     </div>
                 </div>
 
                 <!-- Antigravity -->
-                <div class="glass-card glass-card-hover p-6 rounded-2xl border border-white/5 flex flex-col justify-between h-full">
+                <div class="glass-card glass-card-hover p-6 rounded-2xl border border-slate-200 dark:border-white/5 flex flex-col justify-between h-full">
                     <div class="space-y-4">
-                        <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-2xl">
+                        <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400 text-2xl">
                             <i class="fa-solid fa-compass-drafting"></i>
                         </div>
                         <div>
-                            <span class="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider">Google DeepMind</span>
-                            <h3 class="text-lg font-bold text-white">Antigravity (AGY)</h3>
+                            <span class="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-bold uppercase tracking-wider">Google DeepMind</span>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Antigravity (AGY)</h3>
                         </div>
-                        <div class="inline-block px-2.5 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-[11px] font-semibold text-cyan-300">
-                            Native Subagents
+                        <div class="inline-block px-2.5 py-1 rounded-md bg-cyan-100 text-cyan-800 dark:bg-cyan-500/10 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/20 text-[11px] font-semibold">
+                            Native Subagents &amp; Workflows
                         </div>
-                        <p class="text-slate-400 text-xs leading-relaxed">
-                            Generates skills and workflows (<code class="text-slate-200">agx-*.md</code>) using <code class="text-slate-200">invoke_subagent</code> for parallel reviews and isolated task work.
+                        <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
+                            Generates skills and workflows (<code class="text-slate-800 dark:text-slate-200">agx-*.md</code>) using <code class="text-slate-800 dark:text-slate-200">invoke_subagent</code> with host-native <code class="text-slate-800 dark:text-slate-200">share</code> workspace isolation.
                         </p>
                     </div>
-                    <div class="pt-4 mt-4 border-t border-white/5 text-[11px] text-slate-400 flex items-center justify-between">
+                    <div class="pt-4 mt-4 border-t border-slate-200 dark:border-white/5 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
                         <span>Coordination:</span>
-                        <span class="text-slate-200 font-medium">Subagent Dispatch API</span>
+                        <span class="text-slate-900 dark:text-slate-200 font-medium">Subagents API + Share</span>
                     </div>
                 </div>
 
                 <!-- OpenCode -->
-                <div class="glass-card glass-card-hover p-6 rounded-2xl border border-white/5 flex flex-col justify-between h-full">
+                <div class="glass-card glass-card-hover p-6 rounded-2xl border border-slate-200 dark:border-white/5 flex flex-col justify-between h-full">
                     <div class="space-y-4">
-                        <div class="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 text-2xl">
+                        <div class="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-600 dark:text-teal-400 text-2xl">
                             <i class="fa-solid fa-network-wired"></i>
                         </div>
                         <div>
-                            <span class="text-[10px] font-mono text-teal-400 font-bold uppercase tracking-wider">OpenCode CLI</span>
-                            <h3 class="text-lg font-bold text-white">OpenCode</h3>
+                            <span class="text-[10px] font-mono text-teal-600 dark:text-teal-400 font-bold uppercase tracking-wider">OpenCode CLI</span>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">OpenCode</h3>
                         </div>
-                        <div class="inline-block px-2.5 py-1 rounded-md bg-teal-500/10 border border-teal-500/20 text-[11px] font-semibold text-teal-300">
+                        <div class="inline-block px-2.5 py-1 rounded-md bg-teal-100 text-teal-800 dark:bg-teal-500/10 dark:text-teal-300 border border-teal-200 dark:border-teal-500/20 text-[11px] font-semibold">
                             Parallel Specialist Subagents
                         </div>
-                        <p class="text-slate-400 text-xs leading-relaxed">
-                            Lead coordinates native local subagents (<code class="text-slate-200">agoc-*</code>) with strict permission envelopes (<code class="text-slate-200">"*": deny</code>) and sequential fallback.
+                        <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
+                            Lead coordinates native local subagents with declarative read-only tool envelopes (<code class="text-slate-800 dark:text-slate-200">tools: { write: false, edit: false, bash: false }</code>).
                         </p>
                     </div>
-                    <div class="pt-4 mt-4 border-t border-white/5 text-[11px] text-slate-400 flex items-center justify-between">
+                    <div class="pt-4 mt-4 border-t border-slate-200 dark:border-white/5 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
                         <span>Coordination:</span>
-                        <span class="text-slate-200 font-medium">Lead-Controlled Subagents</span>
+                        <span class="text-slate-900 dark:text-slate-200 font-medium">Declarative Tool Envelopes</span>
                     </div>
                 </div>
 
                 <!-- OpenAI Codex -->
-                <div class="glass-card glass-card-hover p-6 rounded-2xl border border-white/5 flex flex-col justify-between h-full">
+                <div class="glass-card glass-card-hover p-6 rounded-2xl border border-slate-200 dark:border-white/5 flex flex-col justify-between h-full">
                     <div class="space-y-4">
-                        <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 text-2xl">
+                        <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-600 dark:text-purple-400 text-2xl">
                             <i class="fa-solid fa-microchip"></i>
                         </div>
                         <div>
-                            <span class="text-[10px] font-mono text-purple-400 font-bold uppercase tracking-wider">OpenAI</span>
-                            <h3 class="text-lg font-bold text-white">OpenAI Codex</h3>
+                            <span class="text-[10px] font-mono text-purple-600 dark:text-purple-400 font-bold uppercase tracking-wider">OpenAI</span>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">OpenAI Codex</h3>
                         </div>
-                        <div class="inline-block px-2.5 py-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-[11px] font-semibold text-purple-300">
-                            Scoped Skills & Sessions
+                        <div class="inline-block px-2.5 py-1 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-500/10 dark:text-purple-300 border border-purple-200 dark:border-purple-500/20 text-[11px] font-semibold">
+                            Scoped Skills &amp; Profiles
                         </div>
-                        <p class="text-slate-400 text-xs leading-relaxed">
-                            Installs skills in <code class="text-slate-200">.codex/skills/</code> with sequential lead execution and isolated child session delegation for targeted reviews.
+                        <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
+                            Installs skills in <code class="text-slate-800 dark:text-slate-200">.codex/skills/</code> and generates scoped <code class="text-slate-800 dark:text-slate-200">.toml</code> subagent profiles with feature reductions (<code class="text-slate-800 dark:text-slate-200">shell_tool: false</code>).
                         </p>
                     </div>
-                    <div class="pt-4 mt-4 border-t border-white/5 text-[11px] text-slate-400 flex items-center justify-between">
+                    <div class="pt-4 mt-4 border-t border-slate-200 dark:border-white/5 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
                         <span>Coordination:</span>
-                        <span class="text-slate-200 font-medium">Child Session Dispatch</span>
+                        <span class="text-slate-900 dark:text-slate-200 font-medium">Feature-Reduced TOML</span>
                     </div>
                 </div>
 
             </div>
 
             <!-- Agent Host Footer Note -->
-            <div class="mt-8 text-center text-xs text-slate-400 font-mono">
+            <div class="mt-8 text-center text-xs text-slate-500 dark:text-slate-400 font-mono">
                 Also supports Cursor, Gemini CLI, and GitHub Copilot with canonical instruction files and skills.
             </div>
 
         </div>
     </section>
 
-    <!-- INTERACTIVE WORKFLOW TERMINAL WALKTHROUGH -->
-    <section id="workflows" class="py-20 bg-navy-900/40 relative border-t border-white/5">
+    <!-- DEDICATED ECOSYSTEM CREDITS & REFERENCES SECTION -->
+    <section id="credits" class="py-20 border-t border-slate-200 dark:border-white/5 bg-slate-100/60 dark:bg-navy-900/30 relative">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
-            <div class="text-center max-w-3xl mx-auto mb-14 space-y-4">
-                <span class="text-xs uppercase tracking-widest text-cyan-400 font-bold">Interactive CLI Walkthrough</span>
-                <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-                    Choose Your Delivery Workflow
+            <div class="text-center max-w-3xl mx-auto mb-14 space-y-3">
+                <span class="text-xs uppercase tracking-widest text-cyan-600 dark:text-cyan-400 font-bold">Inspirations &amp; Foundations</span>
+                <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
+                    Built on the Shoulders of Giants
                 </h2>
-                <p class="text-slate-400 text-sm sm:text-base">
-                    Explore real terminal commands and orchestrated phases for single-feature delivery, batch backlogs, and PR queues.
+                <p class="text-slate-600 dark:text-slate-400 text-sm sm:text-base">
+                    Architecture Guard builds directly upon open standards, proven engineering methodologies, and companion tools across the AI development ecosystem:
                 </p>
             </div>
 
-            <!-- Walkthrough Container -->
-            <div class="max-w-4xl mx-auto glass-card rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 
-                <!-- Tab Controls Header -->
-                <div class="flex flex-wrap items-center justify-between border-b border-white/10 px-4 py-3 bg-navy-950/60 gap-3">
-                    
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-rose-500/80"></span>
-                        <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
-                        <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
-                        <span class="text-xs text-slate-400 font-mono ml-2">architecture-guard-cli</span>
-                    </div>
-
-                    <!-- Workflow Switcher Tabs -->
-                    <div class="flex items-center gap-1.5 p-1 rounded-xl bg-navy-900 border border-slate-800">
-                        <button id="wf-tab-streamlined" onclick="selectWorkflowTab('streamlined')" 
-                                class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20">
-                            Streamlined Delivery
-                        </button>
-                        <button id="wf-tab-backlog" onclick="selectWorkflowTab('backlog')" 
-                                class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white hover:bg-slate-800/60">
-                            Backlog Queue
-                        </button>
-                        <button id="wf-tab-pr" onclick="selectWorkflowTab('pr')" 
-                                class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white hover:bg-slate-800/60">
-                            PR Queue
-                        </button>
-                    </div>
-
-                </div>
-
-                <!-- Workflow Details & Code Block -->
-                <div class="p-6 sm:p-8 space-y-6">
-                    
-                    <!-- Title & Description Header -->
-                    <div class="space-y-2">
-                        <span id="wf-badge" class="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-bold bg-cyan-500/10 px-2.5 py-1 rounded-md border border-cyan-500/20">
-                            RECOMMENDED FOR FEATURES
-                        </span>
-                        <h3 id="wf-title" class="text-xl font-bold text-white">Streamlined Governed Delivery</h3>
-                        <p id="wf-desc" class="text-sm text-slate-300 leading-relaxed">
-                            Single-feature end-to-end flow: automatically chains Spec, Plan, and Task generation with auto-fixing review loops before implementation.
-                        </p>
-                    </div>
-
-                    <!-- Terminal Code Display Box -->
-                    <div class="relative bg-navy-950 rounded-xl p-5 border border-slate-800 font-mono text-xs sm:text-sm text-cyan-300 leading-relaxed overflow-x-auto group">
-                        <button onclick="copyWorkflowCode()" 
-                                class="absolute top-4 right-4 text-slate-400 hover:text-cyan-400 text-xs px-2.5 py-1.5 rounded-lg bg-slate-850 border border-slate-700/80 transition-all flex items-center gap-1.5 shadow-md">
-                            <i class="fa-regular fa-copy"></i>
-                            <span>Copy Commands</span>
-                        </button>
-                        <pre id="wf-code" class="text-slate-200"># 1. Explore idea with architecture context & story scope
-/ag-governed-discover "Real-time analytics dashboard"
-
-# 2. Automatically generate Spec, Plan, and Tasks with artifact repair loops
-/ag-governed-delivery
-
-# 3. Implement tasks within strict architecture boundaries
-/ag-governed-implement
-
-# 4. Verify against destination branch (same checks as PR review)
-/ag-verify base=main
-
-# 5. Open PR and manage feedback queue
-/ag-pr-queue</pre>
-                    </div>
-
-                </div>
-
-            </div>
-        </div>
-    </section>
-
-    <!-- FEATURES SECTION -->
-    <section id="features" class="py-24 relative">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            
-            <div class="text-center max-w-3xl mx-auto mb-16 space-y-4">
-                <span class="text-xs uppercase tracking-widest text-cyan-400 font-bold">5 Core Pillars</span>
-                <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-                    Engineered for Governed High-Velocity Delivery
-                </h2>
-                <p class="text-slate-400 text-base sm:text-lg">
-                    Architecture Guard bridges your high-level architectural rules with agentic execution across every phase.
-                </p>
-            </div>
-
-            <!-- 5 Feature Cards Grid -->
-            <div class="grid md:grid-cols-3 lg:grid-cols-5 gap-6">
-                
-                <!-- Feature 1 -->
-                <div class="glass-card glass-card-hover p-6 rounded-2xl flex flex-col justify-between h-full border border-white/5">
-                    <div class="space-y-4">
-                        <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-xl">
-                            <i class="fa-solid fa-diagram-project"></i>
+                <!-- OpenSpec -->
+                <a href="https://github.com/Fission-AI/OpenSpec" target="_blank" rel="noopener noreferrer" 
+                   class="glass-card glass-card-hover p-6 rounded-2xl border border-slate-200 dark:border-white/10 flex flex-col justify-between group">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase">SDD Engine</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-slate-400 group-hover:text-emerald-500 transition-colors text-xs"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-white">Spec-Driven by Default</h3>
-                        <p class="text-slate-400 text-xs leading-relaxed">
-                            Supports OpenSpec, SpecKit, and custom adapters with schema-aware delta specs and automatic change scoping.
+                        <h4 class="text-base font-bold text-slate-900 dark:text-white">OpenSpec</h4>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Spec-driven change lifecycle (<code class="text-slate-800 dark:text-slate-300">propose → spec → design → tasks → apply → archive</code>) natively supported as a built-in adapter.
                         </p>
                     </div>
-                </div>
+                    <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium pt-3 mt-3 border-t border-slate-200 dark:border-white/5">Fission-AI/OpenSpec</span>
+                </a>
 
-                <!-- Feature 2 -->
-                <div class="glass-card glass-card-hover p-6 rounded-2xl flex flex-col justify-between h-full border border-white/5">
-                    <div class="space-y-4">
-                        <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xl">
-                            <i class="fa-solid fa-shield-halved"></i>
+                <!-- Spec Kit -->
+                <a href="https://spec-kit.dev" target="_blank" rel="noopener noreferrer" 
+                   class="glass-card glass-card-hover p-6 rounded-2xl border border-slate-200 dark:border-white/10 flex flex-col justify-between group">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 uppercase">Foundational SDD</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-slate-400 group-hover:text-blue-500 transition-colors text-xs"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-white">Deep Verification</h3>
-                        <p class="text-slate-400 text-xs leading-relaxed">
-                            Premise Grounding against real base-branch code, Consumer Inventory, Artifact Consistency, and Hygiene scans.
+                        <h4 class="text-base font-bold text-slate-900 dark:text-white">Spec Kit</h4>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Constitutional specification-driven toolkit that originally inspired Architecture Guard's layered constitution model.
                         </p>
                     </div>
-                </div>
+                    <span class="text-[11px] text-blue-600 dark:text-blue-400 font-medium pt-3 mt-3 border-t border-slate-200 dark:border-white/5">github/spec-kit</span>
+                </a>
 
-                <!-- Feature 3 -->
-                <div class="glass-card glass-card-hover p-6 rounded-2xl flex flex-col justify-between h-full border border-white/5">
-                    <div class="space-y-4">
-                        <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xl">
-                            <i class="fa-solid fa-list-check"></i>
+                <!-- Ponytail Pragmatism -->
+                <a href="https://github.com/DietrichGebert/ponytail" target="_blank" rel="noopener noreferrer" 
+                   class="glass-card glass-card-hover p-6 rounded-2xl border border-slate-200 dark:border-white/10 flex flex-col justify-between group">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase">Pragmatism</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-slate-400 group-hover:text-emerald-500 transition-colors text-xs"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-white">Governed Backlogs</h3>
-                        <p class="text-slate-400 text-xs leading-relaxed">
-                            Deliver Jira JQL, Beads, or YAML backlogs across Full, Fix, Light, and Research lanes with 4 batched gates.
+                        <h4 class="text-base font-bold text-slate-900 dark:text-white">Ponytail Core</h4>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            By Dietrich Gebert. Inspires our shared decision ladder, root-cause caller tracing, safety floor, and runnable verification checks.
                         </p>
                     </div>
-                </div>
+                    <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium pt-3 mt-3 border-t border-slate-200 dark:border-white/5">DietrichGebert/ponytail</span>
+                </a>
 
-                <!-- Feature 4 -->
-                <div class="glass-card glass-card-hover p-6 rounded-2xl flex flex-col justify-between h-full border border-white/5">
-                    <div class="space-y-4">
-                        <div class="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 text-xl">
-                            <i class="fa-solid fa-code-pull-request"></i>
+                <!-- Flash-Mem MCP -->
+                <a href="https://github.com/DyanGalih/flash-mem" target="_blank" rel="noopener noreferrer" 
+                   class="glass-card glass-card-hover p-6 rounded-2xl border border-slate-200 dark:border-white/10 flex flex-col justify-between group">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono font-bold text-purple-600 dark:text-purple-400 uppercase">Persistent Memory</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-slate-400 group-hover:text-purple-500 transition-colors text-xs"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-white">Autonomous PR Queue</h3>
-                        <p class="text-slate-400 text-xs leading-relaxed">
-                            One command scans PRs, triages feedback in isolated worktrees, and reviews team code across all major forges.
+                        <h4 class="text-base font-bold text-slate-900 dark:text-white">Flash-Mem MCP</h4>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            SQLite-backed Model Context Protocol server for durable architectural decisions, typed knowledge objects, and token-budgeted context.
                         </p>
                     </div>
-                </div>
+                    <span class="text-[11px] text-purple-600 dark:text-purple-400 font-medium pt-3 mt-3 border-t border-slate-200 dark:border-white/5">DyanGalih/flash-mem</span>
+                </a>
 
-                <!-- Feature 5 -->
-                <div class="glass-card glass-card-hover p-6 rounded-2xl flex flex-col justify-between h-full border border-white/5">
-                    <div class="space-y-4">
-                        <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 text-xl">
-                            <i class="fa-solid fa-brain"></i>
+                <!-- SonarSource Rules -->
+                <a href="https://rules.sonarsource.com" target="_blank" rel="noopener noreferrer" 
+                   class="glass-card glass-card-hover p-6 rounded-2xl border border-slate-200 dark:border-white/10 flex flex-col justify-between group">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono font-bold text-cyan-600 dark:text-cyan-400 uppercase">37 Code Rules</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-slate-400 group-hover:text-cyan-500 transition-colors text-xs"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-white">Multi-Agent Teams</h3>
-                        <p class="text-slate-400 text-xs leading-relaxed">
-                            Coordinate Claude Code Teammates, Antigravity Subagents, OpenCode, and Codex with strict file boundaries.
+                        <h4 class="text-base font-bold text-slate-900 dark:text-white">SonarSource Catalog</h4>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Rule semantics from sonar-java, SonarJS, sonar-python, and sonar-php powering the 37 architecture-relevant rules in our bundle.
                         </p>
                     </div>
-                </div>
+                    <span class="text-[11px] text-cyan-600 dark:text-cyan-400 font-medium pt-3 mt-3 border-t border-slate-200 dark:border-white/5">rules.sonarsource.com</span>
+                </a>
+
+                <!-- Security Review -->
+                <a href="https://github.com/DyanGalih/security-review" target="_blank" rel="noopener noreferrer" 
+                   class="glass-card glass-card-hover p-6 rounded-2xl border border-slate-200 dark:border-white/10 flex flex-col justify-between group">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono font-bold text-rose-600 dark:text-rose-400 uppercase">Security Review</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-slate-400 group-hover:text-rose-500 transition-colors text-xs"></i>
+                        </div>
+                        <h4 class="text-base font-bold text-slate-900 dark:text-white">Security Review Suite</h4>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Whitebox security governance skills (<code class="text-slate-800 dark:text-slate-300">sr-branch</code>, <code class="text-slate-800 dark:text-slate-300">sr-verify</code>) checking OWASP/CWE boundaries across changes.
+                        </p>
+                    </div>
+                    <span class="text-[11px] text-rose-600 dark:text-rose-400 font-medium pt-3 mt-3 border-t border-slate-200 dark:border-white/5">DyanGalih/security-review</span>
+                </a>
+
+                <!-- Beads Issue Tracker -->
+                <a href="https://github.com/steveyegge/beads" target="_blank" rel="noopener noreferrer" 
+                   class="glass-card glass-card-hover p-6 rounded-2xl border border-slate-200 dark:border-white/10 flex flex-col justify-between group">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono font-bold text-purple-600 dark:text-purple-400 uppercase">Local Backlog</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-slate-400 group-hover:text-purple-500 transition-colors text-xs"></i>
+                        </div>
+                        <h4 class="text-base font-bold text-slate-900 dark:text-white">Beads (<code class="text-xs">bd</code>)</h4>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            By Steve Yegge. Distributed git-backed issue tracker natively integrated as a first-class source in <code class="text-slate-800 dark:text-slate-300">ag-governed-backlog</code>.
+                        </p>
+                    </div>
+                    <span class="text-[11px] text-purple-600 dark:text-purple-400 font-medium pt-3 mt-3 border-t border-slate-200 dark:border-white/5">steveyegge/beads</span>
+                </a>
+
+                <!-- Playwright E2E -->
+                <a href="https://playwright.dev" target="_blank" rel="noopener noreferrer" 
+                   class="glass-card glass-card-hover p-6 rounded-2xl border border-slate-200 dark:border-white/10 flex flex-col justify-between group">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase">E2E Testing</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-slate-400 group-hover:text-emerald-500 transition-colors text-xs"></i>
+                        </div>
+                        <h4 class="text-base font-bold text-slate-900 dark:text-white">Playwright</h4>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Cross-browser UI journey and API verification engine powering the <code class="text-slate-800 dark:text-slate-300">ag-e2e-testing</code> workflow.
+                        </p>
+                    </div>
+                    <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium pt-3 mt-3 border-t border-slate-200 dark:border-white/5">playwright.dev</span>
+                </a>
 
             </div>
         </div>
     </section>
 
     <!-- INTEGRATIONS SECTION -->
-    <section id="integrations" class="py-24 relative border-t border-white/5">
+    <section id="integrations" class="py-20 relative">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <div class="text-center max-w-3xl mx-auto mb-14 space-y-4">
-                <span class="text-xs uppercase tracking-widest text-cyan-400 font-bold">A Unified Ecosystem</span>
-                <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+                <span class="text-xs uppercase tracking-widest text-cyan-600 dark:text-cyan-400 font-bold">A Unified Ecosystem</span>
+                <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
                     Seamless Compatibility Across Your Stack
                 </h2>
-                <p class="text-slate-400 text-base">
+                <p class="text-slate-600 dark:text-slate-400 text-base">
                     Architecture Guard connects SDD frameworks, code forges, trackers, and AI agent hosts.
                 </p>
             </div>
@@ -671,87 +907,87 @@
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 max-w-5xl mx-auto">
                 
                 <!-- OpenSpec -->
-                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-emerald-400 hover:scale-105 transition-all shadow-md">
+                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-emerald-600 dark:text-emerald-400 hover:scale-105 transition-all shadow-sm">
                     <i class="fa-solid fa-file-contract text-2xl mb-1.5"></i>
-                    <span class="text-xs font-semibold text-white">OpenSpec</span>
-                    <span class="text-[10px] text-slate-400">Built-in SDD</span>
+                    <span class="text-xs font-semibold text-slate-900 dark:text-white">OpenSpec</span>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400">Built-in SDD</span>
                 </div>
 
                 <!-- SpecKit -->
-                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-blue-400 hover:scale-105 transition-all shadow-md">
+                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-blue-600 dark:text-blue-400 hover:scale-105 transition-all shadow-sm">
                     <i class="fa-solid fa-layer-group text-2xl mb-1.5"></i>
-                    <span class="text-xs font-semibold text-white">SpecKit</span>
-                    <span class="text-[10px] text-slate-400">Built-in SDD</span>
+                    <span class="text-xs font-semibold text-slate-900 dark:text-white">SpecKit</span>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400">Built-in SDD</span>
                 </div>
 
                 <!-- GitHub -->
-                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-white hover:scale-105 transition-all shadow-md">
+                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-slate-800 dark:text-white hover:scale-105 transition-all shadow-sm">
                     <i class="fa-brands fa-github text-2xl mb-1.5"></i>
-                    <span class="text-xs font-semibold text-white">GitHub</span>
-                    <span class="text-[10px] text-slate-400">Native Forge</span>
+                    <span class="text-xs font-semibold text-slate-900 dark:text-white">GitHub</span>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400">Native Forge</span>
                 </div>
 
                 <!-- GitLab -->
-                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-orange-400 hover:scale-105 transition-all shadow-md">
+                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-orange-600 dark:text-orange-400 hover:scale-105 transition-all shadow-sm">
                     <i class="fa-brands fa-gitlab text-2xl mb-1.5"></i>
-                    <span class="text-xs font-semibold text-white">GitLab</span>
-                    <span class="text-[10px] text-slate-400">Native Forge</span>
+                    <span class="text-xs font-semibold text-slate-900 dark:text-white">GitLab</span>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400">Native Forge</span>
                 </div>
 
                 <!-- Bitbucket -->
-                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-blue-500 hover:scale-105 transition-all shadow-md">
+                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-blue-600 dark:text-blue-500 hover:scale-105 transition-all shadow-sm">
                     <i class="fa-brands fa-bitbucket text-2xl mb-1.5"></i>
-                    <span class="text-xs font-semibold text-white">Bitbucket</span>
-                    <span class="text-[10px] text-slate-400">Native Forge</span>
+                    <span class="text-xs font-semibold text-slate-900 dark:text-white">Bitbucket</span>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400">Native Forge</span>
                 </div>
 
                 <!-- Azure DevOps -->
-                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-cyan-400 hover:scale-105 transition-all shadow-md">
+                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-cyan-600 dark:text-cyan-400 hover:scale-105 transition-all shadow-sm">
                     <i class="fa-solid fa-cloud text-2xl mb-1.5"></i>
-                    <span class="text-xs font-semibold text-white">Azure DevOps</span>
-                    <span class="text-[10px] text-slate-400">Native Forge</span>
+                    <span class="text-xs font-semibold text-slate-900 dark:text-white">Azure DevOps</span>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400">Native Forge</span>
                 </div>
 
                 <!-- Jira -->
-                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-blue-400 hover:scale-105 transition-all shadow-md">
+                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-blue-600 dark:text-blue-400 hover:scale-105 transition-all shadow-sm">
                     <i class="fa-brands fa-jira text-2xl mb-1.5"></i>
-                    <span class="text-xs font-semibold text-white">Jira</span>
-                    <span class="text-[10px] text-slate-400">Story Scope & JQL</span>
+                    <span class="text-xs font-semibold text-slate-900 dark:text-white">Jira</span>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400">Story Scope &amp; JQL</span>
                 </div>
 
                 <!-- Beads -->
-                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-purple-400 hover:scale-105 transition-all shadow-md">
+                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-purple-600 dark:text-purple-400 hover:scale-105 transition-all shadow-sm">
                     <i class="fa-solid fa-diagram-nested text-2xl mb-1.5"></i>
-                    <span class="text-xs font-semibold text-white">Beads (bd)</span>
-                    <span class="text-[10px] text-slate-400">Local Backlog</span>
+                    <span class="text-xs font-semibold text-slate-900 dark:text-white">Beads (bd)</span>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400">Local Backlog</span>
                 </div>
 
                 <!-- Claude Code -->
-                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-amber-400 hover:scale-105 transition-all shadow-md">
+                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-amber-600 dark:text-amber-400 hover:scale-105 transition-all shadow-sm">
                     <i class="fa-solid fa-robot text-2xl mb-1.5"></i>
-                    <span class="text-xs font-semibold text-white">Claude Code</span>
-                    <span class="text-[10px] text-slate-400">Agent Teams</span>
+                    <span class="text-xs font-semibold text-slate-900 dark:text-white">Claude Code</span>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400">Agent Teams</span>
                 </div>
 
                 <!-- Antigravity -->
-                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-cyan-300 hover:scale-105 transition-all shadow-md">
+                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-cyan-600 dark:text-cyan-300 hover:scale-105 transition-all shadow-sm">
                     <i class="fa-solid fa-brain text-2xl mb-1.5"></i>
-                    <span class="text-xs font-semibold text-white">Antigravity</span>
-                    <span class="text-[10px] text-slate-400">Subagents API</span>
+                    <span class="text-xs font-semibold text-slate-900 dark:text-white">Antigravity</span>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400">Subagents API</span>
                 </div>
 
                 <!-- OpenCode -->
-                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-teal-400 hover:scale-105 transition-all shadow-md">
+                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-teal-600 dark:text-teal-400 hover:scale-105 transition-all shadow-sm">
                     <i class="fa-solid fa-code text-2xl mb-1.5"></i>
-                    <span class="text-xs font-semibold text-white">OpenCode</span>
-                    <span class="text-[10px] text-slate-400">Parallel Subagents</span>
+                    <span class="text-xs font-semibold text-slate-900 dark:text-white">OpenCode</span>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400">Parallel Subagents</span>
                 </div>
 
                 <!-- Flash-Mem MCP -->
-                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-purple-300 hover:scale-105 transition-all shadow-md">
+                <div class="p-4 rounded-2xl glass-card flex flex-col items-center justify-center text-purple-600 dark:text-purple-300 hover:scale-105 transition-all shadow-sm">
                     <i class="fa-solid fa-bolt text-2xl mb-1.5"></i>
-                    <span class="text-xs font-semibold text-white">Flash-Mem</span>
-                    <span class="text-[10px] text-slate-400">Memory Protocol</span>
+                    <span class="text-xs font-semibold text-slate-900 dark:text-white">Flash-Mem</span>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400">Memory Protocol</span>
                 </div>
 
             </div>
@@ -761,16 +997,16 @@
     <!-- CTA CARD SECTION -->
     <section id="docs" class="py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-navy-900 via-navy-850 to-blue-950 p-8 sm:p-12 lg:p-16 border border-cyan-500/30 shadow-2xl">
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-cyan-700 via-blue-800 to-indigo-900 dark:from-navy-900 dark:via-navy-850 dark:to-blue-950 p-8 sm:p-12 lg:p-16 border border-cyan-500/30 shadow-2xl">
                 
-                <div class="absolute -left-10 -bottom-10 opacity-10 text-cyan-400 pointer-events-none">
+                <div class="absolute -left-10 -bottom-10 opacity-10 text-white dark:text-cyan-400 pointer-events-none">
                     <i class="fa-solid fa-shield-halved text-[240px]"></i>
                 </div>
 
                 <div class="relative z-10 grid lg:grid-cols-12 gap-8 items-center">
                     
                     <div class="hidden lg:flex lg:col-span-3 items-center justify-center">
-                        <div class="w-28 h-28 rounded-2xl bg-cyan-500/10 border-2 border-cyan-400 flex items-center justify-center text-cyan-400 text-5xl shadow-xl shadow-cyan-500/20">
+                        <div class="w-28 h-28 rounded-2xl bg-white/10 dark:bg-cyan-500/10 border-2 border-white/40 dark:border-cyan-400 flex items-center justify-center text-white dark:text-cyan-400 text-5xl shadow-xl">
                             <i class="fa-solid fa-shield-halved"></i>
                         </div>
                     </div>
@@ -779,18 +1015,18 @@
                         <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
                             Build Better. Together with AI.
                         </h2>
-                        <p class="text-slate-300 text-base sm:text-lg max-w-2xl leading-relaxed">
+                        <p class="text-slate-100 dark:text-slate-300 text-base sm:text-lg max-w-2xl leading-relaxed">
                             Architecture Guard coordinates AI-assisted development with enterprise rigor — protecting architectural boundaries so you can ship faster without technical debt.
                         </p>
 
                         <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
                             <button onclick="openModal()" 
-                               class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-base shadow-lg shadow-cyan-500/25 transition-all transform hover:-translate-y-0.5">
+                               class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-white text-slate-900 hover:bg-slate-100 dark:bg-cyan-500 dark:hover:bg-cyan-400 dark:text-slate-950 font-bold text-base shadow-lg transition-all transform hover:-translate-y-0.5">
                                 Get Started
                             </button>
 
                             <button onclick="openDocsModal()" 
-                               class="w-full sm:w-auto px-7 py-3.5 rounded-xl glass-card hover:bg-slate-800 text-white font-semibold text-base border border-slate-700/80 transition-all">
+                               class="w-full sm:w-auto px-7 py-3.5 rounded-xl glass-card hover:bg-white/20 text-white font-semibold text-base border border-white/30 transition-all">
                                 Read the Documentation
                             </button>
                         </div>
@@ -803,44 +1039,45 @@
     </section>
 
     <!-- FOOTER -->
-    <footer id="community" class="py-12 border-t border-white/5 bg-navy-950 text-xs text-slate-400">
+    <footer id="community" class="py-12 border-t border-slate-200 dark:border-white/5 bg-slate-100 dark:bg-navy-950 text-xs text-slate-600 dark:text-slate-400">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
             
             <div class="flex items-center gap-3">
-                <i class="fa-solid fa-shield-halved text-cyan-400 text-base"></i>
-                <span>Architecture Guard v3.6.0 under the <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener" class="text-slate-300 hover:text-cyan-400 underline underline-offset-2">MIT License</a> · Built for <a href="https://github.com/Fission-AI/OpenSpec" target="_blank" rel="noopener noreferrer" class="text-slate-300 hover:text-cyan-400 underline underline-offset-2">OpenSpec</a> &amp; <a href="https://github.com/github/spec-kit" target="_blank" rel="noopener noreferrer" class="text-slate-300 hover:text-cyan-400 underline underline-offset-2">Spec Kit</a> · Inspired by <a href="https://github.com/DietrichGebert/ponytail" target="_blank" rel="noopener noreferrer" class="text-slate-300 hover:text-cyan-400 underline underline-offset-2">Ponytail</a></span>
+                <i class="fa-solid fa-shield-halved text-cyan-600 dark:text-cyan-400 text-base"></i>
+                <span>Architecture Guard v3.7.0 under the <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener" class="text-slate-900 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 underline underline-offset-2">MIT License</a> · Built for <a href="https://github.com/Fission-AI/OpenSpec" target="_blank" rel="noopener noreferrer" class="text-slate-900 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 underline underline-offset-2">OpenSpec</a> &amp; <a href="https://github.com/github/spec-kit" target="_blank" rel="noopener noreferrer" class="text-slate-900 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 underline underline-offset-2">Spec Kit</a> · Inspired by <a href="https://github.com/DietrichGebert/ponytail" target="_blank" rel="noopener noreferrer" class="text-slate-900 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 underline underline-offset-2">Ponytail</a></span>
             </div>
 
             <div class="flex items-center gap-6 font-medium">
-                <a href="https://github.com/DyanGalih/architecture-guard" target="_blank" rel="noopener noreferrer" class="hover:text-cyan-400 transition-colors">GitHub</a>
-                <a href="#pipeline" class="hover:text-cyan-400 transition-colors">Pipeline</a>
-                <a href="#ecosystem" class="hover:text-cyan-400 transition-colors">Agents</a>
-                <a href="#workflows" class="hover:text-cyan-400 transition-colors">Workflows</a>
-                <a href="#docs" onclick="openDocsModal()" class="hover:text-cyan-400 transition-colors">Docs</a>
+                <a href="https://github.com/DyanGalih/architecture-guard" target="_blank" rel="noopener noreferrer" class="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">GitHub</a>
+                <a href="#flagship" class="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">Flagship</a>
+                <a href="#pipeline" class="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">Pipeline</a>
+                <a href="#ecosystem" class="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">Agents</a>
+                <a href="#credits" class="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">Credits</a>
+                <a href="#docs" onclick="openDocsModal()" class="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">Docs</a>
             </div>
 
         </div>
     </footer>
 
     <!-- GET STARTED MODAL -->
-    <div id="get-started-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-md">
-        <div class="glass-card w-full max-w-lg rounded-2xl p-6 sm:p-8 border border-cyan-500/40 relative shadow-2xl">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-2" aria-label="Close Modal">
+    <div id="get-started-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/60 dark:bg-black/70 backdrop-blur-md">
+        <div class="glass-card w-full max-w-lg rounded-2xl p-6 sm:p-8 border border-slate-300 dark:border-cyan-500/40 relative shadow-2xl">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-900 dark:hover:text-white text-lg p-2" aria-label="Close Modal">
                 <i class="fa-solid fa-xmark"></i>
             </button>
 
             <div class="space-y-6">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400">
+                    <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500 dark:border-cyan-400 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
                         <i class="fa-solid fa-terminal"></i>
                     </div>
                     <div>
-                        <h3 class="text-lg font-bold text-white">Get Started with Architecture Guard</h3>
-                        <p class="text-xs text-slate-400">Install via CLI or integrate with your SDD framework</p>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Get Started with Architecture Guard</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Install via CLI or integrate with your SDD framework</p>
                     </div>
                 </div>
 
-                <div class="bg-navy-950 rounded-xl p-4 border border-slate-800 font-mono text-xs space-y-3 relative group">
+                <div class="bg-slate-900 dark:bg-navy-950 rounded-xl p-4 border border-slate-800 font-mono text-xs space-y-3 relative group">
                     <button onclick="copyCode()" class="absolute top-3 right-3 text-slate-400 hover:text-cyan-400 text-sm px-2 py-1 rounded bg-slate-800 border border-slate-700">
                         <i class="fa-regular fa-copy"></i> Copy
                     </button>
@@ -851,7 +1088,7 @@
                 </div>
 
                 <div class="flex items-center gap-3 pt-2">
-                    <a href="https://github.com/DyanGalih/architecture-guard" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-center text-sm">
+                    <a href="https://github.com/DyanGalih/architecture-guard" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 dark:bg-cyan-500 dark:hover:bg-cyan-400 text-white dark:text-slate-950 font-bold text-center text-sm shadow-md">
                         View Full Setup on GitHub
                     </a>
                 </div>
@@ -860,78 +1097,77 @@
     </div>
 
     <!-- DOCUMENTATION MODAL -->
-    <div id="docs-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-md">
-        <div class="glass-card w-full max-w-3xl rounded-2xl p-6 sm:p-8 border border-blue-500/40 relative shadow-2xl max-h-[85vh] overflow-y-auto">
-            <button onclick="closeDocsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-2" aria-label="Close Documentation Modal">
+    <div id="docs-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/60 dark:bg-black/70 backdrop-blur-md">
+        <div class="glass-card w-full max-w-3xl rounded-2xl p-6 sm:p-8 border border-slate-300 dark:border-blue-500/40 relative shadow-2xl max-h-[85vh] overflow-y-auto">
+            <button onclick="closeDocsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-900 dark:hover:text-white text-lg p-2" aria-label="Close Documentation Modal">
                 <i class="fa-solid fa-xmark"></i>
             </button>
 
             <div class="space-y-6">
-                <div class="flex items-center gap-3 border-b border-white/10 pb-4">
-                    <i class="fa-solid fa-book text-cyan-400 text-2xl"></i>
+                <div class="flex items-center gap-3 border-b border-slate-200 dark:border-white/10 pb-4">
+                    <i class="fa-solid fa-book text-cyan-600 dark:text-cyan-400 text-2xl"></i>
                     <div>
-                        <h3 class="text-xl font-bold text-white">Architecture Guard v3.6.0 Documentation</h3>
-                        <p class="text-xs text-slate-400">Specification-Driven Development, Multi-Agent Teams & PR Operations</p>
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white">Architecture Guard v3.7.0 Documentation</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Specification-Driven Development, Multi-Agent Teams &amp; PR Operations</p>
                     </div>
                 </div>
 
-                <div class="space-y-5 text-sm text-slate-300">
+                <div class="space-y-5 text-sm text-slate-700 dark:text-slate-300">
                     
                     <div class="space-y-1.5">
-                        <h4 class="font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-circle-dot text-cyan-400 text-xs"></i> 1. Governed SDD Orchestration
+                        <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-circle-dot text-cyan-600 dark:text-cyan-400 text-xs"></i> 1. Flagship Commands: /ag-workflow &amp; /ag-governed-backlog
                         </h4>
-                        <p class="text-xs leading-relaxed text-slate-400">
-                            Orchestrates changes across OpenSpec (<code class="text-slate-200">openspec/</code>), SpecKit (<code class="text-slate-200">.specify/</code>), and custom adapters. Commands like <code class="text-slate-200">/ag-governed-discover</code>, <code class="text-slate-200">/ag-governed-delivery</code>, and <code class="text-slate-200">/ag-governed-implement</code> run specs, plans, and tasks through auto-repairing verification loops.
+                        <p class="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                            • <code class="text-slate-900 dark:text-slate-200 font-semibold">/ag-workflow</code>: Single-command interactive conductor for the full lifecycle (discovery → spec → plan → implement → verify → archive) with Gates 0–3.
+                            <br>• <code class="text-slate-900 dark:text-slate-200 font-semibold">/ag-governed-backlog</code>: Autonomous queue engine ingesting Jira JQL, Beads, or YAML across Full, Fix, Light, and Research lanes in isolated worktrees.
                         </p>
                     </div>
 
                     <div class="space-y-1.5">
-                        <h4 class="font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-circle-dot text-cyan-400 text-xs"></i> 2. Multi-Agent Host Coordination
+                        <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-circle-dot text-cyan-600 dark:text-cyan-400 text-xs"></i> 2. Multi-Agent Host Coordination
                         </h4>
-                        <p class="text-xs leading-relaxed text-slate-400">
-                            Architecture Guard coordinates across coding agents:
-                            <br>• <strong>Claude Code</strong>: Native Agent Teams (<code class="text-slate-200">agteam-*</code>) with peer messaging and quality gates.
-                            <br>• <strong>Antigravity (AGY)</strong>: Native subagent execution via <code class="text-slate-200">invoke_subagent</code> and workflows (<code class="text-slate-200">agx-*</code>).
-                            <br>• <strong>OpenCode</strong>: Lead-coordinated native subagents (<code class="text-slate-200">agoc-*</code>) with strict permission envelopes (<code class="text-slate-200">"*": deny</code>) and sequential fallback.
-                            <br>• <strong>OpenAI Codex</strong>: Scoped child sessions via <code class="text-slate-200">.codex/skills/</code>.
+                        <p class="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                            • <strong>Claude Code</strong>: Native Agent Teams (<code class="text-slate-800 dark:text-slate-200">agteam-*</code>) with peer messaging and quality gates.
+                            <br>• <strong>Antigravity (AGY)</strong>: Native subagents API via <code class="text-slate-800 dark:text-slate-200">invoke_subagent</code> and <code class="text-slate-800 dark:text-slate-200">share</code> workspace isolation.
+                            <br>• <strong>OpenCode</strong>: Lead-coordinated native subagents with declarative read-only tool envelopes (<code class="text-slate-800 dark:text-slate-200">tools: { write: false, edit: false, bash: false }</code>).
+                            <br>• <strong>OpenAI Codex</strong>: Scoped child sessions via <code class="text-slate-800 dark:text-slate-200">.codex/skills/</code> and feature reductions.
                         </p>
                     </div>
 
                     <div class="space-y-1.5">
-                        <h4 class="font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-circle-dot text-cyan-400 text-xs"></i> 3. Deep Verification, Premise Grounding &amp; 37 SonarLint Rules
+                        <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-circle-dot text-cyan-600 dark:text-cyan-400 text-xs"></i> 3. Deep Verification, Premise Grounding &amp; 37 SonarLint Rules
                         </h4>
-                        <p class="text-xs leading-relaxed text-slate-400">
+                        <p class="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
                             Unlike standard linting, Architecture Guard verifies that planning artifacts cite true base-branch code (Premise Grounding), detects unlisted file readers/writers (Consumer Inventory), verifies artifact self-consistency, and enforces 37 architecture-focused SonarLint rules across Java, JavaScript, TypeScript, Python, and PHP alongside repository hygiene rules before code is pushed.
                         </p>
                     </div>
 
                     <div class="space-y-1.5">
-                        <h4 class="font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-circle-dot text-cyan-400 text-xs"></i> 4. Backlog Queues, Per-Story Decomposition &amp; Multi-Forge PR Automation
+                        <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-circle-dot text-cyan-600 dark:text-cyan-400 text-xs"></i> 4. Backlog Queues, Per-Story Decomposition &amp; Multi-Forge PR Automation
                         </h4>
-                        <p class="text-xs leading-relaxed text-slate-400">
-                            • <code class="text-slate-200">/ag-governed-delivery-team</code>: Decomposes features into parent and per-item child User Stories (<code class="text-slate-200">user-stories/&lt;feature&gt;/&lt;story-id&gt;.md</code>) and syncs to Jira Epics/Stories or GitHub Issues.
-                            <br>• <code class="text-slate-200">/ag-governed-backlog</code>: Ingests Jira, Beads (<code class="text-slate-200">bd</code>), or YAML backlogs and executes queue items across Full, Fix, Light, and Research lanes.
-                            <br>• <code class="text-slate-200">/ag-pr-queue</code>: Manages pull request reviews and feedback triage across GitHub, GitLab, Bitbucket, and Azure DevOps in isolated worktrees with batched human gates.
+                        <p class="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                            • <code class="text-slate-900 dark:text-slate-200">/ag-governed-delivery-team</code>: Decomposes features into parent and per-item child User Stories and syncs to Jira Epics/Stories or GitHub Issues.
+                            <br>• <code class="text-slate-900 dark:text-slate-200">/ag-pr-queue</code>: Manages pull request reviews and feedback triage across GitHub, GitLab, Bitbucket, and Azure DevOps in isolated worktrees with batched human gates.
                         </p>
                     </div>
 
                     <div class="space-y-1.5">
-                        <h4 class="font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-circle-dot text-cyan-400 text-xs"></i> 5. Credits &amp; Ecosystem References
+                        <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-circle-dot text-cyan-600 dark:text-cyan-400 text-xs"></i> 5. Credits &amp; Ecosystem References
                         </h4>
-                        <p class="text-xs leading-relaxed text-slate-400">
-                            Built with and inspired by <a href="https://github.com/Fission-AI/OpenSpec" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">OpenSpec</a>, <a href="https://github.com/github/spec-kit" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Spec Kit</a>, <a href="https://github.com/DietrichGebert/ponytail" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Ponytail Pragmatism Skill</a>, <a href="https://github.com/DyanGalih/flash-mem" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Flash-Mem</a>, <a href="https://github.com/DyanGalih/security-review" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Security Review</a>, <a href="https://rules.sonarsource.com" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">SonarSource Rules</a>, <a href="https://github.com/steveyegge/beads" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Beads (bd)</a>, and <a href="https://playwright.dev" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Playwright</a>.
+                        <p class="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                            Built with and inspired by <a href="https://github.com/Fission-AI/OpenSpec" target="_blank" rel="noopener noreferrer" class="text-cyan-600 dark:text-cyan-400 hover:underline">OpenSpec</a>, <a href="https://github.com/github/spec-kit" target="_blank" rel="noopener noreferrer" class="text-cyan-600 dark:text-cyan-400 hover:underline">Spec Kit</a>, <a href="https://github.com/DietrichGebert/ponytail" target="_blank" rel="noopener noreferrer" class="text-cyan-600 dark:text-cyan-400 hover:underline">Ponytail Pragmatism Skill</a>, <a href="https://github.com/DyanGalih/flash-mem" target="_blank" rel="noopener noreferrer" class="text-cyan-600 dark:text-cyan-400 hover:underline">Flash-Mem</a>, <a href="https://github.com/DyanGalih/security-review" target="_blank" rel="noopener noreferrer" class="text-cyan-600 dark:text-cyan-400 hover:underline">Security Review</a>, <a href="https://rules.sonarsource.com" target="_blank" rel="noopener noreferrer" class="text-cyan-600 dark:text-cyan-400 hover:underline">SonarSource Rules</a>, <a href="https://github.com/steveyegge/beads" target="_blank" rel="noopener noreferrer" class="text-cyan-600 dark:text-cyan-400 hover:underline">Beads (bd)</a>, and <a href="https://playwright.dev" target="_blank" rel="noopener noreferrer" class="text-cyan-600 dark:text-cyan-400 hover:underline">Playwright</a>.
                         </p>
                     </div>
 
                 </div>
 
-                <div class="pt-4 border-t border-white/10 flex justify-end">
-                    <button onclick="closeDocsModal()" class="px-5 py-2 rounded-xl bg-slate-800 text-white font-semibold text-xs border border-slate-700 hover:bg-slate-700">
+                <div class="pt-4 border-t border-slate-200 dark:border-white/10 flex justify-end">
+                    <button onclick="closeDocsModal()" class="px-5 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold text-xs border border-slate-300 dark:border-slate-700 hover:bg-slate-300 dark:hover:bg-slate-700">
                         Close Overview
                     </button>
                 </div>
@@ -940,8 +1176,8 @@
     </div>
 
     <!-- TOAST NOTIFICATION -->
-    <div id="toast" class="fixed bottom-6 right-6 z-50 hidden glass-card border border-cyan-400/50 text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 text-xs font-semibold">
-        <i class="fa-solid fa-circle-check text-cyan-400 text-base"></i>
+    <div id="toast" class="fixed bottom-6 right-6 z-50 hidden glass-card border border-cyan-500/50 text-slate-900 dark:text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 text-xs font-semibold">
+        <i class="fa-solid fa-circle-check text-cyan-600 dark:text-cyan-400 text-base"></i>
         <span id="toast-msg">Copied to clipboard!</span>
     </div>
 
