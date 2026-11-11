@@ -4227,3 +4227,98 @@ test('user stories decompose and sync per individual item with parent/Epic linka
   const legacyDiscover = fs.readFileSync(path.join(repoRoot, 'commands/governed-discover.md'), 'utf8');
   assert.match(legacyDiscover, /more than one user story per feature/);
 });
+
+test("Role worktree recreation succeeds after worktree directory was manually deleted", () => {
+  const { createRoleWorktree } = require("./cli/repositories");
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-wt-stale-"));
+  initGitRepo(cwd);
+
+  const wt = createRoleWorktree(cwd, "implementor_be");
+  assert.ok(fs.existsSync(wt.worktreePath));
+
+  // Manually delete the worktree folder (simulating interrupted or manual rm -rf)
+  fs.rmSync(wt.worktreePath, { recursive: true, force: true });
+  assert.equal(fs.existsSync(wt.worktreePath), false);
+
+  // createRoleWorktree prunes stale git worktrees and recreates cleanly
+  const recreated = createRoleWorktree(cwd, "implementor_be");
+  assert.ok(fs.existsSync(recreated.worktreePath));
+  assert.equal(recreated.branchName, "agteam/implementor-be");
+});
+
+test("cleanupRoleWorktrees removes non-worktree or empty stale directories", () => {
+  const { cleanupRoleWorktrees } = require("./cli/repositories");
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-wt-empty-"));
+  initGitRepo(cwd);
+
+  const staleDir = path.join(cwd, ".git", "ag-worktrees", "agteam-stale");
+  fs.mkdirSync(staleDir, { recursive: true });
+  assert.ok(fs.existsSync(staleDir));
+
+  // cleanupRoleWorktrees distinguishes empty/non-worktree directories and removes them
+  const removed = cleanupRoleWorktrees(cwd, false);
+  assert.equal(removed.length, 1);
+  assert.equal(fs.existsSync(staleDir), false);
+});
+
+test("sync-team-roles adds host to agent_teams.enabled_hosts in config.yml", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-sync-hosts-"));
+  runArgs(["init", "--yes", "--agent", "codex", "--framework", "openspec", "--commands", "init", "--codex-agents"], cwd);
+
+  const configPath = path.join(cwd, ".architecture-guard/config.yml");
+  let config = require("yaml").parse(fs.readFileSync(configPath, "utf8"));
+  assert.deepEqual(config.agent_teams.enabled_hosts, ["codex"]);
+
+  // Install opencode skills first so opencode sync passes preflight
+  runArgs(["init", "--yes", "--agent", "opencode", "--framework", "openspec", "--commands", "init"], cwd);
+
+  // Sync team roles for opencode
+  runArgs(["sync-team-roles", "--agent", "opencode"], cwd);
+
+  config = require("yaml").parse(fs.readFileSync(configPath, "utf8"));
+  assert.ok(config.agent_teams.enabled_hosts.includes("opencode"));
+});
+
+test("writeInstallerConfig preserves custom keys and comments on existing agent_teams node", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-preserve-custom-"));
+  const configPath = path.join(cwd, ".architecture-guard/config.yml");
+  fs.mkdirSync(path.dirname(configPath), { recursive: true });
+
+  const initialYaml = `adapter: openspec
+presets: []
+agent_teams:
+  # User custom comment
+  custom_key: my_value
+  enabled_hosts:
+    - codex
+  activation: manual
+  isolation: auto
+`;
+  fs.writeFileSync(configPath, initialYaml);
+
+  // Re-run init with opencode-agents
+  runArgs(["init", "--yes", "--agent", "codex,opencode", "--framework", "openspec", "--commands", "init", "--opencode-agents"], cwd);
+
+  const updatedRaw = fs.readFileSync(configPath, "utf8");
+  assert.match(updatedRaw, /User custom comment/);
+  assert.match(updatedRaw, /custom_key:\s*my_value/);
+  const updated = require("yaml").parse(updatedRaw);
+  assert.equal(updated.agent_teams.custom_key, "my_value");
+  assert.ok(updated.agent_teams.enabled_hosts.includes("codex"));
+  assert.ok(updated.agent_teams.enabled_hosts.includes("opencode"));
+});
+
+test("Init with explicit team activation updates config even when no new host roles are selected", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ag-activation-update-"));
+  runArgs(["init", "--yes", "--agent", "codex", "--framework", "openspec", "--commands", "init", "--codex-agents"], cwd);
+
+  const configPath = path.join(cwd, ".architecture-guard/config.yml");
+  let config = require("yaml").parse(fs.readFileSync(configPath, "utf8"));
+  assert.equal(config.agent_teams.activation, "auto");
+
+  // Re-run init without host flags but with --team-activation manual
+  runArgs(["init", "--yes", "--agent", "codex", "--framework", "openspec", "--commands", "init", "--team-activation", "manual"], cwd);
+
+  config = require("yaml").parse(fs.readFileSync(configPath, "utf8"));
+  assert.equal(config.agent_teams.activation, "manual");
+});

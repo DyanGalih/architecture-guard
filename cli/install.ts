@@ -147,7 +147,7 @@ async function ask(promptText, choices, multi = false) {
     if (!choices) return input;
     if (multi) {
       if (input.trim().toLowerCase() === 'all') return choices.map(c => typeof c === 'string' ? c : c.value);
-      if (['y', 'yes'].includes(input.trim().toLowerCase())) return choices.map(c => typeof c === 'string' ? c : c.value);
+      if (['y', 'yes'].includes(input.trim().toLowerCase()) && promptText.toLowerCase().includes('agent')) return choices.map(c => typeof c === 'string' ? c : c.value);
       if (['n', 'no'].includes(input.trim().toLowerCase())) return [];
       const indices = input.split(',').map(s => parseInt(s.trim()) - 1).filter(i => i >= 0 && i < choices.length);
       return indices.map(i => typeof choices[i] === 'string' ? choices[i] : choices[i].value);
@@ -317,15 +317,18 @@ function writeInstallerConfig(configPath, adapter, repositories = null, agentTea
   if (agentTeams) {
     if (doc.has('agent_teams')) {
       const existingNode: any = doc.get('agent_teams');
-      const existing = existingNode && typeof existingNode.toJSON === 'function' ? existingNode.toJSON() : (existingNode || {});
-      const mergedHosts = Array.from(new Set([...(Array.isArray(existing.enabled_hosts) ? existing.enabled_hosts : []), ...(agentTeams.enabled_hosts || [])]));
-      const activation = agentTeams._explicitActivation ? agentTeams.activation : (existing.activation || agentTeams.activation);
-      const isolation = agentTeams._explicitIsolation ? agentTeams.isolation : (existing.isolation || agentTeams.isolation);
-      doc.set('agent_teams', {
-        enabled_hosts: mergedHosts,
-        activation,
-        isolation
-      });
+      if (existingNode && typeof existingNode.set === 'function') {
+        const existing = typeof existingNode.toJSON === 'function' ? existingNode.toJSON() : {};
+        const incomingHosts = agentTeams.enabled_hosts || [];
+        const mergedHosts = Array.from(new Set([...(Array.isArray(existing.enabled_hosts) ? existing.enabled_hosts : []), ...incomingHosts]));
+        const activation = agentTeams._explicitActivation ? agentTeams.activation : (existing.activation || agentTeams.activation);
+        const isolation = agentTeams._explicitIsolation ? agentTeams.isolation : (existing.isolation || agentTeams.isolation);
+        existingNode.set('enabled_hosts', mergedHosts);
+        existingNode.set('activation', activation);
+        existingNode.set('isolation', isolation);
+      } else {
+        doc.set('agent_teams', cleanAgentTeams);
+      }
     } else {
       doc.set('agent_teams', cleanAgentTeams);
     }
@@ -893,6 +896,29 @@ const HOST_ROLE_DESCRIPTORS: Record<string, { desc: any; label: string }> = {
   opencode: { desc: OPENCODE_ROLES, label: 'OpenCode' },
 };
 
+function updateEnabledHostInConfig(targetDir: string, hostKey: string): void {
+  const configPath = path.join(targetDir, '.architecture-guard', 'config.yml');
+  if (!fs.existsSync(configPath)) return;
+  try {
+    const YAML = require('yaml');
+    const doc = YAML.parseDocument(fs.readFileSync(configPath, 'utf8'));
+    if (doc.errors.length || (doc.contents && !YAML.isMap(doc.contents))) return;
+    if (doc.has('agent_teams')) {
+      const existingNode: any = doc.get('agent_teams');
+      if (existingNode && typeof existingNode.set === 'function') {
+        const existing = typeof existingNode.toJSON === 'function' ? existingNode.toJSON() : {};
+        const currentHosts = Array.isArray(existing.enabled_hosts) ? existing.enabled_hosts : [];
+        if (!currentHosts.includes(hostKey)) {
+          existingNode.set('enabled_hosts', [...currentHosts, hostKey]);
+          fs.writeFileSync(configPath, String(doc));
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+}
+
 export function runSyncTeamRoles(target?: string, options: { agent?: string } = {}) {
   if (options.agent && !['claude', 'codex', 'antigravity', 'opencode'].includes(options.agent)) {
     console.error('Unknown role target; use --agent codex, --agent claude, --agent antigravity, or --agent opencode');
@@ -908,7 +934,11 @@ export function runSyncTeamRoles(target?: string, options: { agent?: string } = 
       return { written: [], removed: [], errors: [`No ${options.agent} skills installed`] };
     }
     const result = installRoles(desc, targetDir);
-    if (result.errors.length) process.exitCode = 1;
+    if (result.errors.length) {
+      process.exitCode = 1;
+    } else {
+      updateEnabledHostInConfig(targetDir, options.agent);
+    }
     return result;
   }
   if (!hasHostSkills(targetDir, 'claude')) {
@@ -916,7 +946,11 @@ export function runSyncTeamRoles(target?: string, options: { agent?: string } = 
     return { written: [], removed: [], errors: [] };
   }
   const result = installClaudeRoleAgents(targetDir);
-  if (result.errors.length) process.exitCode = 1;
+  if (result.errors.length) {
+    process.exitCode = 1;
+  } else {
+    updateEnabledHostInConfig(targetDir, 'claude');
+  }
   return result;
 }
 
@@ -1228,9 +1262,11 @@ async function configureMultiHostTeamRoles(targetDir: string, selectedAgents: st
   const installedTeamHosts: string[] = [];
 
   if (selectedTeamHosts.includes('claude')) {
-    configureClaudeAgentTeams(targetDir);
+    const configured = configureClaudeAgentTeams(targetDir);
     const result = installClaudeRoleAgents(targetDir, opts.overwrite);
-    if (!result.errors.length) installedTeamHosts.push('claude');
+    if (configured && !result.errors.length) {
+      installedTeamHosts.push('claude');
+    }
   }
 
   const hostRoleDescriptors = [
@@ -1253,7 +1289,7 @@ async function configureMultiHostTeamRoles(targetDir: string, selectedAgents: st
     }
   }
 
-  if (installedTeamHosts.length === 0) return null;
+  if (installedTeamHosts.length === 0 && !opts.teamActivation && !opts.teamIsolation) return null;
 
   let teamActivation = opts.teamActivation;
   let teamIsolation = opts.teamIsolation;

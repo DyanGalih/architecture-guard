@@ -62,6 +62,8 @@ function ensureWithinBounds(targetPath: string, allowedDirs: string[]): boolean 
 
 // Treat the workspace/package root as the trusted anchor; reject links that escape it or dangle.
 function rejectSymlinks(root: string, target: string): void {
+  const realRoot = fs.existsSync(root) ? fs.realpathSync(root) : path.resolve(root);
+  const realPkg = fs.existsSync(ROOT_DIR) ? fs.realpathSync(ROOT_DIR) : ROOT_DIR;
   const relative = path.relative(root, target);
   if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
     throw new Error(`Resource path escapes root: ${target}`);
@@ -73,8 +75,8 @@ function rejectSymlinks(root: string, target: string): void {
       if (fs.lstatSync(current).isSymbolicLink()) {
         try {
           const real = fs.realpathSync(current);
-          const relReal = path.relative(root, real);
-          const relPkg = path.relative(ROOT_DIR, real);
+          const relReal = path.relative(realRoot, real);
+          const relPkg = path.relative(realPkg, real);
           const escapesRoot = relReal === '..' || relReal.startsWith(`..${path.sep}`) || path.isAbsolute(relReal);
           const escapesPkg = relPkg === '..' || relPkg.startsWith(`..${path.sep}`) || path.isAbsolute(relPkg);
           if (escapesRoot && escapesPkg) {
@@ -91,6 +93,15 @@ function rejectSymlinks(root: string, target: string): void {
   }
 }
 
+function candidateExistsOrIsSymlink(filePath: string): boolean {
+  try {
+    const lstat = fs.lstatSync(filePath);
+    return lstat.isFile() || lstat.isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
 function resolveManifestResource(targetDir: string): ResolvedResource {
   const candidatePaths = [
     path.join(targetDir, '.architecture-guard', 'config.yml'),
@@ -100,14 +111,17 @@ function resolveManifestResource(targetDir: string): ResolvedResource {
   ];
 
   for (const candidate of candidatePaths) {
-    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-      return {
-        category: 'manifest',
-        name: path.basename(candidate),
-        source: 'local',
-        path: candidate,
-        content: fs.readFileSync(candidate, 'utf8'),
-      };
+    if (candidateExistsOrIsSymlink(candidate)) {
+      rejectSymlinks(targetDir, candidate);
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        return {
+          category: 'manifest',
+          name: path.basename(candidate),
+          source: 'local',
+          path: candidate,
+          content: fs.readFileSync(candidate, 'utf8'),
+        };
+      }
     }
   }
 
@@ -124,6 +138,9 @@ function findCandidateResource(
   for (const dir of dirs) {
     for (const ext of extensions) {
       const candidate = path.join(dir, `${cleanName}${ext}`);
+      if (!candidateExistsOrIsSymlink(candidate)) {
+        continue;
+      }
       rejectSymlinks(symlinkBase, candidate);
       if (ensureWithinBounds(candidate, allowedDirs) && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
         return candidate;
