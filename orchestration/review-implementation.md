@@ -321,7 +321,7 @@ Return only this structure:
 | [Governance / Intent / Story scope / Tests / Secrets / Security-sensitive files / CI / Security Review] | [Clean / Finding / Not Applicable / Degraded] | [from policy] | [Yes/No] | [File:Line] | [What was found, or why the check did not apply] |
 
 ### Refactor Tasks
-(One per confirmed violation, including each Change Checks finding, with its Target.)
+(One per confirmed violation, including each Change Checks finding and each `CONFIRMED` correctness finding (Target `code`), with its Target.)
 [Refactor Task]
 - **Title**: 
 - **Priority**: [Based on Severity]
@@ -340,11 +340,11 @@ Return only this structure:
 - **Coverage**: [changed files reviewed of total; any left out and why]
 - **Candidates**: [found / rejected in verification / left out by the cap]
 
-| # | Severity | Verdict | Location | Defect | Failure scenario | Smallest fix | Proving check |
-|:---|:---|:---|:---|:---|:---|:---|:---|
-| [n] | [HIGH/MEDIUM/LOW] | [CONFIRMED / PLAUSIBLE: assumption] | [File:Line] | [One sentence] | [input or state → wrong result] | [Minimal change] | [Test to add or update] |
+| # | Severity | Verdict | Location | Defect | Failure scenario | Smallest fix | Proving check | Evidence |
+|:---|:---|:---|:---|:---|:---|:---|:---|:---|
+| [n] | [HIGH/MEDIUM/LOW] | [CONFIRMED / PLAUSIBLE: assumption] | [File:Line] | [One sentence] | [input or state → wrong result] | [Minimal change] | [Test to add or update] | Static analysis; not executed |
 
-Label every row `Static analysis; not executed`. When nothing survives verification, write `No correctness findings` with the candidate counts. Each confirmed finding also gets a Refactor Task.
+Label every row `Static analysis; not executed` in its Evidence column. When nothing survives verification, write `No correctness findings` with the candidate counts. Each `CONFIRMED` finding also gets a Refactor Task with Target `code`.
 
 ---
 

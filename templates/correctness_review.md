@@ -17,13 +17,13 @@ Leave other concerns to their owners, and do not report them here:
 
 ## Depth
 
-The depth comes from the caller's explicit input, else `review.correctness.depth` in `{adapter_path:governance-config}`, else `quick`.
+The depth comes from the caller's explicit input, else the `correctness=<depth>` argument, else `review.correctness.depth` in `{adapter_path:governance-config}`, else `quick`.
 
 | Depth | Hunt | Verification | Report |
 |---|---|---|---|
 | `off` | none | none | `Correctness: off` |
 | `quick` | inline, the changed hunks and their direct callers | inline, each candidate once | at most 5 findings, `CONFIRMED` only |
-| `standard` | inline, the changed hunks, direct callers, and the contracts they rely on | each candidate verified separately from the hunt | at most 15 findings, `CONFIRMED` and `PLAUSIBLE` |
+| `standard` | inline, the changed hunks, direct callers, and the contracts they rely on | inline, as a second pass after the hunt, each candidate separately | at most 15 findings, `CONFIRMED` and `PLAUSIBLE` |
 | `deep` | read-only reviewers in parallel under `agent_execution`, one per group of changed files or defect family | a fresh-context verifier per finding where dispatch is available | every surviving finding |
 
 When the host cannot dispatch fresh contexts, run `deep` inline with the same steps and report `Execution: inline`. Never claim parallel reviewers or a fresh verifier that did not run.
@@ -56,7 +56,7 @@ When the host cannot dispatch fresh contexts, run `deep` inline with the same st
 - Cite `file:line` in the review root for the defect, and for the caller or input that triggers it.
 - Write the failure scenario as `<input or state> → <wrong result>`, specific enough that someone could write the test that reproduces it.
 - Every finding states the smallest fix and the check that would prove it: name the test to add or update, using the project's existing test tooling.
-- Static reading is not execution. Label each finding `Static analysis; not executed`.
+- Static reading is not execution. Label each finding `Static analysis; not executed` in its Evidence column.
 
 ## Severity and Blocking
 
@@ -76,13 +76,13 @@ A defect already reported as a Root-Cause Miss, Unsafe Simplification, Code Qual
 
 Report to the caller:
 
-- **Depth**: `off` / `quick` / `standard` / `deep`, and where it came from (caller, config, or default)
+- **Depth**: `off` / `quick` / `standard` / `deep`, and where it came from (caller, arguments, config, or default)
 - **Execution**: inline / parallel reviewers (count) / fresh verifier (ran or `Unavailable`)
 - **Coverage**: changed files reviewed of total, and any left out with the reason
 - **Candidates**: found, rejected during verification, left out by the cap
 
-| # | Severity | Verdict | Location | Defect | Failure scenario | Smallest fix | Proving check |
-|:---|:---|:---|:---|:---|:---|:---|:---|
-| [n] | [HIGH/MEDIUM/LOW] | [CONFIRMED / PLAUSIBLE: assumption] | [File:Line] | [One sentence] | [input or state → wrong result] | [Minimal change] | [Test to add or update] |
+| # | Severity | Verdict | Location | Defect | Failure scenario | Smallest fix | Proving check | Evidence |
+|:---|:---|:---|:---|:---|:---|:---|:---|:---|
+| [n] | [HIGH/MEDIUM/LOW] | [CONFIRMED / PLAUSIBLE: assumption] | [File:Line] | [One sentence] | [input or state → wrong result] | [Minimal change] | [Test to add or update] | Static analysis; not executed |
 
 When nothing survives verification, write `No correctness findings` with the candidate counts; never leave the section empty.
