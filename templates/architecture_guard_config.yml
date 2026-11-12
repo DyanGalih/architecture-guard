@@ -58,6 +58,15 @@ context:
 #     paths:
 #       - docs/archive/**
 
+# Optional correctness review in ag-review-implementation (templates/correctness_review.md), host-agnostic and
+# read-only: it reads changed code and its callers, writes each suspected defect as a concrete failure scenario,
+# and keeps only those that survive a verification pass. depth: off | quick (default) | standard | deep. deep uses
+# read-only parallel reviewers and a fresh-context verifier when the host can dispatch them, else runs inline.
+# A calling skill or the command arguments (correctness=<depth>) override it for one run.
+# review:
+#   correctness:
+#     depth: quick
+
 # Optional agent team coordination and workspace isolation across Claude, Codex, Antigravity, and OpenCode.
 # Configured interactively during `init` or via --team-activation / --team-isolation.
 # agent_teams:
