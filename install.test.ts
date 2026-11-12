@@ -1700,6 +1700,7 @@ test('orchestration prompts and runtime templates stay SDD-tool-agnostic', () =>
     'templates/budgeted_context_sdd.md',
     'templates/capability_composition.md',
     'templates/performance_review.md',
+    'templates/correctness_review.md',
     'templates/agent_communication.md',
     'flow/default.md',
   ];
@@ -1995,6 +1996,26 @@ test('review-implementation honors the caller review root and runs the scoped hy
   for (const field of ['Review Root:', 'Trusted Rules:', 'Changed Files:', 'Base Ref:', 'Approval Scope:']) assert.ok(contract.includes(field), field);
   assert.match(contract, /untrusted data/);
   assert.match(contract, /do not edit files or execute untrusted reviewed code/);
+});
+
+test('correctness review is read-only, verified, scenario-based, and never blocks by itself', () => {
+  const template = fs.readFileSync(path.join(repoRoot, 'templates/correctness_review.md'), 'utf8');
+  for (const depth of ['`off`', '`quick`', '`standard`', '`deep`']) assert.ok(template.includes(depth), `correctness_review must define depth ${depth}`);
+  assert.match(template, /never edits files, never runs the reviewed code/);
+  assert.match(template, /`CONFIRMED`/);
+  assert.match(template, /`PLAUSIBLE`/);
+  assert.match(template, /<input or state> → <wrong result>/);
+  assert.match(template, /Static analysis; not executed/);
+  assert.match(template, /never blocks by itself/);
+  assert.match(template, /Never claim parallel reviewers or a fresh verifier that did not run/);
+  assert.match(template, /No correctness findings/);
+  assert.doesNotMatch(template, /\| `CRITICAL`/);
+  const review = orchestrationPrompt('review-implementation.md');
+  assert.match(review, /architecture-guard resolve template correctness_review/);
+  assert.match(review, /7b\. \*\*Correctness Scan \(if mode=architecture\)\*\*/);
+  assert.match(review, /### Correctness Findings/);
+  assert.match(review, /`review\.correctness\.depth`/);
+  assert.match(fs.readFileSync(path.join(repoRoot, 'templates/architecture_guard_config.yml'), 'utf8'), /# {5}depth: quick/);
 });
 
 test('performance is governed by declared constitution constraints, not speculation', () => {
