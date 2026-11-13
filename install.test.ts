@@ -3,7 +3,17 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
-const { spawnSync, execFileSync } = require('node:child_process');
+const { spawnSync: spawnChild, execFileSync } = require('node:child_process');
+
+// Installer tests must never mutate the developer's global Codex configuration.
+const testCodexHome = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-test-codex-home-'));
+test.after(() => fs.rmSync(testCodexHome, { recursive: true, force: true }));
+function spawnSync(command, args, options: any = {}) {
+  return spawnChild(command, args, {
+    ...options,
+    env: { ...process.env, CODEX_HOME: testCodexHome, ...options.env },
+  });
+}
 
 const installer = path.join(__dirname, 'bin', 'cli.js');
 
@@ -3370,6 +3380,113 @@ test('optional forge keys materialize as unsupported for a custom forge that omi
   const out = materializeForgeTokens('Approve with {forge_command:review-approve}.', 'custom', cwd);
   assert.match(out, /- \*\*review-approve\*\*: Unsupported by this forge adapter; do not offer or attempt this action/);
   assert.throws(() => materializeForgeTokens('{forge_command:review-post}', 'custom-missing', cwd), /Unavailable: forge adapter not found/);
+});
+
+test('Codex global config migration preserves unrelated text, V2 settings, and idempotence', () => {
+  const { migrateCodexConfig } = require('./cli/codex-config');
+  const { parse } = require('smol-toml');
+  const source = '# user settings\r\nmodel = "chosen"\r\nbig = 9223372036854775807\r\n[features]\r\nmulti_agent = true\r\nmulti_agent_v2 = false # preserve\r\nmemories = true\r\n[agents]\r\nenabled = false # enable explicitly\r\nmax_threads = 3\r\n[mcp_servers.example]\r\ncommand = "local-server"\r\n';
+  const result = migrateCodexConfig(source);
+  assert.equal(result, source.replace('multi_agent = true\r\n', '').replace('enabled = false', 'enabled = true'));
+  assert.equal(parse(result, { integersAsBigInt: true }).agents.enabled, true);
+  assert.equal(migrateCodexConfig(result), result);
+  for (const input of ['', '[agents.worker]\ndescription = "worker"\n', 'agents.enabled = false\nfeatures.multi_agent = false\n']) {
+    const migrated = parse(migrateCodexConfig(input));
+    assert.equal(migrated.agents.enabled, true);
+    assert.equal(migrated.features?.multi_agent, undefined);
+  }
+  for (const input of ['secret = "DO_NOT_PRINT"\n[broken', 'agents = false', 'agents = {enabled = false}', 'note = """\n[features]\nmulti_agent = true\n"""\n']) {
+    assert.throws(() => migrateCodexConfig(input), error => !error.message.includes('DO_NOT_PRINT'));
+  }
+});
+
+test('Codex global config writes are atomic, private, and reject unsafe paths or changed sources', () => {
+  const { planCodexConfig, applyCodexConfig } = require('./cli/codex-config');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-global-codex-'));
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-global-codex-outside-'));
+  try {
+    const file = path.join(home, 'config.toml');
+    applyCodexConfig(planCodexConfig(home));
+    assert.match(fs.readFileSync(file, 'utf8'), /\[agents\]\nenabled = true/);
+    if (process.platform !== 'win32') assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+    fs.writeFileSync(file, '[agents]\nenabled = false\n');
+    fs.chmodSync(file, 0o640);
+    const rename = fs.renameSync;
+    fs.renameSync = () => { throw new Error('simulated replacement failure'); };
+    try {
+      assert.throws(() => applyCodexConfig(planCodexConfig(home)), /simulated replacement failure/);
+      assert.equal(fs.readFileSync(file, 'utf8'), '[agents]\nenabled = false\n');
+      assert.deepEqual(fs.readdirSync(home), ['config.toml']);
+    } finally { fs.renameSync = rename; }
+    applyCodexConfig(planCodexConfig(home));
+    if (process.platform !== 'win32') assert.equal(fs.statSync(file).mode & 0o777, 0o640);
+    fs.writeFileSync(file, '[agents]\nenabled = false\n');
+    const plan = planCodexConfig(home);
+    fs.appendFileSync(file, '# concurrent edit\n');
+    assert.throws(() => applyCodexConfig(plan), /changed after preview/);
+    assert.match(fs.readFileSync(file, 'utf8'), /enabled = false\n# concurrent edit/);
+    fs.unlinkSync(file);
+    const destination = path.join(outside, 'config.toml');
+    fs.writeFileSync(destination, '# untouched\n');
+    fs.symlinkSync(destination, file);
+    assert.throws(() => planCodexConfig(home), /Unsafe Codex configuration path/);
+    assert.equal(fs.readFileSync(destination, 'utf8'), '# untouched\n');
+    fs.unlinkSync(file);
+    fs.mkdirSync(file);
+    assert.throws(() => planCodexConfig(home), /Unsafe Codex configuration path/);
+    fs.rmdirSync(file);
+    const alias = path.join(home, 'alias');
+    fs.symlinkSync(outside, alias);
+    assert.throws(() => planCodexConfig(alias), /Unsafe Codex configuration path/);
+    assert.throws(() => planCodexConfig(path.join(home, 'missing')), /ENOENT/);
+    assert.deepEqual(fs.readdirSync(home), ['alias']);
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('Codex init activates global tools only for team selection and fails closed on malformed config', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-global-codex-init-'));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-global-codex-config-'));
+  try {
+    const file = path.join(home, 'config.toml');
+    const source = '# preserve\n[features]\nmulti_agent = true\n[agents]\nenabled = false\n';
+    fs.writeFileSync(file, source);
+    const args = [installer, 'init', '--yes', '--agent', 'codex', '--framework', 'openspec', '--commands', 'init'];
+    const run = extra => spawnSync(process.execPath, [...args, ...extra], { cwd, encoding: 'utf8', env: { CODEX_HOME: home } });
+    assert.equal(run([]).status, 0);
+    assert.equal(fs.readFileSync(file, 'utf8'), source);
+    fs.writeFileSync(file, '[bad');
+    const invalid = run(['--codex-agents']);
+    assert.equal(invalid.status, 1);
+    assert.match(invalid.stderr, /invalid TOML/);
+    assert.equal(fs.existsSync(path.join(cwd, '.codex/agents')), false);
+    assert.equal(fs.readFileSync(file, 'utf8'), '[bad');
+    fs.writeFileSync(file, source);
+    const enabled = run(['--codex-agents']);
+    assert.equal(enabled.status, 0, enabled.stderr);
+    assert.match(enabled.stdout, /Restart the background server with \/daemon/);
+    const expected = source.replace('multi_agent = true\n', '').replace('enabled = false', 'enabled = true');
+    assert.equal(fs.readFileSync(file, 'utf8'), expected);
+    assert.equal(run(['--codex-agents']).status, 0);
+    assert.equal(fs.readFileSync(file, 'utf8'), expected);
+    fs.writeFileSync(file, source);
+    const otherHost = spawnSync(process.execPath, [installer, 'init', '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'], { cwd, encoding: 'utf8', env: { CODEX_HOME: home } });
+    assert.equal(otherHost.status, 0, otherHost.stderr);
+    assert.equal(fs.readFileSync(file, 'utf8'), source);
+    if (process.platform !== 'win32') {
+      const fallbackHome = path.join(cwd, 'user-home');
+      fs.mkdirSync(fallbackHome);
+      const fallback = spawnSync(process.execPath, [...args, '--codex-agents'], { cwd, encoding: 'utf8', env: { CODEX_HOME: '', HOME: fallbackHome } });
+      assert.equal(fallback.status, 0, fallback.stderr);
+      assert.equal(require('smol-toml').parse(fs.readFileSync(path.join(fallbackHome, '.codex/config.toml'), 'utf8')).agents.enabled, true);
+      assert.equal(fs.readFileSync(file, 'utf8'), source);
+    }
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+    fs.rmSync(home, { recursive: true, force: true });
+  }
 });
 
 test('Codex roles render native TOML with independent host configuration and inherited defaults', () => {

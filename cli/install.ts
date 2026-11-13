@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { roleAgentName, installCodexRoles, planCodexRoles, validateProfile, assertRolePath, CODEX_ROLES, AGY_ROLES, OPENCODE_ROLES, planRoles, installRoles } = require('./role-setup');
+const { planCodexConfig, applyCodexConfig } = require('./codex-config');
 
 const ROOT_DIR = path.join(__dirname, '..', '..');
 const { resolveForge, installForges, materializeForgeTokens } = require('./forge');
@@ -1090,7 +1091,7 @@ function pruneVendoredCopies(runtimeDir, overwrite) {
 }
 
 // Preview and preflight the whole operation before creating a profile or changing roles.
-async function interviewHostRoles(desc, targetDir, overwrite) {
+async function interviewHostRoles(desc, targetDir, overwrite, codexConfig = null) {
   const root = fs.realpathSync(targetDir);
   const profilePath = path.join(root, '.architecture-guard', desc.profileName);
   assertRolePath(root, profilePath);
@@ -1117,6 +1118,7 @@ async function interviewHostRoles(desc, targetDir, overwrite) {
   }
   const plan = planRoles(desc, root, overwrite, profile);
   console.log(`${desc.label} profile: ${profilePath} (${existing ? 'retain' : 'create'})`);
+  if (codexConfig) console.log(`Codex user config: ${codexConfig.file}; enable agents.enabled and remove deprecated features.multi_agent (all projects).`);
   for (const action of ['create', 'replace', 'retain', 'remove']) {
     console.log(`${action}: ${plan[action].length ? plan[action].map(file => path.relative(root, file)).join(', ') : '(none)'}`);
   }
@@ -1249,7 +1251,7 @@ async function resolveInitFramework(targetDir: string, opts: Record<string, any>
 async function configureMultiHostTeamRoles(targetDir: string, selectedAgents: string[], opts: Record<string, any>): Promise<any | null> {
   const teamRoleHostCandidates = [
     { key: 'claude', name: 'Claude Code Agent Teams (roles + enables experimental Agent Teams setting)' },
-    { key: 'codex', name: 'Codex (roles + coordinated execution auto-activation)' },
+    { key: 'codex', name: 'Codex (roles + enable subagents in global config + coordinated execution auto-activation)' },
     { key: 'antigravity', name: 'Antigravity / agy (roles + coordinated execution auto-activation)' },
     { key: 'opencode', name: 'OpenCode (roles + coordinated execution auto-activation)' },
   ];
@@ -1289,10 +1291,15 @@ async function configureMultiHostTeamRoles(targetDir: string, selectedAgents: st
 
   for (const { key, desc } of hostRoleDescriptors) {
     if (selectedTeamHosts.includes(key)) {
-      const profile = opts.yes ? undefined : await interviewHostRoles(desc, targetDir, opts.overwrite);
+      const codexConfig = key === 'codex' ? planCodexConfig() : null;
+      const profile = opts.yes ? undefined : await interviewHostRoles(desc, targetDir, opts.overwrite, codexConfig);
       if (opts.yes || profile) {
         const result = installRoles(desc, targetDir, opts.overwrite, profile);
         if (!result.errors.length) {
+          if (codexConfig) {
+            applyCodexConfig(codexConfig);
+            console.log(`Codex user config: ${codexConfig.file}; agents.enabled = true; deprecated features.multi_agent removed. Restart the background server with /daemon to reload settings.`);
+          }
           installedTeamHosts.push(key);
         }
       }

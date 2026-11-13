@@ -38,7 +38,7 @@ program
   .option('--overwrite <mode>', 'replace | skip | keep-both')
   .option('--vendor', 'Copy immutable runtime resources locally (for air-gapped setups)')
   .option('--full', 'Alias for --vendor')
-  .option('--codex-agents', 'Install native Codex roles (auto-activates team execution unless configured manual/ask)')
+  .option('--codex-agents', 'Install Codex roles, enable agents.enabled in global Codex config, and remove deprecated features.multi_agent (auto-activates team execution unless manual/ask)')
   .option('--agy-agents', 'Install native Antigravity (agy) roles (auto-activates team execution unless configured manual/ask)')
   .option('--opencode-agents', 'Install native OpenCode roles (auto-activates team execution unless configured manual/ask)')
   .option('--claude-agent-teams', 'Enable Claude Code Agent Teams (Beta / Experimental)')
