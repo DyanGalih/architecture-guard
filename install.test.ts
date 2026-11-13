@@ -6,7 +6,7 @@ const test = require('node:test');
 const { spawnSync: spawnChild, execFileSync } = require('node:child_process');
 
 // Installer tests must never mutate the developer's global Codex configuration.
-const testCodexHome = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-test-codex-home-'));
+const testCodexHome = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ag-test-codex-home-')));
 test.after(() => fs.rmSync(testCodexHome, { recursive: true, force: true }));
 function spawnSync(command, args, options: any = {}) {
   return spawnChild(command, args, {
@@ -3428,8 +3428,8 @@ test('Codex global config migration preserves unrelated text, V2 settings, and i
 
 test('Codex global config writes are atomic, private, and reject unsafe paths or changed sources', () => {
   const { planCodexConfig, applyCodexConfig } = require('./cli/codex-config');
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-global-codex-'));
-  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-global-codex-outside-'));
+  const home = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ag-global-codex-')));
+  const outside = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ag-global-codex-outside-')));
   try {
     const file = path.join(home, 'config.toml');
     applyCodexConfig(planCodexConfig(home));
@@ -3473,8 +3473,8 @@ test('Codex global config writes are atomic, private, and reject unsafe paths or
 });
 
 test('Codex init activates global tools only for team selection and fails closed on malformed config', () => {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-global-codex-init-'));
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-global-codex-config-'));
+  const cwd = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ag-global-codex-init-')));
+  const home = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ag-global-codex-config-')));
   try {
     const file = path.join(home, 'config.toml');
     const source = '# preserve\n[features]\nmulti_agent = true\n[agents]\nenabled = false\n';
