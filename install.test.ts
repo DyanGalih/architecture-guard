@@ -1155,6 +1155,28 @@ test('validate-backlog accepts the example and rejects invalid backlogs', () => 
   assert.equal(insideLink.status, 0, insideLink.stderr);
 });
 
+test('governed-backlog reuses review owners and requires evidence for the final implementation', () => {
+  const prompt = fs.readFileSync(path.join(__dirname, '..', 'orchestration', 'governed-backlog.md'), 'utf8');
+  const step5 = prompt.slice(prompt.indexOf('### Step 5'), prompt.indexOf('### Human Gate I'));
+  const step6 = prompt.slice(prompt.indexOf('### Step 6'), prompt.indexOf('### Human Gate P'));
+  assert.match(step5, /resolve and read the installed `ag-governed-delivery` capability/);
+  assert.match(step5, /execute only its Phase 6[^\n]*Artifact Review Convergence Loop/);
+  assert.match(step5, /Do not run its specification, plan, or task generation phases/);
+  assert.match(step5, /five-review-pass limit, no-progress stop, and confirmation-pass rule/);
+  assert.match(step5, /`## Stories` section stands in for the specification/);
+  assert.match(step5, /`Not converged`, `Blocked`, or `Unavailable`[^\n]*park the group/);
+  assert.match(step6, /sole owner of implementation review, repairs, and final verification/);
+  assert.doesNotMatch(step6, /dedicated post-implementation review|at most 2 passes/);
+  const invalidate = step6.indexOf('Any later implementation or test edit invalidates');
+  const rerun = step6.indexOf('rerun affected checks and final verification');
+  const ready = step6.indexOf('Set the group to `ready`');
+  assert.ok(invalidate >= 0 && invalidate < rerun && rerun < ready, 'invalidate and refresh evidence before readiness');
+  assert.match(step6, /preserve its pass counts and limits/);
+  assert.match(step6, /review and verification evidence for the final implementation/);
+  assert.match(step6, /Missing evidence or exhausted limits parks the group/);
+  assert.match(step6, /Preserve all `Unavailable` and degraded qualifiers/);
+});
+
 test('governed-backlog queues groups through lanes with four batched gates', () => {
   const root = path.join(__dirname, '..');
   const prompt = fs.readFileSync(path.join(root, 'orchestration', 'governed-backlog.md'), 'utf8');
@@ -1187,6 +1209,7 @@ test('governed-backlog queues groups through lanes with four batched gates', () 
     const line = step5.split('\n').find(l => l.startsWith(`- **${lane} lane**`)) || '';
     assert.ok(line.indexOf('minimal plan') !== -1 && line.indexOf('minimal plan') < line.indexOf('`ag-governed-tasks`'), `${lane} lane writes a plan before tasks`);
     assert.match(line, /telling it the change has no specification delta/, lane);
+    assert.match(line, /Artifact Review Convergence Loop/, lane);
   }
   assert.match(step5, /each item's id, title, and acceptance criteria under `## Stories`/);
   const tasksPhase = fs.readFileSync(path.join(__dirname, '..', 'orchestration', 'governed-tasks.md'), 'utf8');
@@ -1209,8 +1232,10 @@ test('governed-backlog queues groups through lanes with four batched gates', () 
   // Gate I previews the exact implementation scope; implement accepts only that caller approval
   const gateI = prompt.slice(prompt.indexOf('### Human Gate I'), prompt.indexOf('### Step 6'));
   assert.match(gateI, /every `tasked` group together, with its implementation scope/);
+  assert.match(gateI, /Do not proceed to Step 6 without explicit user approval/);
   const step6 = prompt.slice(prompt.indexOf('### Step 6'), gateP);
   assert.match(step6, /run `ag-governed-implement`, passing the Gate I approval as the caller approval/);
+  assert.match(step6, /sole owner of implementation review, repairs, and final verification/);
   assert.match(step6, /covers only the files and operations Gate I showed/);
   for (const file of ['governed-implement.md', 'governed-tasks.md', 'governed-delivery.md']) {
     assert.match(fs.readFileSync(path.join(__dirname, '..', 'orchestration', file), 'utf8'), /\*\*Caller approval\*\*: [^\n]*covers only what that preview showed/, file);
@@ -1230,6 +1255,7 @@ test('governed-backlog queues groups through lanes with four batched gates', () 
   // Gate P carries archive's push and pull request approvals per group
   const publish = prompt.slice(gateP, prompt.indexOf('### Step 7'));
   assert.match(publish, /approves each group separately/);
+  assert.match(publish, /Do not publish or archive without explicit user approval/);
   for (const field of ['repository', 'remote', 'branch', 'base branch', 'title and description']) {
     assert.ok(publish.includes(field), `Gate P must name the ${field}`);
   }
