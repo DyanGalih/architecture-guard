@@ -22,6 +22,10 @@ export interface ReviewThreadNode {
   startLine: number | null;
   diffSide: string | null;
   comments: {
+    pageInfo?: {
+      hasNextPage?: boolean;
+      endCursor?: string | null;
+    };
     nodes: ReviewCommentNode[];
   };
 }
@@ -56,11 +60,11 @@ export const defaultExecGh: ExecRunner = (args: string[], input?: string, cwd?: 
     });
   } catch (error: any) {
     if (error && error.code === 'ENOENT') {
-      throw new Error('GitHub CLI (gh) is not installed or not found in PATH. Install gh and try again.');
+      throw new Error('GitHub CLI (gh) is not installed or not found in PATH. Install gh and try again.', { cause: error });
     }
     const stderr = error.stderr ? String(error.stderr).trim() : '';
     const message = stderr || (error instanceof Error ? error.message : String(error));
-    throw new Error(`GitHub CLI command failed: gh ${args.join(' ')}\n${message}`);
+    throw new Error(`GitHub CLI command failed: gh ${args.join(' ')}\n${message}`, { cause: error });
   }
 };
 
@@ -99,12 +103,16 @@ export function resolveRepoOwnerAndName(
   runner: ExecRunner = defaultExecGh
 ): { owner: string; repo: string } {
   if (options.repo) {
-    const parts = options.repo.split('/');
+    const trimmed = options.repo.trim();
+    const parts = trimmed.split('/');
     if (parts.length >= 2) {
       const repo = parts[parts.length - 1];
       const owner = parts[parts.length - 2];
-      return { owner, repo };
+      if (owner.length > 0 && repo.length > 0) {
+        return { owner, repo };
+      }
     }
+    throw new Error(`Invalid repository format: "${options.repo}". Expected "owner/repo" or "[host/]owner/repo".`);
   }
 
   const raw = runner(['repo', 'view', '--json', 'owner,name'], undefined, options.cwd);
@@ -117,7 +125,7 @@ export function resolveRepoOwnerAndName(
     }
     return { owner, repo };
   } catch (err: any) {
-    throw new Error(`Failed to determine repository owner and name: ${err.message || String(err)}`);
+    throw new Error(`Failed to determine repository owner and name: ${err.message || String(err)}`, { cause: err });
   }
 }
 
@@ -139,6 +147,10 @@ query($owner: String!, $repo: String!, $pr: Int!, $cursor: String) {
           startLine
           diffSide
           comments(first: 100) {
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
             nodes {
               id
               databaseId
@@ -156,13 +168,41 @@ query($owner: String!, $repo: String!, $pr: Int!, $cursor: String) {
 }
 `;
 
+export const THREAD_COMMENTS_GRAPHQL_QUERY = `
+query($threadId: ID!, $cursor: String) {
+  node(id: $threadId) {
+    ... on PullRequestReviewThread {
+      comments(first: 100, after: $cursor) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        nodes {
+          id
+          databaseId
+          author {
+            login
+          }
+          body
+          createdAt
+        }
+      }
+    }
+  }
+}
+`;
+
 export function runPrThreads(
   prInput: string | number,
   options: { unresolved?: boolean; json?: boolean; repo?: string; cwd?: string } = {},
   runner: ExecRunner = defaultExecGh
 ): NormalizedReviewThread[] {
-  const prNumber = parseInt(String(prInput), 10);
-  if (isNaN(prNumber) || prNumber <= 0) {
+  const rawInput = String(prInput).trim();
+  if (!/^\d+$/.test(rawInput)) {
+    throw new Error(`Invalid pull request number: "${prInput}"`);
+  }
+  const prNumber = parseInt(rawInput, 10);
+  if (prNumber <= 0) {
     throw new Error(`Invalid pull request number: "${prInput}"`);
   }
 
@@ -189,8 +229,8 @@ export function runPrThreads(
     let parsed: any;
     try {
       parsed = JSON.parse(responseRaw);
-    } catch {
-      throw new Error(`Invalid JSON response from GitHub GraphQL API: ${responseRaw}`);
+    } catch (err: any) {
+      throw new Error(`Invalid JSON response from GitHub GraphQL API: ${responseRaw}`, { cause: err });
     }
 
     if (parsed.errors && parsed.errors.length > 0) {
@@ -215,6 +255,49 @@ export function runPrThreads(
         createdAt: c.createdAt,
       }));
 
+      let commentHasNext = Boolean(node.comments?.pageInfo?.hasNextPage);
+      let commentCursor = node.comments?.pageInfo?.endCursor || null;
+      let commentPageCount = 0;
+      const MAX_COMMENT_PAGES = 10;
+
+      while (commentHasNext && commentPageCount < MAX_COMMENT_PAGES) {
+        commentPageCount++;
+        const cPayload = JSON.stringify({
+          query: THREAD_COMMENTS_GRAPHQL_QUERY,
+          variables: {
+            threadId: node.id,
+            cursor: commentCursor,
+          },
+        });
+        const cResponseRaw = runner(['api', 'graphql', '--input', '-'], cPayload, options.cwd);
+        let cParsed: any;
+        try {
+          cParsed = JSON.parse(cResponseRaw);
+        } catch (err: any) {
+          throw new Error(`Invalid JSON response from GitHub GraphQL API: ${cResponseRaw}`, { cause: err });
+        }
+        if (cParsed.errors && cParsed.errors.length > 0) {
+          const errMsgs = cParsed.errors.map((e: any) => e.message).join('; ');
+          throw new Error(`GitHub GraphQL error: ${errMsgs}`);
+        }
+        const commentConnection = cParsed.data?.node?.comments;
+        for (const c of commentConnection?.nodes || []) {
+          normalizedComments.push({
+            id: c.id,
+            databaseId: c.databaseId,
+            author: c.author?.login || 'unknown',
+            body: c.body,
+            createdAt: c.createdAt,
+          });
+        }
+        commentHasNext = Boolean(commentConnection?.pageInfo?.hasNextPage);
+        commentCursor = commentConnection?.pageInfo?.endCursor || null;
+      }
+
+      if (commentHasNext) {
+        throw new Error(`Thread ${node.id} comment pagination reached maximum limit (${MAX_COMMENT_PAGES}) with remaining unread comments.`);
+      }
+
       threads.push({
         id: node.id,
         isResolved: Boolean(node.isResolved),
@@ -229,6 +312,10 @@ export function runPrThreads(
 
     hasNextPage = Boolean(connection?.pageInfo?.hasNextPage);
     cursor = connection?.pageInfo?.endCursor || null;
+  }
+
+  if (hasNextPage) {
+    throw new Error(`Review thread pagination reached maximum page limit (${MAX_PAGES}) with remaining unread threads. Narrow search or filter.`);
   }
 
   const result = options.unresolved ? threads.filter((t) => !t.isResolved) : threads;
@@ -286,8 +373,8 @@ export function runPrReply(
   let parsed: any;
   try {
     parsed = JSON.parse(responseRaw);
-  } catch {
-    throw new Error(`Invalid JSON response from GitHub GraphQL API: ${responseRaw}`);
+  } catch (err: any) {
+    throw new Error(`Invalid JSON response from GitHub GraphQL API: ${responseRaw}`, { cause: err });
   }
 
   if (parsed.errors && parsed.errors.length > 0) {
@@ -360,8 +447,8 @@ export function runPrResolve(
   let parsed: any;
   try {
     parsed = JSON.parse(responseRaw);
-  } catch {
-    throw new Error(`Invalid JSON response from GitHub GraphQL API: ${responseRaw}`);
+  } catch (err: any) {
+    throw new Error(`Invalid JSON response from GitHub GraphQL API: ${responseRaw}`, { cause: err });
   }
 
   if (parsed.errors && parsed.errors.length > 0) {
@@ -398,8 +485,12 @@ export function runPrComment(
   runner: ExecRunner = defaultExecGh,
   stdinReader?: () => string
 ): { id: number; html_url?: string; body: string } {
-  const prNumber = parseInt(String(prInput), 10);
-  if (isNaN(prNumber) || prNumber <= 0) {
+  const rawInput = String(prInput).trim();
+  if (!/^\d+$/.test(rawInput)) {
+    throw new Error(`Invalid pull request number: "${prInput}"`);
+  }
+  const prNumber = parseInt(rawInput, 10);
+  if (prNumber <= 0) {
     throw new Error(`Invalid pull request number: "${prInput}"`);
   }
 
@@ -413,8 +504,8 @@ export function runPrComment(
   let parsed: any;
   try {
     parsed = JSON.parse(responseRaw);
-  } catch {
-    throw new Error(`Invalid JSON response from GitHub API: ${responseRaw}`);
+  } catch (err: any) {
+    throw new Error(`Invalid JSON response from GitHub API: ${responseRaw}`, { cause: err });
   }
 
   if (parsed.message && !parsed.id) {

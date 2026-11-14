@@ -283,3 +283,100 @@ test('runPrComment: posts comment to pull request and returns comment info', () 
   assert.strictEqual(result.id, 55512);
   assert.strictEqual(result.html_url, 'https://github.com/MyOrg/MyRepo/pull/10#issuecomment-55512');
 });
+
+test('resolveRepoOwnerAndName: throws on invalid repo format', () => {
+  const dummyRunner: ExecRunner = () => {
+    throw new Error('Should not be called');
+  };
+  assert.throws(
+    () => resolveRepoOwnerAndName({ repo: 'invalid-single-segment' }, dummyRunner),
+    /Invalid repository format/
+  );
+});
+
+test('runPrThreads and runPrComment: reject malformed PR numbers like "42x"', () => {
+  const dummyRunner: ExecRunner = () => {
+    throw new Error('Should not be called');
+  };
+  assert.throws(
+    () => runPrThreads('42x', { repo: 'owner/repo' }, dummyRunner),
+    /Invalid pull request number/
+  );
+  assert.throws(
+    () => runPrComment('42x', { body: 'test', repo: 'owner/repo' }, dummyRunner),
+    /Invalid pull request number/
+  );
+});
+
+test('runPrThreads: paginates comments within a thread', () => {
+  const mockRunner: ExecRunner = (args, input) => {
+    const payload = JSON.parse(input!);
+    if (payload.query.includes('reviewThreads(first: 100')) {
+      return JSON.stringify({
+        data: {
+          repository: {
+            pullRequest: {
+              reviewThreads: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                nodes: [
+                  {
+                    id: 'PRRT_PAGINATED',
+                    isResolved: false,
+                    isOutdated: false,
+                    path: 'src/main.ts',
+                    line: 10,
+                    startLine: null,
+                    diffSide: 'RIGHT',
+                    comments: {
+                      pageInfo: { hasNextPage: true, endCursor: 'comment_cursor_1' },
+                      nodes: [
+                        {
+                          id: 'PRRC_1',
+                          databaseId: 1,
+                          author: { login: 'user1' },
+                          body: 'Comment 1',
+                          createdAt: '2026-11-14T01:00:00Z',
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      });
+    }
+
+    if (payload.query.includes('comments(first: 100, after: $cursor)')) {
+      assert.strictEqual(payload.variables.threadId, 'PRRT_PAGINATED');
+      assert.strictEqual(payload.variables.cursor, 'comment_cursor_1');
+      return JSON.stringify({
+        data: {
+          node: {
+            comments: {
+              pageInfo: { hasNextPage: false, endCursor: null },
+              nodes: [
+                {
+                  id: 'PRRC_2',
+                  databaseId: 2,
+                  author: { login: 'user2' },
+                  body: 'Comment 2',
+                  createdAt: '2026-11-14T02:00:00Z',
+                },
+              ],
+            },
+          },
+        },
+      });
+    }
+
+    throw new Error('Unexpected query');
+  };
+
+  const threads = runPrThreads(1, { repo: 'owner/repo' }, mockRunner);
+  assert.strictEqual(threads.length, 1);
+  assert.strictEqual(threads[0].comments.length, 2);
+  assert.strictEqual(threads[0].comments[0].id, 'PRRC_1');
+  assert.strictEqual(threads[0].comments[1].id, 'PRRC_2');
+});
