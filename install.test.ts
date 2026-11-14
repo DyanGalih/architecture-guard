@@ -3,7 +3,17 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
-const { spawnSync, execFileSync } = require('node:child_process');
+const { spawnSync: spawnChild, execFileSync } = require('node:child_process');
+
+// Installer tests must never mutate the developer's global Codex configuration.
+const testCodexHome = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ag-test-codex-home-')));
+test.after(() => fs.rmSync(testCodexHome, { recursive: true, force: true }));
+function spawnSync(command, args, options: any = {}) {
+  return spawnChild(command, args, {
+    ...options,
+    env: { ...process.env, CODEX_HOME: testCodexHome, ...options.env },
+  });
+}
 
 const installer = path.join(__dirname, 'bin', 'cli.js');
 
@@ -1145,6 +1155,28 @@ test('validate-backlog accepts the example and rejects invalid backlogs', () => 
   assert.equal(insideLink.status, 0, insideLink.stderr);
 });
 
+test('governed-backlog reuses review owners and requires evidence for the final implementation', () => {
+  const prompt = fs.readFileSync(path.join(__dirname, '..', 'orchestration', 'governed-backlog.md'), 'utf8');
+  const step5 = prompt.slice(prompt.indexOf('### Step 5'), prompt.indexOf('### Human Gate I'));
+  const step6 = prompt.slice(prompt.indexOf('### Step 6'), prompt.indexOf('### Human Gate P'));
+  assert.match(step5, /resolve and read the installed `ag-governed-delivery` capability/);
+  assert.match(step5, /execute only its Phase 6[^\n]*Artifact Review Convergence Loop/);
+  assert.match(step5, /Do not run its specification, plan, or task generation phases/);
+  assert.match(step5, /five-review-pass limit, no-progress stop, and confirmation-pass rule/);
+  assert.match(step5, /`## Stories` section stands in for the specification/);
+  assert.match(step5, /`Not converged`, `Blocked`, or `Unavailable`[^\n]*park the group/);
+  assert.match(step6, /sole owner of implementation review, repairs, and final verification/);
+  assert.doesNotMatch(step6, /dedicated post-implementation review|at most 2 passes/);
+  const invalidate = step6.indexOf('Any later implementation or test edit invalidates');
+  const rerun = step6.indexOf('rerun affected checks and final verification');
+  const ready = step6.indexOf('Set the group to `ready`');
+  assert.ok(invalidate >= 0 && invalidate < rerun && rerun < ready, 'invalidate and refresh evidence before readiness');
+  assert.match(step6, /preserve its pass counts and limits/);
+  assert.match(step6, /review and verification evidence for the final implementation/);
+  assert.match(step6, /Missing evidence or exhausted limits parks the group/);
+  assert.match(step6, /Preserve all `Unavailable` and degraded qualifiers/);
+});
+
 test('governed-backlog queues groups through lanes with four batched gates', () => {
   const root = path.join(__dirname, '..');
   const prompt = fs.readFileSync(path.join(root, 'orchestration', 'governed-backlog.md'), 'utf8');
@@ -1169,7 +1201,7 @@ test('governed-backlog queues groups through lanes with four batched gates', () 
   // Lanes and their capability order
   const step5 = prompt.slice(prompt.indexOf('### Step 5'), prompt.indexOf('### Human Gate I'));
   assert.match(step5, /\*\*Full lane\*\*: run `ag-governed-delivery`/);
-  assert.match(step5, /\*\*Fix lane\*\*:[^\n]*Then run `ag-governed-tasks`, telling it the change has no specification delta\. Its tasks start with reproducing each bug/);
+  assert.match(step5, /\*\*Fix lane\*\*:[^\n]*Then run `ag-governed-tasks`, passing the approved specification delta when Gate S approved one for this fix, otherwise telling it the change has no specification delta\. Its tasks start with reproducing each bug/);
   assert.match(step5, /\*\*Light lane\*\*:[^\n]*then run `ag-governed-tasks`, telling it the change has no specification delta\. Do not write a new specification/);
   assert.match(step5, /never code or tests/);
   // Fix and light lanes supply the inputs ag-governed-tasks requires before handing off to it
@@ -1177,7 +1209,9 @@ test('governed-backlog queues groups through lanes with four batched gates', () 
     const line = step5.split('\n').find(l => l.startsWith(`- **${lane} lane**`)) || '';
     assert.ok(line.indexOf('minimal plan') !== -1 && line.indexOf('minimal plan') < line.indexOf('`ag-governed-tasks`'), `${lane} lane writes a plan before tasks`);
     assert.match(line, /telling it the change has no specification delta/, lane);
+    assert.match(line, /Artifact Review Convergence Loop/, lane);
   }
+  assert.match(step5, /passing the approved specification delta when Gate S approved one for this fix/);
   assert.match(step5, /each item's id, title, and acceptance criteria under `## Stories`/);
   const tasksPhase = fs.readFileSync(path.join(__dirname, '..', 'orchestration', 'governed-tasks.md'), 'utf8');
   // An item with no acceptance criteria has nothing to trace to: tasks stop, and Gate Q must approve criteria first
@@ -1199,8 +1233,10 @@ test('governed-backlog queues groups through lanes with four batched gates', () 
   // Gate I previews the exact implementation scope; implement accepts only that caller approval
   const gateI = prompt.slice(prompt.indexOf('### Human Gate I'), prompt.indexOf('### Step 6'));
   assert.match(gateI, /every `tasked` group together, with its implementation scope/);
+  assert.match(gateI, /Do not proceed to Step 6 without explicit user approval/);
   const step6 = prompt.slice(prompt.indexOf('### Step 6'), gateP);
   assert.match(step6, /run `ag-governed-implement`, passing the Gate I approval as the caller approval/);
+  assert.match(step6, /sole owner of implementation review, repairs, and final verification/);
   assert.match(step6, /covers only the files and operations Gate I showed/);
   for (const file of ['governed-implement.md', 'governed-tasks.md', 'governed-delivery.md']) {
     assert.match(fs.readFileSync(path.join(__dirname, '..', 'orchestration', file), 'utf8'), /\*\*Caller approval\*\*: [^\n]*covers only what that preview showed/, file);
@@ -1220,6 +1256,7 @@ test('governed-backlog queues groups through lanes with four batched gates', () 
   // Gate P carries archive's push and pull request approvals per group
   const publish = prompt.slice(gateP, prompt.indexOf('### Step 7'));
   assert.match(publish, /approves each group separately/);
+  assert.match(publish, /Do not publish or archive without explicit user approval/);
   for (const field of ['repository', 'remote', 'branch', 'base branch', 'title and description']) {
     assert.ok(publish.includes(field), `Gate P must name the ${field}`);
   }
@@ -1338,7 +1375,7 @@ test('governed-backlog keeps the fixes from its dry run', () => {
   assert.match(example, /type: story[\s\S]*type: bug[\s\S]*\n\s+lane: full\s/);
 
   // A resume can unpark, diff, and re-approve
-  assert.match(prompt, /When the reason no longer holds, set the group back to `planned`/);
+  assert.match(prompt, /For every other park reason, when the reason no longer holds, set the group back to `planned`/);
   assert.match(example, /depends_on: \[\], size: s, title: [^,]+, description: [^,]+, acceptance:/, 'queue.yml keeps an item snapshot for the resume diff');
   assert.match(prompt, /On a resume, Steps 2 and 3 and Gate Q run again over the whole queue/);
 
@@ -3370,6 +3407,113 @@ test('optional forge keys materialize as unsupported for a custom forge that omi
   const out = materializeForgeTokens('Approve with {forge_command:review-approve}.', 'custom', cwd);
   assert.match(out, /- \*\*review-approve\*\*: Unsupported by this forge adapter; do not offer or attempt this action/);
   assert.throws(() => materializeForgeTokens('{forge_command:review-post}', 'custom-missing', cwd), /Unavailable: forge adapter not found/);
+});
+
+test('Codex global config migration preserves unrelated text, V2 settings, and idempotence', () => {
+  const { migrateCodexConfig } = require('./cli/codex-config');
+  const { parse } = require('smol-toml');
+  const source = '# user settings\r\nmodel = "chosen"\r\nbig = 9223372036854775807\r\n[features]\r\nmulti_agent = true\r\nmulti_agent_v2 = false # preserve\r\nmemories = true\r\n[agents]\r\nenabled = false # enable explicitly\r\nmax_threads = 3\r\n[mcp_servers.example]\r\ncommand = "local-server"\r\n';
+  const result = migrateCodexConfig(source);
+  assert.equal(result, source.replace('multi_agent = true\r\n', '').replace('enabled = false', 'enabled = true'));
+  assert.equal(parse(result, { integersAsBigInt: true }).agents.enabled, true);
+  assert.equal(migrateCodexConfig(result), result);
+  for (const input of ['', '[agents.worker]\ndescription = "worker"\n', 'agents.enabled = false\nfeatures.multi_agent = false\n']) {
+    const migrated = parse(migrateCodexConfig(input));
+    assert.equal(migrated.agents.enabled, true);
+    assert.equal(migrated.features?.multi_agent, undefined);
+  }
+  for (const input of ['secret = "DO_NOT_PRINT"\n[broken', 'agents = false', 'agents = {enabled = false}', 'note = """\n[features]\nmulti_agent = true\n"""\n']) {
+    assert.throws(() => migrateCodexConfig(input), error => !error.message.includes('DO_NOT_PRINT'));
+  }
+});
+
+test('Codex global config writes are atomic, private, and reject unsafe paths or changed sources', () => {
+  const { planCodexConfig, applyCodexConfig } = require('./cli/codex-config');
+  const home = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ag-global-codex-')));
+  const outside = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ag-global-codex-outside-')));
+  try {
+    const file = path.join(home, 'config.toml');
+    applyCodexConfig(planCodexConfig(home));
+    assert.match(fs.readFileSync(file, 'utf8'), /\[agents\]\nenabled = true/);
+    if (process.platform !== 'win32') assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+    fs.writeFileSync(file, '[agents]\nenabled = false\n');
+    fs.chmodSync(file, 0o640);
+    const rename = fs.renameSync;
+    fs.renameSync = () => { throw new Error('simulated replacement failure'); };
+    try {
+      assert.throws(() => applyCodexConfig(planCodexConfig(home)), /simulated replacement failure/);
+      assert.equal(fs.readFileSync(file, 'utf8'), '[agents]\nenabled = false\n');
+      assert.deepEqual(fs.readdirSync(home), ['config.toml']);
+    } finally { fs.renameSync = rename; }
+    applyCodexConfig(planCodexConfig(home));
+    if (process.platform !== 'win32') assert.equal(fs.statSync(file).mode & 0o777, 0o640);
+    fs.writeFileSync(file, '[agents]\nenabled = false\n');
+    const plan = planCodexConfig(home);
+    fs.appendFileSync(file, '# concurrent edit\n');
+    assert.throws(() => applyCodexConfig(plan), /changed after preview/);
+    assert.match(fs.readFileSync(file, 'utf8'), /enabled = false\n# concurrent edit/);
+    fs.unlinkSync(file);
+    const destination = path.join(outside, 'config.toml');
+    fs.writeFileSync(destination, '# untouched\n');
+    fs.symlinkSync(destination, file);
+    assert.throws(() => planCodexConfig(home), /Unsafe Codex configuration path/);
+    assert.equal(fs.readFileSync(destination, 'utf8'), '# untouched\n');
+    fs.unlinkSync(file);
+    fs.mkdirSync(file);
+    assert.throws(() => planCodexConfig(home), /Unsafe Codex configuration path/);
+    fs.rmdirSync(file);
+    const alias = path.join(home, 'alias');
+    fs.symlinkSync(outside, alias);
+    assert.throws(() => planCodexConfig(alias), /Unsafe Codex configuration path/);
+    assert.throws(() => planCodexConfig(path.join(home, 'missing')), /ENOENT/);
+    assert.deepEqual(fs.readdirSync(home), ['alias']);
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('Codex init activates global tools only for team selection and fails closed on malformed config', () => {
+  const cwd = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ag-global-codex-init-')));
+  const home = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ag-global-codex-config-')));
+  try {
+    const file = path.join(home, 'config.toml');
+    const source = '# preserve\n[features]\nmulti_agent = true\n[agents]\nenabled = false\n';
+    fs.writeFileSync(file, source);
+    const args = [installer, 'init', '--yes', '--agent', 'codex', '--framework', 'openspec', '--commands', 'init'];
+    const run = extra => spawnSync(process.execPath, [...args, ...extra], { cwd, encoding: 'utf8', env: { CODEX_HOME: home } });
+    assert.equal(run([]).status, 0);
+    assert.equal(fs.readFileSync(file, 'utf8'), source);
+    fs.writeFileSync(file, '[bad');
+    const invalid = run(['--codex-agents']);
+    assert.equal(invalid.status, 1);
+    assert.match(invalid.stderr, /invalid TOML/);
+    assert.equal(fs.existsSync(path.join(cwd, '.codex/agents')), false);
+    assert.equal(fs.readFileSync(file, 'utf8'), '[bad');
+    fs.writeFileSync(file, source);
+    const enabled = run(['--codex-agents']);
+    assert.equal(enabled.status, 0, enabled.stderr);
+    assert.match(enabled.stdout, /Restart the background server with \/daemon/);
+    const expected = source.replace('multi_agent = true\n', '').replace('enabled = false', 'enabled = true');
+    assert.equal(fs.readFileSync(file, 'utf8'), expected);
+    assert.equal(run(['--codex-agents']).status, 0);
+    assert.equal(fs.readFileSync(file, 'utf8'), expected);
+    fs.writeFileSync(file, source);
+    const otherHost = spawnSync(process.execPath, [installer, 'init', '--yes', '--agent', 'opencode', '--framework', 'none', '--commands', 'init'], { cwd, encoding: 'utf8', env: { CODEX_HOME: home } });
+    assert.equal(otherHost.status, 0, otherHost.stderr);
+    assert.equal(fs.readFileSync(file, 'utf8'), source);
+    if (process.platform !== 'win32') {
+      const fallbackHome = path.join(cwd, 'user-home');
+      fs.mkdirSync(fallbackHome);
+      const fallback = spawnSync(process.execPath, [...args, '--codex-agents'], { cwd, encoding: 'utf8', env: { CODEX_HOME: '', HOME: fallbackHome } });
+      assert.equal(fallback.status, 0, fallback.stderr);
+      assert.equal(require('smol-toml').parse(fs.readFileSync(path.join(fallbackHome, '.codex/config.toml'), 'utf8')).agents.enabled, true);
+      assert.equal(fs.readFileSync(file, 'utf8'), source);
+    }
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+    fs.rmSync(home, { recursive: true, force: true });
+  }
 });
 
 test('Codex roles render native TOML with independent host configuration and inherited defaults', () => {
