@@ -140,7 +140,7 @@ Flags:
 | `--framework` | `spec-kit \| openspec \| none` | Framework to target |
 | `--commands` | `all`, `review`, or `init,governed-plan` | Comma-separated canonical names, indices, or aliases |
 | `--overwrite` | `replace` (default) / `skip` / `keep-both` | Existing file policy with `--yes` |
-| `--codex-agents` | (none) | Optional: install native Codex roles for a selection including `codex`. |
+| `--codex-agents` | (none) | Install native Codex roles for a selection including `codex`; enable global `agents.enabled` and remove deprecated `features.multi_agent`. |
 | `--agy-agents` | (none) | Optional: install native Antigravity (agy) roles for a selection including `antigravity`. |
 | `--opencode-agents` | (none) | Optional: install native OpenCode roles for a selection including `opencode`. |
 | `--claude-agent-teams` | (none) | Enable Claude Code Agent Teams (Beta / Experimental): sets `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `.claude/settings.json` and generates one agent type per role in `.claude/agents/agteam-<role>.md`. |
@@ -239,6 +239,10 @@ architecture-guard sync-team-roles --agent codex
 ```
 
 Customize `.architecture-guard/codex-agents.yml` from `architecture-guard resolve template codex_agents_template`. Roles generate `.codex/agents/agteam-<role>.toml`; a missing profile uses the bundled or local template. Keep only roles needed by the project. The legacy no-option `sync-team-roles` still targets Claude; `--agent claude` is explicit. Mixed installations use separate profiles and outputs. Reinstalling skills is a separate normal installer operation.
+
+Selecting Codex team setup in interactive init, or passing `--codex-agents`, also enables native subagent tools in the user configuration: `$CODEX_HOME/config.toml`, otherwise `~/.codex/config.toml`. A nonempty `CODEX_HOME` must already name a directory. The installer sets `[agents] enabled = true`, including replacing an explicit `false`, and removes deprecated `[features] multi_agent`. This affects all projects using that Codex home. Interactive role confirmation shows the exact global target; the noninteractive flag selects this action explicitly. Skills-only init, declining the role plan, and `sync-team-roles` leave global configuration unchanged.
+
+Other settings, comments, and `features.multi_agent_v2` remain intact. The installer validates TOML before and after editing, preserves existing file permissions, creates new config files with mode `0600`, and atomically replaces the file after checking for concurrent edits. Symlink paths, malformed input, and layouts it cannot safely edit (such as inline tables for these settings) fail without replacing the config. Normalize the affected settings into `[agents]` and `[features]` tables and retry. Errors never print configuration source excerpts. Restart the Codex background server with `/daemon` to reload the migrated configuration; project, profile, session, or managed settings can still override user-level activation.
 
 Codex profiles use `version: 1`, `topology: codex-subagents`, and a `roles` mapping. Each role has `description`, `system_prompt`, an optional unique uppercase `task_tag`, optional `model` (`inherit` omits the native model override), and explicit `features` reductions. Supported feature names are `shell_tool`, `apps`, `plugins`, `memories`, and `request_permissions_tool`; each configured value must be `false`. Unknown fields and required controls are rejected rather than ignored. Do not copy Claude `allowed_tools` lists into this profile.
 
