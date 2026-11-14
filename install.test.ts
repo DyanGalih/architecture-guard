@@ -1201,7 +1201,7 @@ test('governed-backlog queues groups through lanes with four batched gates', () 
   // Lanes and their capability order
   const step5 = prompt.slice(prompt.indexOf('### Step 5'), prompt.indexOf('### Human Gate I'));
   assert.match(step5, /\*\*Full lane\*\*: run `ag-governed-delivery`/);
-  assert.match(step5, /\*\*Fix lane\*\*:[^\n]*Then run `ag-governed-tasks`, telling it the change has no specification delta\. Its tasks start with reproducing each bug/);
+  assert.match(step5, /\*\*Fix lane\*\*:[^\n]*Then run `ag-governed-tasks`, passing the approved specification delta when Gate S approved one for this fix, otherwise telling it the change has no specification delta\. Its tasks start with reproducing each bug/);
   assert.match(step5, /\*\*Light lane\*\*:[^\n]*then run `ag-governed-tasks`, telling it the change has no specification delta\. Do not write a new specification/);
   assert.match(step5, /never code or tests/);
   // Fix and light lanes supply the inputs ag-governed-tasks requires before handing off to it
@@ -1211,6 +1211,7 @@ test('governed-backlog queues groups through lanes with four batched gates', () 
     assert.match(line, /telling it the change has no specification delta/, lane);
     assert.match(line, /Artifact Review Convergence Loop/, lane);
   }
+  assert.match(step5, /passing the approved specification delta when Gate S approved one for this fix/);
   assert.match(step5, /each item's id, title, and acceptance criteria under `## Stories`/);
   const tasksPhase = fs.readFileSync(path.join(__dirname, '..', 'orchestration', 'governed-tasks.md'), 'utf8');
   // An item with no acceptance criteria has nothing to trace to: tasks stop, and Gate Q must approve criteria first
@@ -1374,7 +1375,7 @@ test('governed-backlog keeps the fixes from its dry run', () => {
   assert.match(example, /type: story[\s\S]*type: bug[\s\S]*\n\s+lane: full\s/);
 
   // A resume can unpark, diff, and re-approve
-  assert.match(prompt, /When the reason no longer holds, set the group back to `planned`/);
+  assert.match(prompt, /For every other park reason, when the reason no longer holds, set the group back to `planned`/);
   assert.match(example, /depends_on: \[\], size: s, title: [^,]+, description: [^,]+, acceptance:/, 'queue.yml keeps an item snapshot for the resume diff');
   assert.match(prompt, /On a resume, Steps 2 and 3 and Gate Q run again over the whole queue/);
 
