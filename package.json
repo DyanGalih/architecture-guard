@@ -7,9 +7,9 @@
   },
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc",
-    "test": "npm run build && node --test dist/install.test.js dist/archive.test.js dist/resolve.test.js dist/hygiene.test.js",
+    "test": "npm run build && node --test dist/install.test.js dist/archive.test.js dist/resolve.test.js dist/hygiene.test.js dist/pr.test.js",
     "lint": "eslint .",
-    "prepublishOnly": "npm run lint && npm run build && node --test dist/install.test.js dist/archive.test.js dist/resolve.test.js dist/hygiene.test.js"
+    "prepublishOnly": "npm run lint && npm run build && node --test dist/install.test.js dist/archive.test.js dist/resolve.test.js dist/hygiene.test.js dist/pr.test.js"
   },
   "keywords": [
     "sdd",
