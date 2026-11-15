@@ -197,6 +197,78 @@ program
   });
 
 import { runSelfUpdate } from '../cli/self-update';
+import {
+  runPrThreads,
+  runPrReply,
+  runPrResolve,
+  runPrComment,
+} from '../cli/pr';
+
+const prCommand = program
+  .command('pr')
+  .description('Pull request review thread and comment operations (GitHub via gh)');
+
+prCommand
+  .command('threads <pr>')
+  .description('Fetch and display review threads for a pull request')
+  .option('--unresolved', 'Return only unresolved review threads')
+  .option('--json', 'Output machine-readable JSON array of review threads')
+  .option('--repo <owner/repo>', 'Explicit repository in owner/repo format')
+  .action((pr, options) => {
+    try {
+      runPrThreads(pr, options);
+    } catch (err: any) {
+      console.error(`Error: ${err.message || String(err)}`);
+      process.exitCode = 1;
+    }
+  });
+
+prCommand
+  .command('reply')
+  .description('Post a reply to a pull request review thread')
+  .requiredOption('--thread <id>', 'GraphQL Thread ID (PRRT_...)')
+  .option('--body <text>', 'Reply body text')
+  .option('--file <path>', 'Path to file containing reply body')
+  .option('--json', 'Output machine-readable JSON result')
+  .action((options) => {
+    try {
+      runPrReply(options);
+    } catch (err: any) {
+      console.error(`Error: ${err.message || String(err)}`);
+      process.exitCode = 1;
+    }
+  });
+
+prCommand
+  .command('resolve')
+  .description('Resolve or unresolve a pull request review thread')
+  .requiredOption('--thread <id>', 'GraphQL Thread ID (PRRT_...)')
+  .option('--unresolve', 'Unresolve the thread instead of resolving it')
+  .option('--json', 'Output machine-readable JSON result')
+  .action((options) => {
+    try {
+      runPrResolve(options);
+    } catch (err: any) {
+      console.error(`Error: ${err.message || String(err)}`);
+      process.exitCode = 1;
+    }
+  });
+
+prCommand
+  .command('comment <pr>')
+  .description('Post a top-level comment to a pull request')
+  .option('--body <text>', 'Comment body text')
+  .option('--file <path>', 'Path to file containing comment body')
+  .option('--repo <owner/repo>', 'Explicit repository in owner/repo format')
+  .option('--json', 'Output machine-readable JSON result')
+  .action((pr, options) => {
+    try {
+      runPrComment(pr, options);
+    } catch (err: any) {
+      console.error(`Error: ${err.message || String(err)}`);
+      process.exitCode = 1;
+    }
+  });
 
 program
   .command('update')
