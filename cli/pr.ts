@@ -101,15 +101,16 @@ export function resolveBody(
 export function resolveRepoOwnerAndName(
   options: { repo?: string; cwd?: string },
   runner: ExecRunner = defaultExecGh
-): { owner: string; repo: string } {
+): { owner: string; repo: string; host?: string } {
   if (options.repo) {
     const trimmed = options.repo.trim();
     const parts = trimmed.split('/');
     if (parts.length >= 2) {
       const repo = parts[parts.length - 1];
       const owner = parts[parts.length - 2];
+      const host = parts.length >= 3 ? parts.slice(0, parts.length - 2).join('/') : undefined;
       if (owner.length > 0 && repo.length > 0) {
-        return { owner, repo };
+        return { owner, repo, host };
       }
     }
     throw new Error(`Invalid repository format: "${options.repo}". Expected "owner/repo" or "[host/]owner/repo".`);
@@ -206,7 +207,8 @@ export function runPrThreads(
     throw new Error(`Invalid pull request number: "${prInput}"`);
   }
 
-  const { owner, repo } = resolveRepoOwnerAndName(options, runner);
+  const { owner, repo, host } = resolveRepoOwnerAndName(options, runner);
+  const hostArgs = host ? ['--hostname', host] : [];
   const threads: NormalizedReviewThread[] = [];
   let cursor: string | null = null;
   let hasNextPage = true;
@@ -225,7 +227,7 @@ export function runPrThreads(
       },
     });
 
-    const responseRaw = runner(['api', 'graphql', '--input', '-'], payload, options.cwd);
+    const responseRaw = runner(['api', ...hostArgs, 'graphql', '--input', '-'], payload, options.cwd);
     let parsed: any;
     try {
       parsed = JSON.parse(responseRaw);
@@ -269,7 +271,7 @@ export function runPrThreads(
             cursor: commentCursor,
           },
         });
-        const cResponseRaw = runner(['api', 'graphql', '--input', '-'], cPayload, options.cwd);
+        const cResponseRaw = runner(['api', ...hostArgs, 'graphql', '--input', '-'], cPayload, options.cwd);
         let cParsed: any;
         try {
           cParsed = JSON.parse(cResponseRaw);
@@ -494,13 +496,14 @@ export function runPrComment(
     throw new Error(`Invalid pull request number: "${prInput}"`);
   }
 
-  const { owner, repo } = resolveRepoOwnerAndName(options, runner);
+  const { owner, repo, host } = resolveRepoOwnerAndName(options, runner);
+  const hostArgs = host ? ['--hostname', host] : [];
   const body = resolveBody(options, stdinReader);
 
   const endpoint = `repos/${owner}/${repo}/issues/${prNumber}/comments`;
   const payload = JSON.stringify({ body });
 
-  const responseRaw = runner(['api', '-X', 'POST', endpoint, '--input', '-'], payload, options.cwd);
+  const responseRaw = runner(['api', ...hostArgs, '-X', 'POST', endpoint, '--input', '-'], payload, options.cwd);
   let parsed: any;
   try {
     parsed = JSON.parse(responseRaw);

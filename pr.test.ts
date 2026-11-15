@@ -68,10 +68,10 @@ test('resolveRepoOwnerAndName: parses explicit repo option', () => {
     throw new Error('Should not be called');
   };
   const result = resolveRepoOwnerAndName({ repo: 'my-org/my-repo' }, dummyRunner);
-  assert.deepStrictEqual(result, { owner: 'my-org', repo: 'my-repo' });
+  assert.deepStrictEqual(result, { owner: 'my-org', repo: 'my-repo', host: undefined });
 
   const hostResult = resolveRepoOwnerAndName({ repo: 'github.com/my-org/my-repo' }, dummyRunner);
-  assert.deepStrictEqual(hostResult, { owner: 'my-org', repo: 'my-repo' });
+  assert.deepStrictEqual(hostResult, { owner: 'my-org', repo: 'my-repo', host: 'github.com' });
 });
 
 test('resolveRepoOwnerAndName: queries repo view via runner', () => {
@@ -379,4 +379,39 @@ test('runPrThreads: paginates comments within a thread', () => {
   assert.strictEqual(threads[0].comments.length, 2);
   assert.strictEqual(threads[0].comments[0].id, 'PRRC_1');
   assert.strictEqual(threads[0].comments[1].id, 'PRRC_2');
+});
+
+test('runPrThreads and runPrComment: pass --hostname when host is provided in repo option', () => {
+  const mockRunner: ExecRunner = (args, input) => {
+    if (args[0] === 'api' && args[1] === '--hostname' && args[2] === 'ghe.corp.internal' && args[3] === 'graphql') {
+      return JSON.stringify({
+        data: {
+          repository: {
+            pullRequest: {
+              reviewThreads: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                nodes: [],
+              },
+            },
+          },
+        },
+      });
+    }
+
+    if (args[0] === 'api' && args[1] === '--hostname' && args[2] === 'ghe.corp.internal' && args[3] === '-X') {
+      return JSON.stringify({
+        id: 777,
+        html_url: 'https://ghe.corp.internal/enterprise/repo/pull/5#issuecomment-777',
+        body: 'GHE comment',
+      });
+    }
+
+    throw new Error(`Unexpected runner args: ${args.join(' ')}`);
+  };
+
+  const threads = runPrThreads(5, { repo: 'ghe.corp.internal/enterprise/repo' }, mockRunner);
+  assert.strictEqual(threads.length, 0);
+
+  const comment = runPrComment(5, { body: 'GHE comment', repo: 'ghe.corp.internal/enterprise/repo' }, mockRunner);
+  assert.strictEqual(comment.id, 777);
 });
