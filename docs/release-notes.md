@@ -1,3 +1,14 @@
+## 3.9.0
+
+- **PR Thread Governance & Review Operations (`architecture-guard pr`)**: Added native CLI commands wrapping `gh` and the GitHub GraphQL API for comprehensive PR thread management and comment posting:
+  - `architecture-guard pr threads <pr>`: Query and inspect PR review threads with pagination support, filtering for unresolved vs resolved threads, file paths, line numbers, and comment details.
+  - `architecture-guard pr reply <thread-id>`: Post replies directly to existing review threads from `--body`, `--body-file`, or stdin.
+  - `architecture-guard pr resolve <thread-id>` / `unresolve <thread-id>`: Resolve or unresolve review threads with verified GraphQL mutations.
+  - `architecture-guard pr comment <pr>`: Post top-level review comments to pull requests.
+  - Full support for `--repo <owner/repo>`, enterprise GitHub host routing via `--hostname`, JSON formatted output with `--format json`, and strict input validation on PR numbers and comment bodies.
+- **Governed Backlog Guardrails & Gate Enforcement**: Enforced mandatory artifact review (`ag-review-artifacts`) and post-implementation review in `ag-governed-backlog`. Enforced human gate halts (Gates Q, S, I, P) to prevent autonomous drift without explicit user approvals, protected approved spec deltas in fix-lane tasks, and scoped parked-group planned resets.
+- **Autonomous PR Queue (`ag-pr-queue`) & Cross-Host Governance Synchronization**: Unified `ag-pr-queue` skills, commands, and workflows across Claude Code, Codex, Antigravity (`agy`), and OpenCode. Decomposed multi-host parallel agent team user stories with parent and child tracking. Added OpenSpec change specifications for Codex global agent configuration.
+
 ## 3.8.0
 
 - **Host-Agnostic Correctness Review (`correctness-review`)**: `ag-review-implementation` adds a read-only Correctness Scan (step 7b, `templates/correctness_review.md`) that hunts logic defects in the changed code and its callers using file reading only, so it behaves the same on Claude Code, Codex, Antigravity (`agy`), and OpenCode. Each finding carries a concrete failure scenario, the smallest fix, and the test that proves it, is verified as `CONFIRMED` or `PLAUSIBLE` before it is reported, is labelled `Static analysis; not executed`, and never blocks by itself. `ag-review-pr`, `ag-pr-feedback`, `ag-governed-implement`, and `ag-verify` inherit it through delegation. Depth is `off`, `quick` (default, inline, at most 5 `CONFIRMED` findings), `standard`, or `deep` (read-only parallel reviewers and a fresh verifier when the host can dispatch them), set per run with `correctness=<depth>` or per project with `review.correctness.depth` in `.architecture-guard/config.yml`; set `off` to skip the extra review cost.
