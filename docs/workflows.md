@@ -278,7 +278,7 @@ If the push fails, the workflow gracefully degrades by logging a warning and rec
 7. **Implementation**: each approved group is implemented and verified in its worktree. A group whose review does not converge, has a blocking security finding, needs a decision or confirmation from you, or depends on an unmerged pull request is **parked**, and the run moves on. A step a skill needs you to confirm (for example continuing without security rules) is never taken for you: the group is parked until you answer at the next gate.
 8. **Gate P**: for each verified group you approve the repository, remote, branch, base, files, and pull request text; `ag-governed-archive` then archives, commits, pushes, and opens that pull request.
 
-Run state is kept in `.architecture-guard/queue.yml` and discovery summaries in `.architecture-guard/queue/`; Gate Q offers to add these paths to `.git/info/exclude`. The next run re-checks parked groups, shows what changed in the backlog, and continues. A group that depends on an unmerged pull request waits by default, even when that dependency is delivered in the same run. You can opt in to stacking a fix or light group on its dependency's branch after the dependency is published; full groups wait. The queue never merges or approves pull requests, never force-pushes, and never writes to Jira. With Beads, write-back is opt-in at Gate Q: beads are marked in progress when their group starts, get a note with the pull request URL, and are closed only after the pull request has merged and you approve. Research beads have no pull request, so the queue leaves them open for you to close. Without a remote, Gate P commits approved work locally; when the forge cannot create pull requests, the queue supplies the title and description for you to open one.
+Run state is kept in `.architecture-guard/queue.yml` and discovery summaries in `.architecture-guard/queue/`; Gate Q offers to add these paths to `.git/info/exclude`. The next run re-checks parked groups, shows what changed in the backlog, including origin and criterion-mapping changes, and continues only after Gate Q re-approval. A group that depends on an unmerged pull request waits by default, even when that dependency is delivered in the same run. You can opt in to stacking a fix or light group on its dependency's branch after the dependency is published; full groups wait. The queue never merges or approves pull requests, never force-pushes, and never writes to Jira. With Beads, write-back is opt-in at Gate Q: beads are marked in progress when their group starts, get a note with the pull request URL, and are closed only after the pull request has merged and you approve. Research beads have no pull request, so the queue leaves them open for you to close. Without a remote, Gate P commits approved work locally; when the forge cannot create pull requests, the queue supplies the title and description for you to open one.
 
 A local backlog (see [`examples/backlog.yml`](../examples/backlog.yml)):
 
@@ -290,6 +290,18 @@ items:
     title: Support expired sessions
     acceptance:
       - Users with expired sessions are redirected to sign-in
+    origins:
+      - source_id: jira-123
+        role: origin
+        provider: jira
+        identifier: "https://jira.example/PROJ-123"
+        locator: "https://jira.example/browse/PROJ-123"
+    criterion_mappings:
+      - source_id: jira-123
+        criterion_id: jira-123-c1
+        text: Users with expired sessions are redirected to sign-in
+        local_ids: [STORY-1]
+        disposition: included
   - id: BUG-3
     type: bug              # story | feature | bug | task | chore | spike, or a type mapped in sync.yml
     priority: highest      # highest | high | medium | low | lowest

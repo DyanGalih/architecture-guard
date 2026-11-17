@@ -1206,6 +1206,16 @@ test('validate-backlog accepts the example and rejects invalid backlogs', () => 
   const parentOk = spawnSync(process.execPath, [installer, 'validate-backlog', 'parent.yml'], { cwd, encoding: 'utf8' });
   assert.equal(parentOk.status, 0, parentOk.stderr);
   assert.equal(JSON.parse(parentOk.stdout).items[0].parent, 'feature-1');
+  fs.writeFileSync(path.join(cwd, 'provenance.yml'), `items:\n  - id: STORY-1\n    type: story\n    priority: high\n    title: Support expired sessions\n    origins:\n      - source_id: jira-123\n        role: origin\n        provider: jira\n        identifier: https://jira.example/PROJ-123\n        locator: https://jira.example/browse/PROJ-123\n        unavailable_reason: "unavailable: provider access denied"\n    criterion_mappings:\n      - source_id: jira-123\n        criterion_id: jira-123-c1\n        text: Users with expired sessions are redirected to sign-in\n        local_ids: [STORY-1]\n        disposition: included\n`);
+  const provenance = spawnSync(process.execPath, [installer, 'validate-backlog', 'provenance.yml'], { cwd, encoding: 'utf8' });
+  assert.equal(provenance.status, 0, provenance.stderr);
+  assert.equal(JSON.parse(provenance.stdout).items[0].origins[0].identifier, 'https://jira.example/PROJ-123');
+  assert.equal(JSON.parse(provenance.stdout).items[0].origins[0].unavailable_reason, 'unavailable: provider access denied');
+  assert.equal(JSON.parse(provenance.stdout).items[0].criterion_mappings[0].criterion_id, 'jira-123-c1');
+  fs.writeFileSync(path.join(cwd, 'excluded-without-rationale.yml'), `items:\n  - id: STORY-1\n    type: story\n    priority: high\n    title: Support expired sessions\n    criterion_mappings:\n      - source_id: jira-123\n        criterion_id: jira-123-c2\n        text: Do not retain the audit trail\n        disposition: excluded\n`);
+  const excluded = spawnSync(process.execPath, [installer, 'validate-backlog', 'excluded-without-rationale.yml'], { cwd, encoding: 'utf8' });
+  assert.notEqual(excluded.status, 0);
+  assert.match(excluded.stderr, /excluded criteria require a rationale/);
   fs.writeFileSync(path.join(cwd, 'self-parent.yml'), `items:\n${item('A', '    parent: A\n')}`);
   const selfParent = spawnSync(process.execPath, [installer, 'validate-backlog', 'self-parent.yml'], { cwd, encoding: 'utf8' });
   assert.notEqual(selfParent.status, 0, 'self-parenting must be rejected');
@@ -1273,6 +1283,8 @@ test('governed-backlog queues groups through lanes with four batched gates', () 
   assert.ok(contract.indexOf('1. **Jira**') < contract.indexOf('2. **Beads**') && contract.indexOf('2. **Beads**') < contract.indexOf('3. **Local file**'));
   assert.match(contract, /architecture-guard validate-backlog/);
   assert.match(contract, /\*\*Flash-Mem is not a source\.\*\*/);
+  assert.match(contract, /`origins`/);
+  assert.match(contract, /`criterion_mappings`/);
   assert.match(prompt, /Never store backlog items or their status in Flash-Mem/);
 
   // Lanes and their capability order
@@ -1454,6 +1466,11 @@ test('governed-backlog keeps the fixes from its dry run', () => {
   // A resume can unpark, diff, and re-approve
   assert.match(prompt, /For every other park reason, when the reason no longer holds, set the group back to `planned`/);
   assert.match(example, /depends_on: \[\], size: s, title: [^,]+, description: [^,]+, acceptance:/, 'queue.yml keeps an item snapshot for the resume diff');
+  assert.match(prompt, /including its `origins` or `criterion_mappings`/);
+  assert.match(prompt, /acceptance criteria, origins, or criterion mappings changed/);
+  const teamDelivery = fs.readFileSync(path.join(root, 'orchestration', 'governed-delivery-team.md'), 'utf8');
+  assert.match(teamDelivery, /Persist each accepted item's `origins` and sanitized `criterion_mappings`/);
+  assert.match(teamDelivery, /\*\*Source Provenance\*\*: \[Persisted \/ Partially persisted \/ Unpersisted/);
   assert.match(prompt, /On a resume, Steps 2 and 3 and Gate Q run again over the whole queue/);
 
   // Worktrees start from an up-to-date base, and stacked groups never start on an unfinished dependency
@@ -1467,7 +1484,7 @@ test('governed-backlog keeps the fixes from its dry run', () => {
 
   // The widened fix is an in-scope item, and any item change re-plans its group
   assert.match(prompt, /the fix joins the group as an extra item with id `<group>-hygiene-<n>`/);
-  assert.match(prompt, /any change to an item of a group that is not yet `published`, re-plan that group/);
+  assert.match(prompt, /any change to an item of a group that is not yet `published`, including its `origins` or `criterion_mappings`, re-plan that group/);
 
   // A change with no specification delta stays valid
   assert.match(prompt, /as a change having no specification delta/);
@@ -1480,7 +1497,7 @@ test('governed-backlog keeps the fixes from its dry run', () => {
 
   // A resume keeps what the user approved at Gate Q and notices changed item text
   assert.match(prompt, /The groups recorded in `queue.yml` are kept as approved/);
-  assert.match(prompt, /title, description, or acceptance criteria changed/);
+  assert.match(prompt, /title, description, acceptance criteria, origins, or criterion mappings changed/);
   assert.match(gateS, /its `assumptions`, and its `decisions`/);
   assert.match(gateS, /One with an undecided decision stays `researched`/);
   assert.match(prompt, /Work out the work order: first the full-lane and research groups/);
