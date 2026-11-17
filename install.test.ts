@@ -1467,6 +1467,8 @@ test('governed-backlog keeps the fixes from its dry run', () => {
   assert.match(prompt, /For every other park reason, when the reason no longer holds, set the group back to `planned`/);
   assert.match(example, /depends_on: \[\], size: s, title: [^,]+, description: [^,]+, acceptance:/, 'queue.yml keeps an item snapshot for the resume diff');
   assert.match(prompt, /including its `origins` or `criterion_mappings`/);
+  assert.match(prompt, /When the group is `specifying`, `spec-pending`, or later, it returns to `planned` so its discovery and specification are derived again, and its saved Discovery Summary is not reused\./);
+  assert.doesNotMatch(prompt, /When the group is `specifying`, `spec-pending`, or later, it returns to `planned` so its discovery and specification are derived again, and its saved Discovery Summary is not reused, unless the user keeps it as it is\./);
   assert.match(prompt, /acceptance criteria, origins, or criterion mappings changed/);
   const teamDelivery = fs.readFileSync(path.join(root, 'orchestration', 'governed-delivery-team.md'), 'utf8');
   assert.match(teamDelivery, /Persist each accepted item's `origins` and sanitized `criterion_mappings`/);
