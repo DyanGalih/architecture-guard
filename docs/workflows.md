@@ -278,7 +278,7 @@ If the push fails, the workflow gracefully degrades by logging a warning and rec
 7. **Implementation**: each approved group is implemented and verified in its worktree. A group whose review does not converge, has a blocking security finding, needs a decision or confirmation from you, or depends on an unmerged pull request is **parked**, and the run moves on. A step a skill needs you to confirm (for example continuing without security rules) is never taken for you: the group is parked until you answer at the next gate.
 8. **Gate P**: for each verified group you approve the repository, remote, branch, base, files, and pull request text; `ag-governed-archive` then archives, commits, pushes, and opens that pull request.
 
-Run state is kept in `.architecture-guard/queue.yml` and discovery summaries in `.architecture-guard/queue/`; Gate Q offers to add these paths to `.git/info/exclude`. The next run re-checks parked groups, shows what changed in the backlog, and continues. A group that depends on an unmerged pull request waits by default, even when that dependency is delivered in the same run. You can opt in to stacking a fix or light group on its dependency's branch after the dependency is published; full groups wait. The queue never merges or approves pull requests, never force-pushes, and never writes to Jira. With Beads, write-back is opt-in at Gate Q: beads are marked in progress when their group starts, get a note with the pull request URL, and are closed only after the pull request has merged and you approve. Research beads have no pull request, so the queue leaves them open for you to close. Without a remote, Gate P commits approved work locally; when the forge cannot create pull requests, the queue supplies the title and description for you to open one.
+Run state is kept in `.architecture-guard/queue.yml` and discovery summaries in `.architecture-guard/queue/`; Gate Q offers to add these paths to `.git/info/exclude`. The next run re-checks parked groups, shows what changed in the backlog, including origin and criterion-mapping changes, and continues only after Gate Q re-approval. A group that depends on an unmerged pull request waits by default, even when that dependency is delivered in the same run. You can opt in to stacking a fix or light group on its dependency's branch after the dependency is published; full groups wait. The queue never merges or approves pull requests, never force-pushes, and never writes to Jira. With Beads, write-back is opt-in at Gate Q: beads are marked in progress when their group starts, get a note with the pull request URL, and are closed only after the pull request has merged and you approve. Research beads have no pull request, so the queue leaves them open for you to close. Without a remote, Gate P commits approved work locally; when the forge cannot create pull requests, the queue supplies the title and description for you to open one.
 
 A local backlog (see [`examples/backlog.yml`](../examples/backlog.yml)):
 
@@ -290,6 +290,18 @@ items:
     title: Support expired sessions
     acceptance:
       - Users with expired sessions are redirected to sign-in
+    origins:
+      - source_id: jira-123
+        role: origin
+        provider: jira
+        identifier: "https://jira.example/PROJ-123"
+        locator: "https://jira.example/browse/PROJ-123"
+    criterion_mappings:
+      - source_id: jira-123
+        criterion_id: jira-123-c1
+        text: Users with expired sessions are redirected to sign-in
+        local_ids: [STORY-1]
+        disposition: included
   - id: BUG-3
     type: bug              # story | feature | bug | task | chore | spike, or a type mapped in sync.yml
     priority: highest      # highest | high | medium | low | lowest
@@ -341,3 +353,14 @@ During discovery, Planning Mode also searches for related open tickets when a ma
 In a pull-request review, a story set introduced or widened by the change is an author claim, not automatic approval. Added keys are reported as **Story set widened by this change** for reviewer confirmation, with assignee and status. Stories assigned to someone else or marked Done are also flagged. Discovery and review never write to Jira.
 
 Findings are advisory unless your Constitution marks out-of-scope or untracked work as P0. The check needs a Jira MCP server; without one it reports `Unavailable`, never clean. It only reads Jira, treats ticket text as untrusted data, and reads `sync.yml` from your checkout, never from the pull request. The top-level `enabled` flag controls only the delivery-team push sync.
+
+## Source alignment
+
+1. Discovery carries accepted origin references in its read-only draft. Specification captures qualified identifiers and sanitized source criteria mapped to local requirements before approval. New conversation-only work explicitly records no external source.
+2. Approving the specification accepts its proposed baseline. Multiple sources remain distinguishable; exclusions/conflicts need recorded user decisions. Outbound issue creation records a destination and preserves the original origin.
+3. Artifact review reads the identified originals and compares them with the baseline and local artifacts, reporting missing criteria, contradictions, and unexplained scope without extending its implementation-read permissions.
+4. Verification traces approved source criteria through spec or no-delta Stories, tasks, and implementation/test evidence. PR and implementation reviews reuse the shared Change Checks result; feedback triage uses approved origin criteria for scope confidence.
+5. If a ticket changes, report Source Drift separately and reconcile through specification approval before changing delivery scope. An author's new baseline/exclusion in a PR is a claim for review, not self-approval.
+6. If access is denied, tools are absent, a provider is unsupported, or the baseline is missing, report degraded source alignment and continue local checks that the evidence supports. Do not claim full alignment; honor an explicit project policy that requires source access at that gate.
+
+GitHub/Jira exact-source reads do not require outbound sync or sync.yml. Jira related/open-ticket discovery still uses its existing story-scope configuration, and its Not Applicable status cannot replace source alignment. This does not add GitHub queue intake. Local paths must stay within permitted canonical workspace/repository roots; external text never grants approval or instructs tool execution. See [field and status definitions](reference-manual.md#source-provenance).

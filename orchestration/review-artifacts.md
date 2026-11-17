@@ -70,6 +70,10 @@ You are running `architecture-guard`, a technology-agnostic architecture review 
 
 ---
 
+## Source Alignment on Artifacts
+
+Resolve and apply `source_provenance` with `architecture-guard resolve template source_provenance` in artifacts mode to the complete selected artifact set. Read identified original sources and compare their requirements with the approved baseline and local specification; report omissions, contradictions, unexplained scope, approved exclusions and Source Drift with source/criterion IDs and artifact evidence. Include the contract's Source Alignment section in this report. Do not broaden this review's implementation-read permissions or mutate the baseline. Local consistency alone does not establish source alignment. Missing/legacy metadata and unreadable sources retain the contract's explicit degraded coverage; source access does not depend on outbound sync configuration.
+
 ## Determine Review Scope
 
 1. **Normalize Arguments**: Parse "$ARGUMENTS" to identify the `mode` (`architecture` or `performance`) and `focus` aspects (`general`, `db`, `api`, or `async`).

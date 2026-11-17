@@ -5,6 +5,23 @@ import path from 'node:path';
 import os from 'node:os';
 import { resolveResource, listCategoryResources } from './cli/resolve';
 
+test('source provenance is listed and resolved in lean installs with local override precedence', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-source-resource-'));
+  try {
+    assert.ok(listCategoryResources('template', { target: root }).includes('source_provenance.md'));
+    const bundled = resolveResource('template', 'source_provenance', { target: root });
+    assert.equal(bundled.source, 'bundled');
+    assert.match(bundled.content, /# Source Provenance Contract/);
+    const localDir = path.join(root, '.architecture-guard', 'templates');
+    fs.mkdirSync(localDir, { recursive: true });
+    fs.writeFileSync(path.join(localDir, 'source_provenance.md'), '# Project source policy');
+    assert.equal(resolveResource('template', 'source_provenance', { target: root }).content, '# Project source policy');
+    assert.equal(listCategoryResources('template', { target: root }).filter(name => name === 'source_provenance.md').length, 1);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('resolves bundled template ponytail_core', () => {
   const result = resolveResource('template', 'ponytail_core');
   assert.strictEqual(result.source, 'bundled');

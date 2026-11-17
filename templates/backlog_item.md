@@ -28,8 +28,10 @@ Read `sync.yml` and `backlog.yml` from the user's checkout. When `sync.yml` exis
 | `parent` | parent issue key or Epic link (must not equal id) | parent from `parent-child` dependencies (must not equal id) | `parent` (names the feature/parent entity; must not equal item id) |
 | `depends_on` | from `story_scope` grouping (below) | beads it depends on (`blocks` dependencies) | `depends_on` |
 | `size` | story points: ≤1 xs, 2 s, 3-5 m, 8 l, more xl | `estimate` minutes: ≤60 xs, ≤240 s, ≤960 m, ≤2400 l, more xl | `size` |
+| `origins` | accepted source records, each with a qualified identifier and locator | source identity supplied by the bead or explicit handoff | source records supplied with the item |
+| `criterion_mappings` | sanitized source criteria mapped to local requirement or Story IDs | sanitized criteria and mappings supplied by the bead or explicit handoff | sanitized criteria and mappings supplied with the item |
 
-A missing field stays empty; never invent acceptance criteria. An item with no acceptance criteria is shown as such at Gate Q; in a fix-lane or light-lane group, which has no specification to supply them, the user must approve criteria for it there before the group starts (see `ag-governed-backlog`).
+A missing field stays empty; never invent acceptance criteria, origins, or baseline rows. Each `origins` entry retains `source_id`, `role` (`origin` or `sync-destination`), `provider`, qualified `identifier`, `locator`, available `observed_revision` and `observed_at` metadata, and an explicit `unavailable_reason` when retrieval is incomplete. Each `criterion_mappings` entry retains `source_id`, stable `criterion_id`, sanitized `text`, `local_ids`, `disposition` (`included` or `excluded`), and an approved `rationale` when needed. Do not copy full tickets, secrets, or unnecessary personal data. An item with no acceptance criteria is shown as such at Gate Q; in a fix-lane or light-lane group, which has no specification to supply them, the user must approve criteria for it there before the group starts (see `ag-governed-backlog`).
 
 ## Story Items
 

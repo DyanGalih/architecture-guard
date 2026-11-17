@@ -95,6 +95,10 @@ When no current sufficient cached synthesis exists and Flash-Mem is usable under
 
 Prefer summaries, metadata, tags, confidence, and related files. Load full entries only when those results are insufficient. If Flash-Mem is unavailable, continue with repository artifacts and report the degraded state.
 
+## Source Provenance Through Stories and Sync
+
+Resolve and apply `source_provenance` with `architecture-guard resolve template source_provenance` in capture mode. Carry accepted origin identities, sanitized baseline criteria and decisions into requested story artifacts, then transfer them to the change's adapter-resolved provenance owner during specification. When the user selects a backlog-only output, persist the accepted records as each item's `origins` and `criterion_mappings` fields instead of silently dropping them. Preview these sections with the existing story/spec/backlog writes; do not create an unrequested output. A confirmed provider/id/url from outbound synchronization is a `sync-destination`, never automatically an origin. Preserve original references when generating or reusing stories, and do not rewrite approved baselines without reconciliation approval. No external source means an explicit conversation/local origin as applicable. Source reads remain independent of sync.yml and outbound sync being enabled.
+
 ## Phase 3 — Generate User Story
 
 Before engineering planning begins, generate a business-oriented User Story (or multi-item backlog / story breakdown when decomposing an initiative) representing the approved business intent.
@@ -118,7 +122,7 @@ Before engineering planning begins, generate a business-oriented User Story (or 
    - For a single-story feature: persist the User Story as `<feature-name>.md` in the `<root>/user-stories/` directory with status `draft`.
    Otherwise present the proposed items without creating story files.
 5. Present the stories or backlog items for stakeholder review and stop before engineering planning until the user explicitly accepts them. Record `approved` in the story files only when those files were requested.
-5b. **Local Backlog Persistence (when breaking down into a backlog)**: Only when the user selected `.architecture-guard/backlog.yml` as an output in item 1, resolve and apply the `backlog_item` template with `architecture-guard resolve template backlog_item` and write or update `.architecture-guard/backlog.yml` after the Write Approval Gate and stakeholder acceptance in item 5. A Discovery Summary Draft proposes outputs; the user's selection controls. When the `architecture-guard` CLI is installed, validate the written file with `architecture-guard validate-backlog .architecture-guard/backlog.yml`; a non-zero exit means invalid and must be repaired and re-validated before continuing or stopping.
+5b. **Local Backlog Persistence (when breaking down into a backlog)**: Only when the user selected `.architecture-guard/backlog.yml` as an output in item 1, resolve and apply the `backlog_item` template with `architecture-guard resolve template backlog_item` and write or update `.architecture-guard/backlog.yml` after the Write Approval Gate and stakeholder acceptance in item 5. Persist each accepted item's `origins` and sanitized `criterion_mappings` alongside its normal fields; preserve explicit unavailable metadata and approved exclusions rather than inventing values. A Discovery Summary Draft proposes outputs; the user's selection controls. When the `architecture-guard` CLI is installed, validate the written file with `architecture-guard validate-backlog .architecture-guard/backlog.yml`; a non-zero exit means invalid and must be repaired and re-validated before continuing or stopping.
 6. Once the User Story (or breakdown) is approved, check for `.architecture-guard/sync.yml` for a normal single-feature run, or for a breakdown only if tracker sync was selected in item 1. If the file is absent, report sync as skipped. If it is disabled, report disabled and do not push. If it is enabled, offer synchronization; external synchronization is a separate side effect and requires explicit approval of the resolved provider, repository/project, and target before the first push:
    - When the `architecture-guard` CLI is installed, run `architecture-guard validate-sync-config .architecture-guard/sync.yml` to strictly validate the configuration; a non-zero exit means invalid and no remote write happens. Never fetch the CLI on demand (for example through a package runner); if it is not installed, skip sync and record `Unavailable`.
    - If valid, enabled, and approved, sync items parent-first (if multi-story) so child stories can link to their remote parent:
@@ -241,6 +245,7 @@ Return a concise `Governed Team Delivery Summary`:
 - **Memory**: [Ready / Unavailable]
 - **User Story**: [Draft / Approved / Review Required] — [Generated / Reused]
 - **Backlog**: [Validated (`.architecture-guard/backlog.yml`) / Skipped / Not Applicable]
+- **Source Provenance**: [Persisted / Partially persisted / Unpersisted: reason / Not Applicable]
 - **External Sync**: [Synced / Skipped / Approval Required / Failed / Unavailable]
 - **Plan**: [Generated / Reused / Repaired / Blocked / Skipped (breakdown-only)]
 - **Plan Security Review**: [Passed / Advisory / Blocked / Not Applicable / Unavailable]

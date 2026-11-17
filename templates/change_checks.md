@@ -15,6 +15,10 @@ The caller or the running skill supplies these; use whatever is available and na
 - **Security Review owner**: which step dispatches the host Security Review in this run, so it runs once.
 - **Story key**: the Jira key of the User Story this change delivers, or the approved story set, when the caller knows it. Without it, the Story scope check reads the set from the active change or looks for a key.
 
+## Source Alignment Ownership
+
+Resolve and apply `source_provenance` with `architecture-guard resolve template source_provenance` in verification mode, using active provenance/baseline and permitted code/test evidence. If the caller (for example verify) already owns source alignment for this same pass and inputs, reuse its result; do not dispatch it again. Include the shared Source Alignment section independently of the Jira story-scope outcome. Source reads are independent of sync.yml and outbound sync configuration; missing provenance, missing baselines, and unreadable sources cannot count as complete alignment. Keep approved-baseline delivery and Source Drift separate. Preserve this caller's read-only/code-execution limits.
+
 ## Checks
 
 Report each check as `Clean`, findings, or `Not Applicable` with the reason. Never report a check that did not run as clean.

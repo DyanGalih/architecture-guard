@@ -37,6 +37,10 @@ You are orchestrating the `ag-governed-discover` workflow for `architecture-guar
 
 This command coordinates an architecture-aware brainstorming and discovery phase before a formal specification is written. It helps ideas align with existing historical and architectural constraints, reducing drift early in the lifecycle while still leaving final validation to `ag-governed-spec`.
 
+## Source Provenance Handoff
+
+Resolve and apply `source_provenance` with `architecture-guard resolve template source_provenance` in capture mode. Keep known GitHub/Jira/local/conversation origins and proposed criterion mappings in the Discovery Summary Draft's `## Source Provenance` section, independently of Jira story-scope configuration. Record no external source explicitly when that is known; never infer it from unavailable access. Preserve accepted origins and related-story classifications. This remains read-only: propose metadata and baseline content without writing files or updating trackers.
+
 ## Flash-Mem-First Architecture Context Retrieval
 
 When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. If retrieval is unavailable or insufficient, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before using repository artifacts. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
@@ -94,7 +98,7 @@ Enter an interactive Q&A discussion with the user.
 1. **Acknowledge and Advise**: Briefly state your understanding of the user's idea and any immediate architectural considerations.
 2. **Warn on Violations**: If the user suggests an idea that conflicts with an architectural constraint (e.g., adding a new database when the constitution mandates a single shared database), you MUST warn them, identify whether the rule is blocking/P0 or non-blocking, and suggest an architecture-compliant alternative.
 3. **Refine**: Ask clarifying questions to flesh out edge cases, UX flows, and technical boundaries. Give your recommended answer and why with each question, as the Ponytail Core Open Questions rule requires.
-4. **Idea-to-Backlog Decomposition (when requested or multi-item)**: When the user's idea spans multiple stories, bugs, tasks, or spikes, contains more than one user story, or the user asks to break an idea down into a backlog or user stories, resolve and apply the `backlog_item` template with `architecture-guard resolve template backlog_item` and decompose the idea into proposed backlog items (`id`, `type`, `priority`, `size`, `group`, `parent`, `depends_on`, `title`, `description`, `acceptance`) conforming to `## Story Items` for the handoff draft. Each story item holds exactly one user story statement with its own acceptance criteria, and items of one feature name that feature as `parent`. Keep this decomposition strictly read-only.
+4. **Idea-to-Backlog Decomposition (when requested or multi-item)**: When the user's idea spans multiple stories, bugs, tasks, or spikes, contains more than one user story, or the user asks to break an idea down into a backlog or user stories, resolve and apply the `backlog_item` template with `architecture-guard resolve template backlog_item` and decompose the idea into proposed backlog items (`id`, `type`, `priority`, `size`, `group`, `parent`, `depends_on`, `title`, `description`, `acceptance`, optional `origins`, and optional `criterion_mappings`) conforming to `## Story Items` for the handoff draft. Each story item holds exactly one user story statement with its own acceptance criteria, and items of one feature name that feature as `parent`. Keep this decomposition strictly read-only.
 
 *Do not generate a full specification markdown file during this phase. Keep the interaction conversational and focused on alignment.*
 
@@ -143,6 +147,9 @@ When the discussion is concluded and aligned, the command MUST return:
 - **Existing Patterns Reviewed**: [Relevant codebase patterns, if reviewed]
 - **Assumptions**: [Assumptions that governed-spec should verify]
 
+## Source Provenance
+- [Known qualified origins, locators, observation metadata, proposed sanitized criterion mappings, or explicit no external source; no files are written]
+
 ## Story Set
 - **Main story**: [Jira KEY: summary] or none (and why: not configured / unavailable / none found)
 - **Bundled**: [KEY: summary, evidence that it is small and shares the same boundaries] or None
@@ -151,7 +158,7 @@ When the discussion is concluded and aligned, the command MUST return:
 - **Owned elsewhere**: [KEY: summary (assignee), coordinate with] or None
 
 ## Backlog Breakdown
-- [Proposed items using the `backlog_item` template shape (`id`, `type`, `priority`, `size`, `group`, `parent`, `depends_on`, `title`, `description`, `acceptance`) when decomposing a multi-item idea, a feature with more than one user story, or a requested backlog breakdown; or "Single feature (none)" only when the feature has exactly one user story]
+- [Proposed items using the `backlog_item` template shape (`id`, `type`, `priority`, `size`, `group`, `parent`, `depends_on`, `title`, `description`, `acceptance`, optional `origins`, and optional `criterion_mappings`) when decomposing a multi-item idea, a feature with more than one user story, or a requested backlog breakdown; or "Single feature (none)" only when the feature has exactly one user story]
 
 ## Rejected Options
 - [Options avoided because they conflict with architecture, add drift, or over-engineer the solution]

@@ -14,6 +14,30 @@ const id = z.string()
   .regex(/^[A-Za-z0-9._-]+$/, 'use letters, digits, dot, underscore, or hyphen')
   .refine(value => slug(value) !== '', 'needs at least one letter or digit, because it becomes a change name');
 
+const originSchema = z.object({
+  source_id: id,
+  role: z.enum(['origin', 'sync-destination']),
+  provider: z.string().min(1),
+  identifier: z.string().min(1),
+  locator: z.string().min(1),
+  observed_revision: z.string().min(1).optional(),
+  observed_at: z.string().min(1).optional(),
+  unavailable_reason: z.string().min(1).optional(),
+}).strict();
+
+const criterionMappingSchema = z.object({
+  source_id: id,
+  criterion_id: id,
+  text: z.string().min(1),
+  local_ids: z.array(z.string().min(1)).optional(),
+  disposition: z.enum(['included', 'excluded']),
+  rationale: z.string().min(1).optional(),
+}).strict().superRefine((mapping, ctx) => {
+  if (mapping.disposition === 'excluded' && !mapping.rationale) {
+    ctx.addIssue({ code: 'custom', path: ['rationale'], message: 'excluded criteria require a rationale' });
+  }
+});
+
 // Local fallback backlog for ag-governed-backlog (see templates/backlog_item.md)
 const itemSchema = z.object({
   id,
@@ -27,6 +51,8 @@ const itemSchema = z.object({
   parent: id.optional(),
   depends_on: z.array(id).optional(),
   size: z.enum(['xs', 's', 'm', 'l', 'xl']).optional(),
+  origins: z.array(originSchema).optional(),
+  criterion_mappings: z.array(criterionMappingSchema).optional(),
 }).strict();
 
 const backlogSchema = z.object({
@@ -39,7 +65,7 @@ const backlogSchema = z.object({
     }
     itemIds.add(item.id);
   });
-  const groupIds = new Set(backlog.items.map(item => item.group).filter(Boolean));
+  const groupIds = new Set(backlog.items.map(item => item.group).filter((group): group is string => group !== undefined));
   for (const groupId of groupIds) {
     if (itemIds.has(groupId)) {
       ctx.addIssue({ code: 'custom', path: ['items'], message: `group ${groupId} reuses an item id` });
@@ -75,8 +101,9 @@ function itemEdges(items: BacklogItem[]) {
       const members = items.filter(other => other.group === target).map(other => other.id);
       for (const to of members.length ? members : [target]) {
         if (to === item.id) continue;
-        if (!edges.has(item.id)) edges.set(item.id, new Set());
-        edges.get(item.id).add(to);
+        const adjacent = edges.get(item.id) ?? new Set<string>();
+        adjacent.add(to);
+        edges.set(item.id, adjacent);
       }
     }
   }
@@ -88,12 +115,13 @@ function groupEdges(items: BacklogItem[]) {
   const groupOf = new Map(items.map(item => [item.id, item.group ?? item.id]));
   const edges = new Map<string, Set<string>>();
   for (const item of items) {
-    const from = groupOf.get(item.id);
+    const from = item.group ?? item.id;
     for (const target of item.depends_on ?? []) {
       const to = groupOf.get(target) ?? target;
       if (to === from) continue;
-      if (!edges.has(from)) edges.set(from, new Set());
-      edges.get(from).add(to);
+      const adjacent = edges.get(from) ?? new Set<string>();
+      adjacent.add(to);
+      edges.set(from, adjacent);
     }
   }
   return edges;

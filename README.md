@@ -6,7 +6,7 @@
 
 > Keep AI-generated code aligned with your architecture, specs, and delivery workflow.
 
-[![Version](https://img.shields.io/badge/version-3.8.0-22c55e)](extension.yml)
+[![Version](https://img.shields.io/badge/version-3.9.0-22c55e)](extension.yml)
 [![OpenSpec](https://img.shields.io/badge/OpenSpec-compatible-8b5cf6)](https://github.com/Fission-AI/OpenSpec)
 [![Spec Kit](https://img.shields.io/badge/Spec%20Kit-compatible-2563eb)](https://spec-kit.dev)
 [![Non-blocking](https://img.shields.io/badge/style-non--blocking-10b981)](https://spec-kit.dev)
@@ -199,3 +199,7 @@ Architecture Guard is built alongside and inspired by open-source tools, methodo
 - **[OpenAI Codex CLI](https://github.com/openai/codex)** ([Subagent Configuration](https://learn.chatgpt.com/docs/agent-configuration/subagents)) — Scoped `.codex/agents/agteam-*.toml` role profiles and feature reductions.
 - **[Google Antigravity (`agy`)](https://idx.dev)** — Native `.agents/agents/agteam-*.md` subagent invocation and `share` workspace isolation.
 - **[OpenCode](https://github.com/sst/opencode)** ([opencode.ai](https://opencode.ai)) — Native `.opencode/agents/agteam-*.md` subagents with declarative read-only tool envelopes.
+
+## Source traceability
+
+Specifications retain their originating GitHub issues, Jira tickets, or local documents with qualified identifiers and an approved requirements baseline. Artifact review checks those originals; verification traces their criteria through requirements and tasks to code/test evidence. Later ticket edits are reported as drift and require scope reconciliation. Unreadable sources permit local checks but prevent a claim of complete source alignment. This works independently of outbound sync; Jira related-ticket discovery remains separately configured. See the [source alignment workflow](docs/workflows.md#source-alignment) and [provenance fields](docs/reference-manual.md#source-provenance).
