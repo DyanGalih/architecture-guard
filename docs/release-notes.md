@@ -1,3 +1,8 @@
+## Unreleased
+
+- Preserve specification origins and approved requirement baselines; check original sources during artifact review and verification.
+- Enforce strict TypeScript compilation across application and test sources while preserving existing behavior.
+
 ## 3.9.0
 
 - **PR Thread Governance & Review Operations (`architecture-guard pr`)**: Added native CLI commands wrapping `gh` and the GitHub GraphQL API for comprehensive PR thread management and comment posting:

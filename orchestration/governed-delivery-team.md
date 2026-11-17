@@ -95,6 +95,10 @@ When no current sufficient cached synthesis exists and Flash-Mem is usable under
 
 Prefer summaries, metadata, tags, confidence, and related files. Load full entries only when those results are insufficient. If Flash-Mem is unavailable, continue with repository artifacts and report the degraded state.
 
+## Source Provenance Through Stories and Sync
+
+Resolve and apply `source_provenance` with `architecture-guard resolve template source_provenance` in capture mode. Carry accepted origin identities, sanitized baseline criteria and decisions into requested story artifacts, then transfer them to the change's adapter-resolved provenance owner during specification. Preview these sections with the existing story/spec writes; do not create an unrequested output. A confirmed provider/id/url from outbound synchronization is a `sync-destination`, never automatically an origin. Preserve original references when generating or reusing stories, and do not rewrite approved baselines without reconciliation approval. No external source means an explicit conversation/local origin as applicable. Source reads remain independent of sync.yml and outbound sync being enabled.
+
 ## Phase 3 — Generate User Story
 
 Before engineering planning begins, generate a business-oriented User Story (or multi-item backlog / story breakdown when decomposing an initiative) representing the approved business intent.

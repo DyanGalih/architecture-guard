@@ -98,6 +98,10 @@ Between gates, nothing waits for the user. Automated steps, reviews, and repair 
 2. Read and normalize the items. Report the source, the query or file, the item count, and items excluded and why (closed, deferred, pinned, owned elsewhere).
 3. When resuming, diff the items with the snapshots in `queue.yml`: new items, items now Done or closed, and items whose priority, type, dependencies, size, title, description, or acceptance criteria changed. These go to Gate Q.
 
+### Origin Preservation at Intake
+
+Resolve and apply `source_provenance` with `architecture-guard resolve template source_provenance` in capture mode. Carry the selected source's qualified identity and actual acceptance criteria through each accepted group's discovery/specification handoff. Jira references include the site and key; local backlog references include the workspace-relative file and item ID; other explicit providers such as Beads retain their identity with unavailable retrieval reported when unsupported. Preserve origin metadata supplied with an item. This does not add GitHub queue intake or change source selection. For fix/light lanes writing no-delta `## Stories`, retain the provenance section and proposed sanitized baseline in the same owner and map criterion IDs to Stories IDs; include it in Gate Q's artifact scope and approval, never fabricate acceptance criteria or baseline approval. Preserve accepted baselines on resume; source changes use the existing re-approval gates. Newly discovered origins need user acceptance.
+
 ### Step 3 - Plan
 
 1. Group, order, and assign lanes as the `backlog_item` template defines. Cap the run at `backlog.max_groups` from `sync.yml` (default 10), counting the groups that will run, research groups included, and not those that wait or are blocked. Leave the rest for a later run.

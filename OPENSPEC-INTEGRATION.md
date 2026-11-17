@@ -73,3 +73,11 @@ For a fix or light backlog group with no specification delta, the adapter marks 
 ## Agent Files
 
 The OpenSpec adapter (`adapters/openspec.md`) also provides a Command Map for all OpenSpec CLI invocations. This lets Architecture Guard orchestrate `openspec *` commands naturally.
+
+## Source provenance
+
+For a new OpenSpec change derived from issues or local documents, keep `## Source Provenance` in `openspec/changes/<change>/proposal.md`. Record qualified origins and a sanitized proposed acceptance-criteria baseline mapped to requirement IDs in the change-level capability specs. Specification approval accepts the baseline; multiple specs reference this single owner. A no-delta change keeps the baseline beside its proposal's Stories and maps to Stories IDs.
+
+For example, a GitHub origin identifies its host and owner/repository#123; a Jira origin identifies its site and key. Record actual observed revision/update metadata or an explicit unavailable reason. Conversation-only work explicitly records no external source. Later synced issues are destinations, not automatically origins.
+
+Artifact review and verification read identified originals independently of outbound sync. Ticket changes produce Source Drift for explicit reconciliation, and absent access/baselines produce degraded alignment while local checks continue unless project policy gates access. Legacy changes are not silently migrated. See the [shared fields and states](docs/reference-manual.md#source-provenance).

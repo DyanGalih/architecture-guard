@@ -100,6 +100,10 @@ You must orchestrate {adapter_command:create-spec} workflow directly.
 4. **Apply Ponytail Pragmatism**: Instruct the agent to prevent over-specified, "future-proofed" requirements. Keep the specification minimal and focused purely on the immediate needs (YAGNI).
 5. The specification process must incorporate the Project Constitution documents and memory synthesis. Use Flash-Mem first when available.
 
+### Source Provenance Capture Before Approval
+
+Resolve and apply `source_provenance` with `architecture-guard resolve template source_provenance` in capture mode to the accepted discovery/story inputs. Preserve qualified origins and proposed sanitized source criteria with stable local requirement mappings in the adapter-resolved proposal, or spec when no proposal is supported. Use the contract's single provenance owner for multiple specs and its Stories fallback for no-delta work. Source capture is included in the existing artifact-write preview, never an implicit tracker write. Present the proposed baseline with the specification at its existing approval gate; record only actual user approval. Preserve approved baselines on resume; material source drift requires explicit reconciliation approval and affected plan/task review. Missing metadata or source access is explicit, never invented.
+
 ### Step 6 — Orchestrate Specification Clarification
 
 You must orchestrate {adapter_command:clarify-spec} workflow directly.

@@ -39,7 +39,7 @@ const backlogSchema = z.object({
     }
     itemIds.add(item.id);
   });
-  const groupIds = new Set(backlog.items.map(item => item.group).filter(Boolean));
+  const groupIds = new Set(backlog.items.map(item => item.group).filter((group): group is string => group !== undefined));
   for (const groupId of groupIds) {
     if (itemIds.has(groupId)) {
       ctx.addIssue({ code: 'custom', path: ['items'], message: `group ${groupId} reuses an item id` });
@@ -75,8 +75,9 @@ function itemEdges(items: BacklogItem[]) {
       const members = items.filter(other => other.group === target).map(other => other.id);
       for (const to of members.length ? members : [target]) {
         if (to === item.id) continue;
-        if (!edges.has(item.id)) edges.set(item.id, new Set());
-        edges.get(item.id).add(to);
+        const adjacent = edges.get(item.id) ?? new Set<string>();
+        adjacent.add(to);
+        edges.set(item.id, adjacent);
       }
     }
   }
@@ -88,12 +89,13 @@ function groupEdges(items: BacklogItem[]) {
   const groupOf = new Map(items.map(item => [item.id, item.group ?? item.id]));
   const edges = new Map<string, Set<string>>();
   for (const item of items) {
-    const from = groupOf.get(item.id);
+    const from = item.group ?? item.id;
     for (const target of item.depends_on ?? []) {
       const to = groupOf.get(target) ?? target;
       if (to === from) continue;
-      if (!edges.has(from)) edges.set(from, new Set());
-      edges.get(from).add(to);
+      const adjacent = edges.get(from) ?? new Set<string>();
+      adjacent.add(to);
+      edges.set(from, adjacent);
     }
   }
   return edges;

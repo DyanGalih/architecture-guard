@@ -137,6 +137,10 @@ Review any available artifacts from these common locations. **IMPORTANT**: You M
     - Rules: Run `architecture-guard resolve hygiene-rules --list` in the user's base checkout, then resolve and load every returned rule in deterministic order. Workspace files under `.architecture-guard/hygiene-rules/` override same-named bundled rules. The runner in step 8c executes them.
     - **Direct Discovery Guard**: When checking adapter-resolved hidden paths such as `.architecture-guard/**`, use direct directory inspection first, then read listed files. A Glob/search no-match result is inconclusive and MUST NOT be reported as missing. Report a path as unavailable only after direct inspection confirms it does not exist. The review report MUST explicitly list loaded rule files and counts. Missing optional hygiene rules are non-blocking.
 
+## Original Source Evidence
+
+Change Checks owns source comparison through `source_provenance` (`architecture-guard resolve template source_provenance`) in verification mode. Pass the active provenance owner, baseline, and allowed code/test evidence; reuse its Source Alignment result and include the shared report section. Compare approved source criteria through requirements and tasks to implementation evidence, while reporting latest-source drift separately. Missing origins/baselines or unreadable sources degrade source coverage and never become a local verification pass. Preserve existing review permissions and independent Security Review ownership.
+
 ## Semantic Modeling
 
 Before analysis, build internal representations (do not output these):

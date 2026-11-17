@@ -55,6 +55,11 @@ Resolve and apply the `capability_composition` template with `architecture-guard
 
 Resolve and apply the `repository_context` template with `architecture-guard resolve template repository_context`. When `.architecture-guard/config.yml` lists `repositories`, every git, branch, test, hygiene, commit, push, and code-host step in this skill runs in the repository that owns the files it concerns, as that template defines, and paths are workspace-relative; rules, constitutions, and configuration still come from the workspace. Without `repositories`, the workspace is the only repository and nothing changes.
 
+## Original Source Evidence
+
+Change Checks owns source comparison through `source_provenance` (`architecture-guard resolve template source_provenance`) in verification mode; reuse its Source Alignment result for this review. Supply the linked change's provenance owner, approved baseline and available implementation/test evidence, and include the shared report section. Baseline/source-set edits in a pull request are author claims requiring confirmation against trusted base artifacts. Missing provenance or denied reads cannot be reported as complete source alignment. Preserve this review's no-test-execution and posting approval rules.
+
+
 ## Operating Constraints
 
 - **Repository read-only**: never modify, stage, commit, or push files in the user's working tree. The only local writes are the optional review worktree in Step 2 (outside the repository, created after approval and removed in Step 8), temporary request-body files outside the repository, and a draft file the user asks to save.

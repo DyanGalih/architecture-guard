@@ -1,6 +1,10 @@
 # Architecture Guard Story Scope Contract
 
-Apply this contract to a change set to check it against the work the team has agreed to do in the issue tracker. The Intent check asks whether the change does what it says; this check asks whether what it says is the agreed work: the acceptance criteria of the linked User Story (or the approved story set), its related tickets, and, when no story is linked, the open tickets it may overlap. Before any code exists, `ag-governed-discover` applies it in Planning Mode to propose that story set. Jira is the only supported provider today.
+Apply this contract to a change set to check it against the work the team has agreed to do in the issue tracker. The Intent check asks whether the change does what it says; this check asks whether what it says is the agreed work: the acceptance criteria of the linked User Story (or the approved story set), its related tickets, and, when no story is linked, the open tickets it may overlap. Before any code exists, `ag-governed-discover` applies it in Planning Mode to propose that story set. Jira is the only supported provider for related-ticket discovery; origin alignment also supports explicit GitHub and local sources through the shared source_provenance contract.
+
+## Origin Alignment Before Jira Discovery
+
+Resolve and apply `source_provenance` with `architecture-guard resolve template source_provenance` using the caller's mode, or reuse its matching caller-owned Source Alignment result without a second dispatch. Planning Mode uses capture mode and stays read-only; change review uses verification mode with permitted evidence. Origin identity, approved baseline comparison, drift and coverage belong only to that contract. The Configuration and Steps below govern Jira related-ticket discovery only: their Not Applicable/Unavailable outcome does not skip or replace Source Alignment. Read only Jira stories belonging to the configured site/project here; non-Jira origins and conversation lines in a mixed `## Stories` section are not Jira keys. Preserve accepted scope; do not promote related candidates into origins. Latest ticket criteria changed after approval are drift, not automatically approved delivery obligations.
 
 ## Configuration
 
@@ -42,9 +46,9 @@ Compare the changed files and behavior with the loaded tickets. Judge by behavio
 
 - **Out of scope**: a change that no acceptance criterion of the story, or of any story in the set, explains. Name the change and the closest criterion, or say none applies.
 - **Belongs to another ticket**: a change that matches a related or candidate ticket better than the story. Cite that ticket's key, assignee, and status. When that ticket is assigned to someone other than the change's author, say so: two people may be doing the same work.
-- **Not delivered**: an acceptance criterion, of any story in the set, with no matching change and no matching test. Report it as a gap, not as proof the work is missing, when the criterion may be met by code outside the diff or by a later ticket.
+- **Not delivered**: an approved-baseline acceptance criterion, of any story in the set, with no matching change and no matching test. Report it as a gap, not as proof the work is missing, when the criterion may be met by code outside the diff or by a later ticket.
 - **Untracked change**: no story was linked or picked. When a candidate matches, report it as possible overlap with that ticket; otherwise report the change as untracked.
-- **Clean**: every change maps to an acceptance criterion of the story and nothing matches another ticket better.
+- **Clean**: every change maps to an approved acceptance criterion of the story and nothing matches another ticket better; this related-ticket result never replaces the separate Source Alignment status. Without an approved baseline, qualify delivery comparison as Degraded rather than assuming the latest ticket was approved.
 
 ## Planning Mode
 

@@ -1,13 +1,15 @@
 #!/usr/bin/env node
-const fs = require('fs');
-const path = require('path');
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as readline from 'node:readline';
+import type { HostRoleDescriptor } from './role-setup';
 
-const { roleAgentName, installCodexRoles, planCodexRoles, validateProfile, assertRolePath, CODEX_ROLES, AGY_ROLES, OPENCODE_ROLES, planRoles, installRoles } = require('./role-setup');
-const { planCodexConfig, applyCodexConfig } = require('./codex-config');
+import { roleAgentName, installCodexRoles, planCodexRoles, validateProfile, assertRolePath, CODEX_ROLES, AGY_ROLES, OPENCODE_ROLES, planRoles, installRoles } from './role-setup';
+import { planCodexConfig, applyCodexConfig } from './codex-config';
 
 const ROOT_DIR = path.join(__dirname, '..', '..');
 const { resolveForge, installForges, materializeForgeTokens } = require('./forge');
-const { configuredRepositories, detectNestedRepositories, isGitRepository, readWorkspaceConfig } = require('./repositories');
+import { configuredRepositories, detectNestedRepositories, isGitRepository, readWorkspaceConfig } from './repositories';
 
 // ponytail: stdin detection is the trickiest part of a prompt-style installer.
 // Node has no synchronous peek on stdin, so we distinguish three cases:
@@ -20,27 +22,27 @@ const { configuredRepositories, detectNestedRepositories, isGitRepository, readW
 // hung or silently picked defaults. Using `process.stdout.isTTY` keeps interactive
 // prompts working whenever the user can see them, and lets piped-stdin cases still
 // drain when stdout is redirected (the test path).
-let _inputLines = null;
+let _inputLines: string[] | null = null;
 let _inputIdx = 0;
-function nextLine() {
+function nextLine(): Promise<string> {
   if (_inputLines !== null) {
     const line = _inputLines[_inputIdx];
     _inputIdx++;
     return Promise.resolve(line || '');
   }
-  const rl = require('readline').createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise<string>((resolve) => {
     rl.question('', (line) => { rl.close(); resolve(line); });
   });
 }
 function readAllStdin() {
-  return new Promise((resolve) => {
+  return new Promise<void>((resolve) => {
     // Drain piped answers only when stdout is not interactive (tests, CI) and stdin is
     // actually a pipe. Interactive stdout => readline prompts work even if stdin is a pipe
     // (opencode); an interactive stdin with redirected stdout (`init > log`) is never
     // drained, or the installer would wait for an EOF the user never sends.
     if (!process.stdout.isTTY && !process.stdin.isTTY) {
-      const rl = require('readline').createInterface({ input: process.stdin });
+      const rl = readline.createInterface({ input: process.stdin });
       const lines: string[] = [];
       rl.on('line', (l: string) => lines.push(l));
       rl.on('close', () => { _inputLines = lines; _inputIdx = 0; resolve(undefined); });
@@ -53,7 +55,7 @@ function readAllStdin() {
 // ponytail: no TTY on ANY fd and no piped answers = can't proceed interactively.
 // Called after readAllStdin() has drained piped incoming lines (the test harness path).
 // If nothing drained + no flags → error with corrective instruction.
-function requireInteractiveOrYes(opts) {
+function requireInteractiveOrYes(opts: { yes?: boolean }) {
   if (opts.yes) return;
   // If we drained piped input (_inputLines exists), user chose non-interactive mode.
   // Even if they piped nothing, let normal validation handle missing answers.
@@ -71,7 +73,7 @@ function requireInteractiveOrYes(opts) {
   }
 }
 
-const AGENT_CONFIGS = {
+const AGENT_CONFIGS: Record<string, { dir: string; ext: string }> = {
   opencode:     { dir: '.opencode/commands',   ext: '.md' },
   junie:        { dir: '.junie/commands',      ext: '.md' },
   amp:          { dir: '.amp/commands',        ext: '.md' },
@@ -135,13 +137,17 @@ const COMMANDS = [
   'governed-archive',
 ];
 
-const COMMAND_ALIASES = {
+const COMMAND_ALIASES: Record<string, string[]> = {
   all: COMMANDS,
   review: ['review-artifacts', 'review-implementation'],
   pr: ['review-pr', 'pr-feedback', 'pr-queue', 'review-implementation'],
 };
 
-async function ask(promptText, choices, multi: boolean = false) {
+type PromptChoice = string | { name: string; value: string; checked?: boolean };
+function ask(promptText: string, choices: null): Promise<string>;
+function ask(promptText: string, choices: PromptChoice[], multi: true): Promise<string[]>;
+function ask(promptText: string, choices: PromptChoice[], multi?: false): Promise<string | null>;
+async function ask(promptText: string, choices: PromptChoice[] | null, multi: boolean = false) {
   // Use old logic if reading from piped stdin (e.g. tests)
   if (_inputLines !== null) {
     const input = await nextLine();
@@ -185,7 +191,7 @@ async function ask(promptText, choices, multi: boolean = false) {
 
     return await input({ message: message });
   } catch (error) {
-    if (error.name === 'ExitPromptError' || error instanceof Error && error.message.includes('User force closed the prompt')) {
+    if (error instanceof Error && error.name === 'ExitPromptError' || error instanceof Error && error.message.includes('User force closed the prompt')) {
       console.log('\nInstallation aborted.');
       process.exit(0);
     }
@@ -193,20 +199,20 @@ async function ask(promptText, choices, multi: boolean = false) {
   }
 }
 
-function slug(name) {
+function slug(name: string) {
   return name.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
 }
 
-function readPrompt(promptPath) {
+function readPrompt(promptPath: string) {
   return fs.readFileSync(promptPath, 'utf8');
 }
 
-function parseAdapterSection(content, heading, nextHeading = null) {
+function parseAdapterSection(content: string, heading: string, nextHeading: string | null = null) {
   const afterHeading = content.split(heading)[1] || '';
   const section = (nextHeading && afterHeading.includes(nextHeading))
     ? afterHeading.split(nextHeading)[0]
     : afterHeading.split(/\r?\n## /)[0];
-  const map = new Map();
+  const map = new Map<string, string>();
   for (const line of section.split(new RegExp('\\r?\\n'))) {
     const cells = line.split('|').map(cell => cell.trim());
     if (cells.length >= 4 && cells[1] && cells[2] && cells[1] !== 'Canonical Name' && cells[1] !== 'Canonical Key') {
@@ -223,21 +229,21 @@ const ADAPTER_NAME = /^[a-z0-9][a-z0-9-]*$/;
 const ADAPTER_TOKEN = /\{adapter_(path|command):([a-z0-9-]+)\}/g;
 
 // Built-in adapters ship with the package; custom adapters live in the target project.
-function adapterFilePath(adapterName, targetDir = null) {
+function adapterFilePath(adapterName: string, targetDir: string | null = null) {
   if (BUILTIN_ADAPTERS.includes(adapterName) || !targetDir) {
     return path.join(ROOT_DIR, 'adapters', adapterName + '.md');
   }
   return path.join(targetDir, '.architecture-guard', 'adapters', adapterName + '.md');
 }
 
-function adapterKeys(content) {
+function adapterKeys(content: string) {
   return {
     path: parseAdapterSection(content, '## Path Map', '## Command Map'),
     command: parseAdapterSection(content, '## Command Map', '## Constitution Layout'),
   };
 }
 
-function resolveAdapterBindings(adapterName, targetDir = null) {
+function resolveAdapterBindings(adapterName: string, targetDir: string | null = null) {
   const adapterPath = adapterFilePath(adapterName, targetDir);
   if (!fs.existsSync(adapterPath)) {
     throw new Error('Unavailable: adapter file not found at ' + adapterPath);
@@ -247,27 +253,27 @@ function resolveAdapterBindings(adapterName, targetDir = null) {
 
 // Every adapter must define each key the installed prompts and runtime templates reference.
 function requiredAdapterKeys() {
-  const keys = { path: new Set(), command: new Set() };
+  const keys = { path: new Set<string>(), command: new Set<string>() };
   for (const dir of ['orchestration', 'templates', 'flow']) {
     const root = path.join(ROOT_DIR, dir);
     if (!fs.existsSync(root)) continue;
     for (const file of fs.readdirSync(root).filter(name => name.endsWith('.md'))) {
       for (const [, kind, key] of fs.readFileSync(path.join(root, file), 'utf8').matchAll(ADAPTER_TOKEN)) {
-        keys[kind].add(key);
+        if (kind === 'path' || kind === 'command') keys[kind].add(key);
       }
     }
   }
   return { path: [...keys.path].sort(), command: [...keys.command].sort() };
 }
 
-function missingAdapterKeys(content) {
+function missingAdapterKeys(content: string) {
   const required = requiredAdapterKeys();
   const defined = adapterKeys(content);
-  return ['path', 'command'].flatMap(kind =>
+  return (['path', 'command'] as const).flatMap(kind =>
     required[kind].filter(key => !defined[kind].has(key)).map(key => `${kind}:${key}`));
 }
 
-function customAdapters(targetDir) {
+function customAdapters(targetDir: string) {
   const dir = path.join(targetDir, '.architecture-guard', 'adapters');
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir)
@@ -278,7 +284,7 @@ function customAdapters(targetDir) {
 }
 
 // Validates a custom adapter before anything is written to the target project.
-function resolveCustomAdapter(name, targetDir) {
+function resolveCustomAdapter(name: string, targetDir: string) {
   if (!ADAPTER_NAME.test(name) || name === 'resolve') {
     throw new Error(`Invalid adapter name "${name}". Use lowercase letters, digits, and hyphens.`);
   }
@@ -299,7 +305,14 @@ function resolveCustomAdapter(name, targetDir) {
 
 // config.yml is also the adapters' governance-config, so keep the user's settings
 // (context budget, repository_hygiene, presets) and only update the installer-owned keys.
-function writeInstallerConfig(configPath, adapter, repositories = null, agentTeams = null) {
+interface TeamConfiguration {
+  enabled_hosts: string[];
+  activation: string;
+  isolation: string;
+  _explicitActivation: boolean;
+  _explicitIsolation: boolean;
+}
+function writeInstallerConfig(configPath: string, adapter: string, repositories: unknown = null, agentTeams: TeamConfiguration | null = null) {
   const YAML = require('yaml');
   let cleanAgentTeams = null;
   if (agentTeams) {
@@ -342,7 +355,7 @@ function writeInstallerConfig(configPath, adapter, repositories = null, agentTea
   fs.writeFileSync(configPath, String(doc));
 }
 
-function installAdapters(targetDir, preserve) {
+function installAdapters(targetDir: string, preserve: boolean) {
   const adaptersDir = path.join(targetDir, '.architecture-guard', 'adapters');
   fs.mkdirSync(adaptersDir, { recursive: true });
   // Built-in adapters ship with the prompts and are refreshed on install; custom adapters are never touched.
@@ -364,13 +377,13 @@ function installAdapters(targetDir, preserve) {
   }
 }
 
-function resolveAdapterValue(bindings, kind, key, trail = []) {
+function resolveAdapterValue(bindings: ReturnType<typeof adapterKeys>, kind: string, key: string, trail: string[] = []): string {
   const identifier = `${kind}:${key}`;
   if (trail.includes(identifier)) {
     throw new Error('AdapterTokenCycle: ' + identifier);
   }
 
-  const value = bindings[kind].get(key);
+  const value = kind === 'path' || kind === 'command' ? bindings[kind].get(key) : undefined;
   if (!value) {
     throw new Error('AdapterMissingKey: ' + identifier);
   }
@@ -381,11 +394,11 @@ function resolveAdapterValue(bindings, kind, key, trail = []) {
   );
 }
 
-function materializeAdapterTokens(content, adapterName, targetDir = null) {
+function materializeAdapterTokens(content: string, adapterName: string, targetDir: string | null = null) {
   const normalizedAdapter = adapterName === 'none' || adapterName === 'none (framework-agnostic)' ? 'generic' : adapterName;
   const bindings = resolveAdapterBindings(normalizedAdapter, targetDir);
   const tokenPattern = new RegExp('\\{adapter_(path|command):([^}]+)}', 'g');
-  const resolvedCommands = new Map();
+  const resolvedCommands = new Map<string, string>();
   const materialized = content.replace(tokenPattern, (token, kind, key) => {
     const value = resolveAdapterValue(bindings, kind, key);
     if (kind === 'command') {
@@ -406,7 +419,7 @@ function materializeAdapterTokens(content, adapterName, targetDir = null) {
   return `${materialized.trim()}\n\n## Resolved Adapter Actions\n\nThe entries below are the selected adapter's action guidance. Treat them as declarative instructions; execute only an explicitly named host capability, slash command, or CLI invocation.\n\n${actionLines}\n`;
 }
 
-function parseCommandSelection(rawCommands) {
+function parseCommandSelection(rawCommands: string) {
   const selected = [];
   const invalid = [];
 
@@ -447,13 +460,13 @@ function parseCommandSelection(rawCommands) {
   return [...new Set(selected)];
 }
 
-function installMarkdown(sk, content, cmdDir, dest) {
+function installMarkdown(sk: string, content: string, cmdDir: string, dest?: string) {
   dest ||= path.join(cmdDir, `ag-${sk}.md`);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.writeFileSync(dest, content);
 }
 
-function installSkillMd(sk, content, cmdDir, dest, agentType) {
+function installSkillMd(sk: string, content: string, cmdDir: string, dest: string | undefined, agentType: string) {
   if (!dest) {
     dest = path.join(cmdDir, `ag-${sk}`, 'SKILL.md');
   }
@@ -488,7 +501,7 @@ ${cleanContent}`;
 // Prompts contain backslashes (LaTeX, regexes) that are escapes in TOML basic strings, so
 // prefer a multi-line literal string, which keeps the text verbatim. Fall back to an escaped
 // basic string only when the text contains ''' or a control character literals cannot hold.
-function tomlMultilineString(text) {
+function tomlMultilineString(text: string) {
   // eslint-disable-next-line no-control-regex
   const control = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g;
   if (!text.includes("'''") && !text.match(control)) {
@@ -501,7 +514,7 @@ function tomlMultilineString(text) {
   return `"""\n${escaped}\n"""`;
 }
 
-function installToml(sk, content, cmdDir, dest) {
+function installToml(sk: string, content: string, cmdDir: string, dest?: string) {
   dest ||= path.join(cmdDir, `${sk}.toml`);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   const toml = `description = "Architecture Guard: ag-${sk}"
@@ -511,10 +524,10 @@ prompt = ${tomlMultilineString(content.trim())}
   fs.writeFileSync(dest, toml);
 }
 
-function installYaml(sk, content, cmdDir, dest) {
+function installYaml(sk: string, content: string, cmdDir: string, dest?: string) {
   dest ||= path.join(cmdDir, `${sk}.yaml`);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  const yamlQuote = value => `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, '\\n')}"`;
+  const yamlQuote = (value: string) => `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, '\\n')}"`;
   const yaml = `version: "1.0"
 title: ${yamlQuote(`ag-${sk}`)}
 description: ${yamlQuote(`Architecture Guard: ag-${sk}`)}
@@ -524,14 +537,14 @@ prompt: |2
   fs.writeFileSync(dest, yaml);
 }
 
-function commandDestination(cfg, sk, cmdDir, agentType) {
+function commandDestination(cfg: { ext: string }, sk: string, cmdDir: string, agentType: string) {
   if (cfg.ext === '/SKILL.md') {
     return path.join(cmdDir, `ag-${sk}`, 'SKILL.md');
   }
   return path.join(cmdDir, `ag-${sk}${cfg.ext}`);
 }
 
-function availableCopy(dest, cfg, sk, cmdDir, agentType) {
+function availableCopy(dest: string, cfg: { ext: string }, sk: string, cmdDir: string, agentType: string) {
   if (cfg.ext === '/SKILL.md') {
     const prefix = `ag-${sk}`;
     let candidate = path.join(cmdDir, `${prefix}-2`, 'SKILL.md');
@@ -551,7 +564,7 @@ function availableCopy(dest, cfg, sk, cmdDir, agentType) {
 const OVERWRITE_MODES = ['replace', 'skip', 'keep-both'];
 
 // Applies --overwrite to an existing destination: the path to write, or null to skip it.
-function writableDestination(dest, overwrite, keepBothCopy) {
+function writableDestination(dest: string, overwrite: string | undefined, keepBothCopy: (dest: string) => string) {
   if (!fs.existsSync(dest)) return dest;
   if (overwrite === 'skip') return null;
   if (overwrite === 'keep-both') return keepBothCopy(dest);
@@ -600,11 +613,11 @@ async function installCommand(agentType: any, commandName: any, cmdDir: any, opt
       fs.writeFileSync(wfDest, content);
     }
   } catch (err) {
-    console.error(`  ✗ ${commandName}: ${err.message}`);
+    console.error(`  ✗ ${commandName}: ${(err instanceof Error ? err.message : String(err))}`);
   }
 }
 
-function appendAgentsMd(projectPath, selectedAgents) {
+function appendAgentsMd(projectPath: string, selectedAgents: string[]) {
   const agentsPath = path.join(projectPath, 'AGENTS.md');
   const sectionStart = '<!-- architecture-guard:start -->';
   const sectionEnd = '<!-- architecture-guard:end -->';
@@ -657,7 +670,7 @@ ${sectionEnd}`;
   }
 }
 
-async function installRuntimeResources(runtimeDir, opts: any = {}) {
+async function installRuntimeResources(runtimeDir: string, opts: any = {}) {
   const overwrite = typeof opts === 'object' && opts !== null ? opts.overwrite : (opts ? 'replace' : null);
   for (const dir of REQUIRED_RESOURCES) {
     const destination = path.join(runtimeDir, dir);
@@ -715,7 +728,7 @@ function configureClaudeAgentTeams(targetDir: string) {
 }
 
 // Older role profiles used generic tool names; Claude Code only honors its own.
-const LEGACY_TOOL_NAMES = {
+const LEGACY_TOOL_NAMES: Record<string, string> = {
   read_file: 'Read',
   write_to_file: 'Write',
   replace_file_content: 'Edit',
@@ -762,7 +775,7 @@ function normalizeClaudeRoleTools(rawTools: unknown[] | undefined): { tools: str
 
 function validateRoleProfile(profile: unknown) {
   const errors = [];
-  const roles = [];
+  const roles: { key: string; name: string; role: Record<string, unknown>; tools: string[]; dropped: string[] }[] = [];
   if (!isMapping(profile)) return { roles, errors: ['the profile is empty or not a YAML mapping'] };
   const roleMap = (profile as Record<string, any>).roles;
   if (!isMapping(roleMap)) {
@@ -969,7 +982,7 @@ export function runSyncTeamRoles(target?: string, options: { agent?: string } = 
 
 const REQUIRED_RESOURCES = ['templates', 'presets', 'hygiene-rules', 'sonar-rules'];
 
-function readPersistedAdapter(targetDir) {
+function readPersistedAdapter(targetDir: string) {
   const markerPath = path.join(targetDir, ".architecture-guard", "selected-adapter");
   if (fs.existsSync(markerPath)) {
     const value = fs.readFileSync(markerPath, "utf8").trim().toLowerCase();
@@ -993,13 +1006,13 @@ function readPersistedAdapter(targetDir) {
 // otherwise standalone nested git repositories that the workspace ignores (or any, when the workspace is not a git
 // repository) are returned for recording: a tracked or vendored checkout is not a separate application. The first
 // code repository is where pull requests live, so the forge is detected from its origin.
-function resolveWorkspaceRepositories(targetDir) {
+function resolveWorkspaceRepositories(targetDir: string) {
   const config = readWorkspaceConfig(targetDir);
   let record = null;
-  const messages = [];
+  const messages: string[] = [];
   if (!config || config.repositories === undefined) {
     const taken = new Set();
-    const ignoredByWorkspace = location => {
+    const ignoredByWorkspace = (location: string) => {
       const result = require('child_process').spawnSync('git', ['-C', targetDir, 'check-ignore', '-q', '--', location], { stdio: 'ignore' });
       return result.status !== 1; // 0: ignored; 128: the workspace is not a git repository
     };
@@ -1021,7 +1034,7 @@ function resolveWorkspaceRepositories(targetDir) {
 
 // A rerun without --forge keeps a previously selected forge that still validates, so a
 // custom or self-hosted forge is not silently replaced by auto-detection.
-function resolveSelectedForge(requested, targetDir, detectDirectory = targetDir) {
+function resolveSelectedForge(requested: string | undefined, targetDir: string, detectDirectory = targetDir) {
   const markerPath = path.join(targetDir, '.architecture-guard', 'selected-forge');
   if (!requested && fs.existsSync(markerPath)) {
     const persisted = fs.readFileSync(markerPath, 'utf8').trim();
@@ -1064,10 +1077,10 @@ function pruneDirectory(localDir: string, bundledDir: string, kept: string[], ru
 // Symlinks are never followed (readdir Dirents and lstat do not resolve them), and only
 // directories whose real path stays inside the target are pruned, so cleanup cannot delete
 // files outside the project.
-function pruneVendoredCopies(runtimeDir, overwrite) {
+function pruneVendoredCopies(runtimeDir: string, overwrite: string | undefined) {
   if (overwrite === 'skip' || overwrite === 'keep-both') return;
   const targetRoot = fs.realpathSync(path.dirname(runtimeDir));
-  const insideTarget = dir => {
+  const insideTarget = (dir: string) => {
     const relative = path.relative(targetRoot, fs.realpathSync(dir));
     return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
   };
@@ -1091,7 +1104,7 @@ function pruneVendoredCopies(runtimeDir, overwrite) {
 }
 
 // Preview and preflight the whole operation before creating a profile or changing roles.
-async function interviewHostRoles(desc, targetDir, overwrite, codexConfig = null) {
+async function interviewHostRoles(desc: HostRoleDescriptor, targetDir: string, overwrite: string | undefined, codexConfig: ReturnType<typeof planCodexConfig> | null = null) {
   const root = fs.realpathSync(targetDir);
   const profilePath = path.join(root, '.architecture-guard', desc.profileName);
   assertRolePath(root, profilePath);
@@ -1119,7 +1132,7 @@ async function interviewHostRoles(desc, targetDir, overwrite, codexConfig = null
   const plan = planRoles(desc, root, overwrite, profile);
   console.log(`${desc.label} profile: ${profilePath} (${existing ? 'retain' : 'create'})`);
   if (codexConfig) console.log(`Codex user config: ${codexConfig.file}; enable agents.enabled and remove deprecated features.multi_agent (all projects).`);
-  for (const action of ['create', 'replace', 'retain', 'remove']) {
+  for (const action of ['create', 'replace', 'retain', 'remove'] as const) {
     console.log(`${action}: ${plan[action].length ? plan[action].map(file => path.relative(root, file)).join(', ') : '(none)'}`);
   }
   const confirm = String(await ask(`Apply this ${desc.label} role plan? (y/n): `, null)).trim().toLowerCase();

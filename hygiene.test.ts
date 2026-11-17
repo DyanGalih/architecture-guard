@@ -38,8 +38,10 @@ test('runs selected built-in hygiene checks and applies blocking policy', () => 
     assert.ok(report.findings.some(finding => finding.rule === 'debug-artifacts'));
     assert.ok(report.findings.some(finding => finding.rule === 'temporary-files'));
     assert.ok(report.findings.some(finding => finding.blocking && finding.severity === 'CRITICAL'));
-    assert.equal(report.rules.find(rule => rule.identifier === 'debug-artifacts').severity, 'CRITICAL');
-    assert.equal(report.rules.find(rule => rule.identifier === 'debug-artifacts').blocking, true);
+    const debugRule = report.rules.find(rule => rule.identifier === 'debug-artifacts');
+    assert.ok(debugRule, 'debug-artifacts rule must be present');
+    assert.equal(debugRule.severity, 'CRITICAL');
+    assert.equal(debugRule.blocking, true);
   } finally {
     fs.rmSync(target, { recursive: true, force: true });
   }
@@ -51,6 +53,7 @@ test('debug artifacts are a non-blocking warning unless the project fails on the
     fs.writeFileSync(path.join(target, 'debug.ts'), "console.log('entry boundary output');\n");
     const report = scanHygiene({ target, rules: 'debug-artifacts' });
     const rule = report.rules.find(entry => entry.identifier === 'debug-artifacts');
+    assert.ok(rule, 'debug-artifacts rule must be present');
     assert.equal(rule.severity, 'WARNING');
     assert.equal(rule.blocking, false);
     assert.equal(report.counts.blocking, 0);

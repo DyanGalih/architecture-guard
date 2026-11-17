@@ -300,3 +300,24 @@ specify extension add architecture-guard --dev /path/to/architecture-guard
 specify extension add architecture-guard --from \
   https://github.com/DyanGalih/architecture-guard/archive/refs/tags/v3.9.0.zip
 ```
+
+## Source provenance
+
+The shared `source_provenance` contract owns source identity, approved baselines, comparison, and coverage reporting. Resolve it with `architecture-guard resolve template source_provenance`; existing local overrides and lean/vendor resource rules apply.
+
+Store `## Source Provenance` in the adapter-resolved proposal, otherwise the spec. Use one owner for multiple specs. No-delta changes use the existing Stories owner. Story artifacts preserve the section when handed to specification generation.
+
+| Field | Meaning |
+| --- | --- |
+| source_id / role | Stable local ID; `origin` or `sync-destination` |
+| provider / identifier | GitHub host plus owner/repository#number; Jira site plus key; local owning repository/path; or explicit conversation/other provider |
+| locator | Canonical URL or workspace-relative local path; none for an unlinked conversation |
+| observed_revision / observed_at | Actual version/update metadata and ISO UTC read time, or an explicit unavailable reason |
+
+Baseline rows retain source ID, stable criterion ID, sanitized criterion text, local requirement IDs (or Stories IDs), included/excluded disposition, and approval evidence. Exclusions require an approved rationale. Do not retain full tickets, secrets, or unnecessary personal data. A sync destination in sync_status.json does not establish an origin. A bare #123 or Jira key without site context is ambiguous.
+
+Source Alignment reports each source's retrieval, baseline, mappings, findings and drift. Overall status is `Aligned`, `Findings`, `Degraded`, or `Not Applicable`. An unreadable source is `Unavailable` individually and Degraded overall; partial/redacted reads and missing baselines also degrade coverage. A legacy spec without provenance is Degraded, while explicit conversation-only work has no external alignment to check. Mixed sets retain every source's result.
+
+Verification uses `Verified`, `Partial`, `Missing`, `Contradicted`, or `Not Applicable` for approved criteria, with code/test evidence or explicit gaps; Not Applicable needs an approved rationale. Latest-source drift stays separate from approved-baseline delivery. Only explicit project policy requiring source access at the applicable gate makes unavailable access blocking. No new sync configuration key is required.
+
+Retrieval uses registered exact-target GitHub/Jira read capabilities or contained local paths, including symlink checks; unsupported providers retain references with unavailable coverage. No arbitrary URL fallback, token request, embedded command execution, tracker write, or automatic scope expansion is authorized. These prompts establish workflow obligations; they do not implement a provider client or guarantee live provider availability.

@@ -77,3 +77,9 @@ In a standalone install, use an explicit adapter override in the installed comma
 ```
 
 See [`adapters/spec-kit.md`](adapters/spec-kit.md) for the complete path and command map.
+
+## Source provenance in standalone workflows
+
+Standalone governed skills with the SpecKit adapter store `## Source Provenance` in the adapter-resolved spec when no proposal is defined. Keep one provenance owner, retaining qualified source identifiers and sanitized acceptance criteria mapped to local requirement IDs. Capture the proposed baseline before specification approval; that approval accepts it. Explicit conversation-only work records no external source. Multi-spec artifacts reference the owner rather than copy snapshots.
+
+Artifact review compares the originating GitHub/Jira/local requirements with the approved baseline and spec; verification traces them through tasks to code/test evidence. Source changes require reconciliation approval, and missing access or legacy baselines produce degraded coverage without silently stopping independently supportable local checks. Source reads do not require outbound sync. See [source alignment](docs/workflows.md#source-alignment). This describes the standalone Architecture Guard channel; legacy extension commands retain their existing channel guidance.

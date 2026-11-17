@@ -37,6 +37,10 @@ You are orchestrating the `ag-governed-discover` workflow for `architecture-guar
 
 This command coordinates an architecture-aware brainstorming and discovery phase before a formal specification is written. It helps ideas align with existing historical and architectural constraints, reducing drift early in the lifecycle while still leaving final validation to `ag-governed-spec`.
 
+## Source Provenance Handoff
+
+Resolve and apply `source_provenance` with `architecture-guard resolve template source_provenance` in capture mode. Keep known GitHub/Jira/local/conversation origins and proposed criterion mappings in the Discovery Summary Draft's `## Source Provenance` section, independently of Jira story-scope configuration. Record no external source explicitly when that is known; never infer it from unavailable access. Preserve accepted origins and related-story classifications. This remains read-only: propose metadata and baseline content without writing files or updating trackers.
+
 ## Flash-Mem-First Architecture Context Retrieval
 
 When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. If retrieval is unavailable or insufficient, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before using repository artifacts. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
@@ -142,6 +146,9 @@ When the discussion is concluded and aligned, the command MUST return:
 ## Implementation Context
 - **Existing Patterns Reviewed**: [Relevant codebase patterns, if reviewed]
 - **Assumptions**: [Assumptions that governed-spec should verify]
+
+## Source Provenance
+- [Known qualified origins, locators, observation metadata, proposed sanitized criterion mappings, or explicit no external source; no files are written]
 
 ## Story Set
 - **Main story**: [Jira KEY: summary] or none (and why: not configured / unavailable / none found)

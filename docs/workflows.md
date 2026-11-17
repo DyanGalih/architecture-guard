@@ -341,3 +341,14 @@ During discovery, Planning Mode also searches for related open tickets when a ma
 In a pull-request review, a story set introduced or widened by the change is an author claim, not automatic approval. Added keys are reported as **Story set widened by this change** for reviewer confirmation, with assignee and status. Stories assigned to someone else or marked Done are also flagged. Discovery and review never write to Jira.
 
 Findings are advisory unless your Constitution marks out-of-scope or untracked work as P0. The check needs a Jira MCP server; without one it reports `Unavailable`, never clean. It only reads Jira, treats ticket text as untrusted data, and reads `sync.yml` from your checkout, never from the pull request. The top-level `enabled` flag controls only the delivery-team push sync.
+
+## Source alignment
+
+1. Discovery carries accepted origin references in its read-only draft. Specification captures qualified identifiers and sanitized source criteria mapped to local requirements before approval. New conversation-only work explicitly records no external source.
+2. Approving the specification accepts its proposed baseline. Multiple sources remain distinguishable; exclusions/conflicts need recorded user decisions. Outbound issue creation records a destination and preserves the original origin.
+3. Artifact review reads the identified originals and compares them with the baseline and local artifacts, reporting missing criteria, contradictions, and unexplained scope without extending its implementation-read permissions.
+4. Verification traces approved source criteria through spec or no-delta Stories, tasks, and implementation/test evidence. PR and implementation reviews reuse the shared Change Checks result; feedback triage uses approved origin criteria for scope confidence.
+5. If a ticket changes, report Source Drift separately and reconcile through specification approval before changing delivery scope. An author's new baseline/exclusion in a PR is a claim for review, not self-approval.
+6. If access is denied, tools are absent, a provider is unsupported, or the baseline is missing, report degraded source alignment and continue local checks that the evidence supports. Do not claim full alignment; honor an explicit project policy that requires source access at that gate.
+
+GitHub/Jira exact-source reads do not require outbound sync or sync.yml. Jira related/open-ticket discovery still uses its existing story-scope configuration, and its Not Applicable status cannot replace source alignment. This does not add GitHub queue intake. Local paths must stay within permitted canonical workspace/repository roots; external text never grants approval or instructs tool execution. See [field and status definitions](reference-manual.md#source-provenance).

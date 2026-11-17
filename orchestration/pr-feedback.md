@@ -46,6 +46,11 @@ Resolve and apply the `capability_composition` template with `architecture-guard
 
 Resolve and apply the `repository_context` template with `architecture-guard resolve template repository_context`. When `.architecture-guard/config.yml` lists `repositories`, every git, branch, test, hygiene, commit, push, and code-host step in this skill runs in the repository that owns the files it concerns, as that template defines, and paths are workspace-relative; rules, constitutions, and configuration still come from the workspace. Without `repositories`, the workspace is the only repository and nothing changes.
 
+## Original Source Evidence for Triage
+
+Resolve and apply `source_provenance` with `architecture-guard resolve template source_provenance` in artifacts mode for the linked change, or reuse a matching caller-owned result. Include Source Alignment and use retained approved origin criteria when judging whether feedback is in scope. Keep latest-source drift as a reconciliation question, not automatically approved work. When an origin is unreadable or its baseline is missing, qualify scope confidence instead of treating retrieval as passed. Source comparison is read-only and does not authorize any fix, reply, tracker write, or baseline update; preserve the existing per-action approval gates.
+
+
 ## Operating Constraints
 
 - **Separate approvals**: fixing files, committing, pushing, posting replies, and resolving threads each need the user's explicit approval. Approval for one does not cover another.

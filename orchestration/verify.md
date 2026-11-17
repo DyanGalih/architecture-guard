@@ -103,6 +103,10 @@ Perform a high-integrity verification of the implementation. Unlike a general re
 6. Run `architecture-guard resolve hygiene-rules --list`, then resolve and load every returned hygiene rule in deterministic order. Workspace overrides replace same-named bundled rules.
    - **Direct Discovery Guard**: When checking adapter-resolved hidden paths such as `.architecture-guard/**`, use direct directory inspection first, then read listed files. A Glob/search no-match result is inconclusive and MUST NOT be reported as missing. Report a path as unavailable only after direct inspection confirms it does not exist. The verification report MUST explicitly list loaded rule files and counts. Missing optional hygiene rules are non-blocking.
 
+### Source Alignment Owner
+
+This verification step owns source alignment for this pass. Resolve and apply `source_provenance` with `architecture-guard resolve template source_provenance` in verification mode. Read the identified origins and extend the Requirement Evidence Map with source ID and criterion ID, mapping each approved baseline criterion through local requirements (or no-delta Stories), tasks, and concrete code/test evidence. Use the contract's criterion statuses and approved rationale for Not Applicable. Include its Source Alignment section, keep approved-baseline delivery coverage separate from Source Drift, and pass the result to Change Checks for reuse instead of dispatching twice. Legacy/no-baseline and unreadable-source cases remain Degraded while independently supportable local checks continue unless an explicit policy gates source access. Never claim complete source alignment from local tests alone.
+
 ### 2. Semantic Modeling (Internal)
 
 Build internal representations:
@@ -185,9 +189,9 @@ Build internal representations:
 
 ### Requirement Evidence
 
-| Requirement / Acceptance Criterion | Status | Blocking | Spec Evidence | Plan / Task Evidence | Code / Test Evidence |
-|:---|:---|:---|:---|:---|:---|
-| [Requirement ID or summary] | [Verified / Partial / Missing / Contradicted / Not Applicable] | [Yes/No under active policy] | [Path:line] | [Path:line] | [Path:line or explicit absence] |
+| Source ID / Criterion ID | Requirement / Acceptance Criterion | Status | Blocking | Spec Evidence | Plan / Task Evidence | Code / Test Evidence |
+|:---|:---|:---|:---|:---|:---|:---|
+| [Source/criterion ID or local-only] | [Requirement ID or summary] | [Verified / Partial / Missing / Contradicted / Not Applicable] | [Yes/No under active policy] | [Path:line] | [Path:line] | [Path:line or explicit absence] |
 
 ### Artifact Contradictions
 - **Contradiction**: [Conflicting artifact statements or None]
