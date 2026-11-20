@@ -421,3 +421,30 @@ test('merge-conflict-markers respects policy warn_on override and ignores non-ma
     fs.rmSync(target, { recursive: true, force: true });
   }
 });
+
+test('merge-conflict-markers excludes Markdown Setext headings while flagging conflict blocks in Markdown', () => {
+  const target = temporaryProject();
+  try {
+    fs.writeFileSync(
+      path.join(target, 'README.md'),
+      ['Example', '='.repeat(7), '', 'Body text.'].join('\n') + '\n'
+    );
+    fs.writeFileSync(
+      path.join(target, 'BROKEN.md'),
+      ['# Notes', '<'.repeat(7) + ' HEAD', 'ours', '='.repeat(7), 'theirs', '>'.repeat(7) + ' main'].join('\n') + '\n'
+    );
+
+    const headingReport = scanHygiene({ target, rules: 'merge-conflict-markers', files: 'README.md' });
+    assert.equal(headingReport.status, 'passed');
+    assert.equal(headingReport.counts.findings, 0);
+
+    const conflictReport = scanHygiene({ target, rules: 'merge-conflict-markers', files: 'BROKEN.md' });
+    assert.equal(conflictReport.status, 'failed');
+    assert.deepEqual(
+      conflictReport.findings.map(finding => finding.line),
+      [2, 4, 6]
+    );
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});

@@ -5,7 +5,7 @@ Shared rules for performance analysis in reviews, planning, and verification. Po
 ## Declared Constraints
 
 1. Read the `Performance Constraints` section of the authoritative architecture constitution, or the equivalent section the selected adapter's constitution layout names. Each entry is a constraint, for example a latency target, a page-size limit, an expected data volume, a caching rule, or an operation that must stay off the request path.
-2. If no section exists or it says `Not applicable`, report `Performance constraints: none declared`. Performance concerns are then advisory only: never blocking, and never invent targets on the project's behalf.
+2. If no section exists or it says `Not applicable`, report `Performance constraints: none declared`. General performance concerns are then advisory only (never blocking, and never invent targets on the project's behalf), while concrete crash, OOM, or unbounded stream-to-RAM resource-exhaustion defects remain actionable.
 3. A change that breaks a declared constraint is a Constitution finding. Take severity and blocking status from the constitution; when it states neither, use HIGH and non-blocking.
 
 ## Checklist by Focus
@@ -20,7 +20,7 @@ Always apply `general`, then the selected `focus` (`db`, `api`, or `async`). Whe
 ## Actionable vs. Advisory Classification (Default Architecture Mode)
 
 - **Declared `Performance Constraints` breach**: Constitution finding (severity and blocking status from the constitution, or `HIGH` non-blocking when unspecified).
-- **Concrete crash, OOM, or unbounded stream-to-RAM resource exhaustion**: Actionable finding with a Refactor Task, subject to the **Architecture ↔ Performance Conflict Gate** when the fix conflicts with an architectural boundary or Constitution rule.
+- **Concrete crash, OOM, or unbounded stream-to-RAM resource exhaustion**: Actionable finding with a Refactor Task even when the Constitution declares no `Performance Constraints`, subject to the **Architecture ↔ Performance Conflict Gate** when the fix conflicts with an architectural boundary or Constitution rule.
 - **Other concrete growth-driver improvements**: Advisory, non-blocking `### Performance Insights` only (no speculative caches, queues, or extra services).
 
 ## Artifact Reviews

@@ -559,11 +559,34 @@ SeverityDetectors['deprecated-and-dangerous-code'] = (_rule, files) => {
 
 SeverityDetectors['merge-conflict-markers'] = (_rule, files) => files.flatMap(file => {
   if (!readableContent(file)) return [];
-  return lineMatches(
-    file,
-    /^(?:<{7}(?:\s|$)|\|{7}(?:\s|$)|={7}$|>{7}(?:\s|$))/,
-    'Unresolved Git merge conflict marker detected.'
-  );
+  const isMarkdown = /\.(?:md|mdx)$/i.test(file.relativePath);
+  const lines = file.content!.split(/\r?\n/);
+  const findings: RawFinding[] = [];
+  let inConflict = false;
+  lines.forEach((line, index) => {
+    if (/^<{7}(?:\s|$)/.test(line)) {
+      inConflict = true;
+      findings.push({ relativePath: file.relativePath, line: index + 1, message: 'Unresolved Git merge conflict marker detected.' });
+      return;
+    }
+    if (/^>{7}(?:\s|$)/.test(line)) {
+      inConflict = false;
+      findings.push({ relativePath: file.relativePath, line: index + 1, message: 'Unresolved Git merge conflict marker detected.' });
+      return;
+    }
+    if (/^\|{7}(?:\s|$)/.test(line)) {
+      findings.push({ relativePath: file.relativePath, line: index + 1, message: 'Unresolved Git merge conflict marker detected.' });
+      return;
+    }
+    if (/^={7}$/.test(line)) {
+      const previous = index > 0 ? lines[index - 1] : '';
+      const isSetextHeadingUnderline = isMarkdown && !inConflict && /\S/.test(previous) && !/^(?:```|~~~)/.test(previous.trim());
+      if (!isSetextHeadingUnderline) {
+        findings.push({ relativePath: file.relativePath, line: index + 1, message: 'Unresolved Git merge conflict marker detected.' });
+      }
+    }
+  });
+  return findings;
 });
 
 export function scanHygiene(options: HygieneOptions = {}): HygieneReport {

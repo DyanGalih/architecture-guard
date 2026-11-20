@@ -881,8 +881,8 @@ public function share(Request $request): array
 Apply these Laravel-native runtime and operational checks alongside the core `correctness_review`, `change_checks`, and `performance_review` contracts:
 
 ### Queue & Worker Lifecycle Invariants [Focus: async]
-- **Timeout Failure Hook**: Any `ShouldQueue` job that transitions a durable record into a non-terminal state (such as `processing`) MUST define `public function failed(?Throwable $exception = null): void` so worker timeouts (`SIGALRM`/`SIGTERM` bypassing `try/catch`) do not leave records stuck indefinitely.
-- **Terminal-State Idempotency**: Inside `failed()`, re-read fresh model state (e.g., `$model->fresh()`) and guard against overwriting an already-completed terminal state on queue broker redelivery.
+- **Timeout Failure Hook & Bounded Failure Strategy**: Any `ShouldQueue` job that transitions a durable record into a non-terminal state (such as `processing`) MUST define `public function failed(?Throwable $exception = null): void` **and** configure a bounded retry/timeout-failure strategy (such as finite `$tries` and/or `$failOnTimeout = true`) so timeouts actually trigger `failed()` instead of retrying indefinitely. Because forced worker termination (`SIGKILL` / OOM) can still bypass `failed()`, long-running jobs should pair this with stale-job recovery or watchdog expiration rather than relying on `failed()` alone.
+- **Atomic Terminal-State Idempotency**: Inside `failed()`, guard against overwriting an already-completed terminal state atomically—using a conditional update (e.g., `Model::whereKey($id)->where('status', '!=', STATUS_COMPLETED)->update(['status' => STATUS_FAILED])`) or a row-level lock (`lockForUpdate()` inside a transaction)—rather than a non-atomic `fresh()` read followed by a separate write.
 - **Post-Commit Dispatch**: Any job or queued listener dispatched from an Eloquent model hook (`created`, `updated`, observers) or inside `DB::transaction()` MUST chain `->afterCommit()` (or set `$afterCommit = true`) so workers never read uncommitted or stale database state.
 
 ### File, Stream & Storage Invariants [Focus: general]
@@ -891,7 +891,7 @@ Apply these Laravel-native runtime and operational checks alongside the core `co
 - **Failure-Path Cleanup**: Close file handles and spreadsheet writers (`$writer->close()`, `fclose($stream)`) on both success and exception paths before unlinking temporary files.
 
 ### Spreadsheet & Tabular Export Invariants [Focus: security]
-- **Formula Injection Defense (CWE-1236)**: Dynamic user-controlled values written to CSV/XLSX cells MUST use explicit literal string cell types (e.g., OpenSpout `StringCell`) or neutralize leading formula characters (`=`, `+`, `-`, `@`).
+- **Formula Injection Defense (CWE-1236)**: Dynamic user-controlled values written to **CSV** exports MUST neutralize leading formula characters (`=`, `+`, `-`, `@`). Explicit literal string cell types (such as OpenSpout `StringCell`) protect **typed spreadsheet formats** (e.g., XLSX/ODS) and do not protect plain CSV outputs.
 
 ### Bulk-Read & Export Authorization Symmetry [Focus: security]
 - **Read-Permission Blast Radius (CWE-863)**: Policies and controllers authorizing bulk read, aggregation, or export endpoints MUST require read permissions (`view`, `viewAny`) matching the exposed records—never write/create permissions (`create-*`) merely because the endpoint inserts an export job or metadata row.
