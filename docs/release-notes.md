@@ -1,7 +1,17 @@
-## Unreleased
+## 3.10.0
 
-- Preserve specification origins and approved requirement baselines; check original sources during artifact review and verification.
-- Enforce strict TypeScript compilation across application and test sources while preserving existing behavior.
+- **Hardened Implementation Review & Operational Failure-Mode Checks**:
+  - Added built-in, language-agnostic `merge-conflict-markers` hygiene rule (`hygiene-rules/merge-conflict-markers.md`, `cli/hygiene.ts`) that detects unresolved column-0 Git conflict markers (`CRITICAL`, `blocking: true` by default) while excluding valid Markdown Setext headings and nested code fences, without executing reviewed code.
+  - Expanded `templates/correctness_review.md` to cover worker timeout/process kills (`SIGALRM`/`SIGTERM`), terminal-state idempotency in failure callbacks, pre-commit async dispatch, paired range-bound validation, stream-to-RAM buffering, POSIX `tempnam()` safety, and failure-path handle/writer cleanup.
+  - Expanded `templates/change_checks.md` Check 5 to catch bulk-read/export authorization symmetry violations (CWE-863) and CSV/spreadsheet formula injection (CWE-1236).
+  - Added `## Runtime & Operational Invariants` to the flat `presets/laravel.md` preset covering bounded queue retries/timeouts, atomic `failed()` terminal-state updates, `->afterCommit()`, streamed `Storage::put()`, `tempnam()`, CSV vs. typed-spreadsheet formula safety, and read-permission export symmetry.
+- **Default-On Scoped Performance Governance & Architecture ↔ Performance Conflict Gate**:
+  - Activated scoped `performance_review.md` by default inside `mode=architecture` in `ag-review-implementation` (opt-out via `--no-performance` or `review.performance: off`), preserving `mode=performance` for dedicated performance audits. Concrete crash, OOM, and unbounded stream-to-RAM defects remain actionable even when no `Performance Constraints` are declared; other growth-driver improvements stay advisory in `### Performance Insights`.
+  - Enforced an explicit **Architecture ↔ Performance Conflict Permission Gate** across `ag-governed-implement` (Steps 3, 5.1, 6), `ag-review-implementation`, and `ag-refactor-generator` requiring user permission before applying a conflicting fix or generating conflicting refactor tasks.
+  - Added trusted local diff-wide syntax and typecheck verification guidance for applicable files in `ag-verify` and `ag-governed-implement` while keeping `ag-review-implementation` strictly read-only and non-executing.
+- **Source Provenance & Strict TypeScript**:
+  - Preserve specification origins and approved requirement baselines; check original sources during artifact review and verification.
+  - Enforce strict TypeScript compilation across application and test sources while preserving existing behavior.
 
 ## 3.9.0
 
