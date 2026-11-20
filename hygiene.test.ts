@@ -358,3 +358,112 @@ test('unresolved-governance-citations skips hidden tool and agent directories', 
     fs.rmSync(target, { recursive: true, force: true });
   }
 });
+
+test('merge-conflict-markers flags column-0 conflict markers as CRITICAL and blocking by default', () => {
+  const target = temporaryProject();
+  try {
+    const broken = [
+      '<?php',
+      '<'.repeat(7) + ' HEAD',
+      '$a = 1;',
+      '='.repeat(7),
+      '$a = 2;',
+      '>'.repeat(7) + ' feature/payments',
+    ].join('\n') + '\n';
+    fs.writeFileSync(path.join(target, 'Controller.php'), broken);
+
+    const report = scanHygiene({ target, rules: 'merge-conflict-markers', files: 'Controller.php' });
+    assert.equal(report.status, 'failed');
+    assert.equal(report.counts.executedRules, 1);
+    assert.equal(report.counts.blocking, 3);
+    assert.deepEqual(
+      report.findings.map(finding => ({ line: finding.line, severity: finding.severity, blocking: finding.blocking })),
+      [
+        { line: 2, severity: 'CRITICAL', blocking: true },
+        { line: 4, severity: 'CRITICAL', blocking: true },
+        { line: 6, severity: 'CRITICAL', blocking: true },
+      ]
+    );
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test('merge-conflict-markers respects policy warn_on override and ignores non-marker syntax', () => {
+  const target = temporaryProject();
+  try {
+    fs.mkdirSync(path.join(target, '.architecture-guard'), { recursive: true });
+    fs.writeFileSync(
+      path.join(target, '.architecture-guard', 'config.yml'),
+      'repository_hygiene:\n  warn_on:\n    - merge-conflict-markers\n'
+    );
+    fs.writeFileSync(
+      path.join(target, 'clean.ts'),
+      [
+        'export const same = (a: number, b: number) => a === b;',
+        '  // indented ' + '<'.repeat(7) + ' example',
+        '='.repeat(8),
+        '---',
+      ].join('\n') + '\n'
+    );
+    fs.writeFileSync(path.join(target, 'conflict.txt'), '<'.repeat(7) + ' ours\n');
+
+    const cleanReport = scanHygiene({ target, rules: 'merge-conflict-markers', files: 'clean.ts' });
+    assert.equal(cleanReport.status, 'passed');
+    assert.equal(cleanReport.counts.findings, 0);
+
+    const warnReport = scanHygiene({ target, rules: 'merge-conflict-markers', files: 'conflict.txt' });
+    assert.equal(warnReport.status, 'passed');
+    assert.equal(warnReport.counts.findings, 1);
+    assert.equal(warnReport.findings[0].severity, 'WARNING');
+    assert.equal(warnReport.findings[0].blocking, false);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test('merge-conflict-markers excludes Markdown Setext headings while flagging conflict blocks in Markdown', () => {
+  const target = temporaryProject();
+  try {
+    fs.writeFileSync(
+      path.join(target, 'README.md'),
+      ['Example', '='.repeat(7), '', 'Body text.'].join('\n') + '\n'
+    );
+    fs.writeFileSync(
+      path.join(target, 'BROKEN.md'),
+      ['# Notes', '<'.repeat(7) + ' HEAD', 'ours', '='.repeat(7), 'theirs', '>'.repeat(7) + ' main'].join('\n') + '\n'
+    );
+    fs.writeFileSync(
+      path.join(target, 'ATX_SEP.md'),
+      ['# Notes', '='.repeat(7), 'Body text.'].join('\n') + '\n'
+    );
+    fs.writeFileSync(
+      path.join(target, 'FENCED_HEADING.md'),
+      ['~~~~', '~~~', '~~~~', 'Title', '='.repeat(7)].join('\n') + '\n'
+    );
+
+    const headingReport = scanHygiene({ target, rules: 'merge-conflict-markers', files: 'README.md' });
+    assert.equal(headingReport.status, 'passed');
+    assert.equal(headingReport.counts.findings, 0);
+
+    const conflictReport = scanHygiene({ target, rules: 'merge-conflict-markers', files: 'BROKEN.md' });
+    assert.equal(conflictReport.status, 'failed');
+    assert.deepEqual(
+      conflictReport.findings.map(finding => finding.line),
+      [2, 4, 6]
+    );
+
+    const atxSepReport = scanHygiene({ target, rules: 'merge-conflict-markers', files: 'ATX_SEP.md' });
+    assert.equal(atxSepReport.status, 'failed');
+    assert.deepEqual(
+      atxSepReport.findings.map(finding => finding.line),
+      [2]
+    );
+
+    const fencedHeadingReport = scanHygiene({ target, rules: 'merge-conflict-markers', files: 'FENCED_HEADING.md' });
+    assert.equal(fencedHeadingReport.status, 'passed');
+    assert.equal(fencedHeadingReport.counts.findings, 0);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});

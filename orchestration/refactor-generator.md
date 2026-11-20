@@ -45,7 +45,7 @@ Convert architecture violations into structured tasks that preserve delivery mom
 
 When Flash-Mem is available, call `get_project_summary`, then `search_memory`; prefer summaries and metadata and load full entries only as needed. Reuse approved decisions and flag conflicts. After analysis, propose validated durable knowledge and write it only after explicit user approval. If retrieval is unavailable or insufficient, resolve the selected adapter project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file before using repository artifacts. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 
-Use the same normalized command context as the review workflow. When `mode=performance`, do not invent refactor tasks from performance guidance; that mode is advisory and belongs to `ag-review-implementation` output only.
+Use the same normalized command context as the review workflow. When `mode=performance`, do not invent refactor tasks from advisory performance guidance; that mode is advisory and belongs to `ag-review-implementation` output only. When `mode=architecture` surfaces an actionable crash/OOM performance defect (such as unbounded stream-to-RAM buffering), generate a refactor task only if it does not conflict with an established architectural rule; if any performance finding or optimization conflicts with an architectural boundary or Constitution rule, **STOP** and obtain explicit user permission and direction before generating refactor tasks.
 
 ## Input & Context Loading
 
@@ -96,8 +96,9 @@ Each task must:
 - Assign a priority.
 - Suggest a small, practical fix.
 - Avoid framework-specific requirements unless preset guidance is present.
-- Avoid security or performance remediation unless it is strictly architectural.
-- Do not duplicate `Performance Insights` into refactor tasks.
+- Avoid security or non-crash advisory performance remediation unless it is strictly architectural or explicitly requested by the user.
+- Do not duplicate advisory `Performance Insights` into refactor tasks unless the user explicitly requested them.
+- **Architecture ↔ Performance Conflict Permission Gate**: If a performance optimization or crash/OOM fix conflicts with an established architectural boundary or Constitution rule, pause, present the conflicting rule, performance evidence, options with trade-offs, and a recommendation, and wait for explicit user permission before generating refactor tasks.
 
 ## Priority Guide
 

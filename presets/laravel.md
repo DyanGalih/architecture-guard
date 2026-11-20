@@ -876,6 +876,28 @@ public function share(Request $request): array
 
 ---
 
+## Runtime & Operational Invariants
+
+Apply these Laravel-native runtime and operational checks alongside the core `correctness_review`, `change_checks`, and `performance_review` contracts:
+
+### Queue & Worker Lifecycle Invariants [Focus: async]
+- **Timeout Failure Hook & Bounded Failure Strategy**: Any `ShouldQueue` job that transitions a durable record into a non-terminal state (such as `processing`) MUST define `public function failed(?Throwable $exception = null): void`, **and** configure both a finite attempt limit or retry deadline (such as finite `$tries` or `retryUntil()`) so ordinary exceptions cannot retry indefinitely under `--tries=0` **and** timeout-failure handling (such as `$failOnTimeout = true` alongside bounded retries) so timeouts trigger `failed()` rather than looping. Because forced worker termination (`SIGKILL` / OOM) can still bypass `failed()`, long-running jobs should pair this with stale-job recovery or watchdog expiration rather than relying on `failed()` alone.
+- **Atomic Terminal-State Idempotency**: Inside `failed()`, guard against overwriting an already-completed terminal state atomically—using a conditional update (e.g., `Model::whereKey($id)->where('status', '!=', STATUS_COMPLETED)->update(['status' => STATUS_FAILED])`) or a row-level lock (`lockForUpdate()` inside a transaction)—rather than a non-atomic `fresh()` read followed by a separate write.
+- **Post-Commit Dispatch**: Any job or queued listener dispatched from an Eloquent model hook (`created`, `updated`, observers) or inside `DB::transaction()` MUST chain `->afterCommit()` (or set `$afterCommit = true`) so workers never read uncommitted or stale database state.
+
+### File, Stream & Storage Invariants [Focus: general]
+- **Streamed Uploads**: Never pass `file_get_contents($temporaryPath)` of a generated export or large temporary file to `Storage::put()`. Open a binary read stream (`fopen($temporaryPath, 'rb')`), pass the resource to `Storage::put()`, and close it in a `finally` block.
+- **POSIX `tempnam()` Contract**: Use the path returned by `tempnam()` directly after checking for `false`; never append an extension via string concatenation (which leaves an orphaned empty file and points at an uncreated path).
+- **Failure-Path Cleanup**: Close file handles and spreadsheet writers (`$writer->close()`, `fclose($stream)`) on both success and exception paths before unlinking temporary files.
+
+### Spreadsheet & Tabular Export Invariants [Focus: security]
+- **Formula Injection Defense (CWE-1236)**: Dynamic user-controlled values written to **CSV** exports MUST neutralize leading formula characters (`=`, `+`, `-`, `@`). Explicit literal string cell types (such as OpenSpout `StringCell`) protect **typed spreadsheet formats** (e.g., XLSX/ODS) and do not protect plain CSV outputs.
+
+### Bulk-Read & Export Authorization Symmetry [Focus: security]
+- **Read-Permission Blast Radius (CWE-863)**: Policies and controllers authorizing bulk read, aggregation, or export endpoints MUST require read permissions (`view`, `viewAny`) matching the exposed records—never write/create permissions (`create-*`) merely because the endpoint inserts an export job or metadata row.
+
+---
+
 ## Output Format
 
 When this adapter is active, the architecture review should include a **Laravel Conventions** section:

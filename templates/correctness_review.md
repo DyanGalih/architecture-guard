@@ -41,14 +41,14 @@ When the host cannot dispatch fresh contexts, run `deep` inline with the same st
 
 ## Defect Checklist
 
-- **Conditions and boundaries**: inverted or incomplete conditions, off-by-one ranges, wrong comparison or operator precedence, missing `else` or default branch, inclusive versus exclusive limits.
-- **Absent and empty values**: null, undefined, missing keys, empty strings or collections, zero, and `NaN` reaching code that assumes a value.
+- **Conditions and boundaries**: inverted or incomplete conditions, off-by-one ranges, wrong comparison or operator precedence, missing `else` or default branch, inclusive versus exclusive limits, and unpaired or dependent range bounds (such as optional `from`/`to` date or numeric filters that allow unbounded scans when only one side is supplied).
+- **Absent and empty values**: null, undefined, missing keys, empty strings or collections, zero, `NaN`, and unchecked failure return values (such as `false` from OS/temporary-file helpers) reaching code that assumes a valid value.
 - **Types and units**: implicit conversion, integer versus decimal or float, currency and rounding, time zones and date boundaries, units of measure, string versus numeric identifiers.
-- **Error paths**: exceptions swallowed or rethrown without cleanup, partial writes without a transaction, retries that repeat a non-idempotent effect, errors reported as success.
-- **State and ordering**: race conditions, check-then-act, stale reads, events or jobs processed out of order or twice, cache entries that outlive the data they copy.
+- **Error paths**: exceptions swallowed or rethrown without cleanup, partial writes without a transaction, retries that repeat a non-idempotent effect, errors reported as success, worker or process timeouts and kills (`SIGALRM`/`SIGTERM`) that bypass `try/catch` and leave durable state stuck in `processing`, and failure callbacks that overwrite an already-completed terminal state on redelivery.
+- **State and ordering**: race conditions, check-then-act, stale reads, events or jobs dispatched inside a database transaction or model lifecycle hook before commit, events or jobs processed out of order or twice, cache entries that outlive the data they copy.
 - **Contracts and callers**: a changed signature, return shape, default, or exception that an unchanged caller still relies on; a producer and consumer that disagree on a field's name, type, or meaning.
 - **Collections and iteration**: mutation while iterating, duplicates, ordering assumptions, pagination that skips or repeats rows, unbounded growth that changes behavior.
-- **Resources**: handles, connections, locks, or subscriptions that are not released on every path.
+- **Resources**: handles, writers, connections, locks, temporary files, or subscriptions that are not closed and cleaned up on every path (including exception paths before unlinking); unsafe temporary-file path concatenation after creation (for example appending a suffix to a `tempnam()` path); and full-file stream-to-RAM buffering of unbounded files or exports.
 - **Configuration and environment**: a value read before it is set, a feature flag or setting whose absent case is not handled.
 
 ## Evidence

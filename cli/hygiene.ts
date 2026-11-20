@@ -557,6 +557,67 @@ SeverityDetectors['deprecated-and-dangerous-code'] = (_rule, files) => {
   });
 };
 
+SeverityDetectors['merge-conflict-markers'] = (_rule, files) => files.flatMap(file => {
+  if (!readableContent(file)) return [];
+  const isMarkdown = /\.(?:md|mdx)$/i.test(file.relativePath);
+  const lines = file.content!.split(/\r?\n/);
+  const findings: RawFinding[] = [];
+  let inConflict = false;
+  let fenceChar: '`' | '~' | null = null;
+  let fenceLength = 0;
+  const isMarkdownParagraphLine = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed || /^(?: {4}|\t)/.test(value)) return false;
+    if (/^#{1,6}(?:\s|$)/.test(trimmed)) return false;
+    if (/^>/.test(trimmed)) return false;
+    if (/^(?:[-*+]|\d+[.)])\s/.test(trimmed)) return false;
+    if (/^(?:[-*_]\s*){3,}$/.test(trimmed)) return false;
+    if (/^(?:`{3,}|~{3,})/.test(trimmed)) return false;
+    return true;
+  };
+  lines.forEach((line, index) => {
+    if (isMarkdown && !inConflict) {
+      if (fenceChar) {
+        const closeMatch = line.match(/^ {0,3}(`{3,}|~{3,})[ \t]*$/);
+        if (closeMatch && closeMatch[1][0] === fenceChar && closeMatch[1].length >= fenceLength) {
+          fenceChar = null;
+          fenceLength = 0;
+          return;
+        }
+      } else {
+        const openMatch = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+        if (openMatch && !(openMatch[1][0] === '`' && openMatch[2].includes('`'))) {
+          fenceChar = openMatch[1][0] as '`' | '~';
+          fenceLength = openMatch[1].length;
+          return;
+        }
+      }
+    }
+    if (/^<{7}(?:\s|$)/.test(line)) {
+      inConflict = true;
+      findings.push({ relativePath: file.relativePath, line: index + 1, message: 'Unresolved Git merge conflict marker detected.' });
+      return;
+    }
+    if (/^>{7}(?:\s|$)/.test(line)) {
+      inConflict = false;
+      findings.push({ relativePath: file.relativePath, line: index + 1, message: 'Unresolved Git merge conflict marker detected.' });
+      return;
+    }
+    if (/^\|{7}(?:\s|$)/.test(line)) {
+      findings.push({ relativePath: file.relativePath, line: index + 1, message: 'Unresolved Git merge conflict marker detected.' });
+      return;
+    }
+    if (/^={7}$/.test(line)) {
+      const previous = index > 0 ? lines[index - 1] : '';
+      const isSetextHeadingUnderline = isMarkdown && !inConflict && !fenceChar && isMarkdownParagraphLine(previous);
+      if (!isSetextHeadingUnderline) {
+        findings.push({ relativePath: file.relativePath, line: index + 1, message: 'Unresolved Git merge conflict marker detected.' });
+      }
+    }
+  });
+  return findings;
+});
+
 export function scanHygiene(options: HygieneOptions = {}): HygieneReport {
   const target = path.resolve(options.target || process.cwd());
   const policyRoot = path.resolve(options.policyRoot || target);
