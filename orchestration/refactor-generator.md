@@ -97,7 +97,7 @@ Each task must:
 - Suggest a small, practical fix.
 - Avoid framework-specific requirements unless preset guidance is present.
 - Avoid security or non-crash advisory performance remediation unless it is strictly architectural or explicitly requested by the user.
-- Do not duplicate advisory `Performance Insights` into refactor tasks.
+- Do not duplicate advisory `Performance Insights` into refactor tasks unless the user explicitly requested them.
 - **Architecture ↔ Performance Conflict Permission Gate**: If a performance optimization or crash/OOM fix conflicts with an established architectural boundary or Constitution rule, pause, present the conflicting rule, performance evidence, options with trade-offs, and a recommendation, and wait for explicit user permission before generating refactor tasks.
 
 ## Priority Guide
