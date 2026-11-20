@@ -876,6 +876,28 @@ public function share(Request $request): array
 
 ---
 
+## Runtime & Operational Invariants
+
+Apply these Laravel-native runtime and operational checks alongside the core `correctness_review`, `change_checks`, and `performance_review` contracts:
+
+### Queue & Worker Lifecycle Invariants [Focus: async]
+- **Timeout Failure Hook**: Any `ShouldQueue` job that transitions a durable record into a non-terminal state (such as `processing`) MUST define `public function failed(?Throwable $exception = null): void` so worker timeouts (`SIGALRM`/`SIGTERM` bypassing `try/catch`) do not leave records stuck indefinitely.
+- **Terminal-State Idempotency**: Inside `failed()`, re-read fresh model state (e.g., `$model->fresh()`) and guard against overwriting an already-completed terminal state on queue broker redelivery.
+- **Post-Commit Dispatch**: Any job or queued listener dispatched from an Eloquent model hook (`created`, `updated`, observers) or inside `DB::transaction()` MUST chain `->afterCommit()` (or set `$afterCommit = true`) so workers never read uncommitted or stale database state.
+
+### File, Stream & Storage Invariants [Focus: general]
+- **Streamed Uploads**: Never pass `file_get_contents($temporaryPath)` of a generated export or large temporary file to `Storage::put()`. Open a binary read stream (`fopen($temporaryPath, 'rb')`), pass the resource to `Storage::put()`, and close it in a `finally` block.
+- **POSIX `tempnam()` Contract**: Use the path returned by `tempnam()` directly after checking for `false`; never append an extension via string concatenation (which leaves an orphaned empty file and points at an uncreated path).
+- **Failure-Path Cleanup**: Close file handles and spreadsheet writers (`$writer->close()`, `fclose($stream)`) on both success and exception paths before unlinking temporary files.
+
+### Spreadsheet & Tabular Export Invariants [Focus: security]
+- **Formula Injection Defense (CWE-1236)**: Dynamic user-controlled values written to CSV/XLSX cells MUST use explicit literal string cell types (e.g., OpenSpout `StringCell`) or neutralize leading formula characters (`=`, `+`, `-`, `@`).
+
+### Bulk-Read & Export Authorization Symmetry [Focus: security]
+- **Read-Permission Blast Radius (CWE-863)**: Policies and controllers authorizing bulk read, aggregation, or export endpoints MUST require read permissions (`view`, `viewAny`) matching the exposed records—never write/create permissions (`create-*`) merely because the endpoint inserts an export job or metadata row.
+
+---
+
 ## Output Format
 
 When this adapter is active, the architecture review should include a **Laravel Conventions** section:

@@ -557,6 +557,15 @@ SeverityDetectors['deprecated-and-dangerous-code'] = (_rule, files) => {
   });
 };
 
+SeverityDetectors['merge-conflict-markers'] = (_rule, files) => files.flatMap(file => {
+  if (!readableContent(file)) return [];
+  return lineMatches(
+    file,
+    /^(?:<{7}(?:\s|$)|\|{7}(?:\s|$)|={7}$|>{7}(?:\s|$))/,
+    'Unresolved Git merge conflict marker detected.'
+  );
+});
+
 export function scanHygiene(options: HygieneOptions = {}): HygieneReport {
   const target = path.resolve(options.target || process.cwd());
   const policyRoot = path.resolve(options.policyRoot || target);

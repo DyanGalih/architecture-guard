@@ -102,7 +102,7 @@ Apply the shared `agent_execution` delegation decisions and complete handoff. Re
 
 ## Determine Review Scope
 
-1. **Normalize Arguments**: Parse "$ARGUMENTS" to identify the `mode` (`architecture` or `performance`) and `focus` aspects (`general`, `db`, `api`, or `async`), and an optional `correctness` depth (`off`, `quick`, `standard`, or `deep`).
+1. **Normalize Arguments**: Parse "$ARGUMENTS" to identify the `mode` (`architecture` or `performance`), `focus` aspects (`general`, `db`, `api`, or `async`), an optional `correctness` depth (`off`, `quick`, `standard`, or `deep`), and whether default performance scanning is disabled (`--no-performance` or `review.performance: off` in `{adapter_path:governance-config}`).
 2. **Identify Changed Files**:
    - If the user or a calling skill provided a file list or explicit instructions, follow them.
    - Otherwise, use `architecture-guard detect-changed-files --json` only after confirming that capability is available, run from the review root and with `--base <ref>` when a base ref was given. If it reports that it could not determine the default branch, ask the user for the base ref and rerun with `--base <ref>`; never treat that failure as an empty change set.
@@ -176,7 +176,7 @@ Detect violations such as:
 - **Root-Cause Miss**: A symptom is patched in one caller while sibling callers remain exposed to the same shared defect.
 - **Constitution Breach**: Any conflict with a "MUST" principle in the Constitution.
 - **Correctness Defect**: Changed code produces a wrong result, loses or corrupts data, crashes, or breaks a caller, shown by a concrete failure scenario. Found and verified by the Correctness Scan (step 7b); this list's other categories keep their own owners.
-- **Performance Constraint Breach**: Code breaks a constraint declared in the constitution's `Performance Constraints` section (for example an unbounded list read where a page-size limit is declared). Report only declared constraints here; other performance concerns belong to `mode=performance`.
+- **Performance Constraint Breach**: Code breaks a constraint declared in the constitution's `Performance Constraints` section (for example an unbounded list read where a page-size limit is declared). Concrete crash, OOM, or unbounded stream-to-RAM resource-exhaustion defects are also actionable; other performance improvements stay advisory in `### Performance Insights`.
 
 **Duplication Drift Example**
 - Finding: Both `checkout/controller.ts` and `checkout/service.ts` calculate the same tax rule.
@@ -202,7 +202,10 @@ Detect violations such as:
 6b. **Change Checks (if mode=architecture)**: Resolve and apply the `change_checks` template with `architecture-guard resolve template change_checks` to the review scope: governance, intent, story scope (the linked Jira story and related or overlapping open tickets, through the `story_scope` template), tests, secrets and trust boundaries, security-sensitive files, CI, and the host Security Review (`sr-branch` against the base ref, once per run, unless the caller owns it). Use the base ref from the Review Inputs, or the merge-base with the target branch when reviewing the user's own branch; never `HEAD`. In the user's own checkout, `architecture-guard detect-changed-files --json --security-sensitive --base <ref>` lists the security-sensitive files; in a review root that is not the user's checkout, match by hand against the list from the base checkout. These are the checks a pull-request review runs, so a clean result here means fewer findings after the push.
 7. **Ponytail Audit**: Apply both sides of the shared contract. Check for bloat and unsafe under-building; trace changed shared behavior to its callers; verify the earliest viable ladder rung was used; and confirm non-trivial logic has a runnable check.
 7b. **Correctness Scan (if mode=architecture)**: Resolve and apply the `correctness_review` template with `architecture-guard resolve template correctness_review` at the depth from the Review Inputs, the arguments, or `review.correctness.depth` in `{adapter_path:governance-config}`, defaulting to `quick`; skip it at `off`. Read only from the review root, against the base ref used in step 6b; never execute reviewed code. At `deep`, delegate under `agent_execution` as read-only reviewers with the complete handoff; when the host cannot dispatch, run the same steps inline and say so. Merge its findings with the other steps' findings so each defect is reported once.
-8. **Performance Scan (if mode=performance)**: Resolve and apply the `performance_review` template with `architecture-guard resolve template performance_review` for the selected `focus`. Skip architecture violations other than breaches of declared performance constraints.
+8. **Performance Scan (default-on in `mode=architecture` unless disabled, and always in `mode=performance`)**: Resolve and apply the `performance_review` template with `architecture-guard resolve template performance_review`.
+   - In `mode=performance`: run for the selected `focus` and skip architecture violations other than breaches of declared performance constraints.
+   - In `mode=architecture`: run by default unless disabled via `--no-performance` or `review.performance: off` in `{adapter_path:governance-config}` (when disabled, report `Performance Scan: disabled` and still check declared `Performance Constraints`). Apply `general` always and apply `db`, `api`, or `async` items only when changed files touch those boundaries. Classify declared constraint breaches as Constitution findings, concrete crash/OOM/unbounded stream-to-RAM defects as actionable findings with Refactor Tasks, and other concrete growth-driver improvements as advisory `### Performance Insights`.
+   - **Architecture ↔ Performance Conflict Gate**: Whenever a performance finding or suggested optimization conflicts with an established architectural boundary or Constitution rule, flag it explicitly as an **Architecture ↔ Performance Conflict** with both options, trade-offs, and a recommendation; do NOT route it automatically into `ag-refactor-generator` without explicit user permission.
 8b. **Code Quality Scan (SonarLint)**: If `mode=architecture`, optionally scan for coupling/complexity violations.
 8c. **Repository Hygiene Scan**: Run the hygiene runner on the review scope: `architecture-guard hygiene --json --target <review root> --policy-root <workspace> --files <changed files, comma-separated>` (the policy and local rules always come from the workspace, never from a checkout under review) (or the adapter's {adapter_command:hygiene} with the same `--files` scope, when it maps to the same runner). Omit `--files` only for a whole-repository review. Report each finding's severity and blocking status exactly as the runner returns them, after the exclusions and `fail_on` / `warn_on` overrides it applies; do not re-judge them. List every rule the runner reports under `manualRules` as `Degraded: manual rule not executed`, and check those rules by hand on the changed files only. If the runner is unavailable, say so and mark the hygiene report `Unavailable`; do not present hand-checked results as runner output.
 9. **Generate Refactors**: Produce structured tasks for each confirmed violation.
@@ -352,7 +355,7 @@ Label every row `Static analysis; not executed` in its Evidence column. When not
 
 ---
 
-(Only if `mode=performance`)
+(If `mode=performance`, or in `mode=architecture` when Performance Scan is enabled and insights or declared constraints apply)
 ### Performance Insights
 - **Constraints**: [Declared constraints applied, or `none declared`]
 - **Focus**: [general / db / api / async]

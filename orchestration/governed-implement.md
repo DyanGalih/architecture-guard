@@ -103,7 +103,7 @@ Apply the shared `agent_execution` policy for relevant memory synthesis and invo
 You must orchestrate {adapter_command:implement} (core implementation) workflow directly.
 
 **CRITICAL INSTRUCTION**: You must NOT just advise the user or stop here. You must perform the implementation by following the `tasks.md` breakdown:
-1. **Apply Ponytail Core**: Trace the affected execution flow and apply the shared decision ladder in order. A one-line solution is preferred only when it is correct, readable, and reached after checking YAGNI, existing code, the standard library, native platform features, and installed dependencies.
+1. **Apply Ponytail Core & Performance Discipline**: Trace the affected execution flow and apply the shared decision ladder in order. Follow both the loaded Constitution/Preset architecture rules and the `performance_review` contract (`architecture-guard resolve template performance_review`) while coding (bounded reads, streaming file/export I/O instead of full-file RAM buffering, avoiding N+1 queries and unbounded loads). A one-line solution is preferred only when it is correct, readable, and reached after checking YAGNI, existing code, the standard library, native platform features, and installed dependencies.
    - For fixes or shared behavior, search every caller and sibling path, then correct the owning implementation once when that is the true root cause.
    - Preserve the contract safety floor and leave at least one runnable check for non-trivial logic.
 2. **Execute Tasks**: Follow {adapter_command:implement}; if it names a command that is not available, use the adapter's own inline fallback. When implementing inline:
@@ -113,6 +113,7 @@ You must orchestrate {adapter_command:implement} (core implementation) workflow 
    - Note in the Governance Summary that implementation was performed inline.
 3. **Write Code**: Perform the actual coding work (writing files, running tests) required by the tasks.
 4. **Inline Pre-Completion Self-Verification Gate**: Before marking any task complete:
+   - **Diff-Wide Syntax & Typecheck Check (Trusted Local Branch)**: Run the owning repository's syntax, typecheck, or static-analysis check across all added and modified files in the diff (not only files exercised by targeted unit/feature tests) so untouched routes or modules cannot hide syntax or type failures.
    - **Deprecated & Dangerous Code Check**: Resolve `deprecated-and-dangerous-code` with `architecture-guard resolve hygiene-rule deprecated-and-dangerous-code`, then check changed and target files against it.
    - **Repository Hygiene Check**: Run {adapter_command:hygiene} (the `architecture-guard hygiene --json` runner) and take each finding's severity and `blocking` flag exactly as the runner reports them (no `.tmp`, `.new`, or scratch files left behind; no commented-out code; no dead imports). A finding with `blocking: true` must be fixed before the task is marked complete. If the CLI is unavailable, report the hygiene check as `Unavailable`.
    - **Heuristic SonarLint Scan**: Resolve the bundle with `architecture-guard resolve sonar-rules`, then check changed files against it (ensure no cognitive overload, tight coupling, loose `any`/`unknown` casts, or missing parameter validation).
@@ -169,7 +170,7 @@ Security Review is a separate tool, not part of Architecture Guard. Before every
 Stop conditions:
 
 - **Converged**: a clean pass. Set **Implementation Review** to `Clean` with the pass count. Qualify `Clean` when the final pass was degraded: `architecture only` when Security Review was `Unavailable`, and `hygiene Unavailable` when the hygiene runner was `Unavailable`.
-- **Decision required**: a fix needs a material product or architecture choice, a Constitution change, a spec or plan change, or conflicts with another finding. Present the options, ask the user, and resume the loop after the answer. Record each finding the user accepts or keeps, and leave it out of later clean checks. Resuming does not reset the pass count.
+- **Decision required (including Architecture ↔ Performance Conflicts)**: a fix needs a material product or architecture choice, a Constitution change, a spec or plan change, or a performance optimization conflicts with an established architectural boundary or Constitution rule. Pause before applying the conflicting edit or invoking `ag-refactor-generator`, present the conflicting architectural rule, the performance finding and evidence, both options with trade-offs, and a clear recommendation, and wait for explicit user permission before proceeding. Record each finding the user accepts or keeps, and leave it out of later clean checks. Resuming does not reset the pass count.
 - **No progress**: a finding already fixed in an earlier pass reappears, or the total finding count does not decrease between two consecutive passes. Stop with `Not converged` and report the recurring findings.
 - **Pass limit**: at most 5 review passes per run. If findings remain after the fifth pass, stop with `Not converged`.
 
@@ -200,10 +201,11 @@ IF Security Review finds a policy-designated blocking violation:
 
 ### Step 6 — Generate Refactor Tasks
 
-IF architecture violations exist:
-1. Run {adapter_command:refactor-generator}.
-2. Generate blocking remediation tasks for unresolved P0 or policy-designated blocking findings; generate advisory refactor, migration, or correction tasks for all other findings.
-3. Skip performance refactors unless explicitly requested.
+IF architecture violations or actionable crash/OOM performance defects exist:
+1. **Architecture ↔ Performance Conflict Permission Gate**: Before running `{adapter_command:refactor-generator}`, check whether any performance finding or suggested optimization conflicts with an established architectural rule, boundary, or Constitution requirement. If any conflict exists, **STOP**, present the architectural rule, the performance finding and evidence, both resolution options with trade-offs, and a recommendation, and obtain explicit user permission before invoking `{adapter_command:refactor-generator}`.
+2. Run `{adapter_command:refactor-generator}` only after resolving any Architecture ↔ Performance conflict with the user.
+3. Generate blocking remediation tasks for unresolved P0 or policy-designated blocking findings; generate advisory refactor, migration, or correction tasks for other confirmed findings and actionable crash/OOM performance defects.
+4. Skip non-crash advisory performance refactors unless explicitly requested by the user.
 
 ### Step 7 — Mandatory Verification Gate
 
