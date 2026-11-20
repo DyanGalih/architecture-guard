@@ -433,6 +433,10 @@ test('merge-conflict-markers excludes Markdown Setext headings while flagging co
       path.join(target, 'BROKEN.md'),
       ['# Notes', '<'.repeat(7) + ' HEAD', 'ours', '='.repeat(7), 'theirs', '>'.repeat(7) + ' main'].join('\n') + '\n'
     );
+    fs.writeFileSync(
+      path.join(target, 'ATX_SEP.md'),
+      ['# Notes', '='.repeat(7), 'Body text.'].join('\n') + '\n'
+    );
 
     const headingReport = scanHygiene({ target, rules: 'merge-conflict-markers', files: 'README.md' });
     assert.equal(headingReport.status, 'passed');
@@ -443,6 +447,13 @@ test('merge-conflict-markers excludes Markdown Setext headings while flagging co
     assert.deepEqual(
       conflictReport.findings.map(finding => finding.line),
       [2, 4, 6]
+    );
+
+    const atxSepReport = scanHygiene({ target, rules: 'merge-conflict-markers', files: 'ATX_SEP.md' });
+    assert.equal(atxSepReport.status, 'failed');
+    assert.deepEqual(
+      atxSepReport.findings.map(finding => finding.line),
+      [2]
     );
   } finally {
     fs.rmSync(target, { recursive: true, force: true });

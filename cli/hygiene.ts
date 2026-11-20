@@ -563,7 +563,22 @@ SeverityDetectors['merge-conflict-markers'] = (_rule, files) => files.flatMap(fi
   const lines = file.content!.split(/\r?\n/);
   const findings: RawFinding[] = [];
   let inConflict = false;
+  let inFence = false;
+  const isMarkdownParagraphLine = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed || /^(?: {4}|\t)/.test(value)) return false;
+    if (/^#{1,6}(?:\s|$)/.test(trimmed)) return false;
+    if (/^>/.test(trimmed)) return false;
+    if (/^(?:[-*+]|\d+[.)])\s/.test(trimmed)) return false;
+    if (/^(?:[-*_]\s*){3,}$/.test(trimmed)) return false;
+    if (/^(?:`{3,}|~{3,})/.test(trimmed)) return false;
+    return true;
+  };
   lines.forEach((line, index) => {
+    if (isMarkdown && !inConflict && /^(?:`{3,}|~{3,})/.test(line.trim())) {
+      inFence = !inFence;
+      return;
+    }
     if (/^<{7}(?:\s|$)/.test(line)) {
       inConflict = true;
       findings.push({ relativePath: file.relativePath, line: index + 1, message: 'Unresolved Git merge conflict marker detected.' });
@@ -580,7 +595,7 @@ SeverityDetectors['merge-conflict-markers'] = (_rule, files) => files.flatMap(fi
     }
     if (/^={7}$/.test(line)) {
       const previous = index > 0 ? lines[index - 1] : '';
-      const isSetextHeadingUnderline = isMarkdown && !inConflict && /\S/.test(previous) && !/^(?:```|~~~)/.test(previous.trim());
+      const isSetextHeadingUnderline = isMarkdown && !inConflict && !inFence && isMarkdownParagraphLine(previous);
       if (!isSetextHeadingUnderline) {
         findings.push({ relativePath: file.relativePath, line: index + 1, message: 'Unresolved Git merge conflict marker detected.' });
       }
