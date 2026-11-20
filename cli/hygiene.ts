@@ -563,7 +563,8 @@ SeverityDetectors['merge-conflict-markers'] = (_rule, files) => files.flatMap(fi
   const lines = file.content!.split(/\r?\n/);
   const findings: RawFinding[] = [];
   let inConflict = false;
-  let inFence = false;
+  let fenceChar: '`' | '~' | null = null;
+  let fenceLength = 0;
   const isMarkdownParagraphLine = (value: string) => {
     const trimmed = value.trim();
     if (!trimmed || /^(?: {4}|\t)/.test(value)) return false;
@@ -575,9 +576,22 @@ SeverityDetectors['merge-conflict-markers'] = (_rule, files) => files.flatMap(fi
     return true;
   };
   lines.forEach((line, index) => {
-    if (isMarkdown && !inConflict && /^(?:`{3,}|~{3,})/.test(line.trim())) {
-      inFence = !inFence;
-      return;
+    if (isMarkdown && !inConflict) {
+      if (fenceChar) {
+        const closeMatch = line.match(/^ {0,3}(`{3,}|~{3,})[ \t]*$/);
+        if (closeMatch && closeMatch[1][0] === fenceChar && closeMatch[1].length >= fenceLength) {
+          fenceChar = null;
+          fenceLength = 0;
+          return;
+        }
+      } else {
+        const openMatch = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+        if (openMatch && !(openMatch[1][0] === '`' && openMatch[2].includes('`'))) {
+          fenceChar = openMatch[1][0] as '`' | '~';
+          fenceLength = openMatch[1].length;
+          return;
+        }
+      }
     }
     if (/^<{7}(?:\s|$)/.test(line)) {
       inConflict = true;
@@ -595,7 +609,7 @@ SeverityDetectors['merge-conflict-markers'] = (_rule, files) => files.flatMap(fi
     }
     if (/^={7}$/.test(line)) {
       const previous = index > 0 ? lines[index - 1] : '';
-      const isSetextHeadingUnderline = isMarkdown && !inConflict && !inFence && isMarkdownParagraphLine(previous);
+      const isSetextHeadingUnderline = isMarkdown && !inConflict && !fenceChar && isMarkdownParagraphLine(previous);
       if (!isSetextHeadingUnderline) {
         findings.push({ relativePath: file.relativePath, line: index + 1, message: 'Unresolved Git merge conflict marker detected.' });
       }

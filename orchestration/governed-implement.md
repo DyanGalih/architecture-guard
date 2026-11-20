@@ -170,7 +170,7 @@ Security Review is a separate tool, not part of Architecture Guard. Before every
 Stop conditions:
 
 - **Converged**: a clean pass. Set **Implementation Review** to `Clean` with the pass count. Qualify `Clean` when the final pass was degraded: `architecture only` when Security Review was `Unavailable`, and `hygiene Unavailable` when the hygiene runner was `Unavailable`.
-- **Decision required (including Architecture ↔ Performance Conflicts)**: a fix needs a material product or architecture choice, a Constitution change, a spec or plan change, or a performance optimization conflicts with an established architectural boundary or Constitution rule. Pause before applying the conflicting edit or invoking `ag-refactor-generator`, present the options, trade-offs, and a clear recommendation—including the conflicting architectural rule and performance finding/evidence when it is an Architecture ↔ Performance conflict—and wait for explicit user permission before proceeding. Record each finding the user accepts or keeps, and leave it out of later clean checks. Resuming does not reset the pass count.
+- **Decision required (including Architecture ↔ Performance Conflicts)**: a fix needs a material product or architecture choice, a Constitution change, a spec or plan change, or a performance finding, optimization, or actionable crash, OOM, or unbounded stream-to-RAM fix conflicts with an established architectural boundary or Constitution rule. Pause before applying the conflicting edit or invoking `ag-refactor-generator`, present the options, trade-offs, and a clear recommendation—including the conflicting architectural rule and performance finding/evidence when it is an Architecture ↔ Performance conflict—and wait for explicit user permission before proceeding. Record each finding the user accepts or keeps, and leave it out of later clean checks. Resuming does not reset the pass count.
 - **No progress**: a finding already fixed in an earlier pass reappears, or the total finding count does not decrease between two consecutive passes. Stop with `Not converged` and report the recurring findings.
 - **Pass limit**: at most 5 review passes per run. If findings remain after the fifth pass, stop with `Not converged`.
 
@@ -201,11 +201,11 @@ IF Security Review finds a policy-designated blocking violation:
 
 ### Step 6 — Generate Refactor Tasks
 
-IF architecture violations or actionable crash, OOM, or unbounded stream-to-RAM performance defects exist:
+IF architecture violations, actionable crash, OOM, or unbounded stream-to-RAM performance defects, or explicitly requested advisory performance refactors exist:
 1. **Architecture ↔ Performance Conflict Permission Gate**: Before running `{adapter_command:refactor-generator}`, check whether any performance finding or suggested optimization conflicts with an established architectural rule, boundary, or Constitution requirement. If any conflict exists, **STOP**, present the architectural rule, the performance finding and evidence, both resolution options with trade-offs, and a recommendation, and obtain explicit user permission before invoking `{adapter_command:refactor-generator}`.
 2. Run `{adapter_command:refactor-generator}` only after resolving any Architecture ↔ Performance conflict with the user.
 3. Generate blocking remediation tasks for unresolved P0 or policy-designated blocking findings; generate advisory refactor, migration, or correction tasks for other confirmed findings and actionable crash, OOM, or unbounded stream-to-RAM performance defects.
-4. Skip non-crash advisory performance refactors unless explicitly requested by the user.
+4. Skip advisory growth-driver performance refactors (other than actionable crash, OOM, or unbounded stream-to-RAM defects) unless explicitly requested by the user.
 
 ### Step 7 — Mandatory Verification Gate
 
