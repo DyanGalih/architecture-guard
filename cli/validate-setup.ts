@@ -196,7 +196,21 @@ export function validateSetup(projectRoot: string): Check[] {
     add('warn', 'AGENTS.md has no current Architecture Guard section; rerun `architecture-guard init`');
   }
 
-  add('info', 'Flash-Mem and Security Review are host capabilities; skills detect them at run time.');
+  // Capability discovery diagnostics across host directories
+  const hostLocations: Record<string, string> = {
+    Antigravity: path.join(projectRoot, '.agent', 'skills', 'sr-branch', 'SKILL.md'),
+    OpenCode: path.join(projectRoot, '.opencode', 'commands', 'sr-branch.md'),
+    Codex: path.join(projectRoot, '.codex', 'skills', 'sr-branch', 'SKILL.md'),
+    'Claude Code': path.join(projectRoot, '.claude', 'skills', 'sr-branch', 'SKILL.md'),
+  };
+  const discoveredHosts = Object.entries(hostLocations).filter(([_, loc]) => fs.existsSync(loc));
+  if (discoveredHosts.length > 0) {
+    add('pass', `Security Review (sr-branch) capability discovered for ${discoveredHosts.map(([name]) => name).join(', ')}`);
+  } else {
+    add('info', 'Security Review (sr-branch) capability not discovered in host directories; runs in architecture-only mode when uninstalled');
+  }
+
+  add('info', 'Flash-Mem and Security Review are host capabilities; skills detect callability at run time.');
   return checks;
 }
 

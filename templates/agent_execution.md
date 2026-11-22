@@ -18,7 +18,14 @@ SDD synthesis guidance (declarative only): {adapter_command:subagent-synthesize}
 
 Explicit `--inline` or `--delegate` preferences override workload thresholds only, never authorization, capability, permission, or read-only gates. Otherwise delegate review analysis at **15 changed files or 500 changed lines** and memory synthesis at **20 relevant memory results or 15 relevant active decision documents**; below those thresholds execute inline. Count the selected relevant context, not all historical documents. Independent convergence and final reviews prefer a fresh reviewer regardless of size where authorized and supported. A reviewer already running in a fresh context does not spawn another reviewer for the same complete scope. Reuse current sufficient evidence. Never recursively dispatch an active capability back into its own call chain.
 
-Independent read-only architecture and external Security Review may run side by side within host concurrency limits. External Security Review remains a distinct registered capability; ordinary reviewers never replace it. The lead merges and deduplicates evidence before evaluating the pass. Unavailable review or security tooling remains unavailable, never passed.
+Independent read-only architecture and external Security Review may run side by side within host concurrency limits. External Security Review remains a distinct registered capability; ordinary reviewers never replace it.
+
+When dispatching the canonical Security Review operation (`sr-branch`):
+1. **Prioritize fresh-context subagent dispatch**: Use host-native subagent mechanisms (`invoke_subagent`, custom role subagents) with enforced read-only constraints where supported.
+2. **In-session read-only execution fallback**: When subagent spawning is unsupported, restricted, or session policy enforces sequential execution, execute `sr-branch` instructions in-session under strict read-only constraints (reading branch diffs, applying security constitutions, and generating findings).
+3. **Safety floor**: Never substitute `sr-verify`, which can execute code or PoCs; the review must never run repository code, execute builds/tests, or modify files.
+
+The lead merges and deduplicates evidence before evaluating the pass. Unavailable review or security tooling remains unavailable, never passed.
 
 ## Complete handoff
 
