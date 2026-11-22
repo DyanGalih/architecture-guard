@@ -1,5 +1,11 @@
 ## 3.10.0
 
+- **Security Review Capability Discovery & Lifecycle Separation**:
+  - Decoupled 5 capability lifecycle states (`Discovered` -> `Registered` -> `Callable` -> `Invoked` -> `Completed`) from review verdicts (`PASSED`, `FINDINGS`, `UNAVAILABLE`, `DEGRADED`) in `src/templates/capability_composition.md`.
+  - Added cross-host capability discovery heuristics and session working-directory drift diagnostics for OpenCode, Antigravity, Codex, and Claude Code.
+  - Standardized invocation hierarchy: prioritized isolated read-only subagents with fallback to in-session execution under strict read-only constraints in `src/templates/agent_execution.md`.
+  - Gated security-sensitive changes to report `Degraded` if formal security review is unexecuted or incomplete in `src/templates/change_checks.md`.
+  - Added automated capability discovery checks to `architecture-guard validate-setup`.
 - **Hardened Implementation Review & Operational Failure-Mode Checks**:
   - Added built-in, language-agnostic `merge-conflict-markers` hygiene rule (`hygiene-rules/merge-conflict-markers.md`, `cli/hygiene.ts`) that detects unresolved column-0 Git conflict markers (`CRITICAL`, `blocking: true` by default) while excluding valid Markdown Setext headings and nested code fences, without executing reviewed code.
   - Expanded `templates/correctness_review.md` to cover worker timeout/process kills (`SIGALRM`/`SIGTERM`), terminal-state idempotency in failure callbacks, pre-commit async dispatch, paired range-bound validation, stream-to-RAM buffering, POSIX `tempnam()` safety, and failure-path handle/writer cleanup.

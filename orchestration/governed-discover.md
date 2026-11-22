@@ -65,7 +65,7 @@ Check for the availability of:
 
 **Detection Logic**:
 1. Detect `flash-mem` as an MCP-backed memory service in the current environment.
-2. Detect Security Review as an independent host capability, never from an SDD extension manifest. If present, note it for downstream security flagging.
+2. Detect Security Review as an independent host capability using the 5-stage lifecycle and host discovery heuristics under `capability_composition` (checking installed host skill and command registries, and diagnosing OpenCode session-root drift). If present, note it for downstream security flagging.
 3. If either capability is missing, degrade gracefully. Without `flash-mem`, load the governance files as described in Flash-Mem-First Architecture Context Retrieval above.
 
 ### Step 2 — Architecture Context Retrieval

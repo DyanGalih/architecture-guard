@@ -124,6 +124,11 @@ test('every command loads the shared capability composition contract', () => {
   assert.match(contract, /directly read the sibling skill file/);
   assert.match(contract, /Do not execute a Markdown or `SKILL\.md` path as a shell command/);
   assert.match(contract, /Prevent recursion/);
+  assert.match(contract, /## Capability lifecycle and verdict separation/);
+  assert.match(contract, /\*\*Discovered\*\*.*?\*\*Registered\*\*.*?\*\*Callable\*\*.*?\*\*Invoked\*\*.*?\*\*Completed\*\*/s);
+  assert.match(contract, /## Cross-host capability discovery heuristics/);
+  assert.match(contract, /Prioritize isolated subagent dispatch/);
+  assert.match(contract, /In-session read-only fallback/);
 
   for (const dirName of ['orchestration', 'commands']) {
     const dir = path.join(root, dirName);
@@ -2799,6 +2804,27 @@ test('validate-setup rejects selection markers that are not plain names', () => 
 
   fs.writeFileSync(path.join(cwd, '.architecture-guard/selected-adapter'), '../adapters/generic\n');
   assert.match(failures(), /selected-adapter contains an invalid adapter name "\.\.\/adapters\/generic"/);
+});
+
+test('validate-setup discovers host security review capabilities and distinguishes missing status', () => {
+  const { validateSetup } = require('./cli/validate-setup');
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-guard-'));
+  runArgs(['init', '--yes', '--agent', 'opencode', '--framework', 'none', '--forge', 'generic', '--commands', 'init'], cwd);
+
+  const initialChecks = validateSetup(cwd);
+  assert.ok(initialChecks.some((c: { message: string }) => c.message.includes('Security Review (sr-branch) capability not discovered in host directories')));
+
+  // Add an sr-branch command for OpenCode
+  fs.mkdirSync(path.join(cwd, '.opencode/commands'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, '.opencode/commands/sr-branch.md'), '# sr-branch\n');
+  const updatedChecks = validateSetup(cwd);
+  assert.ok(updatedChecks.some((c: { message: string }) => c.message.includes('Security Review (sr-branch) capability discovered for OpenCode')));
+
+  // Add an sr-branch command for Claude Code (command file location)
+  fs.mkdirSync(path.join(cwd, '.claude/commands'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, '.claude/commands/sr-branch.md'), '# sr-branch\n');
+  const claudeChecks = validateSetup(cwd);
+  assert.ok(claudeChecks.some((c: { message: string }) => c.message.includes('Claude Code')));
 });
 
 test('installer has no unused argv parser and the package excludes compiled tests', () => {
