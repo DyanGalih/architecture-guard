@@ -2819,6 +2819,12 @@ test('validate-setup discovers host security review capabilities and distinguish
   fs.writeFileSync(path.join(cwd, '.opencode/commands/sr-branch.md'), '# sr-branch\n');
   const updatedChecks = validateSetup(cwd);
   assert.ok(updatedChecks.some((c: { message: string }) => c.message.includes('Security Review (sr-branch) capability discovered for OpenCode')));
+
+  // Add an sr-branch command for Claude Code (command file location)
+  fs.mkdirSync(path.join(cwd, '.claude/commands'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, '.claude/commands/sr-branch.md'), '# sr-branch\n');
+  const claudeChecks = validateSetup(cwd);
+  assert.ok(claudeChecks.some((c: { message: string }) => c.message.includes('Claude Code')));
 });
 
 test('installer has no unused argv parser and the package excludes compiled tests', () => {

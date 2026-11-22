@@ -197,13 +197,13 @@ export function validateSetup(projectRoot: string): Check[] {
   }
 
   // Capability discovery diagnostics across host directories
-  const hostLocations: Record<string, string> = {
-    Antigravity: path.join(projectRoot, '.agent', 'skills', 'sr-branch', 'SKILL.md'),
-    OpenCode: path.join(projectRoot, '.opencode', 'commands', 'sr-branch.md'),
-    Codex: path.join(projectRoot, '.codex', 'skills', 'sr-branch', 'SKILL.md'),
-    'Claude Code': path.join(projectRoot, '.claude', 'skills', 'sr-branch', 'SKILL.md'),
+  const hostLocations: Record<string, () => boolean> = {
+    Antigravity: () => fs.existsSync(path.join(projectRoot, '.agent', 'skills', 'sr-branch', 'SKILL.md')),
+    OpenCode: () => fs.existsSync(path.join(projectRoot, '.opencode', 'commands', 'sr-branch.md')),
+    Codex: () => fs.existsSync(path.join(projectRoot, '.codex', 'skills', 'sr-branch', 'SKILL.md')),
+    'Claude Code': () => fs.existsSync(path.join(projectRoot, '.claude', 'skills', 'sr-branch', 'SKILL.md')) || fs.existsSync(path.join(projectRoot, '.claude', 'commands', 'sr-branch.md')),
   };
-  const discoveredHosts = Object.entries(hostLocations).filter(([_, loc]) => fs.existsSync(loc));
+  const discoveredHosts = Object.entries(hostLocations).filter(([_, exists]) => exists());
   if (discoveredHosts.length > 0) {
     add('pass', `Security Review (sr-branch) capability discovered for ${discoveredHosts.map(([name]) => name).join(', ')}`);
   } else {

@@ -27,10 +27,10 @@ Use this contract whenever one Architecture Guard command delegates to another A
 
 Always distinguish capability availability from review verdicts:
 
-1. **Discovered**: The skill or command definition file exists in a supported host directory (`.agent/skills/`, `.opencode/commands/`, `.codex/skills/`, `.claude/skills/`).
+1. **Discovered**: The skill or command definition file exists in a supported host directory (`.agent/skills/`, `.opencode/commands/`, `.codex/skills/`, `.claude/skills/`, `.claude/commands/`).
 2. **Registered**: The active host confirms the capability is loaded and recognized in the active session context.
 3. **Callable**: A supported execution mechanism is available (either isolated read-only subagent dispatch or in-session execution under strict read-only constraints).
-4. **Invoked**: The host dispatches and accepts the execution request.
+4. **Invoked**: The host dispatches and accepts the execution request (for subagent dispatch) or begins executing the capability instructions in-session (for sequential fallback).
 5. **Completed**: The capability finishes execution and returns a verifiable report or findings artifact.
 
 Capability lifecycle states MUST NOT be conflated with review verdicts (`PASSED`, `FINDINGS`, `FAILED`, `UNAVAILABLE`, `SKIPPED`, `DEGRADED`). A review must never be reported as passed based solely on file existence, host registration, or successful dispatch. When an external review cannot be invoked or fails before completion, report `UNAVAILABLE` or `FAILED` with the exact lifecycle failure; never claim a pass.
