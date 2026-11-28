@@ -62,7 +62,7 @@ After specification (and discovery, when it ran) in Step 1 succeeds, present the
 
 ### Step 2 - Governed Planning, Tasks, and Artifact Review Loop
 
-- When stakeholder User Story approval is required, run the registered `ag-governed-delivery-team` capability, in the selected sequential or coordinated host mode.
+- When stakeholder User Story approval is required, run the registered `ag-governed-delivery-team` capability, in the selected sequential or coordinated host mode. When the specification holds more than one story (the user chose one flow), its Phase 3 stops after the User Stories are approved: take that approval for the specification's `## Stories` and continue with the registered `ag-governed-delivery` capability for planning and tasks, instead of ending with the breakdown-only handoff.
 - Otherwise run the registered `ag-governed-delivery` capability (with the active team profile in coordinated implementation mode).
 - Let the delegated delivery prompt perform its own plan, task, security, architecture, analysis, and write-approval gates. It also owns the Artifact Review Convergence Loop (`ag-review-artifacts` plus Security Review on the plan and tasks, repaired through `ag-apply`, until a pass is clean). When the user has stated the destination branch, pass it to the delivery prompt as the **Base ref** for that loop. Do not restate or rerun that loop here; report its status and pass count.
 
