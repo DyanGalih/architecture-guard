@@ -157,6 +157,30 @@ test('queue root refuses to guess from a linked worktree when the git directory 
   }
 });
 
+test('queue root refuses to guess when git is unavailable in a linked worktree', () => {
+  const main = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ag-queue-nogit-')));
+  git(main, 'init', '-b', 'main');
+  git(main, 'config', 'user.email', 'test@example.com');
+  git(main, 'config', 'user.name', 'Test');
+  fs.mkdirSync(path.join(main, '.architecture-guard'));
+  fs.writeFileSync(path.join(main, '.architecture-guard', 'config.yml'), 'schema_version: "1.0"\n');
+  git(main, 'add', '.');
+  git(main, 'commit', '-m', 'init');
+  const linked = `${main}-wt`;
+  git(main, 'worktree', 'add', '-b', 'feat/x', linked);
+  fs.mkdirSync(path.join(linked, '.architecture-guard'), { recursive: true });
+  fs.writeFileSync(path.join(linked, '.architecture-guard', 'config.yml'), 'schema_version: "1.0"\n');
+  const origPath = process.env.PATH;
+  try {
+    process.env.PATH = '';
+    assert.throws(() => queueRoot(linked), /Cannot find the main worktree/);
+  } finally {
+    process.env.PATH = origPath;
+    fs.rmSync(linked, { recursive: true, force: true });
+    fs.rmSync(main, { recursive: true, force: true });
+  }
+});
+
 test('queue root resolves to the enclosing workspace from a worktree of a listed application repository', () => {
   const ws = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ag-queue-ws-')));
   fs.mkdirSync(path.join(ws, '.architecture-guard'));

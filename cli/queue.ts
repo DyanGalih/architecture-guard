@@ -22,6 +22,19 @@ type Archiving = { at: string; file: string; discovery: string | null };
 type ArchivedGroup = { id: string; state: string; pr: string | null; items: string[]; file: string; discovery?: string | null };
 type Queue = Record<string, unknown> & { groups: Group[]; archived?: ArchivedGroup[] };
 
+function findGitMarker(startDir: string): { path: string; isFile: boolean } | null {
+  for (let dir = path.resolve(startDir); ; dir = path.dirname(dir)) {
+    const gitPath = path.join(dir, '.git');
+    try {
+      const stat = fs.lstatSync(gitPath);
+      return { path: gitPath, isFile: stat.isFile() || stat.isSymbolicLink() };
+    } catch {
+      // not found in this directory
+    }
+    if (path.dirname(dir) === dir) return null;
+  }
+}
+
 // The user's checkout holds queue.yml; from a linked worktree, map the workspace back to the main worktree. When that
 // main worktree is an application repository listed under an enclosing workspace, queue.yml is in that workspace.
 export function queueRoot(cwd: string): string {
@@ -36,7 +49,12 @@ export function queueRoot(cwd: string): string {
     const [main = ''] = run(cwd, 'worktree', 'list', '--porcelain').split(/\n\n/);
     if (/^bare$/m.test(main)) return workspace;
     mainTop = /^worktree (.+)$/m.exec(main)?.[1];
-  } catch {
+  } catch (error) {
+    const gitMarker = findGitMarker(cwd);
+    if (gitMarker?.isFile || ((error as NodeJS.ErrnoException).code === 'ENOENT' && gitMarker)) {
+      const reason = (error as NodeJS.ErrnoException).code === 'ENOENT' ? 'git is unavailable' : 'git lookup failed';
+      throw new Error(`Cannot find the main worktree of ${cwd}: ${reason}. Run this from the main checkout.`, { cause: error });
+    }
     return workspace;
   }
   // Git names the git directory itself when it is separate (--separate-git-dir) and nothing records the checkout;
