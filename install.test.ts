@@ -2188,7 +2188,8 @@ test('scope assessment routes small work to one flow and large work to the backl
   assert.match(orchestrationPrompt('governed-delivery-team.md'), /when Phase 3 still produces more than one group or story, its Stop \/ Handoff Gate applies/);
   assert.match(workflow, /in that order, because the queue recommendation depends on the class/);
   assert.match(workflow, /ask the queue question again only when the current status differs from the draft's \*\*Status\*\* line/);
-  assert.match(discover, /2\. When a backlog queue is active, ask the `backlog_queue_check` question[^\n]*\n3\. Generate a structured \*\*Discovery Summary Draft\*\*/, 'ask before writing the draft');
+  assert.match(discover, /2\. When a backlog queue is active, apply the template's \*\*Check Overlap\*\* section to the final scope[^\n]*then ask its question[^\n]*\n3\. Generate a structured \*\*Discovery Summary Draft\*\*/, 'check overlap on the final scope and ask before writing the draft');
+  assert.match(discover, /apply its \*\*Detect the Queue\*\* section now[^\n]*Its overlap check and question wait for Step 5/);
   assert.match(discover, /do not run `ag-governed-spec` yourself/);
   assert.match(discover, /The breakdown is \*\*populated\*\* when it lists at least one item/);
 });
@@ -2197,6 +2198,9 @@ test('entry points check for an unfinished backlog queue once, read-only, and ne
   const template = fs.readFileSync(path.join(repoRoot, 'templates/backlog_queue_check.md'), 'utf8');
   assert.match(template, /It is read-only: it never writes `queue\.yml`/);
   assert.match(template, /git rev-parse --path-format=absolute --git-common-dir/);
+  assert.match(template, /When that main worktree is an application repository listed under `repositories` of an enclosing workspace/);
+  assert.match(template, /A result covers only the scope it was checked against: when the scope has grown since/);
+  assert.ok(!template.includes('backlog show'), 'the backlog show command is not part of this change');
   assert.match(template, /at least one group is in a state other than `done`, `skipped`, or `published`\. `parked` groups count/);
   assert.match(template, /\*\*Skip it\*\* when the caller is `ag-governed-backlog`/);
   assert.match(template, /\*\*Ask once per run\.\*\*/);
