@@ -2167,13 +2167,14 @@ test('scope assessment routes small work to one flow and large work to the backl
   const workflow = orchestrationPrompt('workflow.md');
   assert.match(workflow, /When the user supplies a Discovery Summary Draft, use it as the specification seed and do not run discovery again/);
   assert.match(workflow, /stop the lifecycle after the `ag-governed-delivery-team` Phase 3 handoff/);
+  assert.match(workflow, /When the user accepts it, run `ag-governed-delivery-team` with the draft, stop after its Phase 3 handoff/);
 });
 
 test('entry points check for an unfinished backlog queue once, read-only, and never inside the backlog run', () => {
   const template = fs.readFileSync(path.join(repoRoot, 'templates/backlog_queue_check.md'), 'utf8');
   assert.match(template, /It is read-only: it never writes `queue\.yml`/);
   assert.match(template, /git rev-parse --path-format=absolute --git-common-dir/);
-  assert.match(template, /at least one group is in a state other than `done` or `skipped`\. `parked` groups count/);
+  assert.match(template, /at least one group is in a state other than `done`, `skipped`, or `published`\. `parked` groups count/);
   assert.match(template, /\*\*Skip it\*\* when the caller is `ag-governed-backlog`/);
   assert.match(template, /\*\*Ask once per run\.\*\*/);
   for (const choice of ['**Add to queue**', '**Run directly**', '**Resume backlog first**']) assert.ok(template.includes(choice), `queue check must offer ${choice}`);
@@ -2182,6 +2183,9 @@ test('entry points check for an unfinished backlog queue once, read-only, and ne
   assert.match(template, /never from a group's branch or inside a group's worktree/);
   assert.match(template, /\*\*Hard warning\*\*: when the user picks \*\*Run directly\*\* and the new work overlaps a group that is `implementing` or `ready`/);
   assert.match(template, /instead of assuming there is none/);
+  assert.match(template, /git -C <worktree> diff --name-only HEAD/, 'overlap includes uncommitted changes');
+  assert.match(template, /git -C <worktree> ls-files --others --exclude-standard/, 'overlap includes untracked files');
+  assert.match(template, /without a `depends_on` from the new items to that group \(it would reverse the order\)/);
 
   for (const file of ['governed-discover.md', 'workflow.md', 'governed-spec.md', 'governed-delivery-team.md']) {
     assert.match(orchestrationPrompt(file), /architecture-guard resolve template backlog_queue_check/, file);
@@ -4585,7 +4589,7 @@ test('user stories decompose and sync per individual item with parent/Epic linka
   const discover = orchestrationPrompt('governed-discover.md');
   assert.match(discover, /contains more than one user story/);
   assert.match(discover, /items of one feature name that feature as `parent`/);
-  assert.match(discover, /For a \*\*small\*\* class \(a single feature with exactly one user story, or small work the user kept as one change\), run `ag-workflow`/);
+  assert.match(discover, /For a \*\*small\*\* class \(a single feature with exactly one user story and no large signal in the Scope Assessment, or work the user kept as one change after declining the breakdown\), run `ag-workflow`/);
   assert.match(discover, /To drive each phase yourself instead, run `ag-governed-spec` with this draft as its seed/);
   assert.match(discover, /When the draft includes a populated \*\*Backlog Breakdown\*\*/);
 
