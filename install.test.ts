@@ -1841,6 +1841,8 @@ test('orchestration prompts and runtime templates stay SDD-tool-agnostic', () =>
     'templates/capability_composition.md',
     'templates/performance_review.md',
     'templates/correctness_review.md',
+    'templates/scope_assessment.md',
+    'templates/backlog_queue_check.md',
     'templates/agent_communication.md',
     'flow/default.md',
   ];
@@ -2136,6 +2138,123 @@ test('review-implementation honors the caller review root and runs the scoped hy
   for (const field of ['Review Root:', 'Trusted Rules:', 'Changed Files:', 'Base Ref:', 'Approval Scope:']) assert.ok(contract.includes(field), field);
   assert.match(contract, /untrusted data/);
   assert.match(contract, /do not edit files or execute untrusted reviewed code/);
+});
+
+test('scope assessment routes small work to one flow and large work to the backlog, reusing backlog_item sizes', () => {
+  const template = fs.readFileSync(path.join(repoRoot, 'templates/scope_assessment.md'), 'utf8');
+  for (const cls of ['**small**', '**large**']) assert.ok(template.includes(cls), `scope_assessment must define ${cls}`);
+  assert.match(template, /architecture-guard resolve template backlog_item` and do not restate them/);
+  assert.doesNotMatch(template, /\| story, feature \| full \|/, 'lanes stay owned by backlog_item');
+  assert.match(template, /raise \*\*small\*\* to \*\*large\*\*/);
+  assert.match(template, /Security alone never raises a single story, because it cannot be broken down further/);
+  assert.match(template, /it is still \*\*large\*\* when, for example, its size is `large_at_size` or larger/);
+  assert.match(template, /showing data that is already shown does not count/);
+  assert.match(template, /For a solo developer, their own acceptance at its Phase 3 is the stakeholder review/);
+  assert.match(template, /`large_at_stories` \(default 2, so small work is one user story/);
+  assert.match(template, /`large_at_boundaries` \(default 3\)/);
+  assert.match(template, /`large_at_size` \(default `l`\)/);
+  assert.match(template, /\| small \| `ag-workflow`/);
+  assert.match(template, /\| large \| `ag-governed-delivery-team` to approve and save the Backlog Breakdown and stop after Phase 3, then `ag-governed-backlog`/);
+  assert.match(template, /It never writes files/);
+  assert.match(template, /\*\*Blocking findings are never deferred\.\*\*/);
+  assert.match(template, /`fix_now_max_size` from `routing\.scope` \(default `s`\)/);
+  assert.match(template, /The proposal is never written by the review/);
+  assert.match(fs.readFileSync(path.join(repoRoot, 'templates/architecture_guard_config.yml'), 'utf8'), /# {5}fix_now_max_size: s/);
+
+  const discover = orchestrationPrompt('governed-discover.md');
+  assert.match(discover, /### Step 4\.3 — Scope Assessment/);
+  assert.match(discover, /architecture-guard resolve template scope_assessment/);
+  assert.match(discover, /^## Scope Assessment$/m);
+  assert.match(discover, /Follow the \*\*Route\*\* in the Scope Assessment/);
+  assert.match(discover, /When the Route is the backlog route \(a \*\*large\*\* class whose populated \*\*Backlog Breakdown\*\* has more than one group/);
+  assert.match(discover, /and for a \*\*large\*\* class whose breakdown forms a single group/);
+  assert.match(template, /\*\*One group\.\*\* When a \*\*large\*\* class's breakdown forms a single group/);
+  assert.match(template, /Keep the large route only when stakeholder User Story approval is required/);
+  assert.match(template, /the specification's `## Stories` section holds the items/);
+  assert.match(discover, /Give items the same `group` only when they must ship as one change/);
+  assert.match(orchestrationPrompt('governed-spec.md'), /When the draft's Scope Assessment routes a one-group Backlog Breakdown as one change \(the `scope_assessment` \*\*One group\*\* rule\), its items are the accepted set/);
+  assert.match(fs.readFileSync(path.join(repoRoot, 'templates/architecture_guard_config.yml'), 'utf8'), /# {5}large_at_boundaries: 3/);
+
+  const workflow = orchestrationPrompt('workflow.md');
+  assert.match(workflow, /When the user supplies a Discovery Summary Draft, use it as the specification seed and do not run discovery again/);
+  assert.match(workflow, /stop the lifecycle after the `ag-governed-delivery-team` Phase 3 handoff/);
+  assert.match(workflow, /When the user accepts it, run `ag-governed-delivery-team` with the draft, stop after its Phase 3 handoff/);
+  assert.match(workflow, /6\. Otherwise \(a specific request, with no draft and no active change\), apply the `scope_assessment` template to the request/, 'a specific request is still sized');
+  assert.match(workflow, /When the class is \*\*large\*\*, there is no breakdown yet to route or to record as the specification's stories: do not run the queue check yet/);
+  assert.match(workflow, /runs the queue check against the decomposed scope/);
+  assert.match(workflow, /A large class whose breakdown forms one group with no spike, and needs no stakeholder approval, runs as one flow/);
+  assert.match(discover, /and a large class whose breakdown forms one group with no spike, runs as a single flow through `ag-workflow`, unless it needs stakeholder User Story approval/);
+  assert.match(fs.readFileSync(path.join(repoRoot, 'templates/scope_assessment.md'), 'utf8'), /or a single group that contains a spike \(its research lane runs before any code\) or needs stakeholder approval/);
+  assert.match(orchestrationPrompt('governed-delivery-team.md'), /when Phase 3 still produces more than one group or story, its Stop \/ Handoff Gate applies/);
+  assert.match(workflow, /in that order, because the queue recommendation depends on the class/);
+  assert.match(workflow, /ask the queue question again only when the current status differs from the draft's \*\*Status\*\* line/);
+  assert.match(workflow, /When the draft's \*\*Choice\*\* is \*\*Run directly\*\* and neither line changed, that choice stands: do not ask the route question/);
+  assert.match(discover, /2\. When a backlog queue is active, apply the template's \*\*Check Overlap\*\* section to the final scope[^\n]*then ask its question[^\n]*\n3\. Generate a structured \*\*Discovery Summary Draft\*\*/, 'check overlap on the final scope and ask before writing the draft');
+  assert.match(discover, /apply its \*\*Detect the Queue\*\* section now[^\n]*Its overlap check and question wait for Step 5/);
+  assert.match(discover, /do not run `ag-governed-spec` yourself/);
+  assert.match(discover, /The breakdown is \*\*populated\*\* when it lists at least one item/);
+});
+
+test('entry points check for an unfinished backlog queue once, read-only, and never inside the backlog run', () => {
+  const template = fs.readFileSync(path.join(repoRoot, 'templates/backlog_queue_check.md'), 'utf8');
+  assert.match(template, /It is read-only: it never writes `queue\.yml`/);
+  assert.match(template, /For \*\*Dependency\*\*, also compare it with `published` groups: their work is not in the base until their pull request merges/);
+  assert.match(template, /git rev-parse --path-format=absolute --git-common-dir/);
+  assert.match(template, /When that main worktree is an application repository listed under `repositories` of an enclosing workspace/);
+  assert.match(template, /each time a result is reused, run \*\*Check Overlap\*\* again on the current scope, because discovery can grow the scope and queued groups start or change files during a run/);
+  assert.match(template, /including when the earlier choice was \*\*Run directly\*\*/);
+  assert.match(template, /a queue group id is a kebab-case name and may not exist in the source/);
+  assert.match(template, /those its approved plan and tasks name when the group has them \(they stay its approved scope until Gate Q reconciles a source change\)/);
+  assert.match(orchestrationPrompt('workflow.md'), /its Phase 3 stops after the User Stories are approved: take that approval for the specification's `## Stories` and continue with the registered `ag-governed-delivery` capability/);
+  assert.match(orchestrationPrompt('governed-delivery-team.md'), /When `ag-workflow` called this skill for a one-flow change with more than one story, report the approved User Stories to it at this stop/);
+  assert.ok(!template.includes('backlog show'), 'the backlog show command is not part of this change');
+  assert.match(template, /at least one group is in a state other than `done`, `skipped`, or `published`\. `parked` groups count/);
+  assert.match(template, /\*\*Skip it\*\* when the caller is `ag-governed-backlog`/);
+  assert.match(template, /\*\*Ask once per run\.\*\*/);
+  for (const choice of ['**Add to queue**', '**Run directly**', '**Resume backlog first**']) assert.ok(template.includes(choice), `queue check must offer ${choice}`);
+  assert.match(template, /hand the Discovery Summary Draft to `ag-governed-delivery-team`/);
+  assert.match(template, /picks the items up through its intake diff/);
+  assert.match(template, /never from a group's branch or inside a group's worktree/);
+  assert.match(template, /\*\*Hard warning\*\*: when the user picks \*\*Run directly\*\* and the new work overlaps a group that is `implementing` or `ready`/);
+  assert.match(template, /instead of assuming there is none/);
+  assert.match(template, /git -C <worktree> diff --cached --name-only/, 'overlap includes staged changes');
+  assert.match(template, /git -C <worktree> diff --name-only`\)/, 'overlap includes unstaged changes');
+  assert.match(template, /git -C <worktree> ls-files --others --exclude-standard/, 'overlap includes untracked files');
+  assert.match(template, /without a `depends_on` from the new items to that group \(it would reverse the order\)/);
+  assert.match(template, /For a \*\*large\*\* class, this is the user keeping the work as one change/);
+  assert.match(template, /When the current directory is a group's worktree/);
+  assert.match(template, /or apply that template read-only to the request first when there is none/);
+  assert.match(orchestrationPrompt('workflow.md'), /run the queue detection and the overlap check again/);
+  assert.match(template, /- \*\*Warning\*\*: \[the overlapping group and files, and the user's confirmation, or None\]/);
+
+  for (const file of ['governed-discover.md', 'workflow.md', 'governed-spec.md', 'governed-delivery-team.md']) {
+    assert.match(orchestrationPrompt(file), /architecture-guard resolve template backlog_queue_check/, file);
+  }
+  for (const file of ['governed-backlog.md', 'governed-implement.md', 'governed-delivery.md']) {
+    assert.doesNotMatch(orchestrationPrompt(file), /backlog_queue_check/, `${file} must not ask about the queue`);
+  }
+  const discover = orchestrationPrompt('governed-discover.md');
+  assert.match(discover, /^## Backlog Queue$/m);
+  assert.match(discover, /When the Backlog Queue choice is \*\*Resume backlog first\*\*, run `ag-governed-backlog`/);
+  const team = orchestrationPrompt('governed-delivery-team.md');
+  assert.match(team, /An \*\*Add to queue\*\* choice makes this a breakdown run/);
+});
+
+test('implementation review triages findings into fix-now and defer without writing the backlog', () => {
+  const review = orchestrationPrompt('review-implementation.md');
+  assert.match(review, /9b\. \*\*Triage\*\*: Resolve and apply the `scope_assessment` template/);
+  assert.match(review, /Blocking findings are never deferred/);
+  assert.match(review, /this review never writes a backlog, a tracker, or `queue\.yml`/);
+  assert.match(review, /Inside a governed convergence loop, triage is reported only/);
+  assert.match(review, /Fix `CONFIRMED` correctness findings triaged `fix-now`/);
+  assert.match(review, /the user may fix a `defer` finding now or defer a `fix-now` finding that is not blocking/);
+  assert.match(review, /^### Triage$/m);
+  assert.match(review, /^#### Proposed Backlog Items$/m);
+  assert.match(review, /### Action Plan\nEach action below covers only the findings triaged `fix-now`, after the user's overrides/);
+  assert.match(review, /otherwise do not state a queue state, because `ag-governed-delivery-team` runs that check when it saves them/);
+  assert.match(review, /- \*\*Fix now\*\*:/);
+  assert.match(review, /- \*\*Defer to backlog\*\*:/);
+  assert.match(review, /\[For `fix-now` findings only, e\.g\. run the registered `ag-refactor-generator` capability/);
 });
 
 test('correctness review is read-only, verified, scenario-based, and never blocks by itself', () => {
@@ -4013,7 +4132,7 @@ test('governed-discover decomposes ideas read-only and governed-delivery-team pe
   assert.match(team, /stop cleanly here before Phase 4 \(`Specification Gate`\)/);
   assert.match(team, /Skipped \(breakdown-only\)/);
   assert.match(team, /recommend running `ag-governed-backlog` to deliver the queued items/);
-  assert.match(team, /Continue with steps 4–7 and Phase 2 before Phase 3/);
+  assert.match(team, /Continue with steps 4–8 and Phase 2 before Phase 3/);
   assert.doesNotMatch(team, /skip single-feature SDD change creation[^\n]*proceed to Phase 3/);
   assert.match(team, /do not create unrequested outputs/);
   assert.match(team, /Otherwise present the proposed items without creating story files/);
@@ -4496,8 +4615,9 @@ test('user stories decompose and sync per individual item with parent/Epic linka
   const discover = orchestrationPrompt('governed-discover.md');
   assert.match(discover, /contains more than one user story/);
   assert.match(discover, /items of one feature name that feature as `parent`/);
-  assert.match(discover, /For a single feature with exactly one user story, run `ag-governed-spec`/);
-  assert.match(discover, /When the draft includes a populated \*\*Backlog Breakdown\*\*/);
+  assert.match(discover, /For a \*\*small\*\* class \(a single feature with exactly one user story and no large signal in the Scope Assessment, or work the user kept as one change after declining the breakdown\), and for a \*\*large\*\* class whose breakdown forms a single group/);
+  assert.match(discover, /To drive each phase yourself instead, run `ag-governed-spec` with this draft as its seed/);
+  assert.match(discover, /When the Route is the backlog route \(a \*\*large\*\* class whose populated \*\*Backlog Breakdown\*\*/);
 
   const team = orchestrationPrompt('governed-delivery-team.md');
   assert.match(team, /including User Story files \(`<root>\/user-stories\/\*\*\/\*\.md`\)/);

@@ -30,6 +30,17 @@ The orchestrated workflow is:
 4. Interactive discussion: an architecture-aware chat to refine the idea, warning when it goes beyond the story set's acceptance criteria
 5. Governance suggestions: when the discussion or memory shows a rule that keeps getting in the way (for example the same exception accepted in several changes), drafts a Constitution Update Proposal or workflow suggestion with its evidence. Discovery never edits rules; you decide.
 6. Draft generation: output a clean feature draft, including the story set, to hand off to the specification phase. `ag-governed-spec` records the set in the change's `## Stories` section, so later scope checks treat the bundled stories as in scope. When your idea spans multiple deliverables or you ask to break it down into a backlog or User Stories, the draft also includes a read-only **Backlog Breakdown** using the `backlog_item` schema and recommends `ag-governed-delivery-team` to approve and persist the requested outputs and optionally sync them. Queue delivery follows when a supported source contains the approved items.
+7. Scope and route: discovery sizes the agreed work with the `scope_assessment` template and recommends a route. **Small** work (one user story, fewer than three boundaries, no dependencies between items, no item `l` or larger, no spike) runs as one flow through `ag-workflow`. **Large** work goes to `ag-governed-delivery-team`, which saves the Backlog Breakdown and stops after Phase 3, and then to `ag-governed-backlog`. Large work whose breakdown forms a single group with no spike still runs as one flow through `ag-workflow`, because the backlog run would deliver it as one change anyway; the backlog route stays when stakeholder User Story approval is required. Security-sensitive work always takes the full lane and needs Security Review; it makes work with more than one item large, but never raises a single story by itself (a single story can still be large through another signal, such as its size). You can override the class; the thresholds are configurable under `routing.scope` in `.architecture-guard/config.yml`.
+
+### Starting new work while a backlog run is unfinished
+
+When `.architecture-guard/queue.yml` still has groups that are not `done`, `skipped`, or `published` (including `parked` ones), `ag-governed-discover`, `ag-workflow`, `ag-governed-spec`, and `ag-governed-delivery-team` say so and ask once per run (the `backlog_queue_check` template):
+
+- **Add to queue** (recommended when the new work overlaps or depends on a queued group, or is large): `ag-governed-delivery-team` saves the items to the queue's source, and the next `ag-governed-backlog` run picks them up at Gate Q.
+- **Run directly** (recommended when the work is small, touches nothing queued, and needs nothing from a `published` group whose pull request has not merged): it starts on its own branch from the base, never from a group's branch. When it overlaps a group that is `implementing` or `ready`, you must confirm it after seeing the overlapping files.
+- **Resume backlog first**: stop and continue the queue.
+
+The check only reads the queue; it never edits `queue.yml`, and `ag-governed-backlog` never asks it about itself.
 
 ### Example Orchestration
 

@@ -67,6 +67,17 @@ context:
 #   correctness:
 #     depth: quick
 
+# Optional scope routing thresholds (templates/scope_assessment.md). ag-governed-discover sizes work as small
+# (one flow through ag-workflow) or large (ag-governed-delivery-team saves a backlog, then ag-governed-backlog runs
+# it); large when any threshold is met. A large breakdown that forms one group still runs as one flow. ag-review-implementation fixes a finding now when its fix is at most
+# fix_now_max_size and in scope, otherwise proposes it as a backlog item; blocking findings are never deferred.
+# routing:
+#   scope:
+#     large_at_stories: 2
+#     large_at_boundaries: 3
+#     large_at_size: l
+#     fix_now_max_size: s
+
 # Optional agent team coordination and workspace isolation across Claude, Codex, Antigravity, and OpenCode.
 # Configured interactively during `init` or via --team-activation / --team-isolation.
 # agent_teams:
