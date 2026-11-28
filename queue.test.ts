@@ -53,6 +53,17 @@ test('full snapshots from older runs still diff field by field', () => {
   assert.deepStrictEqual(changedFields(story, { ...story, depends_on: [] }), []);
 });
 
+test('queue diff never reports Gate Q hygiene items as removed', () => {
+  const hygiene = { id: 'auth-session-hygiene-1', type: 'bug', priority: 'high', title: 'Fix lint finding' };
+  const queue = { groups: [{ id: 'auth-session', state: 'implementing', items: [leanSnapshot(story), hygiene] }] };
+  const diff = diffQueue(queue, [story]);
+  assert.deepStrictEqual(diff.removed, []);
+  assert.strictEqual(diff.unchanged, 1);
+  // Only the group's own widen items are exempt
+  const other = diffQueue({ groups: [{ id: 'billing', state: 'planned', items: [{ ...hygiene }] }] }, []);
+  assert.deepStrictEqual(other.removed, [{ id: 'auth-session-hygiene-1', group: 'billing' }]);
+});
+
 test('queue diff reports new, changed, removed, and archived items', () => {
   const queue = {
     groups: [{ id: 'auth-session', state: 'planned', items: [leanSnapshot(story), bug] }],

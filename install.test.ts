@@ -2244,6 +2244,7 @@ test('governed-backlog keeps queue.yml small with lean snapshots, archiving, and
   assert.match(prompt, /never rewrite older snapshots only to convert them/);
   assert.match(prompt, /`architecture-guard queue archive` moves `done` and `skipped` groups, and the `published` groups named with `--group` whose work has merged/);
   assert.match(prompt, /^archived:$/m);
+  assert.match(prompt, /a group's own `<group>-hygiene-<n>` items from Gate Q are never in the source and never reported/);
   assert.match(prompt, /A `done` or `skipped` group that a remaining group is still `stacked_on` stays in `queue.yml`/);
   assert.match(prompt, /stamps each group with an `archiving` field, so a rerun after an interrupted archive finishes that archive instead of adding another/);
   assert.match(prompt, /An archived group still counts as recorded: its items are never planned again/);

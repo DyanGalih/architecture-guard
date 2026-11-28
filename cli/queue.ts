@@ -124,6 +124,8 @@ export function changedFields(snapshot: Record<string, unknown>, item: Record<st
   return fields;
 }
 
+const isHygieneItem = (group: string, id: string) => id.startsWith(`${group}-hygiene-`) && /^\d+$/.test(id.slice(group.length + '-hygiene-'.length));
+
 export function diffQueue(queue: Queue, items: Item[]) {
   const recorded = new Map<string, { group: string; snapshot: Item }>();
   for (const group of queue.groups) for (const snapshot of group.items ?? []) recorded.set(snapshot.id, { group: group.id, snapshot });
@@ -145,7 +147,9 @@ export function diffQueue(queue: Queue, items: Item[]) {
       result.new.push(item.id);
     }
   }
-  for (const [id, entry] of recorded) if (!seen.has(id)) result.removed.push({ id, group: entry.group });
+  // Gate Q's widen items (`<group>-hygiene-<n>`) are approved locally and never exist in the source, so their absence is
+  // not a removal.
+  for (const [id, entry] of recorded) if (!seen.has(id) && !isHygieneItem(entry.group, id)) result.removed.push({ id, group: entry.group });
   return result;
 }
 
