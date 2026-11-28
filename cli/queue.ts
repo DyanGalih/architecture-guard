@@ -17,6 +17,8 @@ const DIRECT_FIELDS = ['type', 'priority', 'size', 'depends_on'] as const;
 
 type Item = Record<string, unknown> & { id: string };
 type Group = Record<string, unknown> & { id: string; state?: string; items?: Item[] };
+// Written on a group before its archive starts; paths are relative to .architecture-guard/
+type Archiving = { at: string; file: string; discovery: string | null };
 type ArchivedGroup = { id: string; state: string; pr: string | null; items: string[]; file: string; discovery?: string | null };
 type Queue = Record<string, unknown> & { groups: Group[]; archived?: ArchivedGroup[] };
 
@@ -184,51 +186,78 @@ export function archiveGroups(root: string, mergedGroups: string[], options: { d
       throw new Error(`Group ${id} is ${group.state}; only published groups whose work has merged, and done or skipped groups, can be archived`);
     }
   }
-  const moving = queue.groups.filter(group => (FINISHED_STATES as readonly string[]).includes(String(group.state)) || mergedGroups.includes(group.id));
+  // A stamped group was being archived when an earlier run stopped, so it moves again without being named.
+  const moving = queue.groups.filter(group => (FINISHED_STATES as readonly string[]).includes(String(group.state)) || mergedGroups.includes(group.id) || group.archiving !== undefined);
   const stillReferenced = queue.groups.filter(group => !moving.includes(group) && moving.some(moved => moved.id === group.stacked_on && moved.state !== 'published'));
   if (stillReferenced.length) throw new Error(`Groups ${stillReferenced.map(group => group.id).join(', ')} are stacked on a group being archived`);
 
-  const month = (options.now ?? new Date()).toISOString().slice(0, 7);
-  const archiveDir = path.join(root, '.architecture-guard', 'queue', 'archive');
-  const archiveFile = path.join(archiveDir, `${month}.yml`);
-  const relativeArchive = path.relative(path.join(root, '.architecture-guard'), archiveFile).split(path.sep).join('/');
-  const existing = fs.existsSync(archiveFile) ? (parse(fs.readFileSync(archiveFile, 'utf8')) as { groups?: Group[] } | null) : null;
-  const records: Group[] = existing?.groups ?? [];
-  const withoutStamp = (group: Group) => JSON.stringify({ ...group, archived_at: undefined, discovery: undefined });
-  const taken = new Set([...(fs.existsSync(archiveDir) ? fs.readdirSync(archiveDir) : [])]);
   const archivedAt = (options.now ?? new Date()).toISOString();
+  const archiveDir = path.join(root, '.architecture-guard', 'queue', 'archive');
   const relative = (target: string) => path.relative(path.join(root, '.architecture-guard'), target).split(path.sep).join('/');
+  const inArchive = (recordedPath: string) => {
+    const full = path.join(root, '.architecture-guard', recordedPath);
+    if (path.dirname(full) !== archiveDir) throw new Error(`Archive path ${recordedPath} is outside ${archiveDir}`);
+    return full;
+  };
+  // Names already used, on disk or by an archive another group has started
+  const taken = new Set([
+    ...(fs.existsSync(archiveDir) ? fs.readdirSync(archiveDir) : []),
+    ...queue.groups.map(group => (group.archiving as Archiving | undefined)?.discovery).filter((name): name is string => typeof name === 'string').map(name => path.basename(name)),
+  ]);
 
   const plan = moving.map(group => {
-    // A run that stopped after writing the archive but before queue.yml left this record already: reuse it.
-    const recorded = records.find(record => record.id === group.id && withoutStamp(record) === withoutStamp(group));
     const source = path.join(root, '.architecture-guard', 'queue', `${group.id}.discovery.md`);
-    const recordedDiscovery = typeof recorded?.discovery === 'string' ? path.join(root, '.architecture-guard', recorded.discovery) : null;
-    if (recordedDiscovery && path.dirname(recordedDiscovery) !== archiveDir) throw new Error(`Archive record for ${group.id} names a summary outside ${archiveDir}`);
-    let target: string | null = recordedDiscovery;
-    if (fs.existsSync(source) && !target) {
-      // A reused group id must not overwrite an earlier summary.
-      let name = `${group.id}.discovery.md`;
-      for (let n = 2; taken.has(name); n += 1) name = `${group.id}-${n}.discovery.md`;
-      taken.add(name);
-      target = path.join(archiveDir, name);
+    // An archive that stopped part way left its stamp on the group: finish that archive instead of starting another.
+    // A group without one is a new archive instance, even when an earlier group had the same id and fields.
+    let stamp = group.archiving as Archiving | undefined;
+    if (!stamp) {
+      let discovery: string | null = null;
+      if (fs.existsSync(source)) {
+        // A reused group id must not overwrite an earlier summary.
+        let name = `${group.id}.discovery.md`;
+        for (let n = 2; taken.has(name); n += 1) name = `${group.id}-${n}.discovery.md`;
+        taken.add(name);
+        discovery = relative(path.join(archiveDir, name));
+      }
+      stamp = { at: archivedAt, file: relative(path.join(archiveDir, `${archivedAt.slice(0, 7)}.yml`)), discovery };
     }
-    return { group, recorded, source: fs.existsSync(source) ? source : null, discovery: target ? relative(target) : null, targetPath: target };
+    inArchive(stamp.file);
+    if (stamp.discovery) inArchive(stamp.discovery);
+    return { group, stamp, source: fs.existsSync(source) ? source : null };
   });
-  const result = { archive: archiveFile, groups: plan.map(entry => entry.group.id), discoveryMoved: plan.filter(entry => entry.source).map(entry => entry.group.id), dryRun: Boolean(options.dryRun) };
+  const result = {
+    archive: plan.length ? inArchive(plan[0].stamp.file) : path.join(archiveDir, `${archivedAt.slice(0, 7)}.yml`),
+    groups: plan.map(entry => entry.group.id),
+    discoveryMoved: plan.filter(entry => entry.source).map(entry => entry.group.id),
+    dryRun: Boolean(options.dryRun),
+  };
   if (options.dryRun || moving.length === 0) return result;
 
+  // Stamp first, so a retry after a crash recognizes its own records and summary paths.
+  for (const entry of plan) entry.group.archiving = entry.stamp;
+  fs.writeFileSync(file, stringify(queue));
+
   fs.mkdirSync(archiveDir, { recursive: true });
-  for (const entry of plan) {
-    if (!entry.recorded) records.push({ ...entry.group, archived_at: archivedAt, discovery: entry.discovery });
+  const files = new Map<string, Group[]>();
+  for (const { group, stamp } of plan) {
+    const archiveFile = inArchive(stamp.file);
+    if (!files.has(archiveFile)) {
+      const existing = fs.existsSync(archiveFile) ? (parse(fs.readFileSync(archiveFile, 'utf8')) as { groups?: Group[] } | null) : null;
+      files.set(archiveFile, existing?.groups ?? []);
+    }
+    const records = files.get(archiveFile)!;
+    if (!records.some(record => record.id === group.id && record.archived_at === stamp.at)) {
+      const { archiving: _stamp, ...rest } = group;
+      records.push({ ...rest, archived_at: stamp.at, discovery: stamp.discovery });
+    }
   }
-  fs.writeFileSync(archiveFile, stringify({ groups: records }));
-  for (const entry of plan) {
-    if (entry.source && entry.targetPath) fs.renameSync(entry.source, entry.targetPath);
+  for (const [archiveFile, records] of files) fs.writeFileSync(archiveFile, stringify({ groups: records }));
+  for (const { source, stamp } of plan) {
+    if (source && stamp.discovery && !fs.existsSync(inArchive(stamp.discovery))) fs.renameSync(source, inArchive(stamp.discovery));
   }
   queue.archived = [
     ...(queue.archived ?? []),
-    ...plan.map(({ group, discovery }) => ({ id: group.id, state: String(group.state), pr: (group.pr as string | null | undefined) ?? null, items: (group.items ?? []).map(item => item.id), file: relativeArchive, discovery })),
+    ...plan.map(({ group, stamp }) => ({ id: group.id, state: String(group.state), pr: (group.pr as string | null | undefined) ?? null, items: (group.items ?? []).map(item => item.id), file: stamp.file, discovery: stamp.discovery })),
   ];
   queue.groups = queue.groups.filter(group => !moving.includes(group));
   fs.writeFileSync(file, stringify(queue));

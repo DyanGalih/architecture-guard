@@ -144,30 +144,56 @@ test('archive moves finished and merged groups out, keeps their item ids, and mo
   assert.deepStrictEqual(diffQueue(queue, [story, bug]).archived, [{ id: 'STORY-1', group: 'auth-session' }]);
 });
 
-test('a retried archive does not duplicate records, and a reused group id keeps the earlier summary', () => {
+test('a reused group id with the same fields is a new archive and keeps the earlier summary', () => {
   const now = new Date('2026-11-28T00:00:00Z');
   const group = { id: 'passkeys', state: 'done', items: [{ id: 'SPIKE-1', type: 'spike', priority: 'medium' }] };
   const root = workspace({ groups: [group] });
   const queueDir = path.join(root, '.architecture-guard', 'queue');
   const archiveFile = path.join(queueDir, 'archive', '2026-11.yml');
-  // An earlier run archived a group with the same id, then stopped after writing the archive but before queue.yml
+  // queue.yml was rebuilt after an earlier group with the same id and fields was archived this month
   fs.mkdirSync(path.join(queueDir, 'archive'));
   fs.writeFileSync(path.join(queueDir, 'archive', 'passkeys.discovery.md'), '# first summary\n');
-  fs.writeFileSync(archiveFile, stringify({ groups: [{ id: 'passkeys', state: 'done', items: [], archived_at: '2026-11-01T00:00:00.000Z', discovery: 'queue/archive/passkeys.discovery.md' }] }));
+  fs.writeFileSync(archiveFile, stringify({ groups: [{ ...group, archived_at: '2026-11-01T00:00:00.000Z', discovery: 'queue/archive/passkeys.discovery.md' }] }));
   fs.writeFileSync(path.join(queueDir, 'passkeys.discovery.md'), '# second summary\n');
 
   archiveGroups(root, [], { now });
   assert.strictEqual(fs.readFileSync(path.join(queueDir, 'archive', 'passkeys.discovery.md'), 'utf8'), '# first summary\n', 'the earlier summary is kept');
   assert.strictEqual(fs.readFileSync(path.join(queueDir, 'archive', 'passkeys-2.discovery.md'), 'utf8'), '# second summary\n');
-  assert.deepStrictEqual(readQueue(path.join(root, '.architecture-guard', 'queue.yml')).archived?.[0].discovery, 'queue/archive/passkeys-2.discovery.md');
-
-  // Simulate a crash before queue.yml was written: restore the group and run again
-  fs.writeFileSync(path.join(root, '.architecture-guard', 'queue.yml'), stringify({ groups: [group] }));
-  archiveGroups(root, [], { now });
   const records = parse(fs.readFileSync(archiveFile, 'utf8')).groups;
-  assert.strictEqual(records.length, 2, 'the retry reuses the record it already wrote');
-  assert.deepStrictEqual(readQueue(path.join(root, '.architecture-guard', 'queue.yml')).archived?.[0].discovery, 'queue/archive/passkeys-2.discovery.md');
-  assert.ok(!fs.existsSync(path.join(queueDir, 'archive', 'passkeys-3.discovery.md')));
+  assert.deepStrictEqual(records.map((record: { discovery: string }) => record.discovery), ['queue/archive/passkeys.discovery.md', 'queue/archive/passkeys-2.discovery.md']);
+  const queue = readQueue(path.join(root, '.architecture-guard', 'queue.yml'));
+  assert.strictEqual(queue.archived?.[0].discovery, 'queue/archive/passkeys-2.discovery.md');
+  assert.ok(!('archiving' in records[1]), 'the stamp stays out of the archive record');
+});
+
+test('a retried archive finishes the archive it started without duplicating records', () => {
+  const now = new Date('2026-11-28T00:00:00Z');
+  const stamp = { at: '2026-11-27T00:00:00.000Z', file: 'queue/archive/2026-11.yml', discovery: 'queue/archive/passkeys-2.discovery.md' };
+  const group = { id: 'passkeys', state: 'done', items: [{ id: 'SPIKE-1', type: 'spike', priority: 'medium' }] };
+  // The earlier run stamped the group and wrote its record, then stopped before moving the summary and writing queue.yml
+  const root = workspace({ groups: [{ ...group, archiving: stamp }] });
+  const queueDir = path.join(root, '.architecture-guard', 'queue');
+  const archiveFile = path.join(queueDir, 'archive', '2026-11.yml');
+  fs.mkdirSync(path.join(queueDir, 'archive'));
+  fs.writeFileSync(path.join(queueDir, 'archive', 'passkeys.discovery.md'), '# first summary\n');
+  fs.writeFileSync(archiveFile, stringify({ groups: [
+    { ...group, archived_at: '2026-11-01T00:00:00.000Z', discovery: 'queue/archive/passkeys.discovery.md' },
+    { ...group, archived_at: stamp.at, discovery: stamp.discovery },
+  ] }));
+  fs.writeFileSync(path.join(queueDir, 'passkeys.discovery.md'), '# second summary\n');
+
+  archiveGroups(root, [], { now });
+  assert.strictEqual(parse(fs.readFileSync(archiveFile, 'utf8')).groups.length, 2, 'the retry reuses the record it already wrote');
+  assert.strictEqual(fs.readFileSync(path.join(queueDir, 'archive', 'passkeys-2.discovery.md'), 'utf8'), '# second summary\n');
+  assert.strictEqual(fs.readFileSync(path.join(queueDir, 'archive', 'passkeys.discovery.md'), 'utf8'), '# first summary\n');
+  const queue = readQueue(path.join(root, '.architecture-guard', 'queue.yml'));
+  assert.deepStrictEqual(queue.groups, []);
+  assert.deepStrictEqual(queue.archived?.map(entry => entry.discovery), ['queue/archive/passkeys-2.discovery.md']);
+});
+
+test('a stamp naming a path outside the archive is refused', () => {
+  const root = workspace({ groups: [{ id: 'a', state: 'done', archiving: { at: '2026-11-01T00:00:00.000Z', file: '../outside.yml', discovery: null } }] });
+  assert.throws(() => archiveGroups(root, []), /outside/);
 });
 
 test('a dry-run archive creates nothing', () => {
