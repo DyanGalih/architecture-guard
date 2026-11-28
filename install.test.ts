@@ -2150,7 +2150,7 @@ test('scope assessment routes small work to one flow and large work to the backl
   assert.match(template, /showing data that is already shown does not count/);
   assert.match(template, /For a solo developer, their own acceptance at its Phase 3 is the stakeholder review/);
   assert.match(template, /`large_at_stories` \(default 2, so small work is one user story/);
-  assert.match(template, /`large_at_boundaries` \(default 2\)/);
+  assert.match(template, /`large_at_boundaries` \(default 3\)/);
   assert.match(template, /`large_at_size` \(default `l`\)/);
   assert.match(template, /\| small \| `ag-workflow`/);
   assert.match(template, /\| large \| `ag-governed-delivery-team` to approve and save the Backlog Breakdown and stop after Phase 3, then `ag-governed-backlog`/);
@@ -2165,7 +2165,11 @@ test('scope assessment routes small work to one flow and large work to the backl
   assert.match(discover, /architecture-guard resolve template scope_assessment/);
   assert.match(discover, /^## Scope Assessment$/m);
   assert.match(discover, /Follow the \*\*Route\*\* in the Scope Assessment/);
-  assert.match(discover, /a \*\*large\*\* class, any feature with more than one user story/);
+  assert.match(discover, /When the Route is the backlog route \(a \*\*large\*\* class whose populated \*\*Backlog Breakdown\*\* has more than one group/);
+  assert.match(discover, /and for a \*\*large\*\* class whose breakdown forms a single group/);
+  assert.match(template, /\*\*One group\.\*\* When a \*\*large\*\* class's breakdown forms a single group/);
+  assert.match(template, /Keep the large route only when stakeholder User Story approval is required/);
+  assert.match(fs.readFileSync(path.join(repoRoot, 'templates/architecture_guard_config.yml'), 'utf8'), /# {5}large_at_boundaries: 3/);
 
   const workflow = orchestrationPrompt('workflow.md');
   assert.match(workflow, /When the user supplies a Discovery Summary Draft, use it as the specification seed and do not run discovery again/);
@@ -4604,9 +4608,9 @@ test('user stories decompose and sync per individual item with parent/Epic linka
   const discover = orchestrationPrompt('governed-discover.md');
   assert.match(discover, /contains more than one user story/);
   assert.match(discover, /items of one feature name that feature as `parent`/);
-  assert.match(discover, /For a \*\*small\*\* class \(a single feature with exactly one user story and no large signal in the Scope Assessment, or work the user kept as one change after declining the breakdown\), run `ag-workflow`/);
+  assert.match(discover, /For a \*\*small\*\* class \(a single feature with exactly one user story and no large signal in the Scope Assessment, or work the user kept as one change after declining the breakdown\), and for a \*\*large\*\* class whose breakdown forms a single group/);
   assert.match(discover, /To drive each phase yourself instead, run `ag-governed-spec` with this draft as its seed/);
-  assert.match(discover, /When the draft includes a populated \*\*Backlog Breakdown\*\*/);
+  assert.match(discover, /When the Route is the backlog route \(a \*\*large\*\* class whose populated \*\*Backlog Breakdown\*\*/);
 
   const team = orchestrationPrompt('governed-delivery-team.md');
   assert.match(team, /including User Story files \(`<root>\/user-stories\/\*\*\/\*\.md`\)/);
