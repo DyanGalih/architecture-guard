@@ -2169,6 +2169,9 @@ test('scope assessment routes small work to one flow and large work to the backl
   assert.match(discover, /and for a \*\*large\*\* class whose breakdown forms a single group/);
   assert.match(template, /\*\*One group\.\*\* When a \*\*large\*\* class's breakdown forms a single group/);
   assert.match(template, /Keep the large route only when stakeholder User Story approval is required/);
+  assert.match(template, /the specification's `## Stories` section holds the items/);
+  assert.match(discover, /Give items the same `group` only when they must ship as one change/);
+  assert.match(orchestrationPrompt('governed-spec.md'), /When the draft's Scope Assessment routes a one-group Backlog Breakdown as one change \(the `scope_assessment` \*\*One group\*\* rule\), its items are the accepted set/);
   assert.match(fs.readFileSync(path.join(repoRoot, 'templates/architecture_guard_config.yml'), 'utf8'), /# {5}large_at_boundaries: 3/);
 
   const workflow = orchestrationPrompt('workflow.md');
