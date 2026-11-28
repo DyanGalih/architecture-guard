@@ -79,7 +79,7 @@ Resolve the selected adapter's project configuration first (`{adapter_path:proje
 
 ### Step 2.6 — Backlog Queue Check
 
-When this run would create a new change, resolve and apply the `backlog_queue_check` template with `architecture-guard resolve template backlog_queue_check` before branch management (it skips itself when the caller is `ag-governed-backlog`, and reuses a result already in the run context). Use the seed's Scope Assessment when one was supplied. On **Add to queue** or **Resume backlog first**, stop before any write and recommend the route the template names.
+When this run would create a new change, resolve and apply the `backlog_queue_check` template with `architecture-guard resolve template backlog_queue_check` before branch management (it skips itself when the caller is `ag-governed-backlog`, and reuses a result already in the run context). Use the seed's Scope Assessment when one was supplied; otherwise the template applies the `scope_assessment` template to the request read-only first. On **Add to queue** or **Resume backlog first**, stop before any write and recommend the route the template names.
 
 ### Step 3 — Branch Management
 

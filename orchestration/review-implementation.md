@@ -415,11 +415,12 @@ Findings exactly as the hygiene runner reports them.
 1. **Critical Fixes**: Address Constitution and Security violations first.
 2. **Architecture Alignment**: Resolve boundary erosion and contract mismatches.
 2b. **Change Checks**: Address intent, story scope, test, secret, governance, and security-sensitive findings before opening or updating a pull request; the pull-request review runs the same checks.
-2c. **Correctness**: Fix `CONFIRMED` correctness findings with the proving check each one names; settle the assumption behind each `PLAUSIBLE` one before changing code.
+2c. **Correctness**: Fix `CONFIRMED` correctness findings triaged `fix-now` with the proving check each one names; settle the assumption behind each `PLAUSIBLE` one before changing code. Deferred findings go to the Proposed Backlog Items instead. Inside a governed convergence loop, the loop's own rules decide what each pass fixes.
 3. **Code Quality**: Address SonarLint findings that map to architectural concerns (if any).
 4. **DRY Alignment**: Centralize repeated business logic, validation, and mapping before duplicating it in another layer or module.
 5. **Durable Memory Preservation (Mandatory Check)**: Include proposed durable-memory entries in the report when warranted. Return the complete report first; then request approval in a separate interaction and write only approved entries.
 6. **Next Step**:
+   Route each finding by its triage after the user's choice: the user may fix a `defer` finding now or defer a `fix-now` finding that is not blocking (record the choice); blocking findings always stay **Fix now**.
    - **Fix now**: [For `fix-now` findings only, e.g. run the registered `ag-refactor-generator` capability for findings whose Target is `code`; run the registered `ag-apply` capability only for findings whose Target is a plan, task, or spec artifact (it edits artifacts, never code). Each runs only after the user approves it.]
    - **Defer to backlog**: [When there are Proposed Backlog Items: run `ag-governed-delivery-team` with them to approve and save them to a supported source and stop after its Phase 3; when a backlog queue is active (`backlog_queue_check`), say so and recommend adding them to it. Or "None".]
 7. **Remediation**: [Concrete remediation direction for the top issues, or "None needed"]
