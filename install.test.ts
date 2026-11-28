@@ -2228,6 +2228,7 @@ test('governed-backlog keeps queue.yml small with lean snapshots, archiving, and
   assert.match(prompt, /`architecture-guard queue archive` moves `done` and `skipped` groups, and the `published` groups named with `--group` whose work has merged/);
   assert.match(prompt, /^archived:$/m);
   assert.match(prompt, /An archived group still counts as recorded: its items are never planned again/);
+  assert.match(prompt, /A `skipped` or `done` entry never satisfies a dependency/);
   assert.match(prompt, /Step 3 plans only items that are in no recorded group and not in the `archived` index/);
   assert.match(prompt, /pipe the items to `architecture-guard queue diff` instead of reading the snapshots yourself/);
   assert.match(prompt, /`architecture-guard backlog show <id>\.\.\.` only for new and changed items/);

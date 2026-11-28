@@ -17,7 +17,7 @@ const DIRECT_FIELDS = ['type', 'priority', 'size', 'depends_on'] as const;
 
 type Item = Record<string, unknown> & { id: string };
 type Group = Record<string, unknown> & { id: string; state?: string; items?: Item[] };
-type ArchivedGroup = { id: string; state: string; pr: string | null; items: string[]; file: string };
+type ArchivedGroup = { id: string; state: string; pr: string | null; items: string[]; file: string; discovery?: string | null };
 type Queue = Record<string, unknown> & { groups: Group[]; archived?: ArchivedGroup[] };
 
 // The user's checkout holds queue.yml; from a linked worktree, map the workspace back to the main worktree.
@@ -192,24 +192,43 @@ export function archiveGroups(root: string, mergedGroups: string[], options: { d
   const archiveDir = path.join(root, '.architecture-guard', 'queue', 'archive');
   const archiveFile = path.join(archiveDir, `${month}.yml`);
   const relativeArchive = path.relative(path.join(root, '.architecture-guard'), archiveFile).split(path.sep).join('/');
+  const existing = fs.existsSync(archiveFile) ? (parse(fs.readFileSync(archiveFile, 'utf8')) as { groups?: Group[] } | null) : null;
+  const records: Group[] = existing?.groups ?? [];
+  const withoutStamp = (group: Group) => JSON.stringify({ ...group, archived_at: undefined, discovery: undefined });
+  const taken = new Set([...(fs.existsSync(archiveDir) ? fs.readdirSync(archiveDir) : [])]);
+  const archivedAt = (options.now ?? new Date()).toISOString();
+  const relative = (target: string) => path.relative(path.join(root, '.architecture-guard'), target).split(path.sep).join('/');
+
   const plan = moving.map(group => {
-    const discovery = path.join(root, '.architecture-guard', 'queue', `${group.id}.discovery.md`);
-    return { id: group.id, state: String(group.state), discovery: fs.existsSync(discovery) ? discovery : null };
+    // A run that stopped after writing the archive but before queue.yml left this record already: reuse it.
+    const recorded = records.find(record => record.id === group.id && withoutStamp(record) === withoutStamp(group));
+    const source = path.join(root, '.architecture-guard', 'queue', `${group.id}.discovery.md`);
+    const recordedDiscovery = typeof recorded?.discovery === 'string' ? path.join(root, '.architecture-guard', recorded.discovery) : null;
+    if (recordedDiscovery && path.dirname(recordedDiscovery) !== archiveDir) throw new Error(`Archive record for ${group.id} names a summary outside ${archiveDir}`);
+    let target: string | null = recordedDiscovery;
+    if (fs.existsSync(source) && !target) {
+      // A reused group id must not overwrite an earlier summary.
+      let name = `${group.id}.discovery.md`;
+      for (let n = 2; taken.has(name); n += 1) name = `${group.id}-${n}.discovery.md`;
+      taken.add(name);
+      target = path.join(archiveDir, name);
+    }
+    return { group, recorded, source: fs.existsSync(source) ? source : null, discovery: target ? relative(target) : null, targetPath: target };
   });
-  const result = { archive: archiveFile, groups: plan.map(entry => entry.id), discoveryMoved: plan.filter(entry => entry.discovery).map(entry => entry.id), dryRun: Boolean(options.dryRun) };
+  const result = { archive: archiveFile, groups: plan.map(entry => entry.group.id), discoveryMoved: plan.filter(entry => entry.source).map(entry => entry.group.id), dryRun: Boolean(options.dryRun) };
   if (options.dryRun || moving.length === 0) return result;
 
   fs.mkdirSync(archiveDir, { recursive: true });
-  const existing = fs.existsSync(archiveFile) ? (parse(fs.readFileSync(archiveFile, 'utf8')) as { groups?: Group[] } | null) : null;
-  const archivedAt = (options.now ?? new Date()).toISOString();
-  const groups = [...(existing?.groups ?? []), ...moving.map(group => ({ ...group, archived_at: archivedAt }))];
-  fs.writeFileSync(archiveFile, stringify({ groups }));
   for (const entry of plan) {
-    if (entry.discovery) fs.renameSync(entry.discovery, path.join(archiveDir, path.basename(entry.discovery)));
+    if (!entry.recorded) records.push({ ...entry.group, archived_at: archivedAt, discovery: entry.discovery });
+  }
+  fs.writeFileSync(archiveFile, stringify({ groups: records }));
+  for (const entry of plan) {
+    if (entry.source && entry.targetPath) fs.renameSync(entry.source, entry.targetPath);
   }
   queue.archived = [
     ...(queue.archived ?? []),
-    ...moving.map(group => ({ id: group.id, state: String(group.state), pr: (group.pr as string | null | undefined) ?? null, items: (group.items ?? []).map(item => item.id), file: relativeArchive })),
+    ...plan.map(({ group, discovery }) => ({ id: group.id, state: String(group.state), pr: (group.pr as string | null | undefined) ?? null, items: (group.items ?? []).map(item => item.id), file: relativeArchive, discovery })),
   ];
   queue.groups = queue.groups.filter(group => !moving.includes(group));
   fs.writeFileSync(file, stringify(queue));

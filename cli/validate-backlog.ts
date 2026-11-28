@@ -184,7 +184,7 @@ export const BACKLOG_WARN_BYTES = 256 * 1024;
 export function backlogSizeWarning(backlogPath: string, backlog: Backlog): string | null {
   const bytes = fs.statSync(path.resolve(backlogPath)).size;
   if (backlog.items.length <= BACKLOG_WARN_ITEMS && bytes <= BACKLOG_WARN_BYTES) return null;
-  return `Warning: ${backlogPath} has ${backlog.items.length} items (${Math.round(bytes / 1024)} KB). Move delivered items to .architecture-guard/backlog.archive.yml, and read it with \`architecture-guard backlog list\` and \`backlog show <id>\` instead of the whole file.`;
+  return `Warning: ${backlogPath} has ${backlog.items.length} items (${Math.round(bytes / 1024)} KB). Move delivered items to .architecture-guard/backlog.archive.yml (first remove \`depends_on\` references to them from the remaining items, or validation reports an unknown dependency), and read it with \`architecture-guard backlog list\` and \`backlog show <id>\` instead of the whole file.`;
 }
 
 // Compact rows: everything ordering, grouping, and lanes need, plus a hash that changes with the item text.
