@@ -2180,7 +2180,12 @@ test('scope assessment routes small work to one flow and large work to the backl
   assert.match(workflow, /stop the lifecycle after the `ag-governed-delivery-team` Phase 3 handoff/);
   assert.match(workflow, /When the user accepts it, run `ag-governed-delivery-team` with the draft, stop after its Phase 3 handoff/);
   assert.match(workflow, /6\. Otherwise \(a specific request, with no draft and no active change\), apply the `scope_assessment` template to the request/, 'a specific request is still sized');
-  assert.match(workflow, /When the class is \*\*large\*\*, there is no breakdown yet to route or to record as the specification's stories: run `ag-governed-discover`/);
+  assert.match(workflow, /When the class is \*\*large\*\*, there is no breakdown yet to route or to record as the specification's stories: do not run the queue check yet/);
+  assert.match(workflow, /runs the queue check against the decomposed scope/);
+  assert.match(workflow, /A large class whose breakdown forms one group with no spike runs as one flow/);
+  assert.match(discover, /and a large class whose breakdown forms one group with no spike, runs as one flow/);
+  assert.match(fs.readFileSync(path.join(repoRoot, 'templates/scope_assessment.md'), 'utf8'), /or a single group that contains a spike \(its research lane runs before any code\) or needs stakeholder approval/);
+  assert.match(orchestrationPrompt('governed-delivery-team.md'), /when Phase 3 still produces more than one group or story, its Stop \/ Handoff Gate applies/);
   assert.match(workflow, /in that order, because the queue recommendation depends on the class/);
   assert.match(workflow, /ask the queue question again only when the current status differs from the draft's \*\*Status\*\* line/);
   assert.match(discover, /2\. When a backlog queue is active, ask the `backlog_queue_check` question[^\n]*\n3\. Generate a structured \*\*Discovery Summary Draft\*\*/, 'ask before writing the draft');
@@ -2234,6 +2239,8 @@ test('implementation review triages findings into fix-now and defer without writ
   assert.match(review, /the user may fix a `defer` finding now or defer a `fix-now` finding that is not blocking/);
   assert.match(review, /^### Triage$/m);
   assert.match(review, /^#### Proposed Backlog Items$/m);
+  assert.match(review, /### Action Plan\nEach action below covers only the findings triaged `fix-now`, after the user's overrides/);
+  assert.match(review, /otherwise do not state a queue state, because `ag-governed-delivery-team` runs that check when it saves them/);
   assert.match(review, /- \*\*Fix now\*\*:/);
   assert.match(review, /- \*\*Defer to backlog\*\*:/);
   assert.match(review, /\[For `fix-now` findings only, e\.g\. run the registered `ag-refactor-generator` capability/);

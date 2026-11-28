@@ -35,7 +35,7 @@ A **large** class needs a populated Backlog Breakdown. When the user declines to
 
 **One group.** When a **large** class's breakdown forms a single group (every item shares one `group`, as `backlog_item` `## Grouping` defines, and none is a spike), `ag-governed-backlog` would deliver it as one change anyway. Route it through `ag-workflow` as one change instead, with every item of the group as a story of its specification, and say so in the Route. Keep the large route only when stakeholder User Story approval is required, because `ag-governed-delivery-team` stops after Phase 3 for more than one story. The class stays **large**, so its signals stay visible as risks. Nothing is saved to a backlog on this route: the specification's `## Stories` section holds the items, as `ag-governed-spec` records them.
 
-The **backlog route** below means `ag-governed-delivery-team` followed by `ag-governed-backlog`: a large class whose breakdown has more than one group, or a single group that needs stakeholder approval.
+The **backlog route** below means `ag-governed-delivery-team` followed by `ag-governed-backlog`: a large class whose breakdown has more than one group, or a single group that contains a spike (its research lane runs before any code) or needs stakeholder approval.
 
 When a backlog queue is active, `backlog_queue_check` may change the route; its choice wins.
 
