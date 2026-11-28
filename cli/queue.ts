@@ -115,6 +115,7 @@ export function leanSnapshot(item: Item) {
     type: item.type,
     priority: item.priority,
     ...(item.size !== undefined ? { size: item.size } : {}),
+    ...(item.group !== undefined ? { group: item.group } : {}),
     depends_on: [...((item.depends_on as string[] | undefined) ?? [])],
     hash: contentHash(item),
   };
@@ -129,6 +130,9 @@ export function changedFields(snapshot: Record<string, unknown>, item: Record<st
   for (const field of DIRECT_FIELDS) {
     const changed = field === 'depends_on' ? !same(sortedDeps(snapshot[field]), sortedDeps(item[field])) : !same(snapshot[field] ?? null, item[field] ?? null);
     if (changed) fields.push(field);
+  }
+  if (snapshot.group !== undefined && item.group !== undefined && snapshot.group !== item.group) {
+    fields.push('group');
   }
   if (typeof snapshot.hash === 'string') {
     if (snapshot.hash !== contentHash(item)) fields.push('content');
@@ -314,7 +318,7 @@ export function archiveGroups(root: string, mergedGroups: string[], options: { d
   }
   queue.archived = [
     ...(queue.archived ?? []),
-    ...plan.map(({ group, stamp }) => ({ id: group.id, state: String(group.state), pr: (group.pr as string | null | undefined) ?? null, items: (group.items ?? []).map(item => item.id), file: stamp.file, discovery: stamp.discovery })),
+    ...plan.map(({ group, stamp }) => ({ id: group.id, state: String(group.state), pr: (group.pr as string | null | undefined) ?? null, items: (group.items ?? []).filter(item => !isGateQItem(item)).map(item => item.id), file: stamp.file, discovery: stamp.discovery })),
   ];
   queue.groups = queue.groups.filter(group => !moving.includes(group));
   writeFileAtomic(file, stringify(queue));

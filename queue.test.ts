@@ -38,6 +38,10 @@ test('lean snapshots keep ordering and lane fields and drop the item text', () =
   assert.strictEqual(changedFields(lean, story).length, 0);
   assert.deepStrictEqual(changedFields(lean, { ...story, title: 'Remember me on sign-in' }), ['content']);
   assert.deepStrictEqual(changedFields(lean, { ...story, priority: 'low', depends_on: ['BUG-3'] }), ['priority', 'depends_on']);
+  const withGroup = leanSnapshot({ ...story, group: 'auth-session' });
+  assert.strictEqual(withGroup.group, 'auth-session');
+  assert.deepStrictEqual(changedFields(withGroup, { ...story, group: 'billing' }), ['group']);
+  assert.deepStrictEqual(changedFields(lean, { ...story, group: 'auth-session' }), [], 'missing group in older snapshot is not flagged');
 });
 
 test('compact backlog list rows diff and snapshot by their own hash, not by their missing text', () => {
@@ -173,10 +177,11 @@ test('queue root resolves to the enclosing workspace from a worktree of a listed
 });
 
 test('archive moves finished and merged groups out, keeps their item ids, and moves discovery summaries', () => {
+  const hygieneItem = { id: 'auth-session-hygiene-1', type: 'bug', priority: 'high', title: 'Fix lint finding', gate_q: true };
   const root = workspace({
     source: 'local',
     groups: [
-      { id: 'auth-session', state: 'published', pr: 'https://example.test/pr/1', items: [leanSnapshot(story)] },
+      { id: 'auth-session', state: 'published', pr: 'https://example.test/pr/1', items: [leanSnapshot(story), hygieneItem] },
       { id: 'passkeys', state: 'done', items: [{ id: 'SPIKE-1', type: 'spike', priority: 'medium' }] },
       { id: 'export', state: 'implementing', items: [bug] },
     ],
