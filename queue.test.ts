@@ -112,6 +112,29 @@ test('queue root resolves to the main checkout from a linked worktree', () => {
   }
 });
 
+test('queue root resolves to the enclosing workspace from a worktree of a listed application repository', () => {
+  const ws = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ag-queue-ws-')));
+  fs.mkdirSync(path.join(ws, '.architecture-guard'));
+  fs.writeFileSync(path.join(ws, '.architecture-guard', 'config.yml'), 'schema_version: "1.0"\nrepositories:\n  - name: app\n    path: src\n    roles: [code]\n');
+  const app = path.join(ws, 'src');
+  fs.mkdirSync(app);
+  git(app, 'init', '-b', 'main');
+  git(app, 'config', 'user.email', 'test@example.com');
+  git(app, 'config', 'user.name', 'Test');
+  fs.writeFileSync(path.join(app, 'index.ts'), 'export {};\n');
+  git(app, 'add', '.');
+  git(app, 'commit', '-m', 'init');
+  const linked = `${ws}-group-wt`;
+  git(app, 'worktree', 'add', '-b', 'feat/group', linked);
+  try {
+    assert.strictEqual(queueRoot(linked), ws);
+    assert.strictEqual(queueRoot(app), ws);
+  } finally {
+    fs.rmSync(linked, { recursive: true, force: true });
+    fs.rmSync(ws, { recursive: true, force: true });
+  }
+});
+
 test('archive moves finished and merged groups out, keeps their item ids, and moves discovery summaries', () => {
   const root = workspace({
     source: 'local',
@@ -203,6 +226,32 @@ test('archive leaves no temporary files behind', () => {
     .flatMap(dir => fs.readdirSync(dir).filter(name => name.endsWith('.tmp')));
   assert.deepStrictEqual(leftovers, []);
   assert.deepStrictEqual(readQueue(path.join(root, '.architecture-guard', 'queue.yml')).groups.map(group => group.id), ['b']);
+});
+
+test('archive keeps a skipped group that a remaining group is stacked on, and archives the rest', () => {
+  const root = workspace({ groups: [
+    { id: 'parent', state: 'skipped' },
+    { id: 'grandparent', state: 'done' },
+    { id: 'middle', state: 'done', stacked_on: 'grandparent' },
+    { id: 'child', state: 'parked', reason: 'waiting on parent', stacked_on: 'parent' },
+    { id: 'finished', state: 'done' },
+  ] });
+  const result = archiveGroups(root, [], { now: new Date('2026-11-28T00:00:00Z') });
+  assert.deepStrictEqual(result.kept, ['parent']);
+  assert.deepStrictEqual(result.groups, ['grandparent', 'middle', 'finished']);
+  const queue = readQueue(path.join(root, '.architecture-guard', 'queue.yml'));
+  assert.deepStrictEqual(queue.groups.map(group => group.id), ['parent', 'child']);
+});
+
+test('archive keeps a whole chain of finished groups under a remaining stacked group', () => {
+  const root = workspace({ groups: [
+    { id: 'base', state: 'done' },
+    { id: 'skipped-mid', state: 'skipped', stacked_on: 'base' },
+    { id: 'child', state: 'parked', stacked_on: 'skipped-mid' },
+  ] });
+  const result = archiveGroups(root, []);
+  assert.deepStrictEqual([...result.kept].sort(), ['base', 'skipped-mid']);
+  assert.deepStrictEqual(result.groups, []);
 });
 
 test('a dry-run archive creates nothing', () => {

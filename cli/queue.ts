@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse, stringify } from 'yaml';
-import { insideWorkspace, locateWorkspace } from './repositories';
+import { insideWorkspace, locateWorkspace, resolveWorkspace } from './repositories';
 
 // Run state of ag-governed-backlog (orchestration/governed-backlog.md ## Run State). Only that skill changes it; this
 // module reads it, computes lean item snapshots and diffs, and archives finished groups when the skill asks.
@@ -22,7 +22,8 @@ type Archiving = { at: string; file: string; discovery: string | null };
 type ArchivedGroup = { id: string; state: string; pr: string | null; items: string[]; file: string; discovery?: string | null };
 type Queue = Record<string, unknown> & { groups: Group[]; archived?: ArchivedGroup[] };
 
-// The user's checkout holds queue.yml; from a linked worktree, map the workspace back to the main worktree.
+// The user's checkout holds queue.yml; from a linked worktree, map the workspace back to the main worktree. When that
+// main worktree is an application repository listed under an enclosing workspace, queue.yml is in that workspace.
 export function queueRoot(cwd: string): string {
   const { workspace } = locateWorkspace(cwd);
   try {
@@ -31,7 +32,10 @@ export function queueRoot(cwd: string): string {
     const gitDir = git('--git-dir');
     if (path.resolve(commonDir) === path.resolve(gitDir) || path.basename(commonDir) !== '.git') return workspace;
     const top = execFileSync('git', ['-C', cwd, 'rev-parse', '--show-toplevel'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-    return path.join(path.dirname(commonDir), path.relative(top, workspace));
+    const mainTop = path.dirname(commonDir);
+    const enclosing = resolveWorkspace(mainTop);
+    if (enclosing.repository) return enclosing.workspace;
+    return path.join(mainTop, path.relative(top, workspace));
   } catch {
     return workspace;
   }
@@ -200,6 +204,20 @@ export function archiveGroups(root: string, mergedGroups: string[], options: { d
   }
   // A stamped group was being archived when an earlier run stopped, so it moves again without being named.
   const moving = queue.groups.filter(group => (FINISHED_STATES as readonly string[]).includes(String(group.state)) || mergedGroups.includes(group.id) || group.archiving !== undefined);
+  // A done or skipped group that a remaining group is still stacked on stays in queue.yml, so Gate Q can show the
+  // unmet stacking (a skipped parent never satisfies it); it is archived once nothing stacks on it.
+  const kept: string[] = [];
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const group of [...moving]) {
+      if (group.state === AWAITING_MERGE_STATE || group.archiving !== undefined) continue;
+      if (queue.groups.some(other => !moving.includes(other) && other.stacked_on === group.id)) {
+        moving.splice(moving.indexOf(group), 1);
+        kept.push(group.id);
+        changed = true;
+      }
+    }
+  }
   const stillReferenced = queue.groups.filter(group => !moving.includes(group) && moving.some(moved => moved.id === group.stacked_on && moved.state !== 'published'));
   if (stillReferenced.length) throw new Error(`Groups ${stillReferenced.map(group => group.id).join(', ')} are stacked on a group being archived`);
 
@@ -240,6 +258,7 @@ export function archiveGroups(root: string, mergedGroups: string[], options: { d
   const result = {
     archive: plan.length ? inArchive(plan[0].stamp.file) : path.join(archiveDir, `${archivedAt.slice(0, 7)}.yml`),
     groups: plan.map(entry => entry.group.id),
+    kept,
     discoveryMoved: plan.filter(entry => entry.source).map(entry => entry.group.id),
     dryRun: Boolean(options.dryRun),
   };
