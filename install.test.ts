@@ -2208,6 +2208,7 @@ test('entry points check for an unfinished backlog queue once, read-only, and ne
   assert.match(template, /those its approved plan and tasks name when the group has them \(they stay its approved scope until Gate Q reconciles a source change\)/);
   assert.match(orchestrationPrompt('workflow.md'), /its Phase 3 stops after the User Stories are approved: take that approval for the specification's `## Stories` and continue with the registered `ag-governed-delivery` capability/);
   assert.match(orchestrationPrompt('governed-delivery-team.md'), /When `ag-workflow` called this skill for a one-flow change with more than one story, report the approved User Stories to it at this stop/);
+
   assert.match(template, /at least one group is in a state other than `done`, `skipped`, or `published`\. `parked` groups count/);
   assert.match(template, /\*\*Skip it\*\* when the caller is `ag-governed-backlog`/);
   assert.match(template, /\*\*Ask once per run\.\*\*/);
@@ -2249,7 +2250,8 @@ test('governed-backlog keeps queue.yml small with lean snapshots, archiving, and
   assert.match(prompt, /^archived:$/m);
   assert.match(prompt, /a group's own Gate Q items, recorded with `gate_q: true`, are never in the source and never reported/);
   assert.match(prompt, /the items of every recorded group that starts or resumes a phase reading item text in this run/);
-  assert.match(prompt, /Leave out each group's Gate Q items \(`gate_q: true`; `queue status` lists them as `gate_q_items`/);
+  assert.match(prompt, /Leave out each group's Gate Q items \(`gate_q: true`; `queue status` lists them as `gate_q_items`, apart from `items`\), which are not in the source, and any item id reported as `removed` by `queue diff`/);
+  assert.match(prompt, /when Beads write-back is enabled, keep groups with pending bead closures in `queue\.yml` until Step 7's approved `bd close` completes/);
   assert.match(prompt, /A `done` or `skipped` group that a remaining group is still `stacked_on` stays in `queue.yml`/);
   assert.match(prompt, /stamps each group with an `archiving` field, so a rerun after an interrupted archive finishes that archive instead of adding another/);
   assert.match(prompt, /An archived group still counts as recorded: its items are never planned again/);
