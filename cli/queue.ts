@@ -115,7 +115,7 @@ export function leanSnapshot(item: Item) {
     type: item.type,
     priority: item.priority,
     ...(item.size !== undefined ? { size: item.size } : {}),
-    ...(item.group !== undefined ? { group: item.group } : {}),
+    group: (item.group as string | null | undefined) ?? null,
     depends_on: [...((item.depends_on as string[] | undefined) ?? [])],
     hash: contentHash(item),
   };

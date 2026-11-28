@@ -34,15 +34,18 @@ test('item hash ignores line endings, surrounding whitespace, and key order, and
 
 test('lean snapshots keep ordering and lane fields and drop the item text', () => {
   const lean = leanSnapshot(story);
-  assert.deepStrictEqual(Object.keys(lean), ['id', 'type', 'priority', 'size', 'depends_on', 'hash']);
+  assert.deepStrictEqual(Object.keys(lean), ['id', 'type', 'priority', 'size', 'group', 'depends_on', 'hash']);
+  assert.strictEqual(lean.group, null);
   assert.strictEqual(changedFields(lean, story).length, 0);
   assert.deepStrictEqual(changedFields(lean, { ...story, title: 'Remember me on sign-in' }), ['content']);
   assert.deepStrictEqual(changedFields(lean, { ...story, priority: 'low', depends_on: ['BUG-3'] }), ['priority', 'depends_on']);
+  assert.deepStrictEqual(changedFields(lean, { ...story, group: 'billing' }), ['group'], 'ungrouped item becoming grouped is flagged');
   const withGroup = leanSnapshot({ ...story, group: 'auth-session' });
   assert.strictEqual(withGroup.group, 'auth-session');
   assert.deepStrictEqual(changedFields(withGroup, { ...story, group: 'billing' }), ['group']);
   assert.deepStrictEqual(changedFields(withGroup, story), ['group'], 'removing a group from a grouped snapshot is flagged');
-  assert.deepStrictEqual(changedFields(lean, { ...story, group: 'auth-session' }), [], 'missing group in older snapshot is not flagged');
+  const legacy = { id: story.id, type: story.type, priority: story.priority, size: story.size, depends_on: [], hash: itemHash(story) };
+  assert.deepStrictEqual(changedFields(legacy, { ...story, group: 'auth-session' }), [], 'missing group in older snapshot is not flagged');
 });
 
 test('compact backlog list rows diff and snapshot by their own hash, not by their missing text', () => {
