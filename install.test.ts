@@ -2203,11 +2203,12 @@ test('entry points check for an unfinished backlog queue once, read-only, and ne
   assert.match(template, /When that main worktree is an application repository listed under `repositories` of an enclosing workspace/);
   assert.match(template, /each time a result is reused, run \*\*Check Overlap\*\* again on the current scope, because discovery can grow the scope and queued groups start or change files during a run/);
   assert.match(template, /including when the earlier choice was \*\*Run directly\*\*/);
+  assert.match(template, /`architecture-guard backlog show <id>\.\.\.` when the CLI is installed, otherwise the items with those ids in `\.architecture-guard\/backlog\.yml`/);
   assert.match(template, /a queue group id is a kebab-case name and may not exist in the source/);
   assert.match(template, /those its approved plan and tasks name when the group has them \(they stay its approved scope until Gate Q reconciles a source change\)/);
   assert.match(orchestrationPrompt('workflow.md'), /its Phase 3 stops after the User Stories are approved: take that approval for the specification's `## Stories` and continue with the registered `ag-governed-delivery` capability/);
   assert.match(orchestrationPrompt('governed-delivery-team.md'), /When `ag-workflow` called this skill for a one-flow change with more than one story, report the approved User Stories to it at this stop/);
-  assert.ok(!template.includes('backlog show'), 'the backlog show command is not part of this change');
+
   assert.match(template, /at least one group is in a state other than `done`, `skipped`, or `published`\. `parked` groups count/);
   assert.match(template, /\*\*Skip it\*\* when the caller is `ag-governed-backlog`/);
   assert.match(template, /\*\*Ask once per run\.\*\*/);
@@ -2238,6 +2239,36 @@ test('entry points check for an unfinished backlog queue once, read-only, and ne
   assert.match(discover, /When the Backlog Queue choice is \*\*Resume backlog first\*\*, run `ag-governed-backlog`/);
   const team = orchestrationPrompt('governed-delivery-team.md');
   assert.match(team, /An \*\*Add to queue\*\* choice makes this a breakdown run/);
+});
+
+test('governed-backlog keeps queue.yml small with lean snapshots, archiving, and CLI slices', () => {
+  const prompt = orchestrationPrompt('governed-backlog.md');
+  assert.match(prompt, /\*\*Lean snapshots\.\*\* When the `architecture-guard` CLI is installed, write each item snapshot as `architecture-guard queue snapshot` prints it/);
+  assert.match(prompt, /Without the CLI, write the full snapshot shown above/);
+  assert.match(prompt, /never rewrite older snapshots only to convert them/);
+  assert.match(prompt, /`architecture-guard queue archive` moves `done` and `skipped` groups, and the `published` groups named with `--group` whose work has merged/);
+  assert.match(prompt, /^archived:$/m);
+  assert.match(prompt, /a group's own Gate Q items, recorded with `gate_q: true`, are never in the source and never reported/);
+  assert.match(prompt, /the items of every recorded group that starts or resumes a phase reading item text in this run/);
+  assert.match(prompt, /Leave out each group's Gate Q items \(`gate_q: true`; `queue status` lists them as `gate_q_items`, apart from `items`\), which are not in the source, and any item id reported as `removed` by `queue diff`/);
+  assert.match(prompt, /when Beads write-back is enabled, keep groups with pending bead closures in `queue\.yml` until Step 7's approved `bd close` completes/);
+  assert.match(prompt, /A `done` or `skipped` group that a remaining group is still `stacked_on` stays in `queue.yml`/);
+  assert.match(prompt, /stamps each group with an `archiving` field, so a rerun after an interrupted archive finishes that archive instead of adding another/);
+  assert.match(prompt, /An archived group still counts as recorded: its items are never planned again/);
+  assert.match(prompt, /A `skipped` or `done` entry never satisfies a dependency/);
+  assert.match(prompt, /Step 3 plans only items that are in no recorded group and not in the `archived` index/);
+  assert.match(prompt, /pipe the items to `architecture-guard queue diff` instead of reading the snapshots yourself/);
+  assert.match(prompt, /`architecture-guard backlog show <id>\.\.\.` only for new and changed items/);
+  assert.match(prompt, /pipe `architecture-guard backlog list` straight into it: each compact row carries the hash/);
+  assert.match(prompt, /After Gate Q approves the queue, write the current snapshot of every item in an approved group/);
+  assert.match(prompt, /before Gate Q, nothing is written except this command's run state/);
+  const contract = fs.readFileSync(path.join(repoRoot, 'templates/backlog_item.md'), 'utf8');
+  assert.match(contract, /It warns, without failing, when the file grows past 200 items or 256 KB/);
+  assert.match(contract, /architecture-guard backlog list/);
+  const check = fs.readFileSync(path.join(repoRoot, 'templates/backlog_queue_check.md'), 'utf8');
+  assert.match(check, /run `architecture-guard queue status`: it finds the workspace itself/);
+  assert.match(check, /Leave the group's own Gate Q items out of that lookup \(`gate_q: true` in `queue.yml`/);
+  assert.match(check, /the result is `Unavailable: main worktree not found`; ask the user for the main checkout/);
 });
 
 test('implementation review triages findings into fix-now and defer without writing the backlog', () => {
