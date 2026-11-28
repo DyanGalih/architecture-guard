@@ -2146,7 +2146,8 @@ test('scope assessment routes small work to one flow and large work to the backl
   assert.match(template, /architecture-guard resolve template backlog_item` and do not restate them/);
   assert.doesNotMatch(template, /\| story, feature \| full \|/, 'lanes stay owned by backlog_item');
   assert.match(template, /raise \*\*small\*\* to \*\*large\*\*/);
-  assert.match(template, /A single story stays \*\*small\*\*, because it cannot be broken down further/);
+  assert.match(template, /Security alone never raises a single story, because it cannot be broken down further/);
+  assert.match(template, /it is still \*\*large\*\* when, for example, its size is `large_at_size` or larger/);
   assert.match(template, /showing data that is already shown does not count/);
   assert.match(template, /For a solo developer, their own acceptance at its Phase 3 is the stakeholder review/);
   assert.match(template, /`large_at_stories` \(default 2, so small work is one user story/);
@@ -2179,6 +2180,7 @@ test('scope assessment routes small work to one flow and large work to the backl
   assert.match(workflow, /stop the lifecycle after the `ag-governed-delivery-team` Phase 3 handoff/);
   assert.match(workflow, /When the user accepts it, run `ag-governed-delivery-team` with the draft, stop after its Phase 3 handoff/);
   assert.match(workflow, /6\. Otherwise \(a specific request, with no draft and no active change\), apply the `scope_assessment` template to the request/, 'a specific request is still sized');
+  assert.match(workflow, /When the class is \*\*large\*\*, there is no breakdown yet to route or to record as the specification's stories: run `ag-governed-discover`/);
   assert.match(workflow, /in that order, because the queue recommendation depends on the class/);
   assert.match(workflow, /ask the queue question again only when the current status differs from the draft's \*\*Status\*\* line/);
   assert.match(discover, /2\. When a backlog queue is active, ask the `backlog_queue_check` question[^\n]*\n3\. Generate a structured \*\*Discovery Summary Draft\*\*/, 'ask before writing the draft');
