@@ -131,7 +131,7 @@ export function changedFields(snapshot: Record<string, unknown>, item: Record<st
     const changed = field === 'depends_on' ? !same(sortedDeps(snapshot[field]), sortedDeps(item[field])) : !same(snapshot[field] ?? null, item[field] ?? null);
     if (changed) fields.push(field);
   }
-  if (snapshot.group !== undefined && item.group !== undefined && snapshot.group !== item.group) {
+  if (snapshot.group !== undefined && (snapshot.group ?? null) !== (item.group ?? null)) {
     fields.push('group');
   }
   if (typeof snapshot.hash === 'string') {
@@ -222,6 +222,26 @@ function writeFileAtomic(target: string, content: string) {
   }
 }
 
+// A workspace is the trusted anchor. Refuse links in all archive components and verify workspace confinement.
+function rejectArchiveSymlinks(root: string, target: string) {
+  if (!insideWorkspace(root, target)) {
+    throw new Error(`Archive path escapes workspace: ${target}`);
+  }
+  const relative = path.relative(root, target);
+  let current = root;
+  for (const part of relative.split(path.sep).filter(Boolean)) {
+    current = path.join(current, part);
+    try {
+      if (fs.lstatSync(current).isSymbolicLink()) {
+        throw new Error(`Symlink archive path is not allowed: ${current}`);
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+      throw error;
+    }
+  }
+}
+
 export function archiveGroups(root: string, mergedGroups: string[], options: { dryRun?: boolean; now?: Date } = {}) {
   const file = queuePath(root);
   const queue = readQueue(file);
@@ -253,10 +273,12 @@ export function archiveGroups(root: string, mergedGroups: string[], options: { d
 
   const archivedAt = (options.now ?? new Date()).toISOString();
   const archiveDir = path.join(root, '.architecture-guard', 'queue', 'archive');
+  rejectArchiveSymlinks(root, archiveDir);
   const relative = (target: string) => path.relative(path.join(root, '.architecture-guard'), target).split(path.sep).join('/');
   const inArchive = (recordedPath: string) => {
     const full = path.join(root, '.architecture-guard', recordedPath);
     if (path.dirname(full) !== archiveDir) throw new Error(`Archive path ${recordedPath} is outside ${archiveDir}`);
+    rejectArchiveSymlinks(root, full);
     return full;
   };
   // Names already used, on disk or by an archive another group has started

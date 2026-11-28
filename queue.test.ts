@@ -41,6 +41,7 @@ test('lean snapshots keep ordering and lane fields and drop the item text', () =
   const withGroup = leanSnapshot({ ...story, group: 'auth-session' });
   assert.strictEqual(withGroup.group, 'auth-session');
   assert.deepStrictEqual(changedFields(withGroup, { ...story, group: 'billing' }), ['group']);
+  assert.deepStrictEqual(changedFields(withGroup, story), ['group'], 'removing a group from a grouped snapshot is flagged');
   assert.deepStrictEqual(changedFields(lean, { ...story, group: 'auth-session' }), [], 'missing group in older snapshot is not flagged');
 });
 
@@ -259,6 +260,14 @@ test('a retried archive finishes the archive it started without duplicating reco
 test('a stamp naming a path outside the archive is refused', () => {
   const root = workspace({ groups: [{ id: 'a', state: 'done', archiving: { at: '2026-11-01T00:00:00.000Z', file: '../outside.yml', discovery: null } }] });
   assert.throws(() => archiveGroups(root, []), /outside/);
+});
+
+test('archive rejects symlinked archive directory escaping the workspace', () => {
+  const root = workspace({ groups: [{ id: 'a', state: 'done' }] });
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'ag-outside-archive-'));
+  fs.symlinkSync(outside, path.join(root, '.architecture-guard', 'queue', 'archive'));
+  assert.throws(() => archiveGroups(root, []), /(escapes workspace|not allowed)/);
+  fs.rmSync(outside, { recursive: true, force: true });
 });
 
 test('archive leaves no temporary files behind', () => {
