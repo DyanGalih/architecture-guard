@@ -2182,8 +2182,8 @@ test('scope assessment routes small work to one flow and large work to the backl
   assert.match(workflow, /6\. Otherwise \(a specific request, with no draft and no active change\), apply the `scope_assessment` template to the request/, 'a specific request is still sized');
   assert.match(workflow, /When the class is \*\*large\*\*, there is no breakdown yet to route or to record as the specification's stories: do not run the queue check yet/);
   assert.match(workflow, /runs the queue check against the decomposed scope/);
-  assert.match(workflow, /A large class whose breakdown forms one group with no spike runs as one flow/);
-  assert.match(discover, /and a large class whose breakdown forms one group with no spike, runs as one flow/);
+  assert.match(workflow, /A large class whose breakdown forms one group with no spike, and needs no stakeholder approval, runs as one flow/);
+  assert.match(discover, /and a large class whose breakdown forms one group with no spike, runs as a single flow through `ag-workflow`, unless it needs stakeholder User Story approval/);
   assert.match(fs.readFileSync(path.join(repoRoot, 'templates/scope_assessment.md'), 'utf8'), /or a single group that contains a spike \(its research lane runs before any code\) or needs stakeholder approval/);
   assert.match(orchestrationPrompt('governed-delivery-team.md'), /when Phase 3 still produces more than one group or story, its Stop \/ Handoff Gate applies/);
   assert.match(workflow, /in that order, because the queue recommendation depends on the class/);
@@ -2199,7 +2199,8 @@ test('entry points check for an unfinished backlog queue once, read-only, and ne
   assert.match(template, /It is read-only: it never writes `queue\.yml`/);
   assert.match(template, /git rev-parse --path-format=absolute --git-common-dir/);
   assert.match(template, /When that main worktree is an application repository listed under `repositories` of an enclosing workspace/);
-  assert.match(template, /A result covers only the scope it was checked against: when the scope has grown since/);
+  assert.match(template, /each time a result is reused, run \*\*Check Overlap\*\* again on the current scope, because discovery can grow the scope and queued groups start or change files during a run/);
+  assert.match(template, /including when the earlier choice was \*\*Run directly\*\*/);
   assert.match(template, /a queue group id is a kebab-case name and may not exist in the source/);
   assert.match(template, /those its approved plan and tasks name when the group has them \(they stay its approved scope until Gate Q reconciles a source change\)/);
   assert.match(orchestrationPrompt('workflow.md'), /its Phase 3 stops after the User Stories are approved: take that approval for the specification's `## Stories` and continue with the registered `ag-governed-delivery` capability/);

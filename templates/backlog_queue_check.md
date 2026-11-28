@@ -6,7 +6,7 @@ Apply this contract when a skill is about to start new work while an `ag-governe
 
 - Run it in `ag-governed-discover`, `ag-workflow`, `ag-governed-spec`, and `ag-governed-delivery-team`, at the points those skills name.
 - **Skip it** when the caller is `ag-governed-backlog`: that run owns the queue and passes its group's accepted Story set, so it must not ask about itself.
-- **Ask once per run.** When the run context already holds this check's result (for example `ag-workflow` ran it and then delegated to `ag-governed-discover`), reuse it and do not ask again. A "run directly" choice holds for the rest of the run. A result covers only the scope it was checked against: when the scope has grown since (for example discovery broke the work down), run **Check Overlap** again on the new scope, and ask again only when the overlap changed; an overlap with a group that is `implementing` or `ready` always gets the hard warning.
+- **Ask once per run.** When the run context already holds this check's result (for example `ag-workflow` ran it and then delegated to `ag-governed-discover`), reuse it and do not ask again. A "run directly" choice holds for the rest of the run. A result covers only the scope and queue state it was checked against: each time a result is reused, run **Check Overlap** again on the current scope, because discovery can grow the scope and queued groups start or change files during a run. Ask again only when the overlap changed; an overlap with a group that is `implementing` or `ready` always gets the hard warning, including when the earlier choice was **Run directly**.
 
 ## Detect the Queue
 
