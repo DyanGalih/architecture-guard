@@ -2205,6 +2205,8 @@ test('entry points check for an unfinished backlog queue once, read-only, and ne
   assert.match(template, /without a `depends_on` from the new items to that group \(it would reverse the order\)/);
   assert.match(template, /For a \*\*large\*\* class, this is the user keeping the work as one change/);
   assert.match(template, /When the current directory is a group's worktree/);
+  assert.match(template, /or apply that template read-only to the request first when there is none/);
+  assert.match(orchestrationPrompt('workflow.md'), /run the queue detection and the overlap check again/);
   assert.match(template, /- \*\*Warning\*\*: \[the overlapping group and files, and the user's confirmation, or None\]/);
 
   for (const file of ['governed-discover.md', 'workflow.md', 'governed-spec.md', 'governed-delivery-team.md']) {
@@ -2226,6 +2228,8 @@ test('implementation review triages findings into fix-now and defer without writ
   assert.match(review, /Blocking findings are never deferred/);
   assert.match(review, /this review never writes a backlog, a tracker, or `queue\.yml`/);
   assert.match(review, /Inside a governed convergence loop, triage is reported only/);
+  assert.match(review, /Fix `CONFIRMED` correctness findings triaged `fix-now`/);
+  assert.match(review, /the user may fix a `defer` finding now or defer a `fix-now` finding that is not blocking/);
   assert.match(review, /^### Triage$/m);
   assert.match(review, /^#### Proposed Backlog Items$/m);
   assert.match(review, /- \*\*Fix now\*\*:/);
