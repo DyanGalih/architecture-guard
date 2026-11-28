@@ -2199,7 +2199,8 @@ test('entry points check for an unfinished backlog queue once, read-only, and ne
   assert.match(template, /never from a group's branch or inside a group's worktree/);
   assert.match(template, /\*\*Hard warning\*\*: when the user picks \*\*Run directly\*\* and the new work overlaps a group that is `implementing` or `ready`/);
   assert.match(template, /instead of assuming there is none/);
-  assert.match(template, /git -C <worktree> diff --name-only HEAD/, 'overlap includes uncommitted changes');
+  assert.match(template, /git -C <worktree> diff --cached --name-only/, 'overlap includes staged changes');
+  assert.match(template, /git -C <worktree> diff --name-only`\)/, 'overlap includes unstaged changes');
   assert.match(template, /git -C <worktree> ls-files --others --exclude-standard/, 'overlap includes untracked files');
   assert.match(template, /without a `depends_on` from the new items to that group \(it would reverse the order\)/);
   assert.match(template, /For a \*\*large\*\* class, this is the user keeping the work as one change/);
