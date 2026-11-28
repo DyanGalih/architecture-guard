@@ -11,7 +11,7 @@ Apply this contract when a skill is about to start new work while an `ag-governe
 ## Detect the Queue
 
 1. Find the user's checkout: the workspace root, the directory containing `.architecture-guard/`. When the current directory is a linked git worktree, take the main worktree instead: the parent of `git rev-parse --path-format=absolute --git-common-dir`. `queue.yml` lives only in the user's checkout, never in a group worktree.
-2. Read `.architecture-guard/queue.yml` there. When it does not exist, the result is **No active queue**; say nothing more.
+2. When the `architecture-guard` CLI is installed, run `architecture-guard queue status`: it finds the main checkout itself and prints the active groups (state, lane, reason, branch, worktree, item ids) without item text, plus the finished and archived counts. Otherwise read `.architecture-guard/queue.yml` there. When it does not exist, the result is **No active queue**; say nothing more.
 3. The queue is **active** when at least one group is in a state other than `done` or `skipped`. `parked` groups count: a parked queue is a paused queue. When every group is `done` or `skipped`, the result is **No active queue**; you may mention in one line that the finished groups can be cleaned up.
 4. For an active queue, summarize it in one line: the count of groups per state, and each parked group's reason (for example `2 in progress (auth-session implementing, billing tasked), 1 parked (export: waiting on auth-session)`).
 

@@ -1,0 +1,281 @@
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { parse, stringify } from 'yaml';
+import { insideWorkspace, locateWorkspace } from './repositories';
+
+// Run state of ag-governed-backlog (orchestration/governed-backlog.md ## Run State). Only that skill changes it; this
+// module reads it, computes lean item snapshots and diffs, and archives finished groups when the skill asks.
+
+export const FINISHED_STATES = ['done', 'skipped'] as const;
+const GROUP_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const CONTENT_FIELDS = ['title', 'description', 'acceptance', 'origins', 'criterion_mappings'] as const;
+const DIRECT_FIELDS = ['type', 'priority', 'size', 'depends_on'] as const;
+
+type Item = Record<string, unknown> & { id: string };
+type Group = Record<string, unknown> & { id: string; state?: string; items?: Item[] };
+type ArchivedGroup = { id: string; state: string; pr: string | null; items: string[]; file: string };
+type Queue = Record<string, unknown> & { groups: Group[]; archived?: ArchivedGroup[] };
+
+// The user's checkout holds queue.yml; from a linked worktree, map the workspace back to the main worktree.
+export function queueRoot(cwd: string): string {
+  const { workspace } = locateWorkspace(cwd);
+  try {
+    const git = (...args: string[]) => execFileSync('git', ['-C', cwd, 'rev-parse', '--path-format=absolute', ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+    const commonDir = git('--git-common-dir');
+    const gitDir = git('--git-dir');
+    if (path.resolve(commonDir) === path.resolve(gitDir) || path.basename(commonDir) !== '.git') return workspace;
+    const top = execFileSync('git', ['-C', cwd, 'rev-parse', '--show-toplevel'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+    return path.join(path.dirname(commonDir), path.relative(top, workspace));
+  } catch {
+    return workspace;
+  }
+}
+
+export const queuePath = (root: string) => path.join(root, '.architecture-guard', 'queue.yml');
+
+export function readQueue(file: string): Queue {
+  let parsed: unknown;
+  try {
+    parsed = parse(fs.readFileSync(file, 'utf8'));
+  } catch (e) {
+    throw new Error(`Unreadable queue ${file}`, { cause: e });
+  }
+  if (!parsed || typeof parsed !== 'object' || !Array.isArray((parsed as Queue).groups)) {
+    throw new Error(`Unreadable queue ${file}: expected a groups list`);
+  }
+  const queue = parsed as Queue;
+  for (const group of queue.groups) {
+    if (!group || typeof group.id !== 'string' || !GROUP_ID.test(group.id)) {
+      throw new Error(`Unreadable queue ${file}: group id ${JSON.stringify(group?.id)} is not lowercase kebab-case`);
+    }
+  }
+  return queue;
+}
+
+// Line endings and surrounding whitespace differ between sources and copies; key order never matters.
+function normalize(value: unknown): unknown {
+  if (typeof value === 'string') return value.replace(/\r\n?/g, '\n').trim();
+  if (Array.isArray(value)) return value.map(normalize);
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return Object.fromEntries(Object.keys(record).sort().map(key => [key, normalize(record[key])]));
+  }
+  return value;
+}
+
+const contentOf = (item: Record<string, unknown>) => ({
+  title: item.title ?? '',
+  description: item.description ?? '',
+  acceptance: item.acceptance ?? [],
+  origins: item.origins ?? [],
+  criterion_mappings: item.criterion_mappings ?? [],
+});
+
+export function itemHash(item: Record<string, unknown>): string {
+  const digest = createHash('sha256').update(JSON.stringify(normalize(contentOf(item)))).digest('hex');
+  return `sha256:${digest.slice(0, 16)}`;
+}
+
+// The lean snapshot keeps what ordering and lanes need, plus a hash of the text a resume must notice changing.
+export function leanSnapshot(item: Item) {
+  return {
+    id: item.id,
+    type: item.type,
+    priority: item.priority,
+    ...(item.size !== undefined ? { size: item.size } : {}),
+    depends_on: [...((item.depends_on as string[] | undefined) ?? [])],
+    hash: itemHash(item),
+  };
+}
+
+const same = (a: unknown, b: unknown) => JSON.stringify(normalize(a)) === JSON.stringify(normalize(b));
+const sortedDeps = (value: unknown) => [...((value as string[] | undefined) ?? [])].sort();
+
+// Snapshots written before lean snapshots carry the full text; compare those field by field.
+export function changedFields(snapshot: Record<string, unknown>, item: Record<string, unknown>): string[] {
+  const fields: string[] = [];
+  for (const field of DIRECT_FIELDS) {
+    const changed = field === 'depends_on' ? !same(sortedDeps(snapshot[field]), sortedDeps(item[field])) : !same(snapshot[field] ?? null, item[field] ?? null);
+    if (changed) fields.push(field);
+  }
+  if (typeof snapshot.hash === 'string') {
+    if (snapshot.hash !== itemHash(item)) fields.push('content');
+  } else {
+    const before = contentOf(snapshot);
+    const after = contentOf(item);
+    for (const field of CONTENT_FIELDS) if (!same(before[field], after[field])) fields.push(field);
+  }
+  return fields;
+}
+
+export function diffQueue(queue: Queue, items: Item[]) {
+  const recorded = new Map<string, { group: string; snapshot: Item }>();
+  for (const group of queue.groups) for (const snapshot of group.items ?? []) recorded.set(snapshot.id, { group: group.id, snapshot });
+  const archived = new Map<string, string>();
+  for (const entry of queue.archived ?? []) for (const id of entry.items) archived.set(id, entry.id);
+
+  const seen = new Set<string>();
+  const result = { new: [] as string[], changed: [] as { id: string; group: string; fields: string[] }[], removed: [] as { id: string; group: string }[], archived: [] as { id: string; group: string }[], unchanged: 0 };
+  for (const item of items) {
+    seen.add(item.id);
+    const entry = recorded.get(item.id);
+    if (entry) {
+      const fields = changedFields(entry.snapshot, item);
+      if (fields.length) result.changed.push({ id: item.id, group: entry.group, fields });
+      else result.unchanged += 1;
+    } else if (archived.has(item.id)) {
+      result.archived.push({ id: item.id, group: archived.get(item.id)! });
+    } else {
+      result.new.push(item.id);
+    }
+  }
+  for (const [id, entry] of recorded) if (!seen.has(id)) result.removed.push({ id, group: entry.group });
+  return result;
+}
+
+export function queueStatus(root: string) {
+  const file = queuePath(root);
+  if (!fs.existsSync(file)) return { queue: null, active: false, counts: {}, groups: [], finished: [], archived: 0 };
+  const queue = readQueue(file);
+  const counts: Record<string, number> = {};
+  const groups = [];
+  const finished: string[] = [];
+  for (const group of queue.groups) {
+    const state = String(group.state ?? 'unknown');
+    counts[state] = (counts[state] ?? 0) + 1;
+    if ((FINISHED_STATES as readonly string[]).includes(state)) {
+      finished.push(group.id);
+      continue;
+    }
+    groups.push({
+      id: group.id,
+      state,
+      lane: group.lane ?? null,
+      reason: group.reason ?? null,
+      branch: group.branch ?? null,
+      worktree: group.worktree ?? null,
+      pr: group.pr ?? null,
+      stacked_on: group.stacked_on ?? null,
+      items: (group.items ?? []).map(item => item.id),
+    });
+  }
+  return { queue: file, source: queue.source ?? null, base: queue.base ?? null, active: groups.length > 0, counts, groups, finished, archived: (queue.archived ?? []).length };
+}
+
+// Moves finished groups, and published groups the caller confirmed merged, out of queue.yml. Their item ids stay in
+// an `archived` index so a resume never plans those items again.
+export function archiveGroups(root: string, mergedGroups: string[], options: { dryRun?: boolean; now?: Date } = {}) {
+  const file = queuePath(root);
+  const queue = readQueue(file);
+  for (const id of mergedGroups) {
+    const group = queue.groups.find(candidate => candidate.id === id);
+    if (!group) throw new Error(`Group ${id} is not in ${file}`);
+    if (group.state !== 'published' && !(FINISHED_STATES as readonly string[]).includes(String(group.state))) {
+      throw new Error(`Group ${id} is ${group.state}; only published groups whose work has merged, and done or skipped groups, can be archived`);
+    }
+  }
+  const moving = queue.groups.filter(group => (FINISHED_STATES as readonly string[]).includes(String(group.state)) || mergedGroups.includes(group.id));
+  const stillReferenced = queue.groups.filter(group => !moving.includes(group) && moving.some(moved => moved.id === group.stacked_on && moved.state !== 'published'));
+  if (stillReferenced.length) throw new Error(`Groups ${stillReferenced.map(group => group.id).join(', ')} are stacked on a group being archived`);
+
+  const month = (options.now ?? new Date()).toISOString().slice(0, 7);
+  const archiveDir = path.join(root, '.architecture-guard', 'queue', 'archive');
+  const archiveFile = path.join(archiveDir, `${month}.yml`);
+  const relativeArchive = path.relative(path.join(root, '.architecture-guard'), archiveFile).split(path.sep).join('/');
+  const plan = moving.map(group => {
+    const discovery = path.join(root, '.architecture-guard', 'queue', `${group.id}.discovery.md`);
+    return { id: group.id, state: String(group.state), discovery: fs.existsSync(discovery) ? discovery : null };
+  });
+  const result = { archive: archiveFile, groups: plan.map(entry => entry.id), discoveryMoved: plan.filter(entry => entry.discovery).map(entry => entry.id), dryRun: Boolean(options.dryRun) };
+  if (options.dryRun || moving.length === 0) return result;
+
+  fs.mkdirSync(archiveDir, { recursive: true });
+  const existing = fs.existsSync(archiveFile) ? (parse(fs.readFileSync(archiveFile, 'utf8')) as { groups?: Group[] } | null) : null;
+  const archivedAt = (options.now ?? new Date()).toISOString();
+  const groups = [...(existing?.groups ?? []), ...moving.map(group => ({ ...group, archived_at: archivedAt }))];
+  fs.writeFileSync(archiveFile, stringify({ groups }));
+  for (const entry of plan) {
+    if (entry.discovery) fs.renameSync(entry.discovery, path.join(archiveDir, path.basename(entry.discovery)));
+  }
+  queue.archived = [
+    ...(queue.archived ?? []),
+    ...moving.map(group => ({ id: group.id, state: String(group.state), pr: (group.pr as string | null | undefined) ?? null, items: (group.items ?? []).map(item => item.id), file: relativeArchive })),
+  ];
+  queue.groups = queue.groups.filter(group => !moving.includes(group));
+  fs.writeFileSync(file, stringify(queue));
+  return result;
+}
+
+function readItems(source: string | undefined, cwd: string, stdin: () => string): Item[] {
+  let text: string;
+  if (!source || source === '-') {
+    text = stdin();
+  } else {
+    const full = path.resolve(cwd, source);
+    if (!insideWorkspace(cwd, full)) throw new Error(`Items file ${source} is outside the project root ${cwd}`);
+    text = fs.readFileSync(full, 'utf8');
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (e) {
+    throw new Error('Items must be a JSON array of normalized backlog items', { cause: e });
+  }
+  const items = Array.isArray(parsed) ? parsed : (parsed as { items?: unknown })?.items;
+  if (!Array.isArray(items) || items.some(item => !item || typeof (item as Item).id !== 'string')) {
+    throw new Error('Items must be a JSON array of normalized backlog items, each with an id');
+  }
+  return items as Item[];
+}
+
+// readFileSync(0) fails with EAGAIN when stdin is a non-blocking pipe whose writer has not finished, which is the
+// usual `backlog show ... | queue snapshot` case; read in chunks and wait briefly instead.
+export function readStdin(fd = 0): string {
+  if (fd === 0 && process.stdin.isTTY) throw new Error('Pipe the items as JSON on stdin, or pass --items <file>');
+  const chunks: Buffer[] = [];
+  const buffer = Buffer.alloc(64 * 1024);
+  const pause = new Int32Array(new SharedArrayBuffer(4));
+  for (;;) {
+    let read: number;
+    try {
+      read = fs.readSync(fd, buffer, 0, buffer.length, null);
+    } catch (e) {
+      const code = (e as NodeJS.ErrnoException).code;
+      if (code === 'EAGAIN') {
+        Atomics.wait(pause, 0, 0, 10);
+        continue;
+      }
+      if (code === 'EOF') break;
+      throw e;
+    }
+    if (read === 0) break;
+    chunks.push(Buffer.from(buffer.subarray(0, read)));
+  }
+  return Buffer.concat(chunks).toString('utf8');
+}
+
+function run(action: () => unknown) {
+  try {
+    process.stdout.write(JSON.stringify(action()) + '\n');
+  } catch (e) {
+    console.error(e instanceof Error ? e.message : e);
+    process.exitCode = 1;
+  }
+}
+
+export const runQueueStatus = (cwd = process.cwd()) => run(() => queueStatus(queueRoot(cwd)));
+
+export const runQueueSnapshot = (options: { items?: string }, cwd = process.cwd(), stdin = readStdin) =>
+  run(() => readItems(options.items, cwd, stdin).map(leanSnapshot));
+
+export const runQueueDiff = (options: { items?: string }, cwd = process.cwd(), stdin = readStdin) =>
+  run(() => {
+    const file = queuePath(queueRoot(cwd));
+    if (!fs.existsSync(file)) throw new Error(`No queue at ${file}`);
+    return diffQueue(readQueue(file), readItems(options.items, cwd, stdin));
+  });
+
+export const runQueueArchive = (options: { group?: string[]; dryRun?: boolean }, cwd = process.cwd()) =>
+  run(() => archiveGroups(queueRoot(cwd), options.group ?? [], { dryRun: options.dryRun }));

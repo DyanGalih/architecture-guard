@@ -3,6 +3,7 @@ import path from 'node:path';
 import { parse } from 'yaml';
 import { z } from 'zod';
 import { insideWorkspace } from './repositories';
+import { itemHash } from './queue';
 
 export const BACKLOG_TYPES = ['story', 'feature', 'bug', 'task', 'chore', 'spike'] as const;
 export const BACKLOG_PRIORITIES = ['highest', 'high', 'medium', 'low', 'lowest'] as const;
@@ -176,11 +177,56 @@ export function validateBacklog(backlogPath: string): Backlog {
   return result.data;
 }
 
-export function runValidateBacklog(backlogPath = '.architecture-guard/backlog.yml') {
+// Above these, agents spend more context reading the backlog than planning from it; a warning, never an error.
+export const BACKLOG_WARN_ITEMS = 200;
+export const BACKLOG_WARN_BYTES = 256 * 1024;
+
+export function backlogSizeWarning(backlogPath: string, backlog: Backlog): string | null {
+  const bytes = fs.statSync(path.resolve(backlogPath)).size;
+  if (backlog.items.length <= BACKLOG_WARN_ITEMS && bytes <= BACKLOG_WARN_BYTES) return null;
+  return `Warning: ${backlogPath} has ${backlog.items.length} items (${Math.round(bytes / 1024)} KB). Move delivered items to .architecture-guard/backlog.archive.yml, and read it with \`architecture-guard backlog list\` and \`backlog show <id>\` instead of the whole file.`;
+}
+
+// Compact rows: everything ordering, grouping, and lanes need, plus a hash that changes with the item text.
+export function listBacklog(backlogPath: string) {
+  return validateBacklog(backlogPath).items.map(item => ({
+    id: item.id,
+    type: item.type,
+    priority: item.priority,
+    ...(item.size !== undefined ? { size: item.size } : {}),
+    ...(item.group !== undefined ? { group: item.group } : {}),
+    ...(item.parent !== undefined ? { parent: item.parent } : {}),
+    depends_on: item.depends_on ?? [],
+    title: item.title,
+    hash: itemHash(item),
+  }));
+}
+
+export function showBacklog(backlogPath: string, ids: string[]) {
+  const items = validateBacklog(backlogPath).items;
+  const missing = ids.filter(id => !items.some(item => item.id === id));
+  if (missing.length) throw new Error(`Unknown backlog item ${missing.join(', ')}`);
+  return items.filter(item => ids.includes(item.id));
+}
+
+function runJson(action: () => unknown) {
   try {
-    console.log(JSON.stringify(validateBacklog(backlogPath)));
+    console.log(JSON.stringify(action()));
   } catch (e) {
     console.error(e instanceof Error ? e.message : e);
     process.exitCode = 1;
   }
 }
+
+export function runValidateBacklog(backlogPath = '.architecture-guard/backlog.yml') {
+  runJson(() => {
+    const backlog = validateBacklog(backlogPath);
+    const warning = backlogSizeWarning(backlogPath, backlog);
+    if (warning) console.error(warning);
+    return backlog;
+  });
+}
+
+export const runBacklogList = (options: { path?: string }) => runJson(() => listBacklog(options.path ?? '.architecture-guard/backlog.yml'));
+
+export const runBacklogShow = (ids: string[], options: { path?: string }) => runJson(() => showBacklog(options.path ?? '.architecture-guard/backlog.yml', ids));

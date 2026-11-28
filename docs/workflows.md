@@ -291,6 +291,17 @@ If the push fails, the workflow gracefully degrades by logging a warning and rec
 
 Run state is kept in `.architecture-guard/queue.yml` and discovery summaries in `.architecture-guard/queue/`; Gate Q offers to add these paths to `.git/info/exclude`. The next run re-checks parked groups, shows what changed in the backlog, including origin and criterion-mapping changes, and continues only after Gate Q re-approval. A group that depends on an unmerged pull request waits by default, even when that dependency is delivered in the same run. You can opt in to stacking a fix or light group on its dependency's branch after the dependency is published; full groups wait. The queue never merges or approves pull requests, never force-pushes, and never writes to Jira. With Beads, write-back is opt-in at Gate Q: beads are marked in progress when their group starts, get a note with the pull request URL, and are closed only after the pull request has merged and you approve. Research beads have no pull request, so the queue leaves them open for you to close. Without a remote, Gate P commits approved work locally; when the forge cannot create pull requests, the queue supplies the title and description for you to open one.
 
+**Keeping run state small.** With the `architecture-guard` CLI installed, the queue stores a lean snapshot per item (id, type, priority, size, dependencies, and a content hash) instead of its full text, and archives finished work: `done` and `skipped` groups, and published groups whose pull requests have merged, move to `.architecture-guard/queue/archive/<yyyy-mm>.yml`, leaving one index line each in `queue.yml` so their items are never planned again. Queues written by older versions keep working; their full snapshots are compared field by field. The skills use these read-only commands instead of loading whole files:
+
+| Command | Prints |
+| --- | --- |
+| `architecture-guard queue status` | Active groups (state, lane, reason, branch, worktree, item ids) with no item text; finds the main checkout from a worktree |
+| `architecture-guard queue snapshot` | Lean snapshots for normalized items read as JSON (stdin or `--items <file>`) |
+| `architecture-guard queue diff` | New, changed (with fields), removed, and archived items compared with the queue |
+| `architecture-guard backlog list` / `backlog show <id>...` | Compact rows with a content hash / the full items |
+
+`architecture-guard queue archive [--group <id>...] [--dry-run]` is the only command that writes, and `ag-governed-backlog` runs it at the start of a resume.
+
 A local backlog (see [`examples/backlog.yml`](../examples/backlog.yml)):
 
 ```yaml
@@ -324,7 +335,7 @@ items:
     size: s                # xs | s | m | l | xl, breaks priority ties
 ```
 
-Check it with `architecture-guard validate-backlog`, run from the project root; it reads only a backlog file inside that root (after resolving symlinks) and rejects dependency cycles, including between items of one group.
+Check it with `architecture-guard validate-backlog`, run from the project root; it reads only a backlog file inside that root (after resolving symlinks) and rejects dependency cycles, including between items of one group. It warns, without failing, above 200 items or 256 KB; move delivered items to `.architecture-guard/backlog.archive.yml`, which no run reads.
 
 Fix and light items need acceptance criteria before task generation. At Gate Q, provide or approve criteria for an item that has none; otherwise its group is parked. For a change with no specification delta, the approved criteria in `## Stories` stand in for the specification during task generation and verification, with their provenance recorded.
 

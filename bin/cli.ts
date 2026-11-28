@@ -19,7 +19,8 @@ program
 import { runInstallCommand, runSyncTeamRoles } from '../cli/install';
 import { runDetectChangedFiles } from '../cli/detect-changed-files';
 import { runValidateSyncConfig } from '../cli/validate-sync-config';
-import { runValidateBacklog } from '../cli/validate-backlog';
+import { runValidateBacklog, runBacklogList, runBacklogShow } from '../cli/validate-backlog';
+import { runQueueStatus, runQueueSnapshot, runQueueDiff, runQueueArchive } from '../cli/queue';
 import { runValidateSetup } from '../cli/validate-setup';
 import { runCreateContextBudgetFixtures } from '../cli/create-context-budget-fixtures';
 import { runReviewArtifacts } from '../cli/review-artifacts';
@@ -76,6 +77,50 @@ program
   .command('validate-backlog [path]')
   .description('Strictly validate the local backlog for ag-governed-backlog (default: .architecture-guard/backlog.yml)')
   .action(runValidateBacklog);
+
+const backlog = program
+  .command('backlog')
+  .description('Read the local backlog in slices instead of loading the whole file');
+
+backlog
+  .command('list')
+  .description('Validate the backlog and print one compact row per item (no description or acceptance), with a content hash')
+  .option('--path <path>', 'Backlog file (default: .architecture-guard/backlog.yml)')
+  .action(runBacklogList);
+
+backlog
+  .command('show <ids...>')
+  .description('Print the full items with these ids')
+  .option('--path <path>', 'Backlog file (default: .architecture-guard/backlog.yml)')
+  .action(runBacklogShow);
+
+const queue = program
+  .command('queue')
+  .description('Read ag-governed-backlog run state (.architecture-guard/queue.yml in the main checkout)');
+
+queue
+  .command('status')
+  .description('Summarize the queue: active groups with state, lane, reason, branch, and item ids; finished and archived counts')
+  .action(() => runQueueStatus());
+
+queue
+  .command('snapshot')
+  .description('Print lean item snapshots (id, type, priority, size, depends_on, hash) for normalized items read as JSON')
+  .option('--items <file>', 'JSON array of normalized items (default: stdin)')
+  .action((options) => runQueueSnapshot(options));
+
+queue
+  .command('diff')
+  .description('Compare normalized items read as JSON with the queue snapshots: new, changed (with fields), removed, archived')
+  .option('--items <file>', 'JSON array of normalized items (default: stdin)')
+  .action((options) => runQueueDiff(options));
+
+queue
+  .command('archive')
+  .description('Move done and skipped groups, and the named published groups whose work has merged, to queue/archive/<yyyy-mm>.yml')
+  .option('--group <ids...>', 'Published groups whose pull requests have merged')
+  .option('--dry-run', 'Report what would move without writing')
+  .action((options) => runQueueArchive(options));
 
 program
   .command('validate-setup [target]')

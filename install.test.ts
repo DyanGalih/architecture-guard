@@ -2196,6 +2196,24 @@ test('entry points check for an unfinished backlog queue once, read-only, and ne
   assert.match(team, /An \*\*Add to queue\*\* choice makes this a breakdown run/);
 });
 
+test('governed-backlog keeps queue.yml small with lean snapshots, archiving, and CLI slices', () => {
+  const prompt = orchestrationPrompt('governed-backlog.md');
+  assert.match(prompt, /\*\*Lean snapshots\.\*\* When the `architecture-guard` CLI is installed, write each item snapshot as `architecture-guard queue snapshot` prints it/);
+  assert.match(prompt, /Without the CLI, write the full snapshot shown above/);
+  assert.match(prompt, /never rewrite older snapshots only to convert them/);
+  assert.match(prompt, /`architecture-guard queue archive` moves `done` and `skipped` groups, and the `published` groups named with `--group` whose work has merged/);
+  assert.match(prompt, /^archived:$/m);
+  assert.match(prompt, /An archived group still counts as recorded: its items are never planned again/);
+  assert.match(prompt, /Step 3 plans only items that are in no recorded group and not in the `archived` index/);
+  assert.match(prompt, /pass the normalized items to `architecture-guard queue diff` instead of reading the snapshots yourself/);
+  assert.match(prompt, /`architecture-guard backlog show <id>\.\.\.` only for new and changed items/);
+  const contract = fs.readFileSync(path.join(repoRoot, 'templates/backlog_item.md'), 'utf8');
+  assert.match(contract, /It warns, without failing, when the file grows past 200 items or 256 KB/);
+  assert.match(contract, /architecture-guard backlog list/);
+  const check = fs.readFileSync(path.join(repoRoot, 'templates/backlog_queue_check.md'), 'utf8');
+  assert.match(check, /run `architecture-guard queue status`: it finds the main checkout itself/);
+});
+
 test('implementation review triages findings into fix-now and defer without writing the backlog', () => {
   const review = orchestrationPrompt('review-implementation.md');
   assert.match(review, /9b\. \*\*Triage\*\*: Resolve and apply the `scope_assessment` template/);
