@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse, stringify } from 'yaml';
@@ -176,6 +176,18 @@ export function queueStatus(root: string) {
 
 // Moves finished groups, and published groups the caller confirmed merged, out of queue.yml. Their item ids stay in
 // an `archived` index so a resume never plans those items again.
+// Write to a temporary file beside the target and rename it over the target, so an interrupted write never leaves a
+// truncated queue.yml or archive file (the same pattern as cli/codex-config.ts).
+function writeFileAtomic(target: string, content: string) {
+  const temp = path.join(path.dirname(target), `.${path.basename(target)}.${randomUUID()}.tmp`);
+  try {
+    fs.writeFileSync(temp, content, { flag: 'wx' });
+    fs.renameSync(temp, target);
+  } finally {
+    if (fs.existsSync(temp)) fs.unlinkSync(temp);
+  }
+}
+
 export function archiveGroups(root: string, mergedGroups: string[], options: { dryRun?: boolean; now?: Date } = {}) {
   const file = queuePath(root);
   const queue = readQueue(file);
@@ -235,7 +247,7 @@ export function archiveGroups(root: string, mergedGroups: string[], options: { d
 
   // Stamp first, so a retry after a crash recognizes its own records and summary paths.
   for (const entry of plan) entry.group.archiving = entry.stamp;
-  fs.writeFileSync(file, stringify(queue));
+  writeFileAtomic(file, stringify(queue));
 
   fs.mkdirSync(archiveDir, { recursive: true });
   const files = new Map<string, Group[]>();
@@ -251,7 +263,7 @@ export function archiveGroups(root: string, mergedGroups: string[], options: { d
       records.push({ ...rest, archived_at: stamp.at, discovery: stamp.discovery });
     }
   }
-  for (const [archiveFile, records] of files) fs.writeFileSync(archiveFile, stringify({ groups: records }));
+  for (const [archiveFile, records] of files) writeFileAtomic(archiveFile, stringify({ groups: records }));
   for (const { source, stamp } of plan) {
     if (source && stamp.discovery && !fs.existsSync(inArchive(stamp.discovery))) fs.renameSync(source, inArchive(stamp.discovery));
   }
@@ -260,7 +272,7 @@ export function archiveGroups(root: string, mergedGroups: string[], options: { d
     ...plan.map(({ group, stamp }) => ({ id: group.id, state: String(group.state), pr: (group.pr as string | null | undefined) ?? null, items: (group.items ?? []).map(item => item.id), file: stamp.file, discovery: stamp.discovery })),
   ];
   queue.groups = queue.groups.filter(group => !moving.includes(group));
-  fs.writeFileSync(file, stringify(queue));
+  writeFileAtomic(file, stringify(queue));
   return result;
 }
 

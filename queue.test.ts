@@ -196,6 +196,15 @@ test('a stamp naming a path outside the archive is refused', () => {
   assert.throws(() => archiveGroups(root, []), /outside/);
 });
 
+test('archive leaves no temporary files behind', () => {
+  const root = workspace({ groups: [{ id: 'a', state: 'done' }, { id: 'b', state: 'implementing' }] });
+  archiveGroups(root, [], { now: new Date('2026-11-28T00:00:00Z') });
+  const leftovers = [path.join(root, '.architecture-guard'), path.join(root, '.architecture-guard', 'queue', 'archive')]
+    .flatMap(dir => fs.readdirSync(dir).filter(name => name.endsWith('.tmp')));
+  assert.deepStrictEqual(leftovers, []);
+  assert.deepStrictEqual(readQueue(path.join(root, '.architecture-guard', 'queue.yml')).groups.map(group => group.id), ['b']);
+});
+
 test('a dry-run archive creates nothing', () => {
   const root = workspace({ groups: [{ id: 'a', state: 'done' }] });
   archiveGroups(root, [], { dryRun: true });

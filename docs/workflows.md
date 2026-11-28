@@ -335,7 +335,7 @@ items:
     size: s                # xs | s | m | l | xl, breaks priority ties
 ```
 
-Check it with `architecture-guard validate-backlog`, run from the project root; it reads only a backlog file inside that root (after resolving symlinks) and rejects dependency cycles, including between items of one group. It warns, without failing, above 200 items or 256 KB; move delivered items to `.architecture-guard/backlog.archive.yml`, which no run reads. Remove `depends_on` references to the moved items from the remaining ones first; otherwise validation reports an unknown dependency.
+Check it with `architecture-guard validate-backlog`, run from the project root; it reads only a backlog file inside that root (after resolving symlinks) and rejects dependency cycles, including between items of one group. It warns, without failing, above 200 items or 256 KB; move delivered items to `.architecture-guard/backlog.archive.yml`, which no run reads. Remove `depends_on` references to the moved items, and to any group whose items have all moved, from the remaining ones first; otherwise validation reports an unknown dependency.
 
 Fix and light items need acceptance criteria before task generation. At Gate Q, provide or approve criteria for an item that has none; otherwise its group is parked. For a change with no specification delta, the approved criteria in `## Stories` stand in for the specification during task generation and verification, with their provenance recorded.
 
