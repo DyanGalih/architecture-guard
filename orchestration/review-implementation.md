@@ -412,6 +412,8 @@ Findings exactly as the hygiene runner reports them.
 ---
 
 ### Action Plan
+Each action below covers only the findings triaged `fix-now`, after the user's overrides; `defer` findings go to the Proposed Backlog Items. Blocking findings are always `fix-now`. Inside a governed convergence loop, the loop's own rules decide what each pass fixes.
+
 1. **Critical Fixes**: Address Constitution and Security violations first.
 2. **Architecture Alignment**: Resolve boundary erosion and contract mismatches.
 2b. **Change Checks**: Address intent, story scope, test, secret, governance, and security-sensitive findings before opening or updating a pull request; the pull-request review runs the same checks.
@@ -422,7 +424,7 @@ Findings exactly as the hygiene runner reports them.
 6. **Next Step**:
    Route each finding by its triage after the user's choice: the user may fix a `defer` finding now or defer a `fix-now` finding that is not blocking (record the choice); blocking findings always stay **Fix now**.
    - **Fix now**: [For `fix-now` findings only, e.g. run the registered `ag-refactor-generator` capability for findings whose Target is `code`; run the registered `ag-apply` capability only for findings whose Target is a plan, task, or spec artifact (it edits artifacts, never code). Each runs only after the user approves it.]
-   - **Defer to backlog**: [When there are Proposed Backlog Items: run `ag-governed-delivery-team` with them to approve and save them to a supported source and stop after its Phase 3; when a backlog queue is active (`backlog_queue_check`), say so and recommend adding them to it. Or "None".]
+   - **Defer to backlog**: [When there are Proposed Backlog Items: run `ag-governed-delivery-team` with them to approve and save them to a supported source and stop after its Phase 3; when the run context already holds a `backlog_queue_check` result (for example from the calling workflow) whose queue is active, say so and recommend adding them to it; otherwise do not state a queue state, because `ag-governed-delivery-team` runs that check when it saves them. Or "None".]
 7. **Remediation**: [Concrete remediation direction for the top issues, or "None needed"]
 
 ### Coordinated Host Review (When Active)

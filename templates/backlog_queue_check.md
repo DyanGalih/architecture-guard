@@ -35,7 +35,7 @@ Offer three choices, with a recommendation and its reason, as the Ponytail Core 
 |---|---|
 | Overlaps an unfinished group, or needs what it delivers | **Add to queue**; when the new work needs that group's output, its items get `depends_on` pointing at the group |
 | An unfinished group needs what the new work delivers | **Add to queue**, without a `depends_on` from the new items to that group (it would reverse the order); propose adding the new item to that group's `depends_on` in the source, for the user to approve, which reopens the group at Gate Q |
-| Scope Assessment route is the backlog route (a large class with more than one group) | **Add to queue** |
+| Scope Assessment route is the backlog route (a large class with more than one group, or one group with a spike or stakeholder approval) | **Add to queue** |
 | Unblocks a parked group | **Run directly**, then **resume the backlog** |
 | Small, no overlap, no dependency | **Run directly** |
 
