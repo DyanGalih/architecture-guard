@@ -190,6 +190,12 @@ This injects refactor tasks into the technical design and task artifacts so the 
 
 Paths proposed for creation are checked for name collisions, not reported missing. Grounding covers up to 40 premises by default and records remaining ones as not grounded. Referenced pull requests or tickets are checked read-only when a host action is available; otherwise their state is not checked. The review also checks coverage of privileged or irreversible paths and flags absolute guarantees that lack a mechanism or verification task.
 
+### Scope routing and review triage
+
+`templates/scope_assessment.md` sizes work as **small** or **large** from the number of stories, declared boundaries or repositories touched, dependencies between items, the largest item size, and unknowns, using the `backlog_item` size scale and lanes. Security-sensitive work is raised to large. `ag-governed-discover` uses it to recommend `ag-workflow` (small) or `ag-governed-delivery-team` followed by `ag-governed-backlog` (large). `ag-review-implementation` uses its `## Triage` rules to mark each finding `fix-now` or `defer`, and drafts a backlog item for each deferred one without writing it; blocking findings are never deferred. Thresholds live under `routing.scope` (`large_at_stories`, `large_at_boundaries`, `large_at_size`, `fix_now_max_size`).
+
+`templates/backlog_queue_check.md` runs in discover, workflow, spec, and team delivery when they start new work. It reads `.architecture-guard/queue.yml` from the main checkout (also from a worktree), and when a backlog run is unfinished it offers **Add to queue**, **Run directly**, or **Resume backlog first** with a recommendation based on overlap with the queued groups.
+
 ### Ponytail Core
 
 All commands load `templates/ponytail_core.md`. The contract applies an ordered YAGNI-to-minimum-code ladder, requires root-cause caller tracing, preserves a correctness and safety floor, requires a runnable check for non-trivial logic, and requires a recommendation on every Open Question. Framework presets add vocabulary but cannot require a layer or dependency without repository evidence.

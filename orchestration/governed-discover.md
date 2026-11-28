@@ -67,6 +67,7 @@ Check for the availability of:
 1. Detect `flash-mem` as an MCP-backed memory service in the current environment.
 2. Detect Security Review as an independent host capability using the 5-stage lifecycle and host discovery heuristics under `capability_composition` (checking installed host skill and command registries, and diagnosing OpenCode session-root drift). If present, note it for downstream security flagging.
 3. If either capability is missing, degrade gracefully. Without `flash-mem`, load the governance files as described in Flash-Mem-First Architecture Context Retrieval above.
+4. Resolve and apply the `backlog_queue_check` template with `architecture-guard resolve template backlog_queue_check` (it skips itself when the caller is `ag-governed-backlog`, and reuses a result already in the run context). When a backlog queue is active, give its one-line status now so the discussion can take the queued work into account; ask its question at Step 5.
 
 ### Step 2 — Architecture Context Retrieval
 
@@ -106,6 +107,10 @@ If required questions remain unresolved, ask only the next necessary questions a
 
 If the user proposes a feature that touches authentication, authorization, PII, secrets, trust boundaries, or data exposure, always flag it as security-sensitive in the handoff. If the `security-review` host capability was detected in Step 1, additionally request its downstream review; otherwise retain the flag and note that external Security Review is unavailable.
 
+### Step 4.3 — Scope Assessment
+
+Once the items and their expected files are known, resolve and apply the `scope_assessment` template with `architecture-guard resolve template scope_assessment`. Share the class, the deciding signals, and the route with the user before the handoff, so they can override it. A **large** class needs the Idea-to-Backlog Decomposition above; when the user declines it, route the work as **small** and record the large signals as risks.
+
 ### Step 4.4 — Governance Suggestions
 
 Discovery uses the latest approved rules and decisions; it never changes them. Suggest a change only when this discussion or the project's memory gives evidence for it:
@@ -127,7 +132,8 @@ If the discussion surfaced new architectural decisions, rejected alternatives, o
 Once you and the user are aligned on the feature details and any blocking/P0 conflicts are resolved:
 1. Conclude the discussion.
 2. Generate a structured **Discovery Summary Draft**.
-3. For a populated Backlog Breakdown (including any feature with more than one user story), recommend team delivery as described below; only for a feature with exactly one user story, hand the draft to the adapter-registered governed-spec capability as its seed input.
+3. When a backlog queue is active, ask the `backlog_queue_check` question (Add to queue, Run directly, or Resume backlog first) with its recommendation, and record the answer in the draft's `## Backlog Queue` section.
+4. Recommend the route from the Scope Assessment, as changed by the queue choice: a populated Backlog Breakdown (including any feature with more than one user story) or an **Add to queue** choice goes to team delivery as described below. A **small** class runs as one flow through `ag-workflow`; when the caller is `ag-workflow` or another skill that runs the specification next, hand the draft to the adapter-registered governed-spec capability as its seed input instead.
 
 ## Output Structure
 
@@ -160,6 +166,17 @@ When the discussion is concluded and aligned, the command MUST return:
 ## Backlog Breakdown
 - [Proposed items using the `backlog_item` template shape (`id`, `type`, `priority`, `size`, `group`, `parent`, `depends_on`, `title`, `description`, `acceptance`, optional `origins`, and optional `criterion_mappings`) when decomposing a multi-item idea, a feature with more than one user story, or a requested backlog breakdown; or "Single feature (none)" only when the feature has exactly one user story]
 
+## Scope Assessment
+- **Class**: [small / large] ([computed / user override: reason])
+- **Signals**: [each signal with its value; mark the deciding ones]
+- **Lane**: [full / fix / light / research, with any escalation]
+- **Route**: [capability and why]
+
+## Backlog Queue
+- **Status**: [No active queue / Active: one-line summary]
+- **Overlap**: [group: overlapping files or boundaries / dependency / unblocks reason, or None]
+- **Choice**: [Add to queue / Run directly / Resume backlog first] ([recommended / user override: reason]), or Not applicable
+
 ## Rejected Options
 - [Options avoided because they conflict with architecture, add drift, or over-engineer the solution]
 
@@ -183,14 +200,16 @@ When the discussion is concluded and aligned, the command MUST return:
 - [Proposed decision/constraint/lesson, rationale, and intended Flash-Mem type; or "None"]
 
 ## Recommended Next Step
-For a single feature with exactly one user story, run `ag-governed-spec` with this Discovery Summary Draft as its seed (suggested change name: `<suggested-feature-name>`); it records the Story Set in the change. It establishes the change through {adapter_command:create-change} after its branch and write-approval gates, then writes and validates the specification.
+Follow the **Route** in the Scope Assessment, as changed by the Backlog Queue choice:
 
-When the draft includes a populated **Backlog Breakdown** (any feature with more than one user story, a multi-item idea, or when the user wants to store the breakdown as User Stories in `<root>/user-stories/`, `.architecture-guard/backlog.yml`, GitHub Issues, or Jira before engineering planning):
-- Run `ag-governed-delivery-team` with this Discovery Summary Draft to approve and persist the requested outputs, optionally sync them to GitHub Issues or Jira, and stop after Phase 3. Hand off to `ag-governed-backlog` only after confirming a supported source contains the approved items.
-
-After the specification is accepted, choose a delivery workflow:
+For a **small** class (a single feature with exactly one user story, or small work the user kept as one change), run `ag-workflow` with this Discovery Summary Draft as its seed (suggested change name: `<suggested-feature-name>`). It runs the specification, plan, tasks, implementation, and final review as one flow with its own gates, without repeating discovery. To drive each phase yourself instead, run `ag-governed-spec` with this draft as its seed; it records the Story Set in the change, establishes the change through {adapter_command:create-change} after its branch and write-approval gates, then writes and validates the specification. After the specification is accepted, choose a delivery workflow:
 - For solo developers: run `ag-governed-delivery`.
 - For teams that need stakeholder User Story approval: run `ag-governed-delivery-team`.
+
+When the draft includes a populated **Backlog Breakdown** (a **large** class, any feature with more than one user story, a multi-item idea, an **Add to queue** choice, or when the user wants to store the breakdown as User Stories in `<root>/user-stories/`, `.architecture-guard/backlog.yml`, GitHub Issues, or Jira before engineering planning):
+- Run `ag-governed-delivery-team` with this Discovery Summary Draft to approve and persist the requested outputs, optionally sync them to GitHub Issues or Jira, and stop after Phase 3. Hand off to `ag-governed-backlog` only after confirming a supported source contains the approved items.
+
+When the Backlog Queue choice is **Resume backlog first**, run `ag-governed-backlog` and keep this draft for later.
 ```
 
 ## Guardrails

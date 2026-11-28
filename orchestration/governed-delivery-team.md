@@ -78,13 +78,14 @@ Before creating, planning, or modifying any active change:
 
 ## Phase 1 — Detect the Active Feature and Integrations
 
-1. Identify the requested work from the user's input and any supplied Discovery Summary Draft without looking up SDD change artifacts. Continue with steps 4–7 and Phase 2 before Phase 3.
+1. Identify the requested work from the user's input and any supplied Discovery Summary Draft without looking up SDD change artifacts. Continue with steps 4–8 and Phase 2 before Phase 3.
 2. Defer single-feature scope resolution and {adapter_command:create-change} until Phase 4, after Phase 3 confirms this is a single-feature run. When a new change is needed, show the derived name and change container in the Write Approval Gate preview; before any Phase 4 write, preview the exact change container and operations and obtain approval.
 3. In Phase 4, do not guess when multiple active feature directories are plausible. Ask the user to identify the feature.
 4. Detect `flash-mem` as an MCP service. Do not inspect an SDD extension manifest for it.
 5. Detect Security Review as an independent host capability. It is not an SDD tool feature or extension; detect it only from host registrations.
 6. Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file.
 7. Load `.architecture-guard/config.yml` when present, then resolve the complete hygiene-rule set through `architecture-guard` and apply configured exclusions and effective severity at plan and task gates.
+8. Resolve and apply the `backlog_queue_check` template with `architecture-guard resolve template backlog_queue_check` before the Write Approval Gate (it skips itself when the caller is `ag-governed-backlog`, and reuses a result already in the run context). An **Add to queue** choice makes this a breakdown run: save the items to the queue's recorded source in Phase 3 and stop at the Phase 3 Stop / Handoff Gate. A **Run directly** choice keeps the requested single-feature path. On **Resume backlog first**, stop before any write.
 
 ## Phase 2 — Mandatory Memory Preflight When Available
 

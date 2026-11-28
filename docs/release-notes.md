@@ -1,3 +1,9 @@
+## Unreleased
+
+- **Scope-Aware Routing**: new `templates/scope_assessment.md` sizes work as small or large, reusing the `backlog_item` sizes and lanes. `ag-governed-discover` adds a Scope Assessment step and section and recommends `ag-workflow` for small work and `ag-governed-delivery-team` then `ag-governed-backlog` for large work; `ag-workflow` accepts a supplied Discovery Summary Draft without rerunning discovery. Thresholds are configurable under `routing.scope`.
+- **Backlog Queue Check**: new `templates/backlog_queue_check.md`. Discover, workflow, spec, and team delivery detect an unfinished `ag-governed-backlog` queue (including from a worktree) and ask once per run whether to add the new work to the queue, run it directly, or resume the backlog first, with a recommendation based on overlap. It is read-only and never runs inside `ag-governed-backlog`.
+- **Review Triage**: `ag-review-implementation` marks each finding `fix-now` or `defer`, drafts a backlog item for each deferred finding, and splits its Next Step into fix now and defer to backlog. Blocking findings are never deferred; inside a convergence loop triage is reported only.
+
 ## 3.10.0
 
 - **Security Review Capability Discovery & Lifecycle Separation**:

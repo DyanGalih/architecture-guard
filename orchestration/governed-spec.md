@@ -77,6 +77,10 @@ When Flash-Mem is available, use it first to gather the most relevant architectu
 
 Resolve the selected adapter's project configuration first (`{adapter_path:project-config}`), inspect it for references to further governance and constitution Markdown files (for example a `context` block), then explicitly read every declared or present constitution, architecture, security, and layout Markdown file. Check {adapter_path:constitution-set} when present, plus every corresponding path resolved by the adapter path map, including any layout or UI constitution path. Never silently omit an existing file. For Generic mode, ask the user for every unresolved required path and the destination specification path before continuing; resolve that destination as `{adapter_path:spec}` and never guess or write until it is supplied. For adapters with optional split files, rules embedded in `{adapter_path:constitution}` satisfy the corresponding input. If governance or architecture rules are missing entirely, stop and direct the user to the adapter-registered init capability. If security rules are missing, report the gap and require explicit user confirmation before continuing with baseline security checks and optional host Security Review.
 
+### Step 2.6 — Backlog Queue Check
+
+When this run would create a new change, resolve and apply the `backlog_queue_check` template with `architecture-guard resolve template backlog_queue_check` before branch management (it skips itself when the caller is `ag-governed-backlog`, and reuses a result already in the run context). Use the seed's Scope Assessment when one was supplied. On **Add to queue** or **Resume backlog first**, stop before any write and recommend the route the template names.
+
 ### Step 3 — Branch Management
 
 Before generating the specification, you MUST ensure work happens on a feature branch.
