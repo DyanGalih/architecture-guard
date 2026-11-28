@@ -53,15 +53,19 @@ test('full snapshots from older runs still diff field by field', () => {
   assert.deepStrictEqual(changedFields(story, { ...story, depends_on: [] }), []);
 });
 
-test('queue diff never reports Gate Q hygiene items as removed', () => {
-  const hygiene = { id: 'auth-session-hygiene-1', type: 'bug', priority: 'high', title: 'Fix lint finding' };
+test('queue diff never reports Gate Q items as removed, and status lists them apart from source ids', () => {
+  const hygiene = { id: 'auth-session-hygiene-1', type: 'bug', priority: 'high', title: 'Fix lint finding', gate_q: true };
   const queue = { groups: [{ id: 'auth-session', state: 'implementing', items: [leanSnapshot(story), hygiene] }] };
   const diff = diffQueue(queue, [story]);
   assert.deepStrictEqual(diff.removed, []);
   assert.strictEqual(diff.unchanged, 1);
-  // Only the group's own widen items are exempt
-  const other = diffQueue({ groups: [{ id: 'billing', state: 'planned', items: [{ ...hygiene }] }] }, []);
-  assert.deepStrictEqual(other.removed, [{ id: 'auth-session-hygiene-1', group: 'billing' }]);
+  // The marker decides, not the id: a source item named like a widen item is still reported when it goes
+  const named = diffQueue({ groups: [{ id: 'auth-session', state: 'planned', items: [{ id: 'auth-session-hygiene-1', type: 'bug', priority: 'high' }] }] }, []);
+  assert.deepStrictEqual(named.removed, [{ id: 'auth-session-hygiene-1', group: 'auth-session' }]);
+  const root = workspace(queue);
+  const [group] = queueStatus(root).groups;
+  assert.deepStrictEqual(group.items, [story.id]);
+  assert.deepStrictEqual(group.gate_q_items, ['auth-session-hygiene-1']);
 });
 
 test('queue diff reports new, changed, removed, and archived items', () => {
@@ -90,7 +94,7 @@ test('queue status counts parked groups as active and finished groups as not', (
   const status = queueStatus(parked);
   assert.strictEqual(status.active, true);
   assert.deepStrictEqual(status.counts, { parked: 1, done: 1 });
-  assert.deepStrictEqual(status.groups, [{ id: 'export', state: 'parked', lane: null, reason: 'waiting on auth-session', branch: null, worktree: null, pr: null, stacked_on: null, items: ['BUG-3'] }]);
+  assert.deepStrictEqual(status.groups, [{ id: 'export', state: 'parked', lane: null, reason: 'waiting on auth-session', branch: null, worktree: null, pr: null, stacked_on: null, items: ['BUG-3'], gate_q_items: [] }]);
   assert.ok(!JSON.stringify(status).includes('Redirects to sign-in'), 'status carries no item text');
 
   const awaitingMerge = workspace({ groups: [{ id: 'auth-session', state: 'published', pr: 'https://example.test/pr/1' }, { id: 'a', state: 'done' }] });

@@ -143,7 +143,9 @@ export function changedFields(snapshot: Record<string, unknown>, item: Record<st
   return fields;
 }
 
-const isHygieneItem = (group: string, id: string) => id.startsWith(`${group}-hygiene-`) && /^\d+$/.test(id.slice(group.length + '-hygiene-'.length));
+// Gate Q's widen items are recorded with `gate_q: true`: approved locally, never in the source. Provenance, not the
+// id, marks them, so a source item that happens to be named `<group>-hygiene-<n>` is still reported when it goes.
+const isGateQItem = (snapshot: Item) => snapshot.gate_q === true;
 
 export function diffQueue(queue: Queue, items: Item[]) {
   const recorded = new Map<string, { group: string; snapshot: Item }>();
@@ -166,9 +168,8 @@ export function diffQueue(queue: Queue, items: Item[]) {
       result.new.push(item.id);
     }
   }
-  // Gate Q's widen items (`<group>-hygiene-<n>`) are approved locally and never exist in the source, so their absence is
-  // not a removal.
-  for (const [id, entry] of recorded) if (!seen.has(id) && !isHygieneItem(entry.group, id)) result.removed.push({ id, group: entry.group });
+  // A Gate Q item's absence from the source is not a removal
+  for (const [id, entry] of recorded) if (!seen.has(id) && !isGateQItem(entry.snapshot)) result.removed.push({ id, group: entry.group });
   return result;
 }
 
@@ -195,7 +196,9 @@ export function queueStatus(root: string) {
       worktree: group.worktree ?? null,
       pr: group.pr ?? null,
       stacked_on: group.stacked_on ?? null,
-      items: (group.items ?? []).map(item => item.id),
+      // Source item ids only, so they can go straight to `backlog show`; Gate Q's own items are listed apart
+      items: (group.items ?? []).filter(item => !isGateQItem(item)).map(item => item.id),
+      gate_q_items: (group.items ?? []).filter(isGateQItem).map(item => item.id),
     });
   }
   return { queue: file, source: queue.source ?? null, base: queue.base ?? null, active: groups.some(group => group.state !== AWAITING_MERGE_STATE), counts, groups, finished, archived: (queue.archived ?? []).length };
