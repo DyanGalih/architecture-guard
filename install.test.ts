@@ -2188,7 +2188,8 @@ test('scope assessment routes small work to one flow and large work to the backl
   assert.match(orchestrationPrompt('governed-delivery-team.md'), /when Phase 3 still produces more than one group or story, its Stop \/ Handoff Gate applies/);
   assert.match(workflow, /in that order, because the queue recommendation depends on the class/);
   assert.match(workflow, /ask the queue question again only when the current status differs from the draft's \*\*Status\*\* line/);
-  assert.match(discover, /2\. When a backlog queue is active, ask the `backlog_queue_check` question[^\n]*\n3\. Generate a structured \*\*Discovery Summary Draft\*\*/, 'ask before writing the draft');
+  assert.match(discover, /2\. When a backlog queue is active, apply the template's \*\*Check Overlap\*\* section to the final scope[^\n]*then ask its question[^\n]*\n3\. Generate a structured \*\*Discovery Summary Draft\*\*/, 'check overlap on the final scope and ask before writing the draft');
+  assert.match(discover, /apply its \*\*Detect the Queue\*\* section now[^\n]*Its overlap check and question wait for Step 5/);
   assert.match(discover, /do not run `ag-governed-spec` yourself/);
   assert.match(discover, /The breakdown is \*\*populated\*\* when it lists at least one item/);
 });
@@ -2197,6 +2198,9 @@ test('entry points check for an unfinished backlog queue once, read-only, and ne
   const template = fs.readFileSync(path.join(repoRoot, 'templates/backlog_queue_check.md'), 'utf8');
   assert.match(template, /It is read-only: it never writes `queue\.yml`/);
   assert.match(template, /git rev-parse --path-format=absolute --git-common-dir/);
+  assert.match(template, /When that main worktree is an application repository listed under `repositories` of an enclosing workspace/);
+  assert.match(template, /A result covers only the scope it was checked against: when the scope has grown since/);
+  assert.match(template, /`architecture-guard backlog show <id>\.\.\.` when the CLI is installed, otherwise the items with those ids in `\.architecture-guard\/backlog\.yml`/);
   assert.match(template, /at least one group is in a state other than `done`, `skipped`, or `published`\. `parked` groups count/);
   assert.match(template, /\*\*Skip it\*\* when the caller is `ag-governed-backlog`/);
   assert.match(template, /\*\*Ask once per run\.\*\*/);
@@ -2236,6 +2240,7 @@ test('governed-backlog keeps queue.yml small with lean snapshots, archiving, and
   assert.match(prompt, /never rewrite older snapshots only to convert them/);
   assert.match(prompt, /`architecture-guard queue archive` moves `done` and `skipped` groups, and the `published` groups named with `--group` whose work has merged/);
   assert.match(prompt, /^archived:$/m);
+  assert.match(prompt, /A `done` or `skipped` group that a remaining group is still `stacked_on` stays in `queue.yml`/);
   assert.match(prompt, /stamps each group with an `archiving` field, so a rerun after an interrupted archive finishes that archive instead of adding another/);
   assert.match(prompt, /An archived group still counts as recorded: its items are never planned again/);
   assert.match(prompt, /A `skipped` or `done` entry never satisfies a dependency/);
@@ -2249,7 +2254,7 @@ test('governed-backlog keeps queue.yml small with lean snapshots, archiving, and
   assert.match(contract, /It warns, without failing, when the file grows past 200 items or 256 KB/);
   assert.match(contract, /architecture-guard backlog list/);
   const check = fs.readFileSync(path.join(repoRoot, 'templates/backlog_queue_check.md'), 'utf8');
-  assert.match(check, /run `architecture-guard queue status`: it finds the main checkout itself/);
+  assert.match(check, /run `architecture-guard queue status`: it finds the workspace itself/);
 });
 
 test('implementation review triages findings into fix-now and defer without writing the backlog', () => {

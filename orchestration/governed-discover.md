@@ -67,7 +67,7 @@ Check for the availability of:
 1. Detect `flash-mem` as an MCP-backed memory service in the current environment.
 2. Detect Security Review as an independent host capability using the 5-stage lifecycle and host discovery heuristics under `capability_composition` (checking installed host skill and command registries, and diagnosing OpenCode session-root drift). If present, note it for downstream security flagging.
 3. If either capability is missing, degrade gracefully. Without `flash-mem`, load the governance files as described in Flash-Mem-First Architecture Context Retrieval above.
-4. Resolve and apply the `backlog_queue_check` template with `architecture-guard resolve template backlog_queue_check` (it skips itself when the caller is `ag-governed-backlog`, and reuses a result already in the run context). When a backlog queue is active, give its one-line status now so the discussion can take the queued work into account; ask its question at Step 5.
+4. Resolve the `backlog_queue_check` template with `architecture-guard resolve template backlog_queue_check` and apply its **Detect the Queue** section now (it skips itself when the caller is `ag-governed-backlog`). When a backlog queue is active, give its one-line status so the discussion can take the queued work into account. Its overlap check and question wait for Step 5, because the scope is not final until the breakdown is agreed.
 
 ### Step 2 — Architecture Context Retrieval
 
@@ -131,7 +131,7 @@ If the discussion surfaced new architectural decisions, rejected alternatives, o
 
 Once you and the user are aligned on the feature details and any blocking/P0 conflicts are resolved:
 1. Conclude the discussion.
-2. When a backlog queue is active, ask the `backlog_queue_check` question (Add to queue, Run directly, or Resume backlog first) with its recommendation.
+2. When a backlog queue is active, apply the template's **Check Overlap** section to the final scope (the Scope Assessment and any Backlog Breakdown from Step 4), then ask its question (Add to queue, Run directly, or Resume backlog first) with its recommendation.
 3. Generate a structured **Discovery Summary Draft**, recording the answer in its `## Backlog Queue` section.
 4. Recommend the route from the Scope Assessment, as changed by the queue choice: the backlog route (a large class whose breakdown has more than one group, or one group that contains a spike or needs stakeholder approval) or an **Add to queue** choice goes to team delivery as described below. A **small** class, and a large class whose breakdown forms one group with no spike, runs as one flow through `ag-workflow`. When the caller is `ag-workflow` or another skill that runs the specification next, return the draft to that caller as the specification seed; do not run `ag-governed-spec` yourself.
 
