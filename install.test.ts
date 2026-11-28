@@ -2200,6 +2200,10 @@ test('entry points check for an unfinished backlog queue once, read-only, and ne
   assert.match(template, /git rev-parse --path-format=absolute --git-common-dir/);
   assert.match(template, /When that main worktree is an application repository listed under `repositories` of an enclosing workspace/);
   assert.match(template, /A result covers only the scope it was checked against: when the scope has grown since/);
+  assert.match(template, /a queue group id is a kebab-case name and may not exist in the source/);
+  assert.match(template, /those its approved plan and tasks name when the group has them \(they stay its approved scope until Gate Q reconciles a source change\)/);
+  assert.match(orchestrationPrompt('workflow.md'), /its Phase 3 stops after the User Stories are approved: take that approval for the specification's `## Stories` and continue with the registered `ag-governed-delivery` capability/);
+  assert.match(orchestrationPrompt('governed-delivery-team.md'), /When `ag-workflow` called this skill for a one-flow change with more than one story, report the approved User Stories to it at this stop/);
   assert.ok(!template.includes('backlog show'), 'the backlog show command is not part of this change');
   assert.match(template, /at least one group is in a state other than `done`, `skipped`, or `published`\. `parked` groups count/);
   assert.match(template, /\*\*Skip it\*\* when the caller is `ag-governed-backlog`/);
