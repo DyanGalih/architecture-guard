@@ -2209,8 +2209,11 @@ test('governed-backlog keeps queue.yml small with lean snapshots, archiving, and
   assert.match(prompt, /^archived:$/m);
   assert.match(prompt, /An archived group still counts as recorded: its items are never planned again/);
   assert.match(prompt, /Step 3 plans only items that are in no recorded group and not in the `archived` index/);
-  assert.match(prompt, /pass the normalized items to `architecture-guard queue diff` instead of reading the snapshots yourself/);
+  assert.match(prompt, /pipe the items to `architecture-guard queue diff` instead of reading the snapshots yourself/);
   assert.match(prompt, /`architecture-guard backlog show <id>\.\.\.` only for new and changed items/);
+  assert.match(prompt, /pipe `architecture-guard backlog list` straight into it: each compact row carries the hash/);
+  assert.match(prompt, /After Gate Q approves the queue, write the current snapshot of every item in an approved group/);
+  assert.match(prompt, /before Gate Q, nothing is written except this command's run state/);
   const contract = fs.readFileSync(path.join(repoRoot, 'templates/backlog_item.md'), 'utf8');
   assert.match(contract, /It warns, without failing, when the file grows past 200 items or 256 KB/);
   assert.match(contract, /architecture-guard backlog list/);

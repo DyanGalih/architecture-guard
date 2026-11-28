@@ -80,6 +80,9 @@ export function itemHash(item: Record<string, unknown>): string {
   return `sha256:${digest.slice(0, 16)}`;
 }
 
+// A compact `backlog list` row has no text but carries the hash of it; never recompute that from the missing text.
+const contentHash = (item: Record<string, unknown>) => (typeof item.hash === 'string' ? item.hash : itemHash(item));
+
 // The lean snapshot keeps what ordering and lanes need, plus a hash of the text a resume must notice changing.
 export function leanSnapshot(item: Item) {
   return {
@@ -88,7 +91,7 @@ export function leanSnapshot(item: Item) {
     priority: item.priority,
     ...(item.size !== undefined ? { size: item.size } : {}),
     depends_on: [...((item.depends_on as string[] | undefined) ?? [])],
-    hash: itemHash(item),
+    hash: contentHash(item),
   };
 }
 
@@ -103,7 +106,10 @@ export function changedFields(snapshot: Record<string, unknown>, item: Record<st
     if (changed) fields.push(field);
   }
   if (typeof snapshot.hash === 'string') {
-    if (snapshot.hash !== itemHash(item)) fields.push('content');
+    if (snapshot.hash !== contentHash(item)) fields.push('content');
+  } else if (typeof item.hash === 'string') {
+    // A full snapshot from an older run against a compact row: compare the hashes of the text
+    if (itemHash(snapshot) !== item.hash) fields.push('content');
   } else {
     const before = contentOf(snapshot);
     const after = contentOf(item);

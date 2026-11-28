@@ -40,6 +40,14 @@ test('lean snapshots keep ordering and lane fields and drop the item text', () =
   assert.deepStrictEqual(changedFields(lean, { ...story, priority: 'low', depends_on: ['BUG-3'] }), ['priority', 'depends_on']);
 });
 
+test('compact backlog list rows diff and snapshot by their own hash, not by their missing text', () => {
+  const row = { id: story.id, type: story.type, priority: story.priority, size: story.size, depends_on: [], title: story.title, hash: itemHash(story) };
+  assert.deepStrictEqual(changedFields(leanSnapshot(story), row), [], 'an unchanged item is not flagged');
+  assert.deepStrictEqual(changedFields(story, row), [], 'a full snapshot from an older run compares by hash');
+  assert.deepStrictEqual(changedFields(leanSnapshot(story), { ...row, hash: itemHash({ ...story, title: 'Other' }) }), ['content']);
+  assert.deepStrictEqual(leanSnapshot(row), leanSnapshot(story));
+});
+
 test('full snapshots from older runs still diff field by field', () => {
   assert.deepStrictEqual(changedFields(story, { ...story, description: 'Stay signed in for 30 days.' }), ['description']);
   assert.deepStrictEqual(changedFields(story, { ...story, depends_on: [] }), []);
