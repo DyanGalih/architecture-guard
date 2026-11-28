@@ -2146,6 +2146,9 @@ test('scope assessment routes small work to one flow and large work to the backl
   assert.match(template, /architecture-guard resolve template backlog_item` and do not restate them/);
   assert.doesNotMatch(template, /\| story, feature \| full \|/, 'lanes stay owned by backlog_item');
   assert.match(template, /raise \*\*small\*\* to \*\*large\*\*/);
+  assert.match(template, /A single story stays \*\*small\*\*, because it cannot be broken down further/);
+  assert.match(template, /showing data that is already shown does not count/);
+  assert.match(template, /For a solo developer, their own acceptance at its Phase 3 is the stakeholder review/);
   assert.match(template, /`large_at_stories` \(default 2, so small work is one user story/);
   assert.match(template, /`large_at_boundaries` \(default 2\)/);
   assert.match(template, /`large_at_size` \(default `l`\)/);
@@ -2168,6 +2171,12 @@ test('scope assessment routes small work to one flow and large work to the backl
   assert.match(workflow, /When the user supplies a Discovery Summary Draft, use it as the specification seed and do not run discovery again/);
   assert.match(workflow, /stop the lifecycle after the `ag-governed-delivery-team` Phase 3 handoff/);
   assert.match(workflow, /When the user accepts it, run `ag-governed-delivery-team` with the draft, stop after its Phase 3 handoff/);
+  assert.match(workflow, /6\. Otherwise \(a specific request, with no draft and no active change\), apply the `scope_assessment` template to the request/, 'a specific request is still sized');
+  assert.match(workflow, /in that order, because the queue recommendation depends on the class/);
+  assert.match(workflow, /ask the queue question again only when the current status differs from the draft's \*\*Status\*\* line/);
+  assert.match(discover, /2\. When a backlog queue is active, ask the `backlog_queue_check` question[^\n]*\n3\. Generate a structured \*\*Discovery Summary Draft\*\*/, 'ask before writing the draft');
+  assert.match(discover, /do not run `ag-governed-spec` yourself/);
+  assert.match(discover, /The breakdown is \*\*populated\*\* when it lists at least one item/);
 });
 
 test('entry points check for an unfinished backlog queue once, read-only, and never inside the backlog run', () => {
@@ -2186,6 +2195,9 @@ test('entry points check for an unfinished backlog queue once, read-only, and ne
   assert.match(template, /git -C <worktree> diff --name-only HEAD/, 'overlap includes uncommitted changes');
   assert.match(template, /git -C <worktree> ls-files --others --exclude-standard/, 'overlap includes untracked files');
   assert.match(template, /without a `depends_on` from the new items to that group \(it would reverse the order\)/);
+  assert.match(template, /For a \*\*large\*\* class, this is the user keeping the work as one change/);
+  assert.match(template, /When the current directory is a group's worktree/);
+  assert.match(template, /- \*\*Warning\*\*: \[the overlapping group and files, and the user's confirmation, or None\]/);
 
   for (const file of ['governed-discover.md', 'workflow.md', 'governed-spec.md', 'governed-delivery-team.md']) {
     assert.match(orchestrationPrompt(file), /architecture-guard resolve template backlog_queue_check/, file);
