@@ -11,7 +11,7 @@ Work out each signal from the proposed work: the backlog items when the work was
 | Signal | Large when |
 |---|---|
 | User stories | at least `large_at_stories` (default 2, so small work is one user story, matching the single-story rule of `## Story Items` in `backlog_item`), or the work spans more than one feature |
-| Boundaries | it touches at least `large_at_boundaries` (default 2) declared architecture boundaries or modules, or more than one entry in `repositories` |
+| Boundaries | it touches at least `large_at_boundaries` (default 3) declared architecture boundaries or modules, or more than one entry in `repositories` |
 | Sequencing | any item `depends_on` another proposed item |
 | Item size | any item is `large_at_size` (default `l`) or larger. Estimate an item without a `size` with the `backlog_item` scale, using the Beads `estimate` column for the time per size; when you cannot estimate it, it counts as `m` |
 | Unknowns | any item needs a spike (`research` lane) before code can be written |
@@ -33,6 +33,10 @@ A **large** class needs a populated Backlog Breakdown. When the user declines to
 | small, stakeholder User Story approval required | `ag-governed-delivery-team` (single-feature path, continuing to Phase 4) |
 | large | `ag-governed-delivery-team` to approve and save the Backlog Breakdown and stop after Phase 3, then `ag-governed-backlog` to deliver it. For a solo developer, their own acceptance at its Phase 3 is the stakeholder review |
 
+**One group.** When a **large** class's breakdown forms a single group (every item shares one `group`, as `backlog_item` `## Grouping` defines, and none is a spike), `ag-governed-backlog` would deliver it as one change anyway. Route it through `ag-workflow` as one change instead, with every item of the group as a story of its specification, and say so in the Route. Keep the large route only when stakeholder User Story approval is required, because `ag-governed-delivery-team` stops after Phase 3 for more than one story. The class stays **large**, so its signals stay visible as risks.
+
+The **backlog route** below means `ag-governed-delivery-team` followed by `ag-governed-backlog`: a large class whose breakdown has more than one group, or a single group that needs stakeholder approval.
+
 When a backlog queue is active, `backlog_queue_check` may change the route; its choice wins.
 
 ## Output
@@ -42,7 +46,7 @@ When a backlog queue is active, `backlog_queue_check` may change the route; its 
 - **Class**: [small / large] ([computed / user override: reason])
 - **Signals**: [each signal with its value; mark the deciding ones]
 - **Lane**: [full / fix / light / research, from `backlog_item` `## Lanes`, with any escalation]
-- **Route**: [capability and why]
+- **Route**: [`ag-workflow` (one flow, including a large class that forms one group) / the backlog route; and why]
 ```
 
 ## Triage
