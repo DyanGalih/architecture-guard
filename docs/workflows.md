@@ -34,7 +34,7 @@ The orchestrated workflow is:
 
 ### Starting new work while a backlog run is unfinished
 
-When `.architecture-guard/queue.yml` still has groups that are not `done` or `skipped` (including `parked` ones), `ag-governed-discover`, `ag-workflow`, `ag-governed-spec`, and `ag-governed-delivery-team` say so and ask once per run (the `backlog_queue_check` template):
+When `.architecture-guard/queue.yml` still has groups that are not `done`, `skipped`, or `published` (including `parked` ones), `ag-governed-discover`, `ag-workflow`, `ag-governed-spec`, and `ag-governed-delivery-team` say so and ask once per run (the `backlog_queue_check` template):
 
 - **Add to queue** (recommended when the new work overlaps or depends on a queued group, or is large): `ag-governed-delivery-team` saves the items to the queue's source, and the next `ag-governed-backlog` run picks them up at Gate Q.
 - **Run directly** (recommended when the work is small and touches nothing queued): it starts on its own branch from the base, never from a group's branch. When it overlaps a group that is `implementing` or `ready`, you must confirm it after seeing the overlapping files.
