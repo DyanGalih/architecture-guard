@@ -6,21 +6,21 @@ Sizes, lanes, and lane escalation come from the `backlog_item` template (`## Ite
 
 ## Signals
 
-Work out each signal from the proposed items, their expected files (as `backlog_item` `## Grouping` defines them), the constitutions' declared boundaries, `security_sensitive_paths` and `repositories` from `.architecture-guard/config.yml`. Thresholds come from `routing.scope` in `.architecture-guard/config.yml`; the defaults are shown.
+Work out each signal from the proposed work: the backlog items when the work was decomposed, otherwise the single feature as one story. Use their expected files (as `backlog_item` `## Grouping` defines them), the constitutions' declared boundaries, `security_sensitive_paths` and `repositories` from `.architecture-guard/config.yml`. Thresholds come from `routing.scope` in `.architecture-guard/config.yml`; the defaults are shown.
 
 | Signal | Large when |
 |---|---|
 | User stories | at least `large_at_stories` (default 2, so small work is one user story, matching the single-story rule of `## Story Items` in `backlog_item`), or the work spans more than one feature |
 | Boundaries | it touches at least `large_at_boundaries` (default 2) declared architecture boundaries or modules, or more than one entry in `repositories` |
 | Sequencing | any item `depends_on` another proposed item |
-| Item size | any item is `large_at_size` (default `l`) or larger; unknown counts as `m` |
+| Item size | any item is `large_at_size` (default `l`) or larger. Estimate an item without a `size` with the `backlog_item` scale, using the Beads `estimate` column for the time per size; when you cannot estimate it, it counts as `m` |
 | Unknowns | any item needs a spike (`research` lane) before code can be written |
 
 ## Class
 
 - **large** when any signal above holds.
 - **small** otherwise.
-- **Security**: when the expected files match a `security_sensitive_paths` glob, or the work touches authentication, authorization, PII, secrets, or a trust boundary, raise **small** to **large**. Say so, because it is a common surprise.
+- **Security**: the work is security-sensitive when its expected files match a `security_sensitive_paths` glob, or it adds or changes authentication, authorization, secrets, a trust boundary, or which personal data is collected, stored, or exposed (showing data that is already shown does not count). Security-sensitive work always takes the **full** lane and needs Security Review on every route. When it has more than one item, also raise **small** to **large**. A single story stays **small**, because it cannot be broken down further; say that the security flag, not the class, adds the rigor.
 - When the expected files cannot be worked out, say so and ask the user to confirm the class instead of guessing.
 
 A **large** class needs a populated Backlog Breakdown. When the user declines to break the work down, route it as **small** and keep the large signals as risks in the handoff.
@@ -31,7 +31,7 @@ A **large** class needs a populated Backlog Breakdown. When the user declines to
 |---|---|
 | small | `ag-workflow`, with the Discovery Summary Draft as its seed: one flow from specification through final review. Mention `ag-governed-spec` followed by `ag-governed-delivery` as the lighter path when the user wants to drive each phase |
 | small, stakeholder User Story approval required | `ag-governed-delivery-team` (single-feature path, continuing to Phase 4) |
-| large | `ag-governed-delivery-team` to approve and save the Backlog Breakdown and stop after Phase 3, then `ag-governed-backlog` to deliver it |
+| large | `ag-governed-delivery-team` to approve and save the Backlog Breakdown and stop after Phase 3, then `ag-governed-backlog` to deliver it. For a solo developer, their own acceptance at its Phase 3 is the stakeholder review |
 
 When a backlog queue is active, `backlog_queue_check` may change the route; its choice wins.
 

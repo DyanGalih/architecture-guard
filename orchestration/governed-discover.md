@@ -109,7 +109,7 @@ If the user proposes a feature that touches authentication, authorization, PII, 
 
 ### Step 4.3 — Scope Assessment
 
-Once the items and their expected files are known, resolve and apply the `scope_assessment` template with `architecture-guard resolve template scope_assessment`. Share the class, the deciding signals, and the route with the user before the handoff, so they can override it. A **large** class needs the Idea-to-Backlog Decomposition above; when the user declines it, route the work as **small** and record the large signals as risks.
+Once the proposed work and its expected files are known (the items from the Idea-to-Backlog Decomposition, or the single feature as one story when it was not decomposed), resolve and apply the `scope_assessment` template with `architecture-guard resolve template scope_assessment`. State the class, the deciding signals, and the route in the discussion so the user can override them; this is not a gate, so do not wait for an answer. A **large** class needs a decomposition: when the idea was not decomposed yet, run the Idea-to-Backlog Decomposition now and assess its items again. When the user declines it, route the work as **small** and record the large signals as risks.
 
 ### Step 4.4 — Governance Suggestions
 
@@ -131,9 +131,9 @@ If the discussion surfaced new architectural decisions, rejected alternatives, o
 
 Once you and the user are aligned on the feature details and any blocking/P0 conflicts are resolved:
 1. Conclude the discussion.
-2. Generate a structured **Discovery Summary Draft**.
-3. When a backlog queue is active, ask the `backlog_queue_check` question (Add to queue, Run directly, or Resume backlog first) with its recommendation, and record the answer in the draft's `## Backlog Queue` section.
-4. Recommend the route from the Scope Assessment, as changed by the queue choice: a populated Backlog Breakdown (including any feature with more than one user story) or an **Add to queue** choice goes to team delivery as described below. A **small** class runs as one flow through `ag-workflow`; when the caller is `ag-workflow` or another skill that runs the specification next, hand the draft to the adapter-registered governed-spec capability as its seed input instead.
+2. When a backlog queue is active, ask the `backlog_queue_check` question (Add to queue, Run directly, or Resume backlog first) with its recommendation.
+3. Generate a structured **Discovery Summary Draft**, recording the answer in its `## Backlog Queue` section.
+4. Recommend the route from the Scope Assessment, as changed by the queue choice: a populated Backlog Breakdown (including any feature with more than one user story) or an **Add to queue** choice goes to team delivery as described below. A **small** class runs as one flow through `ag-workflow`. When the caller is `ag-workflow` or another skill that runs the specification next, return the draft to that caller as the specification seed; do not run `ag-governed-spec` yourself.
 
 ## Output Structure
 
@@ -164,6 +164,7 @@ When the discussion is concluded and aligned, the command MUST return:
 - **Owned elsewhere**: [KEY: summary (assignee), coordinate with] or None
 
 ## Backlog Breakdown
+The breakdown is **populated** when it lists at least one item; "Single feature (none)" is not populated.
 - [Proposed items using the `backlog_item` template shape (`id`, `type`, `priority`, `size`, `group`, `parent`, `depends_on`, `title`, `description`, `acceptance`, optional `origins`, and optional `criterion_mappings`) when decomposing a multi-item idea, a feature with more than one user story, or a requested backlog breakdown; or "Single feature (none)" only when the feature has exactly one user story]
 
 ## Scope Assessment
@@ -175,7 +176,8 @@ When the discussion is concluded and aligned, the command MUST return:
 ## Backlog Queue
 - **Status**: [No active queue / Active: one-line summary]
 - **Overlap**: [group: overlapping files or boundaries / dependency / unblocks reason, or None]
-- **Choice**: [Add to queue / Run directly / Resume backlog first] ([recommended / user override: reason]), or Not applicable
+- **Choice**: [Add to queue / Run directly / Resume backlog first] ([recommended / user override, with the reason when given]), or Not applicable
+- **Warning**: [the overlapping group and files, and the user's confirmation, or None]
 
 ## Rejected Options
 - [Options avoided because they conflict with architecture, add drift, or over-engineer the solution]
