@@ -123,6 +123,28 @@ test('queue root resolves to the main checkout from a linked worktree', () => {
   }
 });
 
+test('queue root refuses to guess from a linked worktree when the git directory is separate', () => {
+  const main = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ag-queue-sep-')));
+  const admin = `${main}-git-admin`;
+  git(main, 'init', '-b', 'main', `--separate-git-dir=${admin}`);
+  git(main, 'config', 'user.email', 'test@example.com');
+  git(main, 'config', 'user.name', 'Test');
+  fs.mkdirSync(path.join(main, '.architecture-guard'));
+  fs.writeFileSync(path.join(main, '.architecture-guard', 'config.yml'), 'schema_version: "1.0"\n');
+  git(main, 'add', '.');
+  git(main, 'commit', '-m', 'init');
+  const linked = `${main}-wt`;
+  git(main, 'worktree', 'add', '-b', 'feat/x', linked);
+  try {
+    // Git records only the separate git directory, so the linked worktree cannot find the checkout: an error, never
+    // the linked worktree's own (empty) queue
+    assert.throws(() => queueRoot(linked), /Cannot find the main worktree/);
+    assert.strictEqual(queueRoot(main), main);
+  } finally {
+    for (const dir of [linked, main, admin]) fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('queue root resolves to the enclosing workspace from a worktree of a listed application repository', () => {
   const ws = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ag-queue-ws-')));
   fs.mkdirSync(path.join(ws, '.architecture-guard'));

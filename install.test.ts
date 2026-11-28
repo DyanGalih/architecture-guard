@@ -2246,6 +2246,7 @@ test('governed-backlog keeps queue.yml small with lean snapshots, archiving, and
   assert.match(prompt, /`architecture-guard queue archive` moves `done` and `skipped` groups, and the `published` groups named with `--group` whose work has merged/);
   assert.match(prompt, /^archived:$/m);
   assert.match(prompt, /a group's own `<group>-hygiene-<n>` items from Gate Q are never in the source and never reported/);
+  assert.match(prompt, /leaving out each group's `<group>-hygiene-<n>` ids, which are not in the source \(an unknown id fails the whole lookup\)/);
   assert.match(prompt, /A `done` or `skipped` group that a remaining group is still `stacked_on` stays in `queue.yml`/);
   assert.match(prompt, /stamps each group with an `archiving` field, so a rerun after an interrupted archive finishes that archive instead of adding another/);
   assert.match(prompt, /An archived group still counts as recorded: its items are never planned again/);
@@ -2261,6 +2262,8 @@ test('governed-backlog keeps queue.yml small with lean snapshots, archiving, and
   assert.match(contract, /architecture-guard backlog list/);
   const check = fs.readFileSync(path.join(repoRoot, 'templates/backlog_queue_check.md'), 'utf8');
   assert.match(check, /run `architecture-guard queue status`: it finds the workspace itself/);
+  assert.match(check, /Leave the group's own `<group>-hygiene-<n>` ids out of that lookup/);
+  assert.match(check, /the result is `Unavailable: main worktree not found`; ask the user for the main checkout/);
 });
 
 test('implementation review triages findings into fix-now and defer without writing the backlog', () => {

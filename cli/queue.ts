@@ -26,19 +26,38 @@ type Queue = Record<string, unknown> & { groups: Group[]; archived?: ArchivedGro
 // main worktree is an application repository listed under an enclosing workspace, queue.yml is in that workspace.
 export function queueRoot(cwd: string): string {
   const { workspace } = locateWorkspace(cwd);
+  const run = (dir: string, ...args: string[]) => execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  let commonDir: string;
+  let mainTop: string | undefined;
   try {
-    const git = (...args: string[]) => execFileSync('git', ['-C', cwd, 'rev-parse', '--path-format=absolute', ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-    const commonDir = git('--git-common-dir');
-    const gitDir = git('--git-dir');
-    if (path.resolve(commonDir) === path.resolve(gitDir) || path.basename(commonDir) !== '.git') return workspace;
-    const top = execFileSync('git', ['-C', cwd, 'rev-parse', '--show-toplevel'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-    const mainTop = path.dirname(commonDir);
-    const enclosing = resolveWorkspace(mainTop);
-    if (enclosing.repository) return enclosing.workspace;
-    return path.join(mainTop, path.relative(top, workspace));
+    commonDir = path.resolve(run(cwd, 'rev-parse', '--path-format=absolute', '--git-common-dir'));
+    if (commonDir === path.resolve(run(cwd, 'rev-parse', '--path-format=absolute', '--git-dir'))) return workspace;
+    // The first entry of the worktree list is the main worktree; a bare main repository has no checkout for queue.yml
+    const [main = ''] = run(cwd, 'worktree', 'list', '--porcelain').split(/\n\n/);
+    if (/^bare$/m.test(main)) return workspace;
+    mainTop = /^worktree (.+)$/m.exec(main)?.[1];
   } catch {
     return workspace;
   }
+  // Git names the git directory itself when it is separate (--separate-git-dir) and nothing records the checkout;
+  // accept the entry only when it is a checkout of this repository, never guess and report an empty queue.
+  const isCheckout = (dir: string | undefined): dir is string => {
+    if (!dir) return false;
+    const relative = path.relative(commonDir, path.resolve(dir));
+    if (!relative.startsWith('..') && !path.isAbsolute(relative)) return false;
+    try {
+      return path.resolve(run(dir, 'rev-parse', '--path-format=absolute', '--git-common-dir')) === commonDir;
+    } catch {
+      return false;
+    }
+  };
+  if (!isCheckout(mainTop)) {
+    throw new Error(`Cannot find the main worktree of ${cwd}: its git directory ${commonDir} does not record the checkout. Run this from the main checkout.`);
+  }
+  const top = run(cwd, 'rev-parse', '--show-toplevel');
+  const enclosing = resolveWorkspace(mainTop);
+  if (enclosing.repository) return enclosing.workspace;
+  return path.join(mainTop, path.relative(top, workspace));
 }
 
 export const queuePath = (root: string) => path.join(root, '.architecture-guard', 'queue.yml');
