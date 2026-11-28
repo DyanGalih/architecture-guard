@@ -73,6 +73,10 @@ test('queue status counts parked groups as active and finished groups as not', (
   assert.deepStrictEqual(status.counts, { parked: 1, done: 1 });
   assert.deepStrictEqual(status.groups, [{ id: 'export', state: 'parked', lane: null, reason: 'waiting on auth-session', branch: null, worktree: null, pr: null, stacked_on: null, items: ['BUG-3'] }]);
   assert.ok(!JSON.stringify(status).includes('Redirects to sign-in'), 'status carries no item text');
+
+  const awaitingMerge = workspace({ groups: [{ id: 'auth-session', state: 'published', pr: 'https://example.test/pr/1' }, { id: 'a', state: 'done' }] });
+  assert.strictEqual(queueStatus(awaitingMerge).active, false, 'published groups wait only for a merge');
+  assert.deepStrictEqual(queueStatus(awaitingMerge).groups.map(group => group.id), ['auth-session'], 'they are still listed');
 });
 
 test('queue ids that are not kebab-case are rejected, so they never become paths', () => {

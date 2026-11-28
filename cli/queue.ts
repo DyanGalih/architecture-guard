@@ -9,6 +9,8 @@ import { insideWorkspace, locateWorkspace } from './repositories';
 // module reads it, computes lean item snapshots and diffs, and archives finished groups when the skill asks.
 
 export const FINISHED_STATES = ['done', 'skipped'] as const;
+// Delivered and waiting only for a merge: listed by `queue status`, but they do not keep the queue active.
+export const AWAITING_MERGE_STATE = 'published';
 const GROUP_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const CONTENT_FIELDS = ['title', 'description', 'acceptance', 'origins', 'criterion_mappings'] as const;
 const DIRECT_FIELDS = ['type', 'priority', 'size', 'depends_on'] as const;
@@ -161,7 +163,7 @@ export function queueStatus(root: string) {
       items: (group.items ?? []).map(item => item.id),
     });
   }
-  return { queue: file, source: queue.source ?? null, base: queue.base ?? null, active: groups.length > 0, counts, groups, finished, archived: (queue.archived ?? []).length };
+  return { queue: file, source: queue.source ?? null, base: queue.base ?? null, active: groups.some(group => group.state !== AWAITING_MERGE_STATE), counts, groups, finished, archived: (queue.archived ?? []).length };
 }
 
 // Moves finished groups, and published groups the caller confirmed merged, out of queue.yml. Their item ids stay in
